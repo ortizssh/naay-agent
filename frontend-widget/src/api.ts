@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { ChatResponse, ChatSession, WidgetConfig } from './types';
+import { ChatResponse, ChatSession, WidgetConfig, SessionResponse } from './types';
 
 export class ChatAPI {
   private client: AxiosInstance;
@@ -32,7 +32,7 @@ export class ChatAPI {
     cartId?: string
   ): Promise<ChatSession> {
     try {
-      const response: AxiosResponse<{ success: boolean; data: ChatSession }> =
+      const response: AxiosResponse<SessionResponse> =
         await this.client.post('/api/chat/session', {
           customer_id: customerId,
           cart_id: cartId,
@@ -122,7 +122,8 @@ export class CartUtils {
       // 1. From localStorage (if stored by theme)
       let cartId =
         localStorage.getItem('naay-cart-id') ||
-        localStorage.getItem('shopify-cart-id');
+        localStorage.getItem('shopify-cart-id') ||
+        undefined;
 
       if (cartId) return cartId;
 

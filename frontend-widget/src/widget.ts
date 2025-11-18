@@ -6,7 +6,7 @@ export class NaayWidget {
   private config: WidgetConfig;
   private api: ChatAPI;
   private state: WidgetState;
-  private container: HTMLElement;
+  private container!: HTMLElement;
   private elements: {
     fab?: HTMLElement;
     chatWindow?: HTMLElement;
@@ -90,7 +90,7 @@ export class NaayWidget {
       'data-theme',
       this.config.theme === 'auto'
         ? BrowserUtils.detectTheme()
-        : this.config.theme
+        : this.config.theme || 'light'
     );
 
     if (this.config.customCSS) {
@@ -142,7 +142,7 @@ export class NaayWidget {
         <div class="naay-input-container">
           <textarea 
             class="naay-input" 
-            placeholder="${this.config.placeholder}"
+            placeholder="${this.config.placeholder || 'Type your message...'}"
             rows="1"
             aria-label="Type your message"
           ></textarea>
@@ -262,7 +262,7 @@ export class NaayWidget {
       const customerId = CartUtils.getCustomerId();
       const cartId = this.state.cartId;
 
-      const session = await this.api.createSession(customerId, cartId);
+      const session = await this.api.createSession(customerId || undefined, cartId || undefined);
       this.state.sessionId = session.id;
 
       // Show welcome message
@@ -313,7 +313,7 @@ export class NaayWidget {
       const response = await this.api.sendMessage(
         messageText,
         this.state.sessionId,
-        this.state.cartId
+        this.state.cartId || undefined
       );
 
       this.hideTypingIndicator();

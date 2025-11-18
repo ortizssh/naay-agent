@@ -39,6 +39,12 @@ export interface ChatResponse {
   error?: string;
 }
 
+export interface SessionResponse {
+  success: boolean;
+  data: ChatSession;
+  error?: string;
+}
+
 export interface Product {
   id: string;
   title: string;
