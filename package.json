@@ -11,7 +11,7 @@
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:admin\" \"npm run dev:widget\"",
     "dev:backend": "cd backend && npm run dev",
-    "dev:admin": "cd frontend-admin && npm run dev", 
+    "dev:admin": "cd frontend-admin && npm run dev",
     "dev:widget": "cd frontend-widget && npm run dev",
     "dev:shopify": "shopify app dev",
     "build": "npm run build:backend && npm run build:admin && npm run build:widget",
@@ -50,5 +50,16 @@
     "ecommerce"
   ],
   "author": "Ignacio Ortiz",
-  "license": "MIT"
+  "license": "MIT",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ortizssh/naay-agent.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ortizssh/naay-agent/issues"
+  },
+  "homepage": "https://github.com/ortizssh/naay-agent#readme"
 }
