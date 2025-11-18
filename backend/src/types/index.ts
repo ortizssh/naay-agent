@@ -121,6 +121,11 @@ export interface AgentResponse {
     cart_status?: string;
     cart_id?: string;
     recommendations_found?: number;
+    has_cart_id?: boolean;
+    recommendation_type?: string;
+    status?: string;
+    response_type?: string;
+    clarification_needed?: boolean;
   };
 }
 

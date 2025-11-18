@@ -3,6 +3,8 @@
 declare module 'jsonwebtoken' {
   export function sign(payload: any, secret: string, options?: any): string;
   export function verify(token: string, secret: string): any;
+  export class JsonWebTokenError extends Error {}
+  export class TokenExpiredError extends Error {}
 }
 
 declare module 'joi' {
@@ -33,7 +35,7 @@ declare module 'uuid' {
 }
 
 declare module 'openai' {
-  export class OpenAI {
+  class OpenAI {
     constructor(config?: any);
     chat: {
       completions: {
@@ -44,12 +46,20 @@ declare module 'openai' {
       create(options: any): Promise<any>;
     };
   }
+  export = OpenAI;
 }
 
 declare module 'bullmq' {
+  export class Job {
+    id: string;
+    data: any;
+    opts: any;
+  }
   export class Queue {
     constructor(name: string, options?: any);
     add(name: string, data: any, options?: any): Promise<any>;
+    getJobCounts(): Promise<any>;
+    getActive(): Promise<any>;
   }
   export class Worker {
     constructor(name: string, processor: any, options?: any);
@@ -66,6 +76,8 @@ declare module 'ioredis' {
 
 declare module '@shopify/admin-api-client' {
   export function createAdminApiClient(options: any): any;
+  export function adminApiClient(options: any): any;
+  export function storefrontApiClient(options: any): any;
 }
 
 declare module '@shopify/storefront-api-client' {
@@ -74,10 +86,13 @@ declare module '@shopify/storefront-api-client' {
 
 declare module '@supabase/supabase-js' {
   export function createClient(url: string, key: string): any;
+  export class SupabaseClient {
+    constructor(url: string, key: string);
+  }
 }
 
 declare module 'dotenv' {
-  export function config(): void;
+  export function config(options?: any): void;
 }
 
 declare module 'winston' {
