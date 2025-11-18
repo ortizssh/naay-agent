@@ -116,6 +116,11 @@ export interface AgentResponse {
     products_found?: number;
     search_query?: string;
     execution_time?: number;
+    intent?: string;
+    error?: any;
+    cart_status?: string;
+    cart_id?: string;
+    recommendations_found?: number;
   };
 }
 
@@ -123,6 +128,7 @@ export interface ProductEmbedding {
   id: string;
   product_id: string;
   variant_id?: string;
+  shop_domain?: string;
   embedding: number[];
   content: string;
   metadata: {
