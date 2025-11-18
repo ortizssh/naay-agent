@@ -2,7 +2,7 @@
   "name": "naay-agent",
   "version": "1.0.0",
   "description": "Agente conversacional IA integrado con Shopify + Supabase + pgvector",
-  "main": "index.js",
+  "main": "startup.js",
   "workspaces": [
     "backend",
     "frontend-admin",

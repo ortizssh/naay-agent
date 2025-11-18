@@ -77,7 +77,13 @@ jobs:
         # Copy backend build
         cp -r backend/dist deploy-package/
         cp -r backend/node_modules deploy-package/
-        cp backend/package.json deploy-package/
+        
+        # Copy root files needed
+        cp package.json deploy-package/
+        cp startup.js deploy-package/
+        
+        # Copy test deployment as fallback
+        cp -r test-deploy deploy-package/ 2>/dev/null || echo "No test-deploy folder"
         
         # Copy other necessary files
         cp -r database deploy-package/ 2>/dev/null || echo "No database folder"
@@ -87,20 +93,28 @@ jobs:
         mkdir -p deploy-package/public/widget
         cp -r frontend-widget/dist/* deploy-package/public/widget/ 2>/dev/null || echo "No widget build"
         
-        # Create production package.json
-        cat > deploy-package/package.json << 'EOF'
-        {
-          "name": "naay-agent-backend",
-          "version": "1.0.0",
-          "description": "Naay Agent Backend - Production",
-          "main": "dist/index.js",
-          "scripts": {
-            "start": "node dist/index.js"
-          },
-          "engines": {
-            "node": "20.x"
-          }
-        }
+        # Create web.config for Azure
+        cat > deploy-package/web.config << 'EOF'
+        <?xml version="1.0" encoding="utf-8"?>
+        <configuration>
+          <system.webServer>
+            <webSocket enabled="false" />
+            <handlers>
+              <add name="iisnode" path="startup.js" verb="*" modules="iisnode"/>
+            </handlers>
+            <rewrite>
+              <rules>
+                <rule name="DynamicContent">
+                  <conditions>
+                    <add input="{REQUEST_FILENAME}" matchType="IsFile" negate="True"/>
+                  </conditions>
+                  <action type="Rewrite" url="startup.js"/>
+                </rule>
+              </rules>
+            </rewrite>
+            <iisnode watchedFiles="web.config;*.js" node_env="production" />
+          </system.webServer>
+        </configuration>
         EOF
 
     - name: Upload artifact for deployment job
