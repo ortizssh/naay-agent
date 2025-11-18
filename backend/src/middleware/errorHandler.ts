@@ -15,14 +15,14 @@ export function errorHandler(
     method: req.method,
     body: req.body,
     params: req.params,
-    query: req.query
+    query: req.query,
   });
 
   if (error instanceof AppError) {
     return res.status(error.statusCode).json({
       success: false,
       error: error.message,
-      code: error.code
+      code: error.code,
     });
   }
 
@@ -31,7 +31,7 @@ export function errorHandler(
     return res.status(400).json({
       success: false,
       error: 'Shopify API error',
-      details: error.message
+      details: error.message,
     });
   }
 
@@ -40,7 +40,7 @@ export function errorHandler(
     return res.status(400).json({
       success: false,
       error: 'Validation error',
-      details: error.message
+      details: error.message,
     });
   }
 
@@ -48,14 +48,14 @@ export function errorHandler(
   if (error.name === 'JsonWebTokenError') {
     return res.status(401).json({
       success: false,
-      error: 'Invalid token'
+      error: 'Invalid token',
     });
   }
 
   if (error.name === 'TokenExpiredError') {
     return res.status(401).json({
       success: false,
-      error: 'Token expired'
+      error: 'Token expired',
     });
   }
 
@@ -63,6 +63,6 @@ export function errorHandler(
   res.status(500).json({
     success: false,
     error: 'Internal server error',
-    ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
+    ...(process.env.NODE_ENV === 'development' && { stack: error.stack }),
   });
 }

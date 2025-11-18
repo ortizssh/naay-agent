@@ -1,7 +1,13 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { config } from '@/utils/config';
 import { logger } from '@/utils/logger';
-import { ShopifyStore, ShopifyProduct, ProductEmbedding, ChatSession, ChatMessage } from '@/types';
+import {
+  ShopifyStore,
+  ShopifyProduct,
+  ProductEmbedding,
+  ChatSession,
+  ChatMessage,
+} from '@/types';
 
 export class SupabaseService {
   private client: SupabaseClient;
@@ -9,7 +15,10 @@ export class SupabaseService {
 
   constructor() {
     this.client = createClient(config.supabase.url, config.supabase.anonKey);
-    this.serviceClient = createClient(config.supabase.url, config.supabase.serviceKey);
+    this.serviceClient = createClient(
+      config.supabase.url,
+      config.supabase.serviceKey
+    );
   }
 
   async createStore(store: Omit<ShopifyStore, 'id'>): Promise<ShopifyStore> {
@@ -42,7 +51,10 @@ export class SupabaseService {
     return data;
   }
 
-  async updateStoreToken(shopDomain: string, accessToken: string): Promise<void> {
+  async updateStoreToken(
+    shopDomain: string,
+    accessToken: string
+  ): Promise<void> {
     const { error } = await this.serviceClient
       .from('stores')
       .update({ access_token: accessToken, updated_at: new Date() })
@@ -54,22 +66,23 @@ export class SupabaseService {
     }
   }
 
-  async saveProduct(shopDomain: string, product: ShopifyProduct): Promise<void> {
-    const { error } = await this.serviceClient
-      .from('products')
-      .upsert({
-        id: product.id,
-        shop_domain: shopDomain,
-        title: product.title,
-        description: product.description,
-        handle: product.handle,
-        vendor: product.vendor,
-        product_type: product.product_type,
-        tags: product.tags,
-        images: product.images,
-        created_at: product.created_at,
-        updated_at: product.updated_at
-      });
+  async saveProduct(
+    shopDomain: string,
+    product: ShopifyProduct
+  ): Promise<void> {
+    const { error } = await this.serviceClient.from('products').upsert({
+      id: product.id,
+      shop_domain: shopDomain,
+      title: product.title,
+      description: product.description,
+      handle: product.handle,
+      vendor: product.vendor,
+      product_type: product.product_type,
+      tags: product.tags,
+      images: product.images,
+      created_at: product.created_at,
+      updated_at: product.updated_at,
+    });
 
     if (error) {
       logger.error('Error saving product:', error);
@@ -83,22 +96,20 @@ export class SupabaseService {
   }
 
   async saveVariant(shopDomain: string, variant: any): Promise<void> {
-    const { error } = await this.serviceClient
-      .from('product_variants')
-      .upsert({
-        id: variant.id,
-        shop_domain: shopDomain,
-        product_id: variant.product_id,
-        title: variant.title,
-        sku: variant.sku,
-        price: variant.price,
-        compare_at_price: variant.compare_at_price,
-        inventory_quantity: variant.inventory_quantity,
-        weight: variant.weight,
-        weight_unit: variant.weight_unit,
-        requires_shipping: variant.requires_shipping,
-        taxable: variant.taxable
-      });
+    const { error } = await this.serviceClient.from('product_variants').upsert({
+      id: variant.id,
+      shop_domain: shopDomain,
+      product_id: variant.product_id,
+      title: variant.title,
+      sku: variant.sku,
+      price: variant.price,
+      compare_at_price: variant.compare_at_price,
+      inventory_quantity: variant.inventory_quantity,
+      weight: variant.weight,
+      weight_unit: variant.weight_unit,
+      requires_shipping: variant.requires_shipping,
+      taxable: variant.taxable,
+    });
 
     if (error) {
       logger.error('Error saving variant:', error);
@@ -106,12 +117,14 @@ export class SupabaseService {
     }
   }
 
-  async saveEmbedding(embedding: Omit<ProductEmbedding, 'id' | 'created_at'>): Promise<void> {
+  async saveEmbedding(
+    embedding: Omit<ProductEmbedding, 'id' | 'created_at'>
+  ): Promise<void> {
     const { error } = await this.serviceClient
       .from('product_embeddings')
       .upsert({
         ...embedding,
-        embedding: `[${embedding.embedding.join(',')}]`
+        embedding: `[${embedding.embedding.join(',')}]`,
       });
 
     if (error) {
@@ -126,14 +139,16 @@ export class SupabaseService {
     embedding: number[],
     limit: number = 10
   ): Promise<any[]> {
-    const { data, error } = await this.serviceClient
-      .rpc('search_products_semantic', {
+    const { data, error } = await this.serviceClient.rpc(
+      'search_products_semantic',
+      {
         shop_domain: shopDomain,
         query_text: query,
         query_embedding: `[${embedding.join(',')}]`,
         match_threshold: 0.7,
-        match_count: limit
-      });
+        match_count: limit,
+      }
+    );
 
     if (error) {
       logger.error('Error searching products:', error);
@@ -143,7 +158,11 @@ export class SupabaseService {
     return data || [];
   }
 
-  async createChatSession(shopDomain: string, customerId?: string, cartId?: string): Promise<ChatSession> {
+  async createChatSession(
+    shopDomain: string,
+    customerId?: string,
+    cartId?: string
+  ): Promise<ChatSession> {
     const { data, error } = await this.serviceClient
       .from('chat_sessions')
       .insert({
@@ -152,7 +171,7 @@ export class SupabaseService {
         cart_id: cartId,
         started_at: new Date(),
         last_activity: new Date(),
-        status: 'active'
+        status: 'active',
       })
       .select()
       .single();
@@ -165,12 +184,14 @@ export class SupabaseService {
     return data;
   }
 
-  async saveChatMessage(message: Omit<ChatMessage, 'id' | 'timestamp'>): Promise<ChatMessage> {
+  async saveChatMessage(
+    message: Omit<ChatMessage, 'id' | 'timestamp'>
+  ): Promise<ChatMessage> {
     const { data, error } = await this.serviceClient
       .from('chat_messages')
       .insert({
         ...message,
-        timestamp: new Date()
+        timestamp: new Date(),
       })
       .select()
       .single();
@@ -194,7 +215,10 @@ export class SupabaseService {
     }
   }
 
-  async getSessionHistory(sessionId: string, limit: number = 50): Promise<ChatMessage[]> {
+  async getSessionHistory(
+    sessionId: string,
+    limit: number = 50
+  ): Promise<ChatMessage[]> {
     const { data, error } = await this.serviceClient
       .from('chat_messages')
       .select('*')
@@ -223,7 +247,10 @@ export class SupabaseService {
     }
   }
 
-  async deleteProductEmbeddings(shopDomain: string, productId: string): Promise<void> {
+  async deleteProductEmbeddings(
+    shopDomain: string,
+    productId: string
+  ): Promise<void> {
     const { error } = await this.serviceClient
       .from('product_embeddings')
       .delete()

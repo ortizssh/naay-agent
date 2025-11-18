@@ -37,7 +37,10 @@ export class ShopifyService {
     return this.storefrontClients.get(key);
   }
 
-  async getAllProducts(shop: string, accessToken: string): Promise<ShopifyProduct[]> {
+  async getAllProducts(
+    shop: string,
+    accessToken: string
+  ): Promise<ShopifyProduct[]> {
     const client = this.getAdminClient(shop, accessToken);
     const products: ShopifyProduct[] = [];
     let cursor = null;
@@ -91,63 +94,67 @@ export class ShopifyService {
 
         const variables = {
           first: 50,
-          after: cursor
+          after: cursor,
         };
 
         const response = await client.request(query, { variables });
-        
+
         if (response.data?.products?.nodes) {
-          const mappedProducts = response.data.products.nodes.map((product: any) => ({
-            id: product.id,
-            title: product.title,
-            description: product.description || '',
-            handle: product.handle,
-            vendor: product.vendor,
-            product_type: product.productType,
-            tags: product.tags,
-            images: product.images.nodes.map((img: any) => ({
-              id: img.id,
-              src: img.url,
-              alt_text: img.altText,
-              width: img.width,
-              height: img.height
-            })),
-            variants: product.variants.nodes.map((variant: any) => ({
-              id: variant.id,
-              product_id: product.id,
-              title: variant.title,
-              sku: variant.sku,
-              price: variant.price,
-              compare_at_price: variant.compareAtPrice,
-              inventory_quantity: variant.inventoryQuantity || 0,
-              weight: variant.weight || 0,
-              weight_unit: variant.weightUnit || 'kg',
-              requires_shipping: variant.requiresShipping,
-              taxable: variant.taxable
-            })),
-            created_at: product.createdAt,
-            updated_at: product.updatedAt
-          }));
+          const mappedProducts = response.data.products.nodes.map(
+            (product: any) => ({
+              id: product.id,
+              title: product.title,
+              description: product.description || '',
+              handle: product.handle,
+              vendor: product.vendor,
+              product_type: product.productType,
+              tags: product.tags,
+              images: product.images.nodes.map((img: any) => ({
+                id: img.id,
+                src: img.url,
+                alt_text: img.altText,
+                width: img.width,
+                height: img.height,
+              })),
+              variants: product.variants.nodes.map((variant: any) => ({
+                id: variant.id,
+                product_id: product.id,
+                title: variant.title,
+                sku: variant.sku,
+                price: variant.price,
+                compare_at_price: variant.compareAtPrice,
+                inventory_quantity: variant.inventoryQuantity || 0,
+                weight: variant.weight || 0,
+                weight_unit: variant.weightUnit || 'kg',
+                requires_shipping: variant.requiresShipping,
+                taxable: variant.taxable,
+              })),
+              created_at: product.createdAt,
+              updated_at: product.updatedAt,
+            })
+          );
 
           products.push(...mappedProducts);
         }
 
-        cursor = response.data?.products?.pageInfo?.hasNextPage 
-          ? response.data.products.pageInfo.endCursor 
+        cursor = response.data?.products?.pageInfo?.hasNextPage
+          ? response.data.products.pageInfo.endCursor
           : null;
-
       } while (cursor);
 
       logger.info(`Fetched ${products.length} products from ${shop}`);
       return products;
-
     } catch (error) {
       logger.error('Error fetching products from Shopify:', error);
       throw new AppError(`Failed to fetch products: ${error}`, 500);
     }
   }
 
-  async getProduct(shop: string, accessToken: string, productId: string): Promise<ShopifyProduct | null> {
+  async getProduct(
+    shop: string,
+    accessToken: string,
+    productId: string
+  ): Promise<ShopifyProduct | null> {
     const client = this.getAdminClient(shop, accessToken);
 
     try {
@@ -191,7 +198,7 @@ export class ShopifyService {
       `;
 
       const response = await client.request(query, {
-        variables: { id: productId }
+        variables: { id: productId },
       });
 
       if (!response.data?.product) {
@@ -212,7 +219,7 @@ export class ShopifyService {
           src: img.url,
           alt_text: img.altText,
           width: img.width,
-          height: img.height
+          height: img.height,
         })),
         variants: product.variants.nodes.map((variant: any) => ({
           id: variant.id,
@@ -225,19 +232,21 @@ export class ShopifyService {
           weight: variant.weight || 0,
           weight_unit: variant.weightUnit || 'kg',
           requires_shipping: variant.requiresShipping,
-          taxable: variant.taxable
+          taxable: variant.taxable,
         })),
         created_at: product.createdAt,
-        updated_at: product.updatedAt
+        updated_at: product.updatedAt,
       };
-
     } catch (error) {
       logger.error('Error fetching product from Shopify:', error);
       throw new AppError(`Failed to fetch product: ${error}`, 500);
     }
   }
 
-  async createCart(shop: string, storefrontToken: string): Promise<ShopifyCart> {
+  async createCart(
+    shop: string,
+    storefrontToken: string
+  ): Promise<ShopifyCart> {
     const client = this.getStorefrontClient(shop, storefrontToken);
 
     try {
@@ -290,11 +299,13 @@ export class ShopifyService {
       const response = await client.request(query);
 
       if (response.data?.cartCreate?.userErrors?.length > 0) {
-        throw new AppError(`Cart creation failed: ${response.data.cartCreate.userErrors[0].message}`, 400);
+        throw new AppError(
+          `Cart creation failed: ${response.data.cartCreate.userErrors[0].message}`,
+          400
+        );
       }
 
       return response.data.cartCreate.cart;
-
     } catch (error) {
       logger.error('Error creating cart:', error);
       throw new AppError(`Failed to create cart: ${error}`, 500);
@@ -302,9 +313,9 @@ export class ShopifyService {
   }
 
   async addToCart(
-    shop: string, 
-    storefrontToken: string, 
-    cartId: string, 
+    shop: string,
+    storefrontToken: string,
+    cartId: string,
     lines: Array<{ merchandiseId: string; quantity: number }>
   ): Promise<ShopifyCart> {
     const client = this.getStorefrontClient(shop, storefrontToken);
@@ -361,17 +372,19 @@ export class ShopifyService {
           cartId,
           lines: lines.map(line => ({
             merchandiseId: line.merchandiseId,
-            quantity: line.quantity
-          }))
-        }
+            quantity: line.quantity,
+          })),
+        },
       });
 
       if (response.data?.cartLinesAdd?.userErrors?.length > 0) {
-        throw new AppError(`Add to cart failed: ${response.data.cartLinesAdd.userErrors[0].message}`, 400);
+        throw new AppError(
+          `Add to cart failed: ${response.data.cartLinesAdd.userErrors[0].message}`,
+          400
+        );
       }
 
       return response.data.cartLinesAdd.cart;
-
     } catch (error) {
       logger.error('Error adding to cart:', error);
       throw new AppError(`Failed to add to cart: ${error}`, 500);
@@ -393,12 +406,12 @@ export class ShopifyService {
   generateInstallUrl(shop: string, redirectUri: string): string {
     const scopes = config.shopify.scopes;
     const state = crypto.randomBytes(16).toString('hex');
-    
+
     const params = new URLSearchParams({
       client_id: config.shopify.apiKey,
       scope: scopes,
       redirect_uri: redirectUri,
-      state: state
+      state: state,
     });
 
     return `https://${shop}/admin/oauth/authorize?${params.toString()}`;
@@ -414,8 +427,8 @@ export class ShopifyService {
         body: JSON.stringify({
           client_id: config.shopify.apiKey,
           client_secret: config.shopify.apiSecret,
-          code: code
-        })
+          code: code,
+        }),
       });
 
       if (!response.ok) {
@@ -424,7 +437,6 @@ export class ShopifyService {
 
       const data = await response.json();
       return data.access_token;
-
     } catch (error) {
       logger.error('Error exchanging code for token:', error);
       throw new AppError(`Failed to exchange code for token: ${error}`, 500);

@@ -18,17 +18,20 @@ async function startServer() {
   try {
     // Validate configuration
     validateConfig();
-    
+
     const app = express();
 
     // Security middleware
     app.use(helmet());
-    app.use(cors({
-      origin: process.env.NODE_ENV === 'production' 
-        ? [config.shopify.appUrl] 
-        : ['http://localhost:3000', 'http://localhost:3001'],
-      credentials: true
-    }));
+    app.use(
+      cors({
+        origin:
+          process.env.NODE_ENV === 'production'
+            ? [config.shopify.appUrl]
+            : ['http://localhost:3000', 'http://localhost:3001'],
+        credentials: true,
+      })
+    );
 
     // Rate limiting
     app.use(rateLimiter);
@@ -54,7 +57,7 @@ async function startServer() {
     app.use('*', (req, res) => {
       res.status(404).json({
         success: false,
-        error: 'Route not found'
+        error: 'Route not found',
       });
     });
 
@@ -68,7 +71,6 @@ async function startServer() {
       logger.info(`📱 Environment: ${config.server.nodeEnv}`);
       logger.info(`🔐 Shopify App URL: ${config.shopify.appUrl}`);
     });
-
   } catch (error) {
     logger.error('Failed to start server:', error);
     process.exit(1);
@@ -76,7 +78,7 @@ async function startServer() {
 }
 
 // Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', error => {
   logger.error('Uncaught Exception:', error);
   process.exit(1);
 });

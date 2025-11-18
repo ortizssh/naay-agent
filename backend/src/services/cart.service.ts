@@ -35,15 +35,17 @@ export class CartService {
       }
 
       // For now, use the same token - in production you'd have a separate storefront access token
-      const cart = await this.shopifyService.createCart(shop, store.access_token);
+      const cart = await this.shopifyService.createCart(
+        shop,
+        store.access_token
+      );
 
       logger.info(`Cart created for shop: ${shop}`, {
         cartId: cart.id,
-        totalQuantity: cart.totalQuantity
+        totalQuantity: cart.totalQuantity,
       });
 
       return cart;
-
     } catch (error) {
       logger.error('Error creating cart:', error);
       throw new AppError(`Failed to create cart: ${error.message}`, 500);
@@ -62,7 +64,10 @@ export class CartService {
       }
 
       // Validate product variants exist
-      await this.validateVariants(shop, lines.map(line => line.merchandiseId));
+      await this.validateVariants(
+        shop,
+        lines.map(line => line.merchandiseId)
+      );
 
       const updatedCart = await this.shopifyService.addToCart(
         shop,
@@ -75,17 +80,16 @@ export class CartService {
         shop,
         cartId,
         itemsAdded: lines.length,
-        totalQuantity: updatedCart.totalQuantity
+        totalQuantity: updatedCart.totalQuantity,
       });
 
       // Log analytics event
       await this.logCartEvent(shop, cartId, 'items_added', {
         items: lines,
-        cart_total: updatedCart.cost.totalAmount.amount
+        cart_total: updatedCart.cost.totalAmount.amount,
       });
 
       return updatedCart;
-
     } catch (error) {
       logger.error('Error adding to cart:', error);
       throw new AppError(`Failed to add to cart: ${error.message}`, 500);
@@ -154,20 +158,26 @@ export class CartService {
         }
       `;
 
-      const client = this.shopifyService.getStorefrontClient(shop, store.access_token);
+      const client = this.shopifyService.getStorefrontClient(
+        shop,
+        store.access_token
+      );
       const response = await client.request(mutation, {
         variables: {
           cartId,
           lines: lines.map(line => ({
             id: line.id,
             quantity: line.quantity,
-            ...(line.merchandiseId && { merchandiseId: line.merchandiseId })
-          }))
-        }
+            ...(line.merchandiseId && { merchandiseId: line.merchandiseId }),
+          })),
+        },
       });
 
       if (response.data?.cartLinesUpdate?.userErrors?.length > 0) {
-        throw new AppError(`Cart update failed: ${response.data.cartLinesUpdate.userErrors[0].message}`, 400);
+        throw new AppError(
+          `Cart update failed: ${response.data.cartLinesUpdate.userErrors[0].message}`,
+          400
+        );
       }
 
       const updatedCart = response.data.cartLinesUpdate.cart;
@@ -176,16 +186,15 @@ export class CartService {
         shop,
         cartId,
         linesUpdated: lines.length,
-        totalQuantity: updatedCart.totalQuantity
+        totalQuantity: updatedCart.totalQuantity,
       });
 
       await this.logCartEvent(shop, cartId, 'cart_updated', {
         updates: lines,
-        cart_total: updatedCart.cost.totalAmount.amount
+        cart_total: updatedCart.cost.totalAmount.amount,
       });
 
       return updatedCart;
-
     } catch (error) {
       logger.error('Error updating cart lines:', error);
       throw new AppError(`Failed to update cart: ${error.message}`, 500);
@@ -249,13 +258,19 @@ export class CartService {
         }
       `;
 
-      const client = this.shopifyService.getStorefrontClient(shop, store.access_token);
+      const client = this.shopifyService.getStorefrontClient(
+        shop,
+        store.access_token
+      );
       const response = await client.request(mutation, {
-        variables: { cartId, lineIds }
+        variables: { cartId, lineIds },
       });
 
       if (response.data?.cartLinesRemove?.userErrors?.length > 0) {
-        throw new AppError(`Remove from cart failed: ${response.data.cartLinesRemove.userErrors[0].message}`, 400);
+        throw new AppError(
+          `Remove from cart failed: ${response.data.cartLinesRemove.userErrors[0].message}`,
+          400
+        );
       }
 
       const updatedCart = response.data.cartLinesRemove.cart;
@@ -264,16 +279,15 @@ export class CartService {
         shop,
         cartId,
         itemsRemoved: lineIds.length,
-        totalQuantity: updatedCart.totalQuantity
+        totalQuantity: updatedCart.totalQuantity,
       });
 
       await this.logCartEvent(shop, cartId, 'items_removed', {
         removed_line_ids: lineIds,
-        cart_total: updatedCart.cost.totalAmount.amount
+        cart_total: updatedCart.cost.totalAmount.amount,
       });
 
       return updatedCart;
-
     } catch (error) {
       logger.error('Error removing from cart:', error);
       throw new AppError(`Failed to remove from cart: ${error.message}`, 500);
@@ -327,13 +341,15 @@ export class CartService {
         }
       `;
 
-      const client = this.shopifyService.getStorefrontClient(shop, store.access_token);
+      const client = this.shopifyService.getStorefrontClient(
+        shop,
+        store.access_token
+      );
       const response = await client.request(query, {
-        variables: { cartId }
+        variables: { cartId },
       });
 
       return response.data?.cart || null;
-
     } catch (error) {
       logger.error('Error fetching cart:', error);
       return null; // Don't throw for cart fetch - might just be expired
@@ -345,22 +361,36 @@ export class CartService {
       // Get current cart to find all line IDs
       const currentCart = await this.getCart(shop, cartId);
       if (!currentCart || currentCart.lines.length === 0) {
-        return currentCart || { id: cartId, lines: [], cost: { totalAmount: { amount: '0', currencyCode: 'USD' }, subtotalAmount: { amount: '0', currencyCode: 'USD' } }, totalQuantity: 0 };
+        return (
+          currentCart || {
+            id: cartId,
+            lines: [],
+            cost: {
+              totalAmount: { amount: '0', currencyCode: 'USD' },
+              subtotalAmount: { amount: '0', currencyCode: 'USD' },
+            },
+            totalQuantity: 0,
+          }
+        );
       }
 
       const lineIds = currentCart.lines.map(line => line.id);
       return await this.removeFromCart(shop, cartId, lineIds);
-
     } catch (error) {
       logger.error('Error clearing cart:', error);
       throw new AppError(`Failed to clear cart: ${error.message}`, 500);
     }
   }
 
-  private async validateVariants(shop: string, variantIds: string[]): Promise<void> {
+  private async validateVariants(
+    shop: string,
+    variantIds: string[]
+  ): Promise<void> {
     try {
       for (const variantId of variantIds) {
-        const { data, error } = await (this.supabaseService as any).serviceClient
+        const { data, error } = await (
+          this.supabaseService as any
+        ).serviceClient
           .from('product_variants')
           .select('id, inventory_quantity')
           .eq('shop_domain', shop)
@@ -376,7 +406,7 @@ export class CartService {
           logger.warn(`Low inventory for variant ${variantId}`, {
             shop,
             variantId,
-            inventory: data.inventory_quantity
+            inventory: data.inventory_quantity,
           });
         }
       }
@@ -403,8 +433,8 @@ export class CartService {
           event_type: eventType,
           event_data: {
             cart_id: cartId,
-            ...eventData
-          }
+            ...eventData,
+          },
         });
 
       if (error) {

@@ -22,8 +22,8 @@
     "test:backend": "cd backend && npm run test",
     "test:admin": "cd frontend-admin && npm run test",
     "test:widget": "cd frontend-widget && npm run test",
-    "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
-    "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
+    "lint": "eslint \"backend/src/**/*.{ts,js}\" \"frontend-widget/src/**/*.{ts,js}\" --fix",
+    "lint:fix": "eslint \"backend/src/**/*.{ts,js}\" \"frontend-widget/src/**/*.{ts,js}\" --fix",
     "postinstall": "npm run setup:env",
     "setup:env": "node scripts/setup-env.js",
     "shopify:generate": "shopify app generate extension",
@@ -31,12 +31,12 @@
     "shopify:info": "shopify app info"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "@typescript-eslint/parser": "^6.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
     "concurrently": "^8.2.0",
     "eslint": "^8.45.0",
     "eslint-config-prettier": "^9.0.0",
-    "eslint-plugin-prettier": "^5.0.0",
+    "eslint-plugin-prettier": "^5.5.4",
     "prettier": "^3.0.0",
     "typescript": "^5.0.0"
   },

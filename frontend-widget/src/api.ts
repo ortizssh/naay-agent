@@ -7,37 +7,40 @@ export class ChatAPI {
 
   constructor(config: WidgetConfig) {
     this.config = config;
-    
+
     this.client = axios.create({
       baseURL: config.apiEndpoint,
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
-        'X-Shop-Domain': config.shopDomain
-      }
+        'X-Shop-Domain': config.shopDomain,
+      },
     });
 
     // Response interceptor for error handling
     this.client.interceptors.response.use(
-      (response) => response,
-      (error) => {
+      response => response,
+      error => {
         console.error('Naay API Error:', error);
         throw this.formatError(error);
       }
     );
   }
 
-  async createSession(customerId?: string, cartId?: string): Promise<ChatSession> {
+  async createSession(
+    customerId?: string,
+    cartId?: string
+  ): Promise<ChatSession> {
     try {
-      const response: AxiosResponse<{ success: boolean; data: ChatSession }> = 
+      const response: AxiosResponse<{ success: boolean; data: ChatSession }> =
         await this.client.post('/api/chat/session', {
           customer_id: customerId,
           cart_id: cartId,
           context: {
             user_agent: navigator.userAgent,
             referrer: document.referrer,
-            timestamp: new Date().toISOString()
-          }
+            timestamp: new Date().toISOString(),
+          },
         });
 
       if (!response.data.success) {
@@ -58,8 +61,9 @@ export class ChatAPI {
     context?: Record<string, any>
   ): Promise<ChatResponse> {
     try {
-      const response: AxiosResponse<ChatResponse> = 
-        await this.client.post('/api/chat/message', {
+      const response: AxiosResponse<ChatResponse> = await this.client.post(
+        '/api/chat/message',
+        {
           message,
           session_id: sessionId,
           cart_id: cartId,
@@ -67,9 +71,10 @@ export class ChatAPI {
             timestamp: new Date().toISOString(),
             page_url: window.location.href,
             page_title: document.title,
-            ...context
-          }
-        });
+            ...context,
+          },
+        }
+      );
 
       return response.data;
     } catch (error) {
@@ -91,13 +96,16 @@ export class ChatAPI {
   private formatError(error: any): Error {
     if (error.response) {
       // Server responded with error status
-      const message = error.response.data?.error || 
-                     error.response.data?.message || 
-                     `Server error: ${error.response.status}`;
+      const message =
+        error.response.data?.error ||
+        error.response.data?.message ||
+        `Server error: ${error.response.status}`;
       return new Error(message);
     } else if (error.request) {
       // Request made but no response
-      return new Error('Unable to connect to chat service. Please check your internet connection.');
+      return new Error(
+        'Unable to connect to chat service. Please check your internet connection.'
+      );
     } else {
       // Something else happened
       return new Error(error.message || 'An unexpected error occurred');
@@ -110,11 +118,12 @@ export class CartUtils {
   static getCartId(): string | null {
     try {
       // Try to get Shopify cart ID from various sources
-      
+
       // 1. From localStorage (if stored by theme)
-      let cartId = localStorage.getItem('naay-cart-id') || 
-                   localStorage.getItem('shopify-cart-id');
-      
+      let cartId =
+        localStorage.getItem('naay-cart-id') ||
+        localStorage.getItem('shopify-cart-id');
+
       if (cartId) return cartId;
 
       // 2. From Shopify's cart.js if available
@@ -134,10 +143,12 @@ export class CartUtils {
       const cartCookie = document.cookie
         .split('; ')
         .find(row => row.startsWith('cart='));
-      
+
       if (cartCookie) {
         try {
-          const cartData = JSON.parse(decodeURIComponent(cartCookie.split('=')[1]));
+          const cartData = JSON.parse(
+            decodeURIComponent(cartCookie.split('=')[1])
+          );
           cartId = cartData.token || cartData.id;
           if (cartId) return cartId;
         } catch (e) {
@@ -198,7 +209,10 @@ export class BrowserUtils {
   }
 
   static detectTheme(): 'light' | 'dark' {
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    if (
+      window.matchMedia &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches
+    ) {
       return 'dark';
     }
     return 'light';
@@ -209,7 +223,7 @@ export class BrowserUtils {
     if (!element.hasAttribute('role')) {
       element.setAttribute('role', 'complementary');
     }
-    
+
     if (!element.hasAttribute('aria-label')) {
       element.setAttribute('aria-label', 'Customer support chat');
     }

@@ -6,7 +6,7 @@ export const rateLimiter = rateLimit({
   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'), // 100 requests per window
   message: {
     success: false,
-    error: 'Too many requests, please try again later.'
+    error: 'Too many requests, please try again later.',
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -14,14 +14,14 @@ export const rateLimiter = rateLimit({
     logger.warn(`Rate limit exceeded for IP: ${req.ip}`, {
       ip: req.ip,
       userAgent: req.get('User-Agent'),
-      path: req.path
+      path: req.path,
     });
-    
+
     res.status(429).json({
       success: false,
-      error: 'Too many requests, please try again later.'
+      error: 'Too many requests, please try again later.',
     });
-  }
+  },
 });
 
 export const chatRateLimiter = rateLimit({
@@ -29,12 +29,12 @@ export const chatRateLimiter = rateLimit({
   max: 30, // 30 chat messages per minute
   message: {
     success: false,
-    error: 'Too many chat messages, please slow down.'
+    error: 'Too many chat messages, please slow down.',
   },
-  keyGenerator: (req) => {
+  keyGenerator: req => {
     // Rate limit by session ID if available, otherwise by IP
     return req.body?.session_id || req.ip;
-  }
+  },
 });
 
 export const webhookRateLimiter = rateLimit({
@@ -42,10 +42,10 @@ export const webhookRateLimiter = rateLimit({
   max: 1000, // High limit for webhooks
   message: {
     success: false,
-    error: 'Webhook rate limit exceeded.'
+    error: 'Webhook rate limit exceeded.',
   },
-  keyGenerator: (req) => {
+  keyGenerator: req => {
     // Rate limit by shop domain
-    return req.headers['x-shopify-shop-domain'] as string || req.ip;
-  }
+    return (req.headers['x-shopify-shop-domain'] as string) || req.ip;
+  },
 });

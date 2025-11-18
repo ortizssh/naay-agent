@@ -13,7 +13,7 @@ export default NaayWidget;
 if (typeof window !== 'undefined') {
   // Make available globally
   (window as any).NaayWidget = NaayWidget;
-  
+
   // Helper function for easy initialization
   (window as any).initNaayWidget = (config: WidgetConfig) => {
     return new NaayWidget(config);

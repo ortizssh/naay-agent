@@ -1,0 +1,46 @@
+# Build outputs
+dist/
+build/
+coverage/
+
+# Dependencies
+node_modules/
+
+# Generated files
+*.min.js
+*.bundle.js
+
+# Config files
+*.config.js
+webpack.config.js
+
+# Documentation
+docs/
+*.md
+
+# GitHub Actions
+.github/
+
+# Test deployment
+test-deploy/
+
+# Azure config
+azure-config/
+
+# Database files
+*.sql
+
+# Shopify files
+*.liquid
+*.toml
+
+# Environment files
+.env*
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

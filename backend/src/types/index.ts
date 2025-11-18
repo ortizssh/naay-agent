@@ -99,7 +99,13 @@ export interface ChatSession {
 }
 
 export interface AgentAction {
-  type: 'cart.create' | 'cart.add' | 'cart.update' | 'cart.remove' | 'product.search' | 'product.recommend';
+  type:
+    | 'cart.create'
+    | 'cart.add'
+    | 'cart.update'
+    | 'cart.remove'
+    | 'product.search'
+    | 'product.recommend';
   params: Record<string, any>;
 }
 
@@ -160,7 +166,11 @@ export interface ShopifyWebhook {
 // Queue Types
 export interface QueueJob {
   id: string;
-  type: 'sync_product' | 'generate_embedding' | 'process_webhook' | 'send_notification';
+  type:
+    | 'sync_product'
+    | 'generate_embedding'
+    | 'process_webhook'
+    | 'send_notification';
   data: Record<string, any>;
   priority: number;
   attempts: number;

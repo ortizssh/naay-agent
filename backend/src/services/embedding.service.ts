@@ -16,7 +16,7 @@ export class EmbeddingService {
     try {
       // Clean and prepare text
       const cleanText = this.cleanText(text);
-      
+
       if (!cleanText.trim()) {
         throw new AppError('Empty text provided for embedding', 400);
       }
@@ -33,14 +33,16 @@ export class EmbeddingService {
       }
 
       const embedding = response.data[0].embedding;
-      
-      logger.debug(`Generated embedding for text: "${cleanText.substring(0, 50)}..."`, {
-        textLength: cleanText.length,
-        embeddingDimension: embedding.length
-      });
+
+      logger.debug(
+        `Generated embedding for text: "${cleanText.substring(0, 50)}..."`,
+        {
+          textLength: cleanText.length,
+          embeddingDimension: embedding.length,
+        }
+      );
 
       return embedding;
-
     } catch (error) {
       if (error instanceof AppError) {
         throw error;
@@ -58,7 +60,9 @@ export class EmbeddingService {
       }
 
       // Clean all texts
-      const cleanTexts = texts.map(text => this.cleanText(text)).filter(text => text.trim());
+      const cleanTexts = texts
+        .map(text => this.cleanText(text))
+        .filter(text => text.trim());
 
       if (cleanTexts.length === 0) {
         return [];
@@ -76,30 +80,34 @@ export class EmbeddingService {
       }
 
       const embeddings = response.data.map(item => item.embedding);
-      
+
       logger.debug(`Generated ${embeddings.length} embeddings in batch`);
 
       return embeddings;
-
     } catch (error) {
       logger.error('Error generating batch embeddings:', error);
-      throw new AppError(`Failed to generate batch embeddings: ${error.message}`, 500);
+      throw new AppError(
+        `Failed to generate batch embeddings: ${error.message}`,
+        500
+      );
     }
   }
 
   private cleanText(text: string): string {
     if (!text) return '';
 
-    return text
-      // Remove HTML tags
-      .replace(/<[^>]*>/g, ' ')
-      // Remove extra whitespace and newlines
-      .replace(/\s+/g, ' ')
-      // Remove special characters but keep basic punctuation
-      .replace(/[^\w\s.,!?-]/g, ' ')
-      // Trim and limit length (OpenAI has token limits)
-      .trim()
-      .substring(0, 8000); // Rough character limit to stay under token limits
+    return (
+      text
+        // Remove HTML tags
+        .replace(/<[^>]*>/g, ' ')
+        // Remove extra whitespace and newlines
+        .replace(/\s+/g, ' ')
+        // Remove special characters but keep basic punctuation
+        .replace(/[^\w\s.,!?-]/g, ' ')
+        // Trim and limit length (OpenAI has token limits)
+        .trim()
+        .substring(0, 8000)
+    ); // Rough character limit to stay under token limits
   }
 
   async searchSimilar(
@@ -108,7 +116,7 @@ export class EmbeddingService {
   ): Promise<Array<{ index: number; similarity: number }>> {
     const similarities = candidateEmbeddings.map((embedding, index) => ({
       index,
-      similarity: this.cosineSimilarity(queryEmbedding, embedding)
+      similarity: this.cosineSimilarity(queryEmbedding, embedding),
     }));
 
     return similarities
@@ -148,7 +156,7 @@ export class EmbeddingService {
       product.description,
       product.vendor,
       product.product_type,
-      ...(product.tags || [])
+      ...(product.tags || []),
     ].filter(Boolean);
 
     return parts.join(' ');
@@ -163,7 +171,7 @@ export class EmbeddingService {
       product.product_type,
       `Price: ${variant.price}`,
       variant.sku ? `SKU: ${variant.sku}` : '',
-      ...(product.tags || [])
+      ...(product.tags || []),
     ].filter(Boolean);
 
     return parts.join(' ');

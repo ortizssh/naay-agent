@@ -21,7 +21,7 @@ export class NaayWidget {
   constructor(config: WidgetConfig) {
     this.config = this.validateAndNormalizeConfig(config);
     this.api = new ChatAPI(this.config);
-    
+
     this.state = {
       isOpen: false,
       isMinimized: false,
@@ -30,7 +30,7 @@ export class NaayWidget {
       currentInput: '',
       sessionId: null,
       cartId: CartUtils.getCartId(),
-      hasUnread: false
+      hasUnread: false,
     };
 
     this.init();
@@ -40,7 +40,7 @@ export class NaayWidget {
     if (!config.shopDomain) {
       throw new Error('shopDomain is required');
     }
-    
+
     if (!config.apiEndpoint) {
       throw new Error('apiEndpoint is required');
     }
@@ -52,7 +52,7 @@ export class NaayWidget {
       placeholder: 'Type your message...',
       theme: 'auto',
       language: 'en',
-      ...config
+      ...config,
     };
   }
 
@@ -60,23 +60,23 @@ export class NaayWidget {
     try {
       // Create container
       this.createContainer();
-      
+
       // Create UI elements
       this.createFloatingButton();
       this.createChatWindow();
-      
+
       // Set up event listeners
       this.setupEventListeners();
-      
+
       // Apply theme
       this.applyTheme();
-      
+
       // Initialize session
       await this.initializeSession();
-      
+
       // Add to DOM
       document.body.appendChild(this.container);
-      
+
       console.log('Naay Widget initialized successfully');
     } catch (error) {
       console.error('Failed to initialize Naay Widget:', error);
@@ -86,8 +86,13 @@ export class NaayWidget {
   private createContainer(): void {
     this.container = document.createElement('div');
     this.container.className = `naay-widget position-${this.config.position}`;
-    this.container.setAttribute('data-theme', this.config.theme === 'auto' ? BrowserUtils.detectTheme() : this.config.theme);
-    
+    this.container.setAttribute(
+      'data-theme',
+      this.config.theme === 'auto'
+        ? BrowserUtils.detectTheme()
+        : this.config.theme
+    );
+
     if (this.config.customCSS) {
       const style = document.createElement('style');
       style.textContent = this.config.customCSS;
@@ -108,7 +113,7 @@ export class NaayWidget {
     `;
 
     fab.addEventListener('click', () => this.toggleChat());
-    
+
     this.container.appendChild(fab);
     this.elements.fab = fab;
   }
@@ -116,7 +121,7 @@ export class NaayWidget {
   private createChatWindow(): void {
     const chatWindow = document.createElement('div');
     chatWindow.className = 'naay-chat-window';
-    
+
     chatWindow.innerHTML = `
       <div class="naay-chat-header">
         <div class="naay-chat-title">
@@ -152,17 +157,21 @@ export class NaayWidget {
 
     this.container.appendChild(chatWindow);
     this.elements.chatWindow = chatWindow;
-    this.elements.messagesContainer = chatWindow.querySelector('.naay-chat-messages')!;
-    this.elements.input = chatWindow.querySelector('.naay-input') as HTMLTextAreaElement;
+    this.elements.messagesContainer = chatWindow.querySelector(
+      '.naay-chat-messages'
+    )!;
+    this.elements.input = chatWindow.querySelector(
+      '.naay-input'
+    ) as HTMLTextAreaElement;
     this.elements.sendButton = chatWindow.querySelector('.naay-send-button')!;
   }
 
   private setupEventListeners(): void {
     // Chat controls
-    this.elements.chatWindow?.addEventListener('click', (e) => {
+    this.elements.chatWindow?.addEventListener('click', e => {
       const target = e.target as HTMLElement;
       const button = target.closest('[data-action]') as HTMLElement;
-      
+
       if (button) {
         const action = button.getAttribute('data-action');
         if (action === 'close') {
@@ -175,12 +184,21 @@ export class NaayWidget {
 
     // Input handling
     if (this.elements.input) {
-      this.elements.input.addEventListener('input', this.handleInputChange.bind(this));
-      this.elements.input.addEventListener('keydown', this.handleKeyDown.bind(this));
+      this.elements.input.addEventListener(
+        'input',
+        this.handleInputChange.bind(this)
+      );
+      this.elements.input.addEventListener(
+        'keydown',
+        this.handleKeyDown.bind(this)
+      );
     }
 
     // Send button
-    this.elements.sendButton?.addEventListener('click', this.sendMessage.bind(this));
+    this.elements.sendButton?.addEventListener(
+      'click',
+      this.sendMessage.bind(this)
+    );
 
     // Auto-resize textarea
     if (this.elements.input) {
@@ -192,9 +210,14 @@ export class NaayWidget {
 
     // Theme change detection
     if (this.config.theme === 'auto') {
-      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-        this.container.setAttribute('data-theme', e.matches ? 'dark' : 'light');
-      });
+      window
+        .matchMedia('(prefers-color-scheme: dark)')
+        .addEventListener('change', e => {
+          this.container.setAttribute(
+            'data-theme',
+            e.matches ? 'dark' : 'light'
+          );
+        });
     }
 
     // Page visibility for unread management
@@ -210,11 +233,11 @@ export class NaayWidget {
 
     const value = this.elements.input.value.trim();
     this.state.currentInput = value;
-    
+
     // Update send button state
     const canSend = value.length > 0 && !this.state.isLoading;
     this.elements.sendButton!.toggleAttribute('disabled', !canSend);
-    
+
     // Auto-resize
     this.adjustTextareaHeight();
   }
@@ -238,31 +261,34 @@ export class NaayWidget {
     try {
       const customerId = CartUtils.getCustomerId();
       const cartId = this.state.cartId;
-      
+
       const session = await this.api.createSession(customerId, cartId);
       this.state.sessionId = session.id;
-      
+
       // Show welcome message
       this.addMessage({
         id: 'welcome',
         role: 'assistant',
         content: this.config.greeting || 'Hi! How can I help you today?',
-        timestamp: new Date()
+        timestamp: new Date(),
       });
-      
     } catch (error) {
       console.error('Failed to initialize session:', error);
       this.addMessage({
         id: 'error',
         role: 'system',
         content: 'Unable to connect to support. Please try again later.',
-        timestamp: new Date()
+        timestamp: new Date(),
       });
     }
   }
 
   private async sendMessage(): Promise<void> {
-    if (!this.state.currentInput.trim() || this.state.isLoading || !this.state.sessionId) {
+    if (
+      !this.state.currentInput.trim() ||
+      this.state.isLoading ||
+      !this.state.sessionId
+    ) {
       return;
     }
 
@@ -276,9 +302,9 @@ export class NaayWidget {
       id: Date.now().toString(),
       role: 'user',
       content: messageText,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
-    
+
     this.addMessage(userMessage);
     this.showTypingIndicator();
     this.setLoading(true);
@@ -300,7 +326,7 @@ export class NaayWidget {
             role: 'assistant',
             content,
             timestamp: new Date(),
-            metadata: response.data.metadata
+            metadata: response.data.metadata,
           };
           this.addMessage(assistantMessage);
         });
@@ -312,16 +338,15 @@ export class NaayWidget {
       } else {
         throw new Error(response.error || 'No response received');
       }
-
     } catch (error) {
       console.error('Error sending message:', error);
       this.hideTypingIndicator();
-      
+
       this.addMessage({
         id: 'error-' + Date.now(),
         role: 'assistant',
         content: 'Sorry, I encountered an error. Please try again.',
-        timestamp: new Date()
+        timestamp: new Date(),
       });
     } finally {
       this.setLoading(false);
@@ -332,7 +357,7 @@ export class NaayWidget {
     this.state.messages.push(message);
     this.renderMessage(message);
     this.scrollToBottom();
-    
+
     // Mark as unread if chat is closed
     if (!this.state.isOpen && message.role === 'assistant') {
       this.markAsUnread();
@@ -345,15 +370,15 @@ export class NaayWidget {
     const messageElement = document.createElement('div');
     messageElement.className = `naay-message ${message.role} naay-fade-in`;
     messageElement.setAttribute('data-message-id', message.id);
-    
+
     // Format content (basic markdown support)
     let content = message.content;
     content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     content = content.replace(/\*(.*?)\*/g, '<em>$1</em>');
     content = content.replace(/\n/g, '<br>');
-    
+
     messageElement.innerHTML = content;
-    
+
     this.elements.messagesContainer.appendChild(messageElement);
   }
 
@@ -374,7 +399,8 @@ export class NaayWidget {
   }
 
   private hideTypingIndicator(): void {
-    const typing = this.elements.messagesContainer?.querySelector('[data-typing]');
+    const typing =
+      this.elements.messagesContainer?.querySelector('[data-typing]');
     if (typing) {
       typing.remove();
     }
@@ -399,13 +425,17 @@ export class NaayWidget {
 
   private scrollToBottom(): void {
     if (this.elements.messagesContainer) {
-      this.elements.messagesContainer.scrollTop = this.elements.messagesContainer.scrollHeight;
+      this.elements.messagesContainer.scrollTop =
+        this.elements.messagesContainer.scrollHeight;
     }
   }
 
   private setLoading(loading: boolean): void {
     this.state.isLoading = loading;
-    this.elements.sendButton?.toggleAttribute('disabled', loading || !this.state.currentInput.trim());
+    this.elements.sendButton?.toggleAttribute(
+      'disabled',
+      loading || !this.state.currentInput.trim()
+    );
   }
 
   private toggleChat(): void {
@@ -419,10 +449,10 @@ export class NaayWidget {
   private openChat(): void {
     this.state.isOpen = true;
     this.state.isMinimized = false;
-    
+
     this.elements.chatWindow?.classList.add('open');
     this.elements.fab?.classList.add('open');
-    
+
     // Focus input
     setTimeout(() => {
       this.elements.input?.focus();
@@ -433,7 +463,7 @@ export class NaayWidget {
 
   private closeChat(): void {
     this.state.isOpen = false;
-    
+
     this.elements.chatWindow?.classList.remove('open');
     this.elements.fab?.classList.remove('open');
   }
@@ -455,7 +485,10 @@ export class NaayWidget {
 
   private applyTheme(): void {
     if (this.config.primaryColor) {
-      this.container.style.setProperty('--naay-primary', this.config.primaryColor);
+      this.container.style.setProperty(
+        '--naay-primary',
+        this.config.primaryColor
+      );
     }
   }
 
@@ -491,7 +524,7 @@ export class NaayWidget {
 if (typeof window !== 'undefined') {
   // Export for global access
   (window as any).NaayWidget = NaayWidget;
-  
+
   // Auto-initialize if config exists
   if ((window as any).NaayConfig) {
     new NaayWidget((window as any).NaayConfig);

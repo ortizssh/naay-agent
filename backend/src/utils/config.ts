@@ -9,40 +9,42 @@ export const config: AppConfig = {
     apiSecret: process.env.SHOPIFY_API_SECRET || '',
     scopes: process.env.SHOPIFY_SCOPES || 'read_products,write_products',
     webhookSecret: process.env.SHOPIFY_WEBHOOK_SECRET || '',
-    appUrl: process.env.SHOPIFY_APP_URL || 'http://localhost:3000'
+    appUrl: process.env.SHOPIFY_APP_URL || 'http://localhost:3000',
   },
   supabase: {
     url: process.env.SUPABASE_URL || '',
     anonKey: process.env.SUPABASE_ANON_KEY || '',
-    serviceKey: process.env.SUPABASE_SERVICE_KEY || ''
+    serviceKey: process.env.SUPABASE_SERVICE_KEY || '',
   },
   openai: {
     apiKey: process.env.OPENAI_API_KEY || '',
     model: process.env.OPENAI_MODEL || 'gpt-4',
-    embeddingModel: process.env.EMBEDDING_MODEL || 'text-embedding-3-small'
+    embeddingModel: process.env.EMBEDDING_MODEL || 'text-embedding-3-small',
   },
   server: {
     port: parseInt(process.env.PORT || '3000'),
     nodeEnv: process.env.NODE_ENV || 'development',
-    jwtSecret: process.env.JWT_SECRET || 'default-secret'
+    jwtSecret: process.env.JWT_SECRET || 'default-secret',
   },
   redis: {
-    url: process.env.REDIS_URL || 'redis://localhost:6379'
-  }
+    url: process.env.REDIS_URL || 'redis://localhost:6379',
+  },
 };
 
 export function validateConfig(): void {
   const required = [
     'SHOPIFY_API_KEY',
-    'SHOPIFY_API_SECRET', 
+    'SHOPIFY_API_SECRET',
     'SUPABASE_URL',
     'SUPABASE_SERVICE_KEY',
-    'OPENAI_API_KEY'
+    'OPENAI_API_KEY',
   ];
 
   const missing = required.filter(key => !process.env[key]);
-  
+
   if (missing.length > 0) {
-    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+    throw new Error(
+      `Missing required environment variables: ${missing.join(', ')}`
+    );
   }
 }

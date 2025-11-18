@@ -11,7 +11,7 @@ router.get('/', async (req: Request, res: Response) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    version: process.env.npm_package_version || '1.0.0'
+    version: process.env.npm_package_version || '1.0.0',
   });
 });
 
@@ -28,15 +28,18 @@ router.get('/detailed', async (req: Request, res: Response) => {
       memory: {
         used: process.memoryUsage().heapUsed,
         total: process.memoryUsage().heapTotal,
-        external: process.memoryUsage().external
-      }
-    }
+        external: process.memoryUsage().external,
+      },
+    },
   };
 
   try {
     // Check Supabase connection
     const supabaseService = new SupabaseService();
-    await (supabaseService as any).serviceClient.from('stores').select('id').limit(1);
+    await (supabaseService as any).serviceClient
+      .from('stores')
+      .select('id')
+      .limit(1);
     health.services.database = 'healthy';
   } catch (error) {
     logger.error('Database health check failed:', error);
@@ -54,12 +57,15 @@ router.get('/ready', async (req: Request, res: Response) => {
   try {
     // Check if all required services are ready
     const supabaseService = new SupabaseService();
-    await (supabaseService as any).serviceClient.from('stores').select('id').limit(1);
+    await (supabaseService as any).serviceClient
+      .from('stores')
+      .select('id')
+      .limit(1);
 
     res.json({
       success: true,
       status: 'ready',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     logger.error('Readiness check failed:', error);
@@ -67,7 +73,7 @@ router.get('/ready', async (req: Request, res: Response) => {
       success: false,
       status: 'not ready',
       timestamp: new Date().toISOString(),
-      error: 'Database connection failed'
+      error: 'Database connection failed',
     });
   }
 });
@@ -77,7 +83,7 @@ router.get('/live', (req: Request, res: Response) => {
   res.json({
     success: true,
     status: 'alive',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
