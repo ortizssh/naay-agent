@@ -6,7 +6,8 @@ import { ShopifyService } from './shopify.service';
 import { SupabaseService } from './supabase.service';
 import { EmbeddingService } from './embedding.service';
 
-const redis = new IORedis(config.redis.url, {
+const redis = new IORedis({
+  ...config.redis,
   maxRetriesPerRequest: 3,
   retryDelayOnFailover: 100,
 });
@@ -185,7 +186,7 @@ export class QueueService {
             variant_id: variantId,
             embedding,
             content,
-            metadata,
+            metadata: metadata as any,
           });
 
           logger.info(`Generated embedding for product: ${productId}`, {

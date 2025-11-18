@@ -50,14 +50,15 @@ declare module 'openai' {
 }
 
 declare module 'bullmq' {
-  export class Job {
+  export class Job<T = any> {
     id: string;
-    data: any;
+    data: T;
     opts: any;
+    updateProgress(progress: number): Promise<void>;
   }
   export class Queue {
     constructor(name: string, options?: any);
-    add(name: string, data: any, options?: any): Promise<any>;
+    add(name: string, data: any, options?: any): Promise<Job>;
     getJobCounts(): Promise<any>;
     getActive(): Promise<any>;
   }
@@ -68,10 +69,10 @@ declare module 'bullmq' {
 }
 
 declare module 'ioredis' {
-  export class Redis {
+  class Redis {
     constructor(options?: any);
   }
-  export default Redis;
+  export = Redis;
 }
 
 declare module '@shopify/admin-api-client' {
@@ -85,9 +86,11 @@ declare module '@shopify/storefront-api-client' {
 }
 
 declare module '@supabase/supabase-js' {
-  export function createClient(url: string, key: string): any;
+  export function createClient(url: string, key: string): SupabaseClient;
   export class SupabaseClient {
     constructor(url: string, key: string);
+    from(table: string): any;
+    rpc(fn: string, args?: any): Promise<any>;
   }
 }
 

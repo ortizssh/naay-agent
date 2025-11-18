@@ -436,7 +436,7 @@ export class ShopifyService {
       }
 
       const data = await response.json();
-      return data.access_token;
+      return (data as any).access_token;
     } catch (error) {
       logger.error('Error exchanging code for token:', error);
       throw new AppError(`Failed to exchange code for token: ${error}`, 500);
