@@ -76,10 +76,15 @@ jobs:
         
         # Copy backend build
         cp -r backend/dist deploy-package/
-        cp -r backend/node_modules deploy-package/
+        
+        # Only copy node_modules if it exists
+        if [ -d "backend/node_modules" ]; then
+          cp -r backend/node_modules deploy-package/
+        else
+          echo "Backend node_modules not found, skipping..."
+        fi
         
         # Copy root files needed
-        cp package.json deploy-package/
         cp startup.js deploy-package/
         
         # Copy test deployment as fallback
@@ -92,6 +97,41 @@ jobs:
         # Copy widget build to serve as static assets
         mkdir -p deploy-package/public/widget
         cp -r frontend-widget/dist/* deploy-package/public/widget/ 2>/dev/null || echo "No widget build"
+        
+        # Create production package.json for dependencies
+        cat > deploy-package/package.json << 'EOF'
+        {
+          "name": "naay-agent-production",
+          "version": "1.0.0",
+          "description": "Naay Agent - Production Deploy",
+          "main": "startup.js",
+          "scripts": {
+            "start": "node startup.js",
+            "postinstall": "echo 'Production dependencies installed'"
+          },
+          "engines": {
+            "node": "20.x"
+          },
+          "dependencies": {
+            "@shopify/admin-api-client": "^1.0.0",
+            "@shopify/storefront-api-client": "^1.0.0",
+            "@supabase/supabase-js": "^2.38.0",
+            "express": "^4.18.2",
+            "express-rate-limit": "^7.1.0",
+            "cors": "^2.8.5",
+            "helmet": "^7.0.0",
+            "dotenv": "^16.3.1",
+            "winston": "^3.10.0",
+            "joi": "^17.9.2",
+            "jsonwebtoken": "^9.0.0",
+            "axios": "^1.5.0",
+            "bullmq": "^4.10.0",
+            "ioredis": "^5.3.2",
+            "openai": "^4.12.0",
+            "uuid": "^9.0.0"
+          }
+        }
+        EOF
         
         # Create web.config for Azure
         cat > deploy-package/web.config << 'EOF'
