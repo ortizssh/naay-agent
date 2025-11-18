@@ -106,6 +106,7 @@ jobs:
           "main": "startup.js",
           "scripts": {
             "start": "node startup.js",
+            "build": "echo 'Build completed in CI'",
             "postinstall": "echo 'Production dependencies installed'"
           },
           "engines": {
@@ -130,6 +131,12 @@ jobs:
             "uuid": "^9.0.0"
           }
         }
+        EOF
+        
+        # Create .deployment file to enable Azure build
+        cat > deploy-package/.deployment << 'EOF'
+        [config]
+        SCM_DO_BUILD_DURING_DEPLOYMENT=true
         EOF
         
         # Create web.config for Azure
