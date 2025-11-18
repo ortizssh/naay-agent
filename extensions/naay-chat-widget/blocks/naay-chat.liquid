@@ -1,0 +1,197 @@
+{% comment %}
+  Naay AI Chat Widget Block
+  This block embeds the Naay AI chat widget into any Shopify theme
+{% endcomment %}
+
+<div id="naay-chat-container" data-shop="{{ shop.permanent_domain }}" style="display: none;">
+  <!-- Widget will be initialized here by JavaScript -->
+</div>
+
+<script>
+  // Configuration for the Naay Widget
+  window.NaayConfig = {
+    shopDomain: '{{ shop.permanent_domain }}',
+    apiEndpoint: '{{ block.settings.api_endpoint | default: "https://api.naay.app" }}',
+    position: '{{ block.settings.position | default: "bottom-right" }}',
+    primaryColor: '{{ block.settings.primary_color | default: "#007bff" }}',
+    greeting: '{{ block.settings.greeting | default: "Hi! How can I help you find the perfect products today?" | escape }}',
+    placeholder: '{{ block.settings.placeholder | default: "Type your message..." | escape }}',
+    theme: '{{ block.settings.theme | default: "auto" }}',
+    avatar: '{{ block.settings.avatar | default: "🤖" | escape }}',
+    language: '{{ request.locale.iso_code | default: "en" }}',
+    
+    // Shopify-specific context
+    context: {
+      customerLoggedIn: {% if customer %}true{% else %}false{% endif %},
+      customerId: {% if customer %}'{{ customer.id }}'{% else %}null{% endif %},
+      customerEmail: {% if customer %}'{{ customer.email | escape }}'{% else %}null{% endif %},
+      currency: '{{ cart.currency.iso_code }}',
+      shopName: '{{ shop.name | escape }}',
+      cartToken: {{ cart.token | json }},
+      cartId: {% if cart.id %}'gid://shopify/Cart/{{ cart.id }}'{% else %}null{% endif %},
+      pageType: '{{ request.page_type }}',
+      productId: {% if product %}'gid://shopify/Product/{{ product.id }}'{% else %}null{% endif %},
+      collectionId: {% if collection %}'gid://shopify/Collection/{{ collection.id }}'{% else %}null{% endif %}
+    }
+  };
+</script>
+
+<!-- Load the Naay Widget -->
+<script>
+  (function() {
+    // Don't load in admin preview or checkout
+    if (window.location.hostname.includes('admin') || window.location.pathname.includes('checkout')) {
+      return;
+    }
+    
+    var script = document.createElement('script');
+    script.src = '{{ block.settings.widget_url | default: "https://cdn.naay.app/widget/latest/naay-widget.js" }}';
+    script.async = true;
+    script.onload = function() {
+      if (window.NaayWidget && window.NaayConfig) {
+        try {
+          new window.NaayWidget(window.NaayConfig);
+          document.getElementById('naay-chat-container').style.display = 'block';
+        } catch (error) {
+          console.error('Failed to initialize Naay Widget:', error);
+        }
+      }
+    };
+    script.onerror = function() {
+      console.error('Failed to load Naay Widget script');
+    };
+    document.head.appendChild(script);
+  })();
+</script>
+
+<style>
+  /* Ensure widget doesn't interfere with theme */
+  #naay-chat-container {
+    position: relative;
+    z-index: 1000;
+  }
+  
+  /* Hide widget in admin areas */
+  .shopify-section-header #naay-chat-container,
+  .admin #naay-chat-container {
+    display: none !important;
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Naay AI Chat",
+  "target": "body",
+  "settings": [
+    {
+      "type": "header",
+      "content": "API Configuration"
+    },
+    {
+      "type": "url",
+      "id": "api_endpoint",
+      "label": "API Endpoint",
+      "default": "https://api.naay.app",
+      "info": "URL of your Naay backend server"
+    },
+    {
+      "type": "url", 
+      "id": "widget_url",
+      "label": "Widget Script URL",
+      "default": "https://cdn.naay.app/widget/latest/naay-widget.js",
+      "info": "URL of the widget JavaScript file"
+    },
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "select",
+      "id": "position",
+      "label": "Position",
+      "default": "bottom-right",
+      "options": [
+        {"value": "bottom-right", "label": "Bottom Right"},
+        {"value": "bottom-left", "label": "Bottom Left"},
+        {"value": "top-right", "label": "Top Right"},
+        {"value": "top-left", "label": "Top Left"}
+      ]
+    },
+    {
+      "type": "color",
+      "id": "primary_color",
+      "label": "Primary Color",
+      "default": "#007bff"
+    },
+    {
+      "type": "select",
+      "id": "theme",
+      "label": "Theme",
+      "default": "auto",
+      "options": [
+        {"value": "auto", "label": "Auto (follows system)"},
+        {"value": "light", "label": "Light"},
+        {"value": "dark", "label": "Dark"}
+      ]
+    },
+    {
+      "type": "text",
+      "id": "avatar",
+      "label": "Avatar",
+      "default": "🤖",
+      "info": "Emoji or character to show as avatar"
+    },
+    {
+      "type": "header",
+      "content": "Messages"
+    },
+    {
+      "type": "textarea",
+      "id": "greeting",
+      "label": "Greeting Message",
+      "default": "Hi! How can I help you find the perfect products today?",
+      "info": "First message customers see when opening chat"
+    },
+    {
+      "type": "text",
+      "id": "placeholder",
+      "label": "Input Placeholder",
+      "default": "Type your message...",
+      "info": "Placeholder text in the message input"
+    },
+    {
+      "type": "header",
+      "content": "Advanced"
+    },
+    {
+      "type": "checkbox",
+      "id": "enabled",
+      "label": "Enable Chat Widget",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "hide_on_mobile",
+      "label": "Hide on Mobile",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "custom_css",
+      "label": "Custom CSS",
+      "info": "Additional CSS for widget customization"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Naay AI Chat",
+      "settings": {
+        "enabled": true,
+        "position": "bottom-right",
+        "primary_color": "#007bff",
+        "greeting": "Hi! How can I help you find the perfect products today?"
+      }
+    }
+  ]
+}
+{% endschema %}

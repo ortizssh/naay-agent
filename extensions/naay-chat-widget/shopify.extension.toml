@@ -1,0 +1,6 @@
+name = "naay-chat-widget"
+type = "theme_app_extension"
+
+[extension_points]
+  [[extension_points.entry]]
+  target = "body_end"

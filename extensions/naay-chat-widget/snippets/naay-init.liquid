@@ -1,0 +1,88 @@
+{% comment %}
+  Naay Widget Initialization Snippet
+  Include this snippet to add the chat widget to any page
+  Usage: {% render 'naay-init' %}
+{% endcomment %}
+
+{% unless request.design_mode or checkout %}
+<script id="naay-widget-config">
+  window.NaayConfig = {
+    shopDomain: {{ shop.permanent_domain | json }},
+    apiEndpoint: {{ settings.naay_api_endpoint | default: 'https://api.naay.app' | json }},
+    position: {{ settings.naay_position | default: 'bottom-right' | json }},
+    primaryColor: {{ settings.naay_primary_color | default: '#007bff' | json }},
+    greeting: {{ settings.naay_greeting | default: 'Hi! How can I help you find the perfect products today?' | json }},
+    placeholder: {{ settings.naay_placeholder | default: 'Type your message...' | json }},
+    theme: {{ settings.naay_theme | default: 'auto' | json }},
+    avatar: {{ settings.naay_avatar | default: '🤖' | json }},
+    language: {{ request.locale.iso_code | default: 'en' | json }},
+    
+    context: {
+      customerLoggedIn: {% if customer %}true{% else %}false{% endif %},
+      customerId: {% if customer %}{{ customer.id | json }}{% else %}null{% endif %},
+      customerEmail: {% if customer %}{{ customer.email | json }}{% else %}null{% endif %},
+      currency: {{ cart.currency.iso_code | json }},
+      shopName: {{ shop.name | json }},
+      cartToken: {{ cart.token | json }},
+      cartId: {% if cart.id %}'gid://shopify/Cart/{{ cart.id }}'{% else %}null{% endif %},
+      pageType: {{ request.page_type | json }},
+      productId: {% if product %}'gid://shopify/Product/{{ product.id }}'{% else %}null{% endif %},
+      collectionId: {% if collection %}'gid://shopify/Collection/{{ collection.id }}'{% else %}null{% endif %},
+      productHandle: {% if product %}{{ product.handle | json }}{% else %}null{% endif %},
+      collectionHandle: {% if collection %}{{ collection.handle | json }}{% else %}null{% endif %}
+    }
+  };
+</script>
+
+<script async>
+  (function() {
+    // Check if widget should be loaded
+    if (!{{ settings.naay_enabled | default: true }}) return;
+    
+    // Don't load on mobile if disabled
+    if ({{ settings.naay_hide_on_mobile | default: false }} && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+      return;
+    }
+    
+    // Don't load in admin or checkout
+    if (window.location.hostname.includes('admin') || window.location.pathname.includes('/checkout')) {
+      return;
+    }
+    
+    var script = document.createElement('script');
+    script.src = {{ settings.naay_widget_url | default: 'https://cdn.naay.app/widget/latest/naay-widget.js' | json }};
+    script.async = true;
+    script.defer = true;
+    
+    script.onload = function() {
+      if (window.NaayWidget && window.NaayConfig) {
+        try {
+          new window.NaayWidget(window.NaayConfig);
+        } catch (error) {
+          console.error('Naay Widget initialization failed:', error);
+        }
+      }
+    };
+    
+    script.onerror = function() {
+      console.error('Failed to load Naay Widget');
+    };
+    
+    // Load script after page is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() {
+        document.head.appendChild(script);
+      });
+    } else {
+      document.head.appendChild(script);
+    }
+  })();
+</script>
+
+{% if settings.naay_custom_css %}
+<style>
+  {{ settings.naay_custom_css }}
+</style>
+{% endif %}
+
+{% endunless %}

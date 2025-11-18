@@ -1,0 +1,38 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+name = "naay-agent"
+client_id = "1c7a47abe69b8020f7ed37d3528e0552"
+application_url = "{{ SHOPIFY_APP_URL }}"
+embedded = true
+
+[access_scopes]
+# Needed for syncing products and creating webhooks
+scopes = "read_products,write_products,read_orders,read_customers,write_draft_orders"
+
+[auth]
+redirect_urls = [
+  "{{ SHOPIFY_APP_URL }}/auth/callback",
+  "{{ SHOPIFY_APP_URL }}/auth/shopify/callback",
+]
+
+[webhooks]
+api_version = "2024-10"
+
+  [[webhooks.subscriptions]]
+  topics = ["products/create"]
+  uri = "{{ SHOPIFY_APP_URL }}/api/webhooks/products/create"
+
+  [[webhooks.subscriptions]]
+  topics = ["products/update"] 
+  uri = "{{ SHOPIFY_APP_URL }}/api/webhooks/products/update"
+
+  [[webhooks.subscriptions]]
+  topics = ["products/delete"]
+  uri = "{{ SHOPIFY_APP_URL }}/api/webhooks/products/delete"
+
+  [[webhooks.subscriptions]]
+  topics = ["app/uninstalled"]
+  uri = "{{ SHOPIFY_APP_URL }}/api/webhooks/app/uninstalled"
+
+[pos]
+embedded = false
