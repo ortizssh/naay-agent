@@ -6,38 +6,53 @@ import { ShopifyService } from './shopify.service';
 import { SupabaseService } from './supabase.service';
 import { EmbeddingService } from './embedding.service';
 
-const redis = new IORedis({
-  ...config.redis,
-  maxRetriesPerRequest: 3,
-  retryDelayOnFailover: 100,
-});
+let redis: IORedis | null = null;
+let syncQueue: Queue | null = null;
+let embeddingQueue: Queue | null = null;
 
-// Queue definitions
-export const syncQueue = new Queue('product-sync', {
-  connection: redis,
-  defaultJobOptions: {
-    removeOnComplete: 100,
-    removeOnFail: 50,
-    attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 2000,
-    },
-  },
-});
+// Try to initialize Redis connection only if enabled
+if (config.redis.enabled) {
+  try {
+    redis = new IORedis({
+      ...config.redis,
+      maxRetriesPerRequest: 3,
+      retryDelayOnFailover: 100,
+      lazyConnect: true,
+    });
 
-export const embeddingQueue = new Queue('embeddings', {
-  connection: redis,
-  defaultJobOptions: {
-    removeOnComplete: 50,
-    removeOnFail: 20,
-    attempts: 2,
-    backoff: {
-      type: 'exponential',
-      delay: 1000,
-    },
-  },
-});
+    // Queue definitions
+    syncQueue = new Queue('product-sync', {
+      connection: redis,
+      defaultJobOptions: {
+        removeOnComplete: 100,
+        removeOnFail: 50,
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 2000,
+        },
+      },
+    });
+
+    embeddingQueue = new Queue('embeddings', {
+      connection: redis,
+      defaultJobOptions: {
+        removeOnComplete: 50,
+        removeOnFail: 20,
+        attempts: 2,
+        backoff: {
+          type: 'exponential',
+          delay: 1000,
+        },
+      },
+    });
+  } catch (error) {
+    logger.warn('Redis not available, using direct processing fallback');
+    redis = null;
+    syncQueue = null;
+    embeddingQueue = null;
+  }
+}
 
 // Job data interfaces
 interface SyncJobData {
@@ -70,18 +85,31 @@ export class QueueService {
 
   // Add jobs to queues
   async addFullSyncJob(shop: string, accessToken: string) {
-    return syncQueue.add(
-      'full-sync',
-      {
-        shop,
-        accessToken,
-        type: 'full_sync',
-      },
-      {
-        priority: 10, // High priority for initial sync
-        delay: 2000, // Small delay to ensure installation is complete
-      }
-    );
+    if (syncQueue) {
+      return syncQueue.add(
+        'full-sync',
+        {
+          shop,
+          accessToken,
+          type: 'full_sync',
+        },
+        {
+          priority: 10, // High priority for initial sync
+          delay: 2000, // Small delay to ensure installation is complete
+        }
+      );
+    } else {
+      // Fallback: Process directly without queue
+      logger.info('Processing full sync directly (no Redis)');
+      setTimeout(async () => {
+        try {
+          await this.processFullSyncDirect(shop, accessToken);
+        } catch (error) {
+          logger.error('Failed to process full sync directly:', error);
+        }
+      }, 2000);
+      return Promise.resolve();
+    }
   }
 
   async addProductSyncJob(
@@ -125,6 +153,11 @@ export class QueueService {
 
   // Setup workers
   private setupWorkers() {
+    if (!redis || !syncQueue || !embeddingQueue) {
+      logger.info('Redis not available, using direct processing mode');
+      return;
+    }
+
     // Product sync worker
     const syncWorker = new Worker(
       'product-sync',
@@ -286,6 +319,60 @@ export class QueueService {
     logger.info(
       `Completed full sync for shop: ${shop}. Synced ${products.length} products`
     );
+  }
+
+  // Direct processing without Redis queue
+  private async processFullSyncDirect(shop: string, accessToken: string) {
+    logger.info(`Starting direct full sync for shop: ${shop}`);
+
+    try {
+      // Fetch all products from Shopify
+      const products = await this.shopifyService.getAllProducts(
+        shop,
+        accessToken
+      );
+
+      // Save products to Supabase
+      for (let i = 0; i < products.length; i++) {
+        const product = products[i];
+
+        // Save product and variants
+        await this.supabaseService.saveProduct(shop, product);
+
+        // Process embeddings directly
+        const content =
+          `${product.title} ${product.description} ${product.vendor} ${product.tags.join(' ')}`.trim();
+        
+        try {
+          const embedding = await this.embeddingService.generateEmbedding(content);
+          await this.supabaseService.saveEmbedding({
+            shop_domain: shop,
+            product_id: product.id,
+            variant_id: null,
+            embedding,
+            content,
+            metadata: {
+              title: product.title,
+              description: product.description,
+              vendor: product.vendor,
+              tags: product.tags,
+              price: product.variants[0]?.price || '0',
+            },
+          });
+        } catch (embeddingError) {
+          logger.warn(`Failed to generate embedding for product ${product.id}:`, embeddingError);
+        }
+
+        logger.info(`Processed product ${i + 1}/${products.length}: ${product.title}`);
+      }
+
+      logger.info(
+        `Completed direct full sync for shop: ${shop}. Synced ${products.length} products`
+      );
+    } catch (error) {
+      logger.error(`Failed direct full sync for shop: ${shop}:`, error);
+      throw error;
+    }
   }
 
   private async processProductSync(

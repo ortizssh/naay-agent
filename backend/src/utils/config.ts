@@ -28,6 +28,7 @@ export const config: AppConfig = {
   },
   redis: {
     url: process.env.REDIS_URL || 'redis://localhost:6379',
+    enabled: process.env.REDIS_ENABLED !== 'false' && process.env.NODE_ENV !== 'production',
   },
 };
 
