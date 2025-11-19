@@ -11,6 +11,7 @@ import { requestLogger } from '@/middleware/requestLogger';
 import authRoutes from '@/controllers/auth.controller';
 import productRoutes from '@/controllers/product.controller';
 import webhookRoutes from '@/controllers/webhook.controller';
+import webhookAdminRoutes from '@/controllers/webhook-admin.controller';
 import chatRoutes from '@/controllers/chat.controller';
 import healthRoutes from '@/controllers/health.controller';
 import widgetRoutes from '@/controllers/widget.controller';
@@ -175,10 +176,25 @@ async function startServer() {
               </div>
               
               <div class="section">
+                <h2>🔗 Webhooks</h2>
+                <div style="margin: 15px 0;">
+                  <p><strong>Estado de webhooks:</strong> <span id="webhook-status">⏳ Verificando...</span></p>
+                  <div id="webhook-stats" style="display: none; margin: 10px 0; padding: 10px; background: #f9f9f9; border-radius: 4px;">
+                    <p style="margin: 5px 0;"><strong>Total de eventos:</strong> <span id="webhook-total">0</span></p>
+                    <p style="margin: 5px 0;"><strong>Eventos hoy:</strong> <span id="webhook-today">0</span></p>
+                    <p style="margin: 5px 0;"><strong>Pendientes:</strong> <span id="webhook-pending">0</span></p>
+                  </div>
+                  <button class="button" onclick="recreateWebhooks()">Recrear Webhooks</button>
+                  <button class="button" onclick="testWebhooks()">Probar Conectividad</button>
+                </div>
+              </div>
+              
+              <div class="section">
                 <h2>📊 Estado del Sistema</h2>
                 <p><strong>Servidor:</strong> <span id="server-status">⏳ Verificando...</span></p>
                 <p><strong>Base de datos:</strong> <span id="db-status">⏳ Verificando conexión...</span></p>
                 <p><strong>OpenAI:</strong> <span id="ai-status">⏳ Verificando conexión...</span></p>
+                <p><strong>Webhooks:</strong> <span id="webhook-connectivity">⏳ Verificando...</span></p>
                 <p><strong>Última actualización:</strong> ${new Date().toLocaleString('es-ES')}</p>
               </div>
             </div>
@@ -250,6 +266,65 @@ async function startServer() {
               window.viewLogs = function() {
                 const azureLogUrl = 'https://portal.azure.com/#view/WebsitesExtension/LogStreamBlade/resourceId/%2Fsubscriptions%2Fe3b3c1bd-dfeb-4c47-a306-fdcaf6e8b99d%2FresourceGroups%2Fnaay-agent-rg%2Fproviders%2FMicrosoft.Web%2Fsites%2Fnaay-agent-app1763504937';
                 window.open(azureLogUrl, '_blank');
+              };
+              
+              // Webhook management functions
+              window.recreateWebhooks = async function() {
+                try {
+                  const button = document.querySelector('button[onclick="recreateWebhooks()"]');
+                  const originalText = button.textContent;
+                  button.textContent = 'Creando...';
+                  button.disabled = true;
+                  
+                  const response = await fetch('/api/webhooks-admin/create', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': 'Bearer ${token || ''}'
+                    }
+                  });
+                  
+                  const data = await response.json();
+                  
+                  if (data.success) {
+                    alert('✅ Webhooks recreados correctamente');
+                    loadWebhookStatus(); // Refresh status
+                  } else {
+                    alert('❌ Error al recrear webhooks: ' + data.error);
+                  }
+                  
+                  button.textContent = originalText;
+                  button.disabled = false;
+                } catch (error) {
+                  console.error('Webhook recreation error:', error);
+                  alert('❌ Error de conexión al recrear webhooks');
+                }
+              };
+              
+              window.testWebhooks = async function() {
+                try {
+                  const response = await fetch('/api/webhooks-admin/test', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': 'Bearer ${token || ''}'
+                    }
+                  });
+                  
+                  const data = await response.json();
+                  
+                  if (data.success) {
+                    const results = data.data.testResults;
+                    const reachable = results.filter(r => r.status === 'reachable').length;
+                    const total = results.length;
+                    alert(\`🔗 Test de conectividad: \${reachable}/\${total} endpoints alcanzables\`);
+                  } else {
+                    alert('❌ Error al probar webhooks: ' + data.error);
+                  }
+                } catch (error) {
+                  console.error('Webhook test error:', error);
+                  alert('❌ Error de conexión al probar webhooks');
+                }
               };
               
               // Widget toggle functionality
@@ -343,6 +418,9 @@ async function startServer() {
                     }
                   }
                   
+                  // Load webhook status
+                  loadWebhookStatus();
+                  
                 } catch (error) {
                   console.error('Status check failed:', error);
                   document.querySelector('#server-status').textContent = '❌ Error';
@@ -350,6 +428,42 @@ async function startServer() {
                   document.querySelector('#ai-status').textContent = '❌ Error';
                 }
               });
+              
+              // Function to load webhook status
+              async function loadWebhookStatus() {
+                try {
+                  const statsResponse = await fetch('/api/webhooks-admin/stats', {
+                    headers: {
+                      'Authorization': 'Bearer ${token || ''}'
+                    }
+                  });
+                  const statsData = await statsResponse.json();
+                  
+                  if (statsData.success) {
+                    const stats = statsData.data.stats;
+                    document.querySelector('#webhook-status').textContent = '✅ Configurado';
+                    document.querySelector('#webhook-connectivity').textContent = '✅ Conectado';
+                    
+                    // Show webhook stats
+                    document.querySelector('#webhook-stats').style.display = 'block';
+                    document.querySelector('#webhook-total').textContent = stats.total || 0;
+                    document.querySelector('#webhook-today').textContent = stats.today || 0;
+                    document.querySelector('#webhook-pending').textContent = stats.pending || 0;
+                    
+                    // Update products synchronized count (approximate from webhook events)
+                    const productEvents = ['products/create', 'products/update'].reduce((sum, topic) => 
+                      sum + (stats.topicBreakdown[topic] || 0), 0);
+                    document.querySelector('.stat-number:first-child').textContent = productEvents;
+                  } else {
+                    document.querySelector('#webhook-status').textContent = '⚠️ No configurado';
+                    document.querySelector('#webhook-connectivity').textContent = '⚠️ Error';
+                  }
+                } catch (error) {
+                  console.error('Webhook status check failed:', error);
+                  document.querySelector('#webhook-status').textContent = '❌ Error';
+                  document.querySelector('#webhook-connectivity').textContent = '❌ Error';
+                }
+              }
             </script>
           </body>
           </html>
@@ -647,6 +761,7 @@ async function startServer() {
     app.use('/auth', authRoutes);
     app.use('/api/products', productRoutes);
     app.use('/api/webhooks', webhookRoutes);
+    app.use('/api/webhooks-admin', webhookAdminRoutes);
     app.use('/api/chat', chatRoutes);
     app.use('/api/widget', widgetRoutes);
 

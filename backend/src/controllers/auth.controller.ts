@@ -191,6 +191,16 @@ router.get(
       );
       await queueService.addFullSyncJob(shop, accessToken);
 
+      // 🔗 AUTO-WEBHOOKS: Create webhooks for real-time synchronization
+      logger.info(`Creating webhooks for shop: ${shop}`);
+      try {
+        await shopifyService.createWebhooks(shop, accessToken);
+        logger.info(`Successfully created webhooks for shop: ${shop}`);
+      } catch (webhookError) {
+        logger.error(`Failed to create webhooks for ${shop}:`, webhookError);
+        // Don't fail the entire installation if webhooks fail
+      }
+
       // Redirect to app with token
       const redirectUrl = `${config.shopify.appUrl}/success?token=${token}&shop=${shop}`;
       logger.info('Redirecting after successful OAuth', { redirectUrl, shop });

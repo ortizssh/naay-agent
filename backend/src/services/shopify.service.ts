@@ -442,4 +442,142 @@ export class ShopifyService {
       throw new AppError(`Failed to exchange code for token: ${error}`, 500);
     }
   }
+
+  async createWebhooks(shop: string, accessToken: string): Promise<void> {
+    const client = this.getAdminClient(shop, accessToken);
+    
+    const webhooks = [
+      {
+        topic: 'PRODUCTS_CREATE',
+        endpoint: `${config.shopify.appUrl}/api/webhooks/products/create`,
+        format: 'JSON'
+      },
+      {
+        topic: 'PRODUCTS_UPDATE', 
+        endpoint: `${config.shopify.appUrl}/api/webhooks/products/update`,
+        format: 'JSON'
+      },
+      {
+        topic: 'PRODUCTS_DELETE',
+        endpoint: `${config.shopify.appUrl}/api/webhooks/products/delete`, 
+        format: 'JSON'
+      },
+      {
+        topic: 'APP_UNINSTALLED',
+        endpoint: `${config.shopify.appUrl}/api/webhooks/app/uninstalled`,
+        format: 'JSON'
+      }
+    ];
+
+    for (const webhook of webhooks) {
+      try {
+        await this.createWebhook(client, webhook.topic, webhook.endpoint, webhook.format);
+        logger.info(`Created webhook: ${webhook.topic} for shop: ${shop}`);
+      } catch (error) {
+        logger.error(`Failed to create webhook ${webhook.topic}:`, error);
+      }
+    }
+  }
+
+  private async createWebhook(
+    client: any,
+    topic: string,
+    address: string,
+    format: string = 'JSON'
+  ): Promise<any> {
+    const mutation = `
+      mutation webhookSubscriptionCreate($topic: WebhookSubscriptionTopic!, $webhookSubscription: WebhookSubscriptionInput!) {
+        webhookSubscriptionCreate(topic: $topic, webhookSubscription: $webhookSubscription) {
+          webhookSubscription {
+            id
+            callbackUrl
+            topic
+            format
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `;
+
+    const variables = {
+      topic,
+      webhookSubscription: {
+        callbackUrl: address,
+        format: format.toUpperCase()
+      }
+    };
+
+    const response = await client.request(mutation, { variables });
+    
+    if (response.data?.webhookSubscriptionCreate?.userErrors?.length > 0) {
+      const errors = response.data.webhookSubscriptionCreate.userErrors;
+      throw new Error(`Webhook creation failed: ${errors[0].message}`);
+    }
+
+    return response.data.webhookSubscriptionCreate.webhookSubscription;
+  }
+
+  async listWebhooks(shop: string, accessToken: string): Promise<any[]> {
+    const client = this.getAdminClient(shop, accessToken);
+    
+    try {
+      const query = `
+        query {
+          webhookSubscriptions(first: 50) {
+            edges {
+              node {
+                id
+                callbackUrl
+                topic
+                format
+                createdAt
+                updatedAt
+              }
+            }
+          }
+        }
+      `;
+
+      const response = await client.request(query);
+      return response.data?.webhookSubscriptions?.edges?.map((edge: any) => edge.node) || [];
+    } catch (error) {
+      logger.error('Error listing webhooks:', error);
+      throw new AppError(`Failed to list webhooks: ${error}`, 500);
+    }
+  }
+
+  async deleteWebhook(shop: string, accessToken: string, webhookId: string): Promise<void> {
+    const client = this.getAdminClient(shop, accessToken);
+    
+    try {
+      const mutation = `
+        mutation webhookSubscriptionDelete($id: ID!) {
+          webhookSubscriptionDelete(id: $id) {
+            deletedWebhookSubscriptionId
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `;
+
+      const response = await client.request(mutation, {
+        variables: { id: webhookId }
+      });
+      
+      if (response.data?.webhookSubscriptionDelete?.userErrors?.length > 0) {
+        const errors = response.data.webhookSubscriptionDelete.userErrors;
+        throw new Error(`Webhook deletion failed: ${errors[0].message}`);
+      }
+
+      logger.info(`Deleted webhook ${webhookId} for shop: ${shop}`);
+    } catch (error) {
+      logger.error('Error deleting webhook:', error);
+      throw new AppError(`Failed to delete webhook: ${error}`, 500);
+    }
+  }
 }
