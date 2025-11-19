@@ -94,11 +94,12 @@ export const validateSessionToken = async (
     next();
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
-      logger.warn('Invalid session token:', error.message);
-      next(new AppError('Invalid session token', 401));
+      logger.warn('Invalid session token, trying legacy auth:', error.message);
+      // Don't fail immediately, let the flexible auth try legacy
+      return validateLegacyToken(req, res, next);
     } else if (error instanceof jwt.TokenExpiredError) {
-      logger.warn('Expired session token');
-      next(new AppError('Session token expired', 401));
+      logger.warn('Expired session token, trying legacy auth');
+      return validateLegacyToken(req, res, next);
     } else {
       logger.error('Session token validation error:', error);
       next(error);
@@ -148,24 +149,41 @@ export const validateAuth = async (
     // Check for session token first (modern authentication)
     const sessionToken = req.headers.authorization?.replace('Bearer ', '') || req.query.session as string;
     
+    logger.debug('Validating auth', {
+      hasAuthHeader: !!req.headers.authorization,
+      hasSessionParam: !!req.query.session,
+      tokenPreview: sessionToken ? sessionToken.substring(0, 20) + '...' : 'none'
+    });
+    
     if (sessionToken && sessionToken.split('.').length === 3) {
       // Try to validate as session token
       try {
         // Manual JWT decode for inspection (just the payload part)
         const parts = sessionToken.split('.');
         const payload = parts.length === 3 ? JSON.parse(Buffer.from(parts[1], 'base64').toString()) : null;
-        if (payload && payload.dest && payload.aud) {
-          // This looks like a session token, validate it
+        
+        // Check if this looks like a Shopify session token
+        if (payload && (payload.dest || payload.aud === config.shopify.apiKey)) {
+          logger.debug('Detected session token, validating...');
           return await validateSessionToken(req, res, next);
         }
+        
+        // Check if this looks like our legacy JWT
+        if (payload && payload.shop && payload.sub) {
+          logger.debug('Detected legacy token, validating...');
+          return validateLegacyToken(req, res, next);
+        }
       } catch (err) {
-        // If session token validation fails, try legacy
+        logger.warn('Token decode failed, trying legacy validation:', err.message);
+        // If token decode fails, try legacy anyway
       }
     }
 
     // Fall back to legacy token validation
+    logger.debug('Falling back to legacy token validation');
     return validateLegacyToken(req, res, next);
   } catch (error) {
+    logger.error('Auth validation error:', error);
     next(error);
   }
 };

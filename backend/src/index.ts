@@ -200,34 +200,56 @@ async function startServer() {
             </div>
             
             <script>
-              // Initialize App Bridge 3.0 with Session Token support
+              // Initialize App Bridge 3.0 with proper session token handling
               let app = null;
               let sessionToken = null;
               let authenticatedFetch = null;
               const host = '${host || ''}';
               
+              // Helper function to get session token from App Bridge
+              async function getSessionToken() {
+                return new Promise((resolve, reject) => {
+                  if (!app) {
+                    reject('App Bridge not initialized');
+                    return;
+                  }
+                  
+                  const timeout = setTimeout(() => {
+                    reject('Session token request timeout');
+                  }, 5000);
+                  
+                  try {
+                    app.getSessionToken().then(token => {
+                      clearTimeout(timeout);
+                      sessionToken = token;
+                      resolve(token);
+                    }).catch(error => {
+                      clearTimeout(timeout);
+                      reject(error);
+                    });
+                  } catch (error) {
+                    clearTimeout(timeout);
+                    reject(error);
+                  }
+                });
+              }
+              
               if (host && typeof AppBridge !== 'undefined') {
                 try {
                   app = AppBridge.createApp({
                     apiKey: '${config.shopify.apiKey}',
-                    host: host,
-                    forceRedirect: true
+                    host: host
                   });
                   
-                  // Set up authenticated fetch with session tokens
-                  authenticatedFetch = AppBridge.authenticatedFetch(app);
+                  console.log('App Bridge 3.0 initialized successfully');
                   
-                  // Get session token for API calls
-                  app.subscribe(AppBridge.Action.APP_BRIDGE_WINDOW, (appBridgeWindow) => {
-                    appBridgeWindow.addEventListener('message', (event) => {
-                      if (event.data && event.data.type === 'shopify:session_token') {
-                        sessionToken = event.data.sessionToken;
-                        console.log('Session token received');
-                      }
-                    });
+                  // Try to get initial session token
+                  getSessionToken().then(token => {
+                    console.log('Initial session token obtained');
+                  }).catch(error => {
+                    console.warn('Could not get initial session token:', error);
                   });
                   
-                  console.log('App Bridge 3.0 initialized with session token support');
                 } catch (error) {
                   console.error('Failed to initialize App Bridge:', error);
                 }
@@ -235,28 +257,53 @@ async function startServer() {
                 console.warn('No host parameter provided - App Bridge cannot initialize');
               }
               
-              // Helper function to make authenticated requests
+              // Enhanced helper function for authenticated requests
               async function makeAuthenticatedRequest(url, options = {}) {
-                if (authenticatedFetch) {
-                  return await authenticatedFetch(url, options);
-                } else if (sessionToken) {
-                  return await fetch(url, {
-                    ...options,
-                    headers: {
-                      ...options.headers,
-                      'Authorization': \`Bearer \${sessionToken}\`
-                    }
-                  });
-                } else {
-                  // Fallback to legacy token
-                  return await fetch(url, {
-                    ...options,
-                    headers: {
-                      ...options.headers,
-                      'Authorization': 'Bearer ${token || ''}'
-                    }
-                  });
+                // Strategy 1: Try to get fresh session token from App Bridge
+                if (app) {
+                  try {
+                    const token = await getSessionToken();
+                    console.log('Using fresh session token for request');
+                    return await fetch(url, {
+                      ...options,
+                      headers: {
+                        ...options.headers,
+                        'Authorization': \`Bearer \${token}\`,
+                        'Content-Type': options.headers?.['Content-Type'] || 'application/json'
+                      }
+                    });
+                  } catch (error) {
+                    console.warn('Session token failed, trying fallback:', error);
+                  }
                 }
+                
+                // Strategy 2: Try cached session token
+                if (sessionToken) {
+                  try {
+                    console.log('Using cached session token');
+                    return await fetch(url, {
+                      ...options,
+                      headers: {
+                        ...options.headers,
+                        'Authorization': \`Bearer \${sessionToken}\`,
+                        'Content-Type': options.headers?.['Content-Type'] || 'application/json'
+                      }
+                    });
+                  } catch (error) {
+                    console.warn('Cached session token failed, trying legacy:', error);
+                  }
+                }
+                
+                // Strategy 3: Fallback to legacy token 
+                console.log('Using legacy token fallback');
+                return await fetch(url, {
+                  ...options,
+                  headers: {
+                    ...options.headers,
+                    'Authorization': 'Bearer ${token || ''}',
+                    'Content-Type': options.headers?.['Content-Type'] || 'application/json'
+                  }
+                });
               }
               
               // Function definitions
