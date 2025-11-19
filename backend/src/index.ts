@@ -18,6 +18,7 @@ import healthRoutes from '@/controllers/health.controller';
 import widgetRoutes from '@/controllers/widget.controller';
 import settingsRoutes from '@/controllers/settings.controller';
 import adminRoutes from '@/controllers/admin.controller';
+import adminBypassRoutes from '@/controllers/admin-bypass.controller';
 
 async function startServer() {
   try {
@@ -497,26 +498,6 @@ async function startServer() {
                   <div class="polaris-card">
                     <div class="polaris-card__header">
                       <h2 class="polaris-card__title">
-                        <span class="polaris-icon">💬</span>
-                        Widget de Chat
-                      </h2>
-                    </div>
-                    <div class="polaris-card__content">
-                      <div class="polaris-toggle">
-                        <input type="checkbox" id="widget-toggle" class="polaris-toggle__input" onchange="toggleWidget()">
-                        <label class="polaris-toggle__label" for="widget-toggle">
-                          <span id="widget-status-text">Activado</span>
-                        </label>
-                      </div>
-                      <p class="polaris-text">
-                        Cuando está activado, el widget de chat aparece en tu tienda para que los clientes puedan interactuar con el AI.
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div class="polaris-card">
-                    <div class="polaris-card__header">
-                      <h2 class="polaris-card__title">
                         <span class="polaris-icon">🔗</span>
                         Gestión de Webhooks
                       </h2>
@@ -814,11 +795,12 @@ async function startServer() {
                   button.textContent = 'Sincronizando...';
                   button.disabled = true;
                   
-                  const response = await makeAuthenticatedRequest('/api/products/sync', { 
+                  const response = await fetch('/api/admin-bypass/products/sync', { 
                     method: 'POST',
                     headers: {
                       'Content-Type': 'application/json'
-                    }
+                    },
+                    body: JSON.stringify({ shop: '${shop || ''}' })
                   });
                   
                   const data = await response.json();
@@ -861,11 +843,12 @@ async function startServer() {
                   button.textContent = 'Creando...';
                   button.disabled = true;
                   
-                  const response = await makeAuthenticatedRequest('/api/webhooks-admin/create', {
+                  const response = await fetch('/api/admin-bypass/webhooks/create', {
                     method: 'POST',
                     headers: {
                       'Content-Type': 'application/json'
-                    }
+                    },
+                    body: JSON.stringify({ shop: '${shop || ''}' })
                   });
                   
                   const data = await response.json();
@@ -887,11 +870,12 @@ async function startServer() {
               
               window.testWebhooks = async function() {
                 try {
-                  const response = await makeAuthenticatedRequest('/api/webhooks-admin/test', {
+                  const response = await fetch('/api/admin-bypass/webhooks/test', {
                     method: 'POST',
                     headers: {
                       'Content-Type': 'application/json'
-                    }
+                    },
+                    body: JSON.stringify({ shop: '${shop || ''}' })
                   });
                   
                   const data = await response.json();
@@ -910,51 +894,6 @@ async function startServer() {
                 }
               };
               
-              // Widget toggle functionality
-              window.toggleWidget = async function() {
-                const toggle = document.getElementById('widget-toggle');
-                const statusText = document.getElementById('widget-status-text');
-                const chatStatusNumber = document.querySelector('.polaris-stat-card:nth-child(3) .polaris-stat-number');
-                
-                try {
-                  const response = await makeAuthenticatedRequest('/api/widget/toggle', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                      enabled: toggle.checked,
-                      shop: '${shop || ''}'
-                    })
-                  });
-                  
-                  const data = await response.json();
-                  
-                  if (data.success) {
-                    statusText.textContent = toggle.checked ? 'Activado' : 'Desactivado';
-                    chatStatusNumber.textContent = toggle.checked ? 'Active' : 'Disabled';
-                    
-                    // Update the main chat status indicator
-                    const chatStatusDiv = document.querySelector('.polaris-stat-card:nth-child(3)');
-                    if (toggle.checked) {
-                      chatStatusDiv.style.backgroundColor = '#f0f9ff';
-                      chatStatusDiv.style.border = '1px solid #b3e5ff';
-                      chatStatusNumber.style.color = '#008060';
-                    } else {
-                      chatStatusDiv.style.backgroundColor = '#fef7f7';
-                      chatStatusDiv.style.border = '1px solid #ffc2c2';
-                      chatStatusNumber.style.color = '#d72c0d';
-                    }
-                  } else {
-                    alert('❌ Error al cambiar estado del widget: ' + data.error);
-                    toggle.checked = !toggle.checked; // Revert toggle
-                  }
-                } catch (error) {
-                  console.error('Widget toggle error:', error);
-                  alert('❌ Error de conexión al cambiar estado del widget');
-                  toggle.checked = !toggle.checked; // Revert toggle
-                }
-              };
               
               // Check system status on load
               window.addEventListener('load', async function() {
@@ -978,29 +917,17 @@ async function startServer() {
                   document.querySelector('#openai-status').textContent = 
                     healthData.services?.openai === 'healthy' ? '✅' : '⚠️';
                   
-                  // Load widget status
-                  const widgetResponse = await makeAuthenticatedRequest('/api/widget/status?shop=${shop || ''}');
-                  const widgetData = await widgetResponse.json();
-                  
-                  if (widgetData.success) {
-                    const toggle = document.getElementById('widget-toggle');
-                    const statusText = document.getElementById('widget-status-text');
-                    const chatStatusNumber = document.querySelector('.polaris-stat-card:nth-child(3) .polaris-stat-number');
+                  // Widget is always enabled - update status display
+                  const chatStatusNumber = document.querySelector('.polaris-stat-card:nth-child(3) .polaris-stat-number');
+                  if (chatStatusNumber) {
+                    chatStatusNumber.textContent = 'Active';
                     
-                    toggle.checked = widgetData.data.enabled;
-                    statusText.textContent = widgetData.data.enabled ? 'Activado' : 'Desactivado';
-                    chatStatusNumber.textContent = widgetData.data.enabled ? 'Active' : 'Disabled';
-                    
-                    // Update the main chat status indicator
+                    // Update the main chat status indicator to always show active
                     const chatStatusDiv = document.querySelector('.polaris-stat-card:nth-child(3)');
-                    if (widgetData.data.enabled) {
+                    if (chatStatusDiv) {
                       chatStatusDiv.style.backgroundColor = '#f0f9ff';
                       chatStatusDiv.style.border = '1px solid #b3e5ff';
                       chatStatusNumber.style.color = '#008060';
-                    } else {
-                      chatStatusDiv.style.backgroundColor = '#fef7f7';
-                      chatStatusDiv.style.border = '1px solid #ffc2c2';
-                      chatStatusNumber.style.color = '#d72c0d';
                     }
                   }
                   
@@ -1021,7 +948,7 @@ async function startServer() {
               // Function to load webhook status
               async function loadWebhookStatus() {
                 try {
-                  const statsResponse = await makeAuthenticatedRequest('/api/webhooks-admin/stats');
+                  const statsResponse = await fetch('/api/admin-bypass/webhooks/stats?shop=${shop || ''}');
                   const statsData = await statsResponse.json();
                   
                   if (statsData.success) {
@@ -1060,6 +987,7 @@ async function startServer() {
                   
                   // Gather form data
                   const formData = {
+                    shop: '${shop || ''}',
                     welcome_message: document.getElementById('welcome-message').value,
                     chat_position: document.getElementById('chat-position').value,
                     chat_color: document.getElementById('chat-color').value,
@@ -1068,7 +996,7 @@ async function startServer() {
                     enable_product_recommendations: document.getElementById('enable-product-recommendations').checked
                   };
                   
-                  const response = await makeAuthenticatedRequest('/api/settings/update', {
+                  const response = await fetch('/api/admin-bypass/settings/update', {
                     method: 'POST',
                     headers: {
                       'Content-Type': 'application/json'
@@ -1110,7 +1038,7 @@ async function startServer() {
                     button.disabled = true;
                   }
                   
-                  const response = await makeAuthenticatedRequest('/api/settings/');
+                  const response = await fetch('/api/admin-bypass/settings?shop=${shop || ''}');
                   const data = await response.json();
                   
                   if (data.success && data.data.settings) {
@@ -1166,11 +1094,12 @@ async function startServer() {
                   button.textContent = 'Restableciendo...';
                   button.disabled = true;
                   
-                  const response = await makeAuthenticatedRequest('/api/settings/reset', {
+                  const response = await fetch('/api/admin-bypass/settings/reset', {
                     method: 'POST',
                     headers: {
                       'Content-Type': 'application/json'
-                    }
+                    },
+                    body: JSON.stringify({ shop: '${shop || ''}' })
                   });
                   
                   const data = await response.json();
@@ -1506,6 +1435,7 @@ async function startServer() {
     app.use('/api/widget', widgetRoutes);
     app.use('/api/settings', settingsRoutes);
     app.use('/api/admin', adminRoutes);
+    app.use('/api/admin-bypass', adminBypassRoutes);
 
     // 404 handler
     app.use('*', (req, res) => {

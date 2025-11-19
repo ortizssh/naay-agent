@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import { AppConfig } from '@/types';
 
-dotenv.config({ path: '../config/.env' });
+dotenv.config({ path: '../.env' });
 
 export const config: AppConfig = {
   shopify: {

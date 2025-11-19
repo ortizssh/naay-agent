@@ -20,11 +20,14 @@
         shopDomain: '',
         apiEndpoint: 'https://naay-agent-app1763504937.azurewebsites.net',
         position: 'bottom-right',
-        primaryColor: '#008060',
-        greeting: '¡Hola! 👋 Soy tu asistente virtual. ¿En qué puedo ayudarte?',
+        primaryColor: '#8B5A3C', // Naay natural brown
+        secondaryColor: '#F5F1EB', // Naay cream
+        accentColor: '#6B8E23', // Naay natural green
+        greeting: '¡Hola! 🌿 Soy tu asistente de Naay. ¿Cómo puedo ayudarte a encontrar el cuidado perfecto para tu piel?',
         placeholder: 'Escribe tu mensaje...',
-        theme: 'auto',
-        avatar: '🤖',
+        theme: 'light',
+        avatar: '🌿',
+        brandName: 'Naay',
         language: 'es',
         enabled: true,
         ...config
@@ -82,26 +85,37 @@
       // Create widget HTML
       this.container.innerHTML = `
         <div class="naay-widget__button" id="naay-widget-button">
-          <span class="naay-widget__icon">${this.config.avatar}</span>
-          <span class="naay-widget__close-icon">×</span>
+          <div class="naay-widget__button-content">
+            <span class="naay-widget__icon">${this.config.avatar}</span>
+            <span class="naay-widget__close-icon">×</span>
+          </div>
+          <div class="naay-widget__pulse"></div>
         </div>
         
         <div class="naay-widget__chat" id="naay-widget-chat">
           <div class="naay-widget__header">
-            <div class="naay-widget__title">
-              <span class="naay-widget__avatar">${this.config.avatar}</span>
-              <div>
-                <div class="naay-widget__name">Naay Assistant</div>
-                <div class="naay-widget__status">En línea</div>
+            <div class="naay-widget__brand">
+              <div class="naay-widget__brand-icon">${this.config.avatar}</div>
+              <div class="naay-widget__brand-info">
+                <div class="naay-widget__brand-name">${this.config.brandName}</div>
+                <div class="naay-widget__brand-tagline">Cosmética Ecológica Funcional</div>
+                <div class="naay-widget__status">
+                  <span class="naay-widget__status-dot"></span>
+                  En línea
+                </div>
               </div>
             </div>
-            <button class="naay-widget__minimize" id="naay-widget-minimize">−</button>
+            <button class="naay-widget__close" id="naay-widget-minimize">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/>
+              </svg>
+            </button>
           </div>
           
           <div class="naay-widget__messages" id="naay-widget-messages">
-            <div class="naay-widget__message naay-widget__message--bot">
-              <div class="naay-widget__message-avatar">${this.config.avatar}</div>
-              <div class="naay-widget__message-content">${this.config.greeting}</div>
+            <div class="naay-widget__welcome">
+              <div class="naay-widget__welcome-icon">${this.config.avatar}</div>
+              <div class="naay-widget__welcome-message">${this.config.greeting}</div>
             </div>
           </div>
           
@@ -110,9 +124,12 @@
               <input type="text" id="naay-widget-input" class="naay-widget__input" placeholder="${this.config.placeholder}">
               <button class="naay-widget__send" id="naay-widget-send">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor"/>
+                  <path d="m2 21 21-9L2 3v7l15 2-15 2v7z" fill="currentColor"/>
                 </svg>
               </button>
+            </div>
+            <div class="naay-widget__powered">
+              Impulsado por IA • Naay
             </div>
           </div>
         </div>
@@ -139,87 +156,130 @@
       const style = document.createElement('style');
       style.id = 'naay-widget-styles';
       style.textContent = `
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+        
         .naay-widget {
           position: fixed;
           z-index: 999999;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           font-size: 14px;
-          line-height: 1.4;
+          line-height: 1.5;
+          color: #2D2D2D;
         }
 
         .naay-widget--bottom-right {
-          bottom: 20px;
-          right: 20px;
+          bottom: 24px;
+          right: 24px;
         }
 
         .naay-widget--bottom-left {
-          bottom: 20px;
-          left: 20px;
+          bottom: 24px;
+          left: 24px;
         }
 
         .naay-widget--top-right {
-          top: 20px;
-          right: 20px;
+          top: 24px;
+          right: 24px;
         }
 
         .naay-widget--top-left {
-          top: 20px;
-          left: 20px;
+          top: 24px;
+          left: 24px;
         }
 
+        /* Naay Chat Button */
         .naay-widget__button {
-          width: 60px;
-          height: 60px;
+          width: 64px;
+          height: 64px;
           border-radius: 50%;
-          background: ${this.config.primaryColor};
-          color: white;
+          background: linear-gradient(135deg, ${this.config.primaryColor} 0%, #A0672A 100%);
           border: none;
           cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-          transition: all 0.3s ease;
           position: relative;
+          box-shadow: 0 4px 16px rgba(139, 90, 60, 0.3);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          overflow: hidden;
         }
 
         .naay-widget__button:hover {
-          transform: scale(1.1);
-          box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+          transform: translateY(-2px) scale(1.05);
+          box-shadow: 0 8px 24px rgba(139, 90, 60, 0.4);
+        }
+
+        .naay-widget__button-content {
+          position: relative;
+          z-index: 2;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+        }
+
+        .naay-widget__pulse {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          background: ${this.config.primaryColor};
+          animation: naayPulse 2s infinite;
+          z-index: 1;
+        }
+
+        @keyframes naayPulse {
+          0% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.1); opacity: 0.7; }
+          100% { transform: scale(1.2); opacity: 0; }
         }
 
         .naay-widget__icon {
-          font-size: 24px;
-          transition: opacity 0.2s ease;
+          font-size: 28px;
+          transition: all 0.3s ease;
+          filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
         }
 
         .naay-widget__close-icon {
           position: absolute;
           font-size: 24px;
           opacity: 0;
-          transition: opacity 0.2s ease;
+          transition: all 0.3s ease;
+          color: white;
         }
 
         .naay-widget--open .naay-widget__icon {
           opacity: 0;
+          transform: rotate(90deg);
         }
 
         .naay-widget--open .naay-widget__close-icon {
           opacity: 1;
+          transform: rotate(0deg);
         }
 
+        .naay-widget--open .naay-widget__pulse {
+          animation: none;
+        }
+
+        /* Naay Chat Window */
         .naay-widget__chat {
           position: absolute;
-          bottom: 70px;
+          bottom: 76px;
           right: 0;
-          width: 350px;
-          height: 500px;
-          background: white;
-          border-radius: 12px;
-          box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+          width: 380px;
+          height: 520px;
+          background: ${this.config.secondaryColor};
+          border-radius: 16px;
+          box-shadow: 0 12px 32px rgba(139, 90, 60, 0.15), 0 2px 8px rgba(0, 0, 0, 0.1);
           display: none;
           flex-direction: column;
           overflow: hidden;
+          backdrop-filter: blur(20px);
+          transform: translateY(20px) scale(0.95);
+          opacity: 0;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .naay-widget--bottom-left .naay-widget__chat {
@@ -230,206 +290,361 @@
         .naay-widget--top-right .naay-widget__chat,
         .naay-widget--top-left .naay-widget__chat {
           bottom: auto;
-          top: 70px;
+          top: 76px;
         }
 
         .naay-widget--open .naay-widget__chat {
           display: flex;
+          transform: translateY(0) scale(1);
+          opacity: 1;
         }
 
+        /* Naay Header */
         .naay-widget__header {
-          background: ${this.config.primaryColor};
+          background: linear-gradient(135deg, ${this.config.primaryColor} 0%, #A0672A 100%);
           color: white;
-          padding: 16px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
+          padding: 20px 16px;
+          position: relative;
+          overflow: hidden;
         }
 
-        .naay-widget__title {
-          display: flex;
-          align-items: center;
-          gap: 8px;
+        .naay-widget__header::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M30 30c0-11.046 8.954-20 20-20s20 8.954 20 20-8.954 20-20 20-20-8.954-20-20zm0 0c0 11.046-8.954 20-20 20S-10 41.046-10 30s8.954-20 20-20 20 8.954 20 20z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
+          pointer-events: none;
         }
 
-        .naay-widget__avatar {
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          background: rgba(255,255,255,0.2);
+        .naay-widget__brand {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          position: relative;
+          z-index: 2;
+        }
+
+        .naay-widget__brand-icon {
+          width: 44px;
+          height: 44px;
+          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.15);
+          backdrop-filter: blur(10px);
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 16px;
+          font-size: 20px;
+          border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        .naay-widget__name {
+        .naay-widget__brand-info {
+          flex: 1;
+        }
+
+        .naay-widget__brand-name {
           font-weight: 600;
-          font-size: 15px;
+          font-size: 18px;
+          margin-bottom: 2px;
+          letter-spacing: 0.5px;
+        }
+
+        .naay-widget__brand-tagline {
+          font-size: 11px;
+          opacity: 0.9;
+          font-weight: 300;
+          letter-spacing: 0.3px;
+          margin-bottom: 4px;
         }
 
         .naay-widget__status {
           font-size: 12px;
           opacity: 0.9;
-        }
-
-        .naay-widget__minimize {
-          background: none;
-          border: none;
-          color: white;
-          font-size: 20px;
-          cursor: pointer;
-          padding: 0;
-          width: 24px;
-          height: 24px;
           display: flex;
           align-items: center;
-          justify-content: center;
+          gap: 6px;
+          font-weight: 400;
         }
 
+        .naay-widget__status-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: ${this.config.accentColor};
+          animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+
+        .naay-widget__close {
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          border-radius: 8px;
+          color: white;
+          cursor: pointer;
+          padding: 8px;
+          transition: all 0.2s ease;
+          position: relative;
+          z-index: 2;
+        }
+
+        .naay-widget__close:hover {
+          background: rgba(255, 255, 255, 0.2);
+          transform: scale(1.05);
+        }
+
+        /* Naay Messages Area */
         .naay-widget__messages {
           flex: 1;
           overflow-y: auto;
-          padding: 16px;
+          padding: 20px 16px 16px;
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          gap: 16px;
+          background: linear-gradient(to bottom, ${this.config.secondaryColor} 0%, #FEFCFA 100%);
+        }
+
+        .naay-widget__welcome {
+          text-align: center;
+          padding: 24px 16px;
+          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.8);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(139, 90, 60, 0.1);
+          margin-bottom: 8px;
+        }
+
+        .naay-widget__welcome-icon {
+          font-size: 32px;
+          margin-bottom: 12px;
+        }
+
+        .naay-widget__welcome-message {
+          color: #5D4037;
+          font-size: 15px;
+          line-height: 1.5;
+          font-weight: 400;
         }
 
         .naay-widget__message {
           display: flex;
-          gap: 8px;
+          gap: 10px;
           align-items: flex-start;
+          max-width: 85%;
+          animation: messageSlideIn 0.3s ease-out;
+        }
+
+        @keyframes messageSlideIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
         }
 
         .naay-widget__message--user {
           flex-direction: row-reverse;
+          align-self: flex-end;
         }
 
         .naay-widget__message-avatar {
-          width: 28px;
-          height: 28px;
-          border-radius: 50%;
-          background: #f0f0f0;
+          width: 32px;
+          height: 32px;
+          border-radius: 10px;
+          background: linear-gradient(135deg, #E8DDD4 0%, #D7C7B7 100%);
           display: flex;
           align-items: center;
           justify-content: center;
           font-size: 14px;
           flex-shrink: 0;
+          border: 1px solid rgba(139, 90, 60, 0.2);
         }
 
         .naay-widget__message--user .naay-widget__message-avatar {
-          background: ${this.config.primaryColor};
+          background: linear-gradient(135deg, ${this.config.primaryColor} 0%, #A0672A 100%);
           color: white;
         }
 
         .naay-widget__message-content {
-          background: #f5f5f5;
-          padding: 10px 12px;
-          border-radius: 12px;
-          max-width: 250px;
-          word-wrap: break-word;
+          background: rgba(255, 255, 255, 0.9);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(139, 90, 60, 0.1);
+          border-radius: 16px;
+          padding: 12px 16px;
+          font-size: 14px;
+          line-height: 1.5;
+          color: #5D4037;
+          position: relative;
+          box-shadow: 0 2px 8px rgba(139, 90, 60, 0.08);
         }
 
         .naay-widget__message--user .naay-widget__message-content {
-          background: ${this.config.primaryColor};
+          background: linear-gradient(135deg, ${this.config.primaryColor} 0%, #A0672A 100%);
           color: white;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          box-shadow: 0 2px 8px rgba(139, 90, 60, 0.15);
         }
 
+        /* Naay Input Area */
         .naay-widget__input-area {
+          border-top: 1px solid rgba(139, 90, 60, 0.1);
+          background: rgba(255, 255, 255, 0.9);
+          backdrop-filter: blur(10px);
           padding: 16px;
-          border-top: 1px solid #eee;
         }
 
         .naay-widget__input-container {
           display: flex;
-          gap: 8px;
-          align-items: center;
+          gap: 10px;
+          align-items: flex-end;
+          background: white;
+          border-radius: 24px;
+          padding: 6px;
+          border: 1px solid rgba(139, 90, 60, 0.2);
+          box-shadow: 0 2px 8px rgba(139, 90, 60, 0.05);
+          transition: all 0.2s ease;
+        }
+
+        .naay-widget__input-container:focus-within {
+          border-color: ${this.config.primaryColor};
+          box-shadow: 0 0 0 3px rgba(139, 90, 60, 0.1);
         }
 
         .naay-widget__input {
           flex: 1;
-          border: 1px solid #ddd;
+          border: none;
           border-radius: 20px;
           padding: 10px 16px;
-          outline: none;
           font-size: 14px;
+          outline: none;
+          font-family: inherit;
+          background: transparent;
+          color: #2D2D2D;
+          resize: none;
+          line-height: 1.4;
         }
 
-        .naay-widget__input:focus {
-          border-color: ${this.config.primaryColor};
+        .naay-widget__input::placeholder {
+          color: #8E8E8E;
         }
 
         .naay-widget__send {
-          background: ${this.config.primaryColor};
-          color: white;
+          background: linear-gradient(135deg, ${this.config.primaryColor} 0%, #A0672A 100%);
           border: none;
           border-radius: 50%;
           width: 40px;
           height: 40px;
-          cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: background-color 0.2s ease;
+          color: white;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 8px rgba(139, 90, 60, 0.2);
+          flex-shrink: 0;
         }
 
         .naay-widget__send:hover {
-          opacity: 0.9;
+          transform: scale(1.05);
+          box-shadow: 0 4px 12px rgba(139, 90, 60, 0.3);
         }
 
         .naay-widget__send:disabled {
           opacity: 0.5;
           cursor: not-allowed;
+          transform: none;
         }
 
-        /* Mobile responsiveness */
+        .naay-widget__powered {
+          text-align: center;
+          font-size: 11px;
+          color: #8E8E8E;
+          margin-top: 8px;
+          font-weight: 300;
+        }
+
+        /* Mobile Responsiveness */
         @media (max-width: 480px) {
           .naay-widget__chat {
-            width: calc(100vw - 40px);
-            height: calc(100vh - 140px);
+            width: calc(100vw - 32px);
+            height: calc(100vh - 120px);
+            max-height: 600px;
           }
 
           .naay-widget--bottom-right,
           .naay-widget--bottom-left {
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
+            bottom: 16px;
+            left: 16px;
+            right: 16px;
           }
 
           .naay-widget--bottom-right .naay-widget__chat,
           .naay-widget--bottom-left .naay-widget__chat {
             right: 0;
             left: 0;
-          }
-        }
-
-        /* Dark theme support */
-        @media (prefers-color-scheme: dark) {
-          .naay-widget__chat {
-            background: #2d2d2d;
-            color: #ffffff;
+            bottom: 72px;
           }
 
-          .naay-widget__input-area {
-            border-top-color: #444;
+          .naay-widget__button {
+            width: 56px;
+            height: 56px;
+          }
+
+          .naay-widget__icon {
+            font-size: 24px;
+          }
+
+          .naay-widget__brand-name {
+            font-size: 16px;
+          }
+
+          .naay-widget__brand-tagline {
+            font-size: 10px;
+          }
+
+          .naay-widget__input-container {
+            padding: 4px;
           }
 
           .naay-widget__input {
-            background: #3d3d3d;
-            border-color: #555;
-            color: #ffffff;
+            padding: 8px 12px;
+            font-size: 16px; /* Prevent zoom on iOS */
           }
 
-          .naay-widget__message-content {
-            background: #3d3d3d;
-            color: #ffffff;
+          .naay-widget__send {
+            width: 36px;
+            height: 36px;
           }
+        }
 
-          .naay-widget__message-avatar {
-            background: #444;
-            color: #ffffff;
+        /* Tablet Adjustments */
+        @media (max-width: 768px) and (min-width: 481px) {
+          .naay-widget__chat {
+            width: 360px;
+            height: 480px;
           }
+        }
+
+        /* Improved Scrollbar Styling */
+        .naay-widget__messages::-webkit-scrollbar {
+          width: 4px;
+        }
+
+        .naay-widget__messages::-webkit-scrollbar-track {
+          background: rgba(139, 90, 60, 0.1);
+          border-radius: 2px;
+        }
+
+        .naay-widget__messages::-webkit-scrollbar-thumb {
+          background: rgba(139, 90, 60, 0.3);
+          border-radius: 2px;
+        }
+
+        .naay-widget__messages::-webkit-scrollbar-thumb:hover {
+          background: rgba(139, 90, 60, 0.5);
         }
       `;
 
@@ -540,11 +755,63 @@
         }
       } catch (error) {
         console.error('Chat API error:', error);
-        this.addMessage('No pude conectarme al servidor. Por favor verifica tu conexión e intenta de nuevo.', 'bot');
+        // Provide fallback responses for better user experience
+        const fallbackResponse = this.getFallbackResponse(text);
+        this.addMessage(fallbackResponse, 'bot');
       } finally {
         // Re-enable send button
         this.sendButton.disabled = false;
       }
+    }
+
+    getFallbackResponse(userMessage) {
+      const message = userMessage.toLowerCase();
+      
+      // Naay-specific fallback responses
+      const fallbackResponses = {
+        // Productos y cuidado de piel
+        productos: [
+          '🌿 En Naay ofrecemos una línea completa de cosmética ecológica funcional. ¿Te interesa algún tipo específico de producto para el cuidado de la piel?',
+          '✨ Nuestros productos están formulados con ingredientes naturales y orgánicos. ¿Qué tipo de piel tienes para recomendarte lo mejor?'
+        ],
+        piel: [
+          '🌱 Para el cuidado de la piel, Naay ofrece productos específicos según tu tipo de piel. ¿Tienes piel grasa, seca, mixta o sensible?',
+          '💚 Nuestros productos de cuidado facial están hechos con ingredientes naturales. ¿Buscas algo específico como limpieza, hidratación o anti-edad?'
+        ],
+        precio: [
+          '💰 Nuestros precios varían según el producto. Puedes explorar nuestra tienda para ver toda la información detallada de cada producto.',
+          '🛍️ Te invito a navegar por nuestros productos para conocer precios y ofertas especiales que tenemos disponibles.'
+        ],
+        envio: [
+          '📦 Ofrecemos diferentes opciones de envío. Para información específica sobre tiempos y costos, te recomiendo revisar nuestra página de envíos.',
+          '🚚 Los envíos se procesan rápidamente. Puedes ver las opciones disponibles durante el proceso de compra.'
+        ],
+        natural: [
+          '🌿 ¡Exacto! Todos nuestros productos son de cosmética ecológica funcional, formulados con ingredientes naturales y sostenibles.',
+          '🌱 En Naay nos enfocamos en ingredientes naturales y procesos ecológicos para cuidar tu piel y el medio ambiente.'
+        ],
+        ayuda: [
+          '😊 ¡Estoy aquí para ayudarte! Puedes preguntarme sobre nuestros productos, cuidado de la piel, o cualquier duda sobre Naay.',
+          '💚 ¿En qué puedo ayudarte? Puedo orientarte sobre productos, rutinas de cuidado o cualquier consulta sobre Naay.'
+        ]
+      };
+      
+      // Check for keywords and provide relevant responses
+      for (const [keyword, responses] of Object.entries(fallbackResponses)) {
+        if (message.includes(keyword)) {
+          return responses[Math.floor(Math.random() * responses.length)];
+        }
+      }
+      
+      // Generic helpful responses
+      const genericResponses = [
+        '🌿 ¡Hola! Aunque tengo algunos problemas de conexión, estoy aquí para ayudarte con Naay. ¿Te interesa conocer sobre nuestros productos de cosmética ecológica?',
+        '💚 Temporalmente estoy en modo offline, pero puedo contarte que Naay ofrece productos naturales para el cuidado de la piel. ¿Qué te gustaría saber?',
+        '✨ Estoy experimentando algunas dificultades técnicas, pero puedo ayudarte con información básica sobre Naay. ¿Buscas algo específico para el cuidado de tu piel?',
+        '🌱 Aunque mi conexión está limitada, puedo compartir que en Naay nos especializamos en cosmética ecológica funcional. ¿Qué tipo de producto te interesa?'
+      ];
+      
+      return genericResponses[Math.floor(Math.random() * genericResponses.length)];
     }
 
     addMessage(text, type) {
