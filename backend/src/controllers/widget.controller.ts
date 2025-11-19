@@ -123,7 +123,7 @@ router.get('/config', async (req: Request, res: Response, next: NextFunction) =>
       .single();
 
     let config = {
-      enabled: store.widget_enabled,
+      enabled: !!store.widget_enabled,
       greeting: '¡Hola! 👋 Soy tu asistente virtual. ¿En qué puedo ayudarte?',
       position: 'bottom-right',
       primaryColor: '#008060',
@@ -134,7 +134,7 @@ router.get('/config', async (req: Request, res: Response, next: NextFunction) =>
 
     if (settings && !error) {
       config = {
-        enabled: store.widget_enabled && (settings.chat_enabled !== false),
+        enabled: !!(store.widget_enabled && (settings.chat_enabled !== false)),
         greeting: settings.welcome_message || config.greeting,
         position: settings.chat_position || config.position,
         primaryColor: settings.chat_color || config.primaryColor,
