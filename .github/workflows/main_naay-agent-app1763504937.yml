@@ -47,12 +47,14 @@ jobs:
     - name: Install backend dependencies
       run: |
         cd backend
-        npm ci
+        # Use npm install instead of npm ci since package-lock.json might be missing
+        npm install
 
     - name: Install widget dependencies
       run: |
         cd frontend-widget
-        npm ci
+        # Use npm install instead of npm ci since package-lock.json might be missing
+        npm install
         
     - name: Verify backend node_modules exists
       run: |
