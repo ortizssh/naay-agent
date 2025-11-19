@@ -1,9 +1,10 @@
 {% comment %}
-  Naay AI Chat Widget Block
-  This block embeds the Naay AI chat widget into any Shopify theme
+  Naay AI Chat Widget - Auto-inject snippet
+  This snippet automatically loads the Naay widget on all pages
 {% endcomment %}
 
-<!-- Naay Chat Widget Container -->
+{% unless request.design_mode or checkout %}
+<!-- Naay Chat Widget Auto-Inject -->
 <div id="naay-chat-container" data-shop="{{ shop.permanent_domain }}">
   <!-- Chat widget will be created here by the JavaScript -->
 </div>
@@ -41,7 +42,7 @@
 <!-- Load the Naay Widget -->
 <script>
   (function() {
-    console.log('🌿 Naay Chat: Initializing widget v2.1...');
+    console.log('🌿 Naay Chat: Auto-injecting widget v2.1...');
     
     // Don't load in admin preview or checkout
     if (window.location.hostname.includes('admin') || window.location.pathname.includes('checkout')) {
@@ -73,7 +74,14 @@
       console.error('❌ Failed to load Naay Widget script from Azure server');
     };
     
-    document.head.appendChild(script);
+    // Wait for DOM to be ready before injecting
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() {
+        document.head.appendChild(script);
+      });
+    } else {
+      document.head.appendChild(script);
+    }
   })();
 </script>
 
@@ -90,24 +98,4 @@
     display: none !important;
   }
 </style>
-
-{% schema %}
-{
-  "name": "Naay AI Chat v2.1",
-  "target": "body",
-  "settings": [
-    {
-      "type": "paragraph",
-      "content": "This widget uses a locked Naay brand configuration. No customization options are available to ensure brand consistency."
-    },
-    {
-      "type": "header",
-      "content": "Widget Status"
-    },
-    {
-      "type": "paragraph",
-      "content": "✅ Widget is always enabled with Naay's official design and promotional message: '¿Necesitas ayuda para tu compra? ¡Habla aquí!'"
-    }
-  ]
-}
-{% endschema %}
+{% endunless %}

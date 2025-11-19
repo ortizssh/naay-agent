@@ -1,74 +1,80 @@
 {% comment %}
-  Naay Widget Initialization Snippet
-  Include this snippet to add the chat widget to any page
-  Usage: {% render 'naay-init' %}
+  Naay Widget Auto-Initialization 
+  This loads automatically when the app extension is enabled
 {% endcomment %}
 
 {% unless request.design_mode or checkout %}
-<script id="naay-widget-config">
+<!-- Naay Chat Widget Container -->
+<div id="naay-chat-container" data-shop="{{ shop.permanent_domain }}">
+  <!-- Chat widget will be created here by the JavaScript -->
+</div>
+
+<script>
+  // HARDCODED Naay Widget Configuration - No customization allowed
   window.NaayConfig = {
-    shopDomain: {{ shop.permanent_domain | json }},
-    apiEndpoint: {{ settings.naay_api_endpoint | default: 'https://api.naay.app' | json }},
-    position: {{ settings.naay_position | default: 'bottom-right' | json }},
-    primaryColor: {{ settings.naay_primary_color | default: '#007bff' | json }},
-    greeting: {{ settings.naay_greeting | default: 'Hi! How can I help you find the perfect products today?' | json }},
-    placeholder: {{ settings.naay_placeholder | default: 'Type your message...' | json }},
-    theme: {{ settings.naay_theme | default: 'auto' | json }},
-    avatar: {{ settings.naay_avatar | default: '🤖' | json }},
-    language: {{ request.locale.iso_code | default: 'en' | json }},
+    shopDomain: '{{ shop.permanent_domain }}',
+    apiEndpoint: 'https://naay-agent-app1763504937.azurewebsites.net',
+    position: 'bottom-right',
+    primaryColor: '#8B5A3C',
+    greeting: '¡Hola! 🌿 Soy tu asistente de Naay. ¿Cómo puedo ayudarte a encontrar el cuidado perfecto para tu piel?',
+    placeholder: 'Escribe tu mensaje...',
+    theme: 'light',
+    avatar: '🌿',
+    language: '{{ request.locale.iso_code | default: "es" }}',
+    enabled: true,
     
+    // Shopify-specific context
     context: {
       customerLoggedIn: {% if customer %}true{% else %}false{% endif %},
-      customerId: {% if customer %}{{ customer.id | json }}{% else %}null{% endif %},
-      customerEmail: {% if customer %}{{ customer.email | json }}{% else %}null{% endif %},
-      currency: {{ cart.currency.iso_code | json }},
-      shopName: {{ shop.name | json }},
+      customerId: {% if customer %}'{{ customer.id }}'{% else %}null{% endif %},
+      customerEmail: {% if customer %}'{{ customer.email | escape }}'{% else %}null{% endif %},
+      currency: '{{ cart.currency.iso_code }}',
+      shopName: '{{ shop.name | escape }}',
       cartToken: {{ cart.token | json }},
       cartId: {% if cart.id %}'gid://shopify/Cart/{{ cart.id }}'{% else %}null{% endif %},
-      pageType: {{ request.page_type | json }},
+      pageType: '{{ request.page_type }}',
       productId: {% if product %}'gid://shopify/Product/{{ product.id }}'{% else %}null{% endif %},
-      collectionId: {% if collection %}'gid://shopify/Collection/{{ collection.id }}'{% else %}null{% endif %},
-      productHandle: {% if product %}{{ product.handle | json }}{% else %}null{% endif %},
-      collectionHandle: {% if collection %}{{ collection.handle | json }}{% else %}null{% endif %}
+      collectionId: {% if collection %}'gid://shopify/Collection/{{ collection.id }}'{% else %}null{% endif %}
     }
   };
 </script>
 
-<script async>
+<!-- Load the Naay Widget -->
+<script>
   (function() {
-    // Check if widget should be loaded
-    if (!{{ settings.naay_enabled | default: true }}) return;
+    console.log('🌿 Naay Chat: Auto-initializing widget v2.1...');
     
-    // Don't load on mobile if disabled
-    if ({{ settings.naay_hide_on_mobile | default: false }} && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+    // Don't load in admin preview or checkout
+    if (window.location.hostname.includes('admin') || window.location.pathname.includes('checkout')) {
+      console.log('Naay Chat: Skipping load in admin/checkout');
       return;
     }
     
-    // Don't load in admin or checkout
-    if (window.location.hostname.includes('admin') || window.location.pathname.includes('/checkout')) {
-      return;
-    }
-    
+    // Load the official Naay widget script
     var script = document.createElement('script');
-    script.src = {{ settings.naay_widget_url | default: 'https://cdn.naay.app/widget/latest/naay-widget.js' | json }};
+    script.src = 'https://naay-agent-app1763504937.azurewebsites.net/static/naay-widget.js?v=FINAL_210_VERIFIED&id=' + (Math.random().toString(36) + Math.random().toString(36)).substr(2, 20) + '&t=' + Date.now() + '&force=true';
     script.async = true;
-    script.defer = true;
     
     script.onload = function() {
+      console.log('✅ Naay Chat: Widget script loaded successfully');
       if (window.NaayWidget && window.NaayConfig) {
         try {
+          // Initialize the official Naay widget
           new window.NaayWidget(window.NaayConfig);
+          console.log('🎉 Naay Chat: Widget initialized successfully with promotional message');
         } catch (error) {
-          console.error('Naay Widget initialization failed:', error);
+          console.error('❌ Failed to initialize Naay Widget:', error);
         }
+      } else {
+        console.error('❌ NaayWidget or NaayConfig not available');
       }
     };
     
     script.onerror = function() {
-      console.error('Failed to load Naay Widget');
+      console.error('❌ Failed to load Naay Widget script from Azure server');
     };
     
-    // Load script after page is ready
+    // Wait for DOM to be ready before injecting
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', function() {
         document.head.appendChild(script);
@@ -79,10 +85,17 @@
   })();
 </script>
 
-{% if settings.naay_custom_css %}
 <style>
-  {{ settings.naay_custom_css }}
+  /* Ensure Naay widget doesn't interfere with theme */
+  #naay-chat-container {
+    position: relative;
+    z-index: 9999;
+  }
+  
+  /* Hide widget in admin areas */
+  .shopify-section-header #naay-chat-container,
+  .admin #naay-chat-container {
+    display: none !important;
+  }
 </style>
-{% endif %}
-
 {% endunless %}
