@@ -47,6 +47,77 @@ async function startServer() {
     // Health check (before auth)
     app.use('/health', healthRoutes);
 
+    // Root route for Shopify app installation
+    app.get('/', (req, res) => {
+      const { token, shop } = req.query;
+      
+      // If coming from Shopify OAuth callback with token and shop
+      if (token && shop) {
+        res.send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Naay Agent - Installation Complete</title>
+            <style>
+              body { 
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                margin: 0; padding: 40px; color: white; text-align: center;
+              }
+              .container { 
+                max-width: 600px; margin: 0 auto; background: rgba(255,255,255,0.1);
+                padding: 40px; border-radius: 20px; backdrop-filter: blur(10px);
+              }
+              .success-icon { font-size: 72px; margin-bottom: 20px; }
+              h1 { margin: 0 0 10px; font-size: 32px; }
+              .shop-name { font-weight: bold; color: #a8ff78; }
+              .next-steps { background: rgba(255,255,255,0.1); padding: 20px; margin: 20px 0; border-radius: 10px; text-align: left; }
+              .step { margin: 10px 0; padding: 8px 0; }
+              .footer { margin-top: 30px; font-size: 14px; opacity: 0.8; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="success-icon">🎉</div>
+              <h1>¡Instalación Completada!</h1>
+              <p>Naay Agent ha sido instalado exitosamente en <span class="shop-name">${shop}</span></p>
+              
+              <div class="next-steps">
+                <h3>🚀 Próximos Pasos:</h3>
+                <div class="step">✅ Sincronización automática de productos iniciada</div>
+                <div class="step">💬 El chat AI está listo para usar</div>
+                <div class="step">🎨 Agrega el widget a tu tema de Shopify</div>
+                <div class="step">⚙️ Configura las variables de entorno si es necesario</div>
+              </div>
+              
+              <div class="footer">
+                <p>Naay Agent v1.0.0 - AI Shopping Assistant</p>
+                <p>Instalado: ${new Date().toLocaleString('es-ES')}</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `);
+      } else {
+        // Regular API response for direct access
+        res.json({
+          success: true,
+          message: '🎉 Naay Agent - Shopify AI Assistant',
+          version: '1.0.0',
+          status: 'running',
+          timestamp: new Date().toISOString(),
+          shopify_app_url: config.shopify.appUrl,
+          endpoints: {
+            auth: '/auth',
+            health: '/health',
+            chat: '/api/chat',
+            webhooks: '/api/webhooks',
+            products: '/api/products'
+          }
+        });
+      }
+    });
+
     // API Routes
     app.use('/auth', authRoutes);
     app.use('/api/products', productRoutes);
