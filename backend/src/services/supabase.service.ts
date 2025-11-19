@@ -69,7 +69,7 @@ export class SupabaseService {
   async updateStoreWidget(
     shopDomain: string,
     enabled: boolean
-  ): Promise<Store> {
+  ): Promise<ShopifyStore> {
     const { data, error } = await this.serviceClient
       .from('stores')
       .update({ 
