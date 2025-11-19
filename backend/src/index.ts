@@ -49,18 +49,81 @@ async function startServer() {
 
     // Root route for Shopify app installation
     app.get('/', (req, res) => {
-      const { token, shop } = req.query;
+      const { token, shop, hmac, host, timestamp } = req.query;
       
       // Debug logging
       logger.info('Root route accessed', {
         query: req.query,
         url: req.url,
         hasToken: !!token,
-        hasShop: !!shop
+        hasShop: !!shop,
+        hasHmac: !!hmac,
+        hasHost: !!host
       });
       
-      // If coming from Shopify OAuth callback with token and shop
-      if (token && shop) {
+      // If coming from Shopify App Bridge with hmac and shop (new Shopify app authentication)
+      if (hmac && shop && host) {
+        res.send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Naay Agent - Installation Complete</title>
+            <style>
+              body { 
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                margin: 0; padding: 40px; color: white; text-align: center;
+              }
+              .container { 
+                max-width: 600px; margin: 0 auto; background: rgba(255,255,255,0.1);
+                padding: 40px; border-radius: 20px; backdrop-filter: blur(10px);
+              }
+              .success-icon { font-size: 72px; margin-bottom: 20px; }
+              h1 { margin: 0 0 10px; font-size: 32px; }
+              .shop-name { font-weight: bold; color: #a8ff78; }
+              .next-steps { background: rgba(255,255,255,0.1); padding: 20px; margin: 20px 0; border-radius: 10px; text-align: left; }
+              .step { margin: 10px 0; padding: 8px 0; }
+              .footer { margin-top: 30px; font-size: 14px; opacity: 0.8; }
+              .back-link { display: inline-block; background: rgba(255,255,255,0.2); padding: 12px 24px; border-radius: 8px; text-decoration: none; color: white; margin-top: 20px; }
+              .back-link:hover { background: rgba(255,255,255,0.3); }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="success-icon">🎉</div>
+              <h1>¡Bienvenido a Naay Agent!</h1>
+              <p>Tu AI Shopping Assistant está funcionando correctamente en <span class="shop-name">${shop}</span></p>
+              
+              <div class="next-steps">
+                <h3>🚀 Funcionalidades Activas:</h3>
+                <div class="step">✅ API de chat inteligente activa</div>
+                <div class="step">💬 Búsqueda semántica de productos</div>
+                <div class="step">🛒 Gestión automática del carrito</div>
+                <div class="step">🎨 Widget listo para integrar en tu tema</div>
+              </div>
+              
+              <div class="next-steps">
+                <h3>📝 Próximos Pasos:</h3>
+                <div class="step">1. Configura las variables de entorno (Supabase, OpenAI)</div>
+                <div class="step">2. Agrega el widget de chat a tu tema</div>
+                <div class="step">3. Sincroniza tus productos</div>
+                <div class="step">4. Prueba el chat en tu tienda</div>
+              </div>
+              
+              <a href="https://${shop}/admin/apps" class="back-link">
+                ← Volver a Apps de Shopify
+              </a>
+              
+              <div class="footer">
+                <p>Naay Agent v1.0.0 - AI Shopping Assistant</p>
+                <p>Conectado: ${new Date().toLocaleString('es-ES')}</p>
+                <p>Host: ${host || 'N/A'}</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `);
+      } else if (token && shop) {
         res.send(`
           <!DOCTYPE html>
           <html>
