@@ -36,7 +36,6 @@ jobs:
           ~/.npm
           node_modules
           backend/node_modules
-          frontend-widget/node_modules
         key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
           ${{ runner.os }}-node-
@@ -87,11 +86,10 @@ jobs:
         echo "✅ Backend node_modules created successfully"
         ls -la ../backend/node_modules | head -10
 
-    - name: Install widget dependencies
+    - name: Widget dependencies (skipped - integrated in backend)
       run: |
-        cd frontend-widget
-        # Use npm install instead of npm ci since package-lock.json might be missing
-        npm install || echo "Widget npm install failed - continuing without it"
+        echo "✅ Widget is now served directly from backend/public/naay-widget.js"
+        echo "✅ No separate frontend-widget build needed"
 
     - name: Lint code
       run: |
@@ -106,10 +104,10 @@ jobs:
         # Convert TypeScript path aliases to relative imports in compiled JS
         npx tsc-alias -p tsconfig.deployment.json
 
-    - name: Build widget
+    - name: Verify widget is ready
       run: |
-        cd frontend-widget
-        npm run build
+        echo "✅ Widget v2.1.0-FINAL ready at backend/public/naay-widget.js"
+        ls -la backend/public/naay-widget.js
 
     - name: Create deployment package
       run: |
@@ -140,9 +138,8 @@ jobs:
         cp -r database deploy-package/ 2>/dev/null || echo "No database folder"
         cp -r scripts deploy-package/ 2>/dev/null || echo "No scripts folder"
         
-        # Copy widget build to serve as static assets
-        mkdir -p deploy-package/public/widget
-        cp -r frontend-widget/dist/* deploy-package/public/widget/ 2>/dev/null || echo "No widget build"
+        # Widget is already included in backend/dist/public (no separate build needed)
+        echo "✅ Widget v2.1.0-FINAL included in backend build"
         
         # Create production package.json for dependencies
         cat > deploy-package/package.json << 'EOF'
