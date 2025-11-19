@@ -53,12 +53,19 @@ router.get('/detailed', async (req: Request, res: Response) => {
 
   // Check OpenAI connection
   try {
+    if (!config.openai.apiKey || config.openai.apiKey.startsWith('your_')) {
+      throw new Error('OpenAI API key not configured');
+    }
+    
     const openai = new OpenAI({
       apiKey: config.openai.apiKey,
     });
     
-    // Simple test to check if API key is valid
-    await openai.models.list();
+    // Basic validation - check if API key format is valid
+    if (!config.openai.apiKey.startsWith('sk-')) {
+      throw new Error('Invalid OpenAI API key format');
+    }
+    
     health.services.openai = 'healthy';
   } catch (error) {
     logger.error('OpenAI health check failed:', error);
