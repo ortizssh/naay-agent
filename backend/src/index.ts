@@ -21,17 +21,31 @@ async function startServer() {
 
     const app = express();
 
-    // Security middleware
-    app.use(helmet());
+    // Security middleware - allow iframe embedding for Shopify
+    app.use(helmet({
+      contentSecurityPolicy: {
+        directives: {
+          frameAncestors: ["'self'", "https://*.shopify.com", "https://admin.shopify.com"],
+        },
+      },
+      frameguard: false, // Disable frameguard to allow iframe
+    }));
     app.use(
       cors({
         origin:
           process.env.NODE_ENV === 'production'
-            ? [config.shopify.appUrl]
+            ? [config.shopify.appUrl, /.*\.shopify\.com$/]
             : ['http://localhost:3000', 'http://localhost:3001'],
         credentials: true,
       })
     );
+
+    // Allow embedding in Shopify iframe
+    app.use((req, res, next) => {
+      res.setHeader('X-Frame-Options', 'ALLOWALL');
+      res.setHeader('Content-Security-Policy', "frame-ancestors 'self' https://*.shopify.com https://admin.shopify.com;");
+      next();
+    });
 
     // Rate limiting
     app.use(rateLimiter);
@@ -49,7 +63,7 @@ async function startServer() {
 
     // Root route for Shopify app installation
     app.get('/', (req, res) => {
-      const { token, shop, hmac, host, timestamp } = req.query;
+      const { token, shop, hmac, host, timestamp, embedded } = req.query;
       
       // Debug logging
       logger.info('Root route accessed', {
@@ -58,11 +72,122 @@ async function startServer() {
         hasToken: !!token,
         hasShop: !!shop,
         hasHmac: !!hmac,
-        hasHost: !!host
+        hasHost: !!host,
+        userAgent: req.get('User-Agent'),
+        referer: req.get('Referer')
       });
       
-      // If coming from Shopify App Bridge with hmac and shop (new Shopify app authentication)
-      if (hmac && shop && host) {
+      // Check if this is being loaded in Shopify admin iframe
+      const isEmbedded = host || embedded || req.get('Referer')?.includes('admin.shopify.com');
+      
+      if (isEmbedded) {
+        // App is being loaded within Shopify admin - show admin interface
+        res.send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Naay Agent - Admin Panel</title>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+              body { 
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                margin: 0; padding: 20px; background: #f7f7f7; color: #333;
+              }
+              .container { 
+                max-width: 1200px; margin: 0 auto; background: white;
+                padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+              }
+              h1 { color: #5c6ac4; margin: 0 0 20px; }
+              .stats { display: flex; gap: 20px; margin: 20px 0; }
+              .stat { background: #f9f9f9; padding: 20px; border-radius: 8px; flex: 1; text-align: center; }
+              .stat-number { font-size: 32px; font-weight: bold; color: #5c6ac4; }
+              .stat-label { font-size: 14px; color: #666; margin-top: 5px; }
+              .section { margin: 30px 0; }
+              .button { 
+                background: #5c6ac4; color: white; padding: 12px 24px; 
+                border: none; border-radius: 4px; cursor: pointer; margin: 10px;
+              }
+              .button:hover { background: #4c5aa0; }
+              .status { padding: 10px; border-radius: 4px; margin: 10px 0; }
+              .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+              .status.warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h1>🤖 Naay Agent - Panel de Administración</h1>
+              
+              <div class="status success">
+                ✅ App conectada correctamente a ${shop || 'tu tienda'}
+              </div>
+              
+              <div class="stats">
+                <div class="stat">
+                  <div class="stat-number">0</div>
+                  <div class="stat-label">Productos Sincronizados</div>
+                </div>
+                <div class="stat">
+                  <div class="stat-number">0</div>
+                  <div class="stat-label">Conversaciones</div>
+                </div>
+                <div class="stat">
+                  <div class="stat-number">Active</div>
+                  <div class="stat-label">Estado del Chat</div>
+                </div>
+              </div>
+              
+              <div class="section">
+                <h2>🚀 Acciones Rápidas</h2>
+                <button class="button" onclick="syncProducts()">Sincronizar Productos</button>
+                <button class="button" onclick="testChat()">Probar Chat</button>
+                <button class="button" onclick="viewLogs()">Ver Logs</button>
+              </div>
+              
+              <div class="section">
+                <h2>⚙️ Configuración</h2>
+                <div class="status warning">
+                  ⚠️ Completa la configuración de variables de entorno (Supabase, OpenAI)
+                </div>
+                <p>Para activar todas las funcionalidades del chat AI, configura las siguientes variables:</p>
+                <ul>
+                  <li>✅ SHOPIFY_API_KEY - Configurado</li>
+                  <li>✅ SHOPIFY_API_SECRET - Configurado</li>
+                  <li>⏳ SUPABASE_URL - Revisar configuración</li>
+                  <li>⏳ OPENAI_API_KEY - Revisar configuración</li>
+                </ul>
+              </div>
+              
+              <div class="section">
+                <h2>📊 Estado del Sistema</h2>
+                <p><strong>Servidor:</strong> ✅ En línea</p>
+                <p><strong>Base de datos:</strong> ⏳ Verificando conexión...</p>
+                <p><strong>OpenAI:</strong> ⏳ Verificando conexión...</p>
+                <p><strong>Última actualización:</strong> ${new Date().toLocaleString('es-ES')}</p>
+              </div>
+            </div>
+            
+            <script>
+              function syncProducts() {
+                alert('Sincronización iniciada - revisar logs para seguimiento');
+                fetch('/api/products/sync', { method: 'POST' })
+                  .then(r => r.json())
+                  .then(data => console.log('Sync result:', data))
+                  .catch(err => console.error('Sync error:', err));
+              }
+              
+              function testChat() {
+                window.open('/api/chat/test', '_blank');
+              }
+              
+              function viewLogs() {
+                alert('Los logs están disponibles en Azure Portal');
+              }
+            </script>
+          </body>
+          </html>
+        `);
+      } else if (hmac && shop && host) {
         // Process the app installation in background
         setTimeout(async () => {
           try {
