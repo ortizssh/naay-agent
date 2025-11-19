@@ -84,7 +84,7 @@ export class QueueService {
   }
 
   // Add jobs to queues
-  async addFullSyncJob(shop: string, accessToken: string) {
+  async addFullSyncJob(shop: string, accessToken: string): Promise<any> {
     if (syncQueue) {
       return syncQueue.add(
         'full-sync',
@@ -108,7 +108,7 @@ export class QueueService {
           logger.error('Failed to process full sync directly:', error);
         }
       }, 2000);
-      return Promise.resolve();
+      return Promise.resolve(null);
     }
   }
 

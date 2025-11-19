@@ -32,13 +32,13 @@ router.post(
       // Trigger full sync job
       const job = await queueService.addFullSyncJob(shop, store.access_token);
 
-      logger.info(`Manual sync triggered for shop: ${shop}`, { jobId: job.id });
+      logger.info(`Manual sync triggered for shop: ${shop}`, { jobId: job?.id || 'direct' });
 
       res.json({
         success: true,
         message: 'Product sync started',
         data: {
-          jobId: job.id,
+          jobId: job?.id || 'direct-processing',
           shop,
         },
       });

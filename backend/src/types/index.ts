@@ -214,6 +214,7 @@ export interface AppConfig {
   };
   redis: {
     url: string;
+    enabled: boolean;
   };
 }
 
