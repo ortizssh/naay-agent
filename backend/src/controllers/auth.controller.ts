@@ -105,6 +105,11 @@ router.get(
   '/callback',
   async (req: Request, res: Response, next: NextFunction) => {
     try {
+      logger.info('OAuth callback received', {
+        query: req.query,
+        url: req.url
+      });
+
       const { code, shop, state } = req.query;
 
       if (
@@ -113,31 +118,60 @@ router.get(
         typeof code !== 'string' ||
         typeof shop !== 'string'
       ) {
+        logger.error('Missing required parameters in OAuth callback', {
+          code: !!code,
+          shop: !!shop,
+          state: !!state,
+          query: req.query
+        });
         throw new AppError('Missing required parameters', 400);
       }
 
       logger.info(`Processing OAuth callback for shop: ${shop}`);
 
       // Exchange code for access token
-      const accessToken = await shopifyService.exchangeCodeForToken(shop, code);
+      logger.info('Exchanging code for access token...');
+      let accessToken;
+      try {
+        accessToken = await shopifyService.exchangeCodeForToken(shop, code);
+        logger.info('Successfully obtained access token');
+      } catch (tokenError) {
+        logger.error('Failed to exchange code for token', {
+          shop,
+          error: tokenError.message,
+          stack: tokenError.stack
+        });
+        throw new AppError('Failed to obtain access token from Shopify', 500);
+      }
 
       // Check if store exists, create or update
-      let store = await supabaseService.getStore(shop);
+      logger.info('Checking/creating store in database...');
+      let store;
+      try {
+        store = await supabaseService.getStore(shop);
 
-      if (store) {
-        // Update existing store
-        await supabaseService.updateStoreToken(shop, accessToken);
-        logger.info(`Updated access token for existing store: ${shop}`);
-      } else {
-        // Create new store
-        store = await supabaseService.createStore({
-          shop_domain: shop,
-          access_token: accessToken,
-          scopes: config.shopify.scopes,
-          installed_at: new Date(),
-          updated_at: new Date(),
+        if (store) {
+          // Update existing store
+          await supabaseService.updateStoreToken(shop, accessToken);
+          logger.info(`Updated access token for existing store: ${shop}`);
+        } else {
+          // Create new store
+          store = await supabaseService.createStore({
+            shop_domain: shop,
+            access_token: accessToken,
+            scopes: config.shopify.scopes,
+            installed_at: new Date(),
+            updated_at: new Date(),
+          });
+          logger.info(`Created new store: ${shop}`);
+        }
+      } catch (dbError) {
+        logger.error('Database operation failed', {
+          shop,
+          error: dbError.message,
+          stack: dbError.stack
         });
-        logger.info(`Created new store: ${shop}`);
+        throw new AppError('Failed to save store information', 500);
       }
 
       // Generate JWT for the app session
@@ -162,8 +196,27 @@ router.get(
       logger.info('Redirecting after successful OAuth', { redirectUrl, shop });
       res.redirect(redirectUrl);
     } catch (error) {
-      logger.error('OAuth callback error:', error);
-      next(error);
+      logger.error('OAuth callback error:', {
+        error: error.message,
+        stack: error.stack,
+        shop: req.query.shop,
+        code: !!req.query.code
+      });
+      
+      // Send a more user-friendly error response
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({
+          success: false,
+          error: error.message,
+          details: 'OAuth callback failed'
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: 'Internal server error during app installation',
+          details: error.message
+        });
+      }
     }
   }
 );
