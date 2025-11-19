@@ -353,6 +353,147 @@ async function startServer() {
                 min-width: 20px;
               }
               
+              /* Tabs */
+              .polaris-tabs {
+                border-bottom: 1px solid #e1e3e5;
+                margin-bottom: 24px;
+              }
+              
+              .polaris-tabs__list {
+                display: flex;
+                list-style: none;
+                margin: 0;
+                padding: 0;
+                gap: 24px;
+              }
+              
+              .polaris-tabs__tab {
+                background: none;
+                border: none;
+                padding: 12px 0;
+                color: #6d7175;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                border-bottom: 2px solid transparent;
+                transition: all 0.2s ease;
+                position: relative;
+              }
+              
+              .polaris-tabs__tab:hover {
+                color: #202223;
+              }
+              
+              .polaris-tabs__tab.active {
+                color: #008060;
+                border-bottom-color: #008060;
+              }
+              
+              .polaris-tab-content {
+                display: none;
+              }
+              
+              .polaris-tab-content.active {
+                display: block;
+              }
+              
+              /* Conversation list styles */
+              .conversation-list {
+                max-height: 400px;
+                overflow-y: auto;
+              }
+              
+              .conversation-item {
+                border-bottom: 1px solid #f1f1f1;
+                padding: 12px 0;
+                cursor: pointer;
+              }
+              
+              .conversation-item:hover {
+                background: #f9fafb;
+                margin: 0 -16px;
+                padding: 12px 16px;
+                border-radius: 6px;
+              }
+              
+              .conversation-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 4px;
+              }
+              
+              .conversation-id {
+                font-size: 12px;
+                color: #6d7175;
+                font-weight: 500;
+              }
+              
+              .conversation-time {
+                font-size: 12px;
+                color: #8c9196;
+              }
+              
+              .conversation-preview {
+                font-size: 14px;
+                color: #202223;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+              }
+              
+              /* Product analytics styles */
+              .product-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 8px 0;
+                border-bottom: 1px solid #f1f1f1;
+              }
+              
+              .product-name {
+                font-weight: 500;
+                color: #202223;
+              }
+              
+              .product-mentions {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: #6d7175;
+                font-size: 14px;
+              }
+              
+              /* Log styles */
+              .log-item {
+                display: flex;
+                gap: 12px;
+                padding: 8px 0;
+                border-bottom: 1px solid #f1f1f1;
+                font-family: 'SF Mono', Monaco, monospace;
+                font-size: 12px;
+              }
+              
+              .log-timestamp {
+                color: #6d7175;
+                min-width: 120px;
+              }
+              
+              .log-level {
+                min-width: 60px;
+                font-weight: 600;
+              }
+              
+              .log-level.info { color: #008060; }
+              .log-level.warning { color: #b45309; }
+              .log-level.error { color: #d72c0d; }
+              
+              .log-message {
+                color: #202223;
+                flex: 1;
+              }
+              
               .polaris-stack {
                 display: flex;
                 flex-direction: column;
@@ -458,21 +599,53 @@ async function startServer() {
               
               <div class="polaris-stats-grid">
                 <div class="polaris-stat-card">
-                  <div class="polaris-stat-number">0</div>
+                  <div id="products-count" class="polaris-stat-number">⏳</div>
                   <div class="polaris-stat-label">Productos Sincronizados</div>
                 </div>
                 <div class="polaris-stat-card">
-                  <div class="polaris-stat-number">0</div>
+                  <div id="conversations-count" class="polaris-stat-number">⏳</div>
                   <div class="polaris-stat-label">Conversaciones</div>
                 </div>
                 <div class="polaris-stat-card">
-                  <div class="polaris-stat-number">Active</div>
+                  <div id="chat-status" class="polaris-stat-number">Active</div>
                   <div class="polaris-stat-label">Estado del Chat</div>
+                </div>
+                <div class="polaris-stat-card">
+                  <div id="webhooks-count" class="polaris-stat-number">⏳</div>
+                  <div class="polaris-stat-label">Eventos de Webhooks</div>
                 </div>
               </div>
               
-              <div class="polaris-layout">
-                <div class="polaris-stack">
+              <!-- Navigation Tabs -->
+              <div class="polaris-tabs">
+                <ul class="polaris-tabs__list">
+                  <li>
+                    <button class="polaris-tabs__tab active" onclick="showTab('dashboard')">
+                      🏠 Panel Principal
+                    </button>
+                  </li>
+                  <li>
+                    <button class="polaris-tabs__tab" onclick="showTab('conversations')">
+                      💬 Conversaciones
+                    </button>
+                  </li>
+                  <li>
+                    <button class="polaris-tabs__tab" onclick="showTab('analytics')">
+                      📊 Productos Recomendados
+                    </button>
+                  </li>
+                  <li>
+                    <button class="polaris-tabs__tab" onclick="showTab('logs')">
+                      📋 Logs del Sistema
+                    </button>
+                  </li>
+                </ul>
+              </div>
+              
+              <!-- Tab Contents -->
+              <div id="dashboard-tab" class="polaris-tab-content active">
+                <div class="polaris-layout">
+                  <div class="polaris-stack">
                   <div class="polaris-card">
                     <div class="polaris-card__header">
                       <h2 class="polaris-card__title">
@@ -679,6 +852,103 @@ async function startServer() {
               </div>
             </div>
             
+            <!-- Conversations Tab -->
+            <div id="conversations-tab" class="polaris-tab-content">
+              <div class="polaris-layout">
+                <div class="polaris-card">
+                  <div class="polaris-card__header">
+                    <h2 class="polaris-card__title">
+                      <span class="polaris-icon">💬</span>
+                      Conversaciones Recientes
+                    </h2>
+                  </div>
+                  <div class="polaris-card__content">
+                    <div id="conversations-loading" class="loading-state">
+                      ⏳ Cargando conversaciones...
+                    </div>
+                    <div id="conversations-list" class="conversation-list" style="display: none;">
+                      <!-- Conversaciones se cargarán aquí dinámicamente -->
+                    </div>
+                    <div id="conversations-empty" style="display: none; text-align: center; color: #8c9196; padding: 40px;">
+                      💬 No hay conversaciones aún.<br>
+                      <small>Las conversaciones aparecerán aquí una vez que los usuarios interactúen con el chat.</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Analytics Tab -->
+            <div id="analytics-tab" class="polaris-tab-content">
+              <div class="polaris-layout">
+                <div class="polaris-card">
+                  <div class="polaris-card__header">
+                    <h2 class="polaris-card__title">
+                      <span class="polaris-icon">📊</span>
+                      Productos Más Recomendados
+                    </h2>
+                  </div>
+                  <div class="polaris-card__content">
+                    <div id="analytics-loading" class="loading-state">
+                      ⏳ Analizando recomendaciones...
+                    </div>
+                    <div id="analytics-content" style="display: none;">
+                      <div class="analytics-summary" style="margin-bottom: 20px; padding: 16px; background: #f6f6f7; border-radius: 6px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                          <span><strong>Período:</strong> <span id="analytics-period">Últimos 30 días</span></span>
+                          <span><strong>Total conversaciones:</strong> <span id="total-conversations">0</span></span>
+                        </div>
+                      </div>
+                      <div id="products-list">
+                        <!-- Productos se cargarán aquí -->
+                      </div>
+                    </div>
+                    <div id="analytics-empty" style="display: none; text-align: center; color: #8c9196; padding: 40px;">
+                      📊 No hay datos de productos aún.<br>
+                      <small>Los productos recomendados aparecerán aquí una vez que el agente empiece a recomendarlos.</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Logs Tab -->
+            <div id="logs-tab" class="polaris-tab-content">
+              <div class="polaris-layout">
+                <div class="polaris-card">
+                  <div class="polaris-card__header">
+                    <h2 class="polaris-card__title">
+                      <span class="polaris-icon">📋</span>
+                      Logs del Sistema
+                    </h2>
+                    <div style="display: flex; gap: 8px;">
+                      <select id="log-level-filter" onchange="filterLogs()" style="padding: 4px 8px; border: 1px solid #c9cccf; border-radius: 4px; font-size: 14px;">
+                        <option value="all">Todos los niveles</option>
+                        <option value="info">Info</option>
+                        <option value="warning">Advertencias</option>
+                        <option value="error">Errores</option>
+                      </select>
+                      <button class="polaris-button polaris-button--secondary" onclick="refreshLogs()">
+                        🔄 Actualizar
+                      </button>
+                    </div>
+                  </div>
+                  <div class="polaris-card__content">
+                    <div id="logs-loading" class="loading-state">
+                      ⏳ Cargando logs...
+                    </div>
+                    <div id="logs-list" style="display: none; max-height: 500px; overflow-y: auto; font-family: 'SF Mono', Monaco, monospace; font-size: 12px;">
+                      <!-- Logs se cargarán aquí -->
+                    </div>
+                    <div id="logs-empty" style="display: none; text-align: center; color: #8c9196; padding: 40px;">
+                      📋 No hay logs disponibles.<br>
+                      <small>Los logs del sistema aparecerán aquí.</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             <script>
               // Initialize App Bridge 3.0 with proper session token handling
               let app = null;
@@ -831,8 +1101,234 @@ async function startServer() {
               };
               
               window.viewLogs = function() {
-                const azureLogUrl = 'https://portal.azure.com/#view/WebsitesExtension/LogStreamBlade/resourceId/%2Fsubscriptions%2Fe3b3c1bd-dfeb-4c47-a306-fdcaf6e8b99d%2FresourceGroups%2Fnaay-agent-rg%2Fproviders%2FMicrosoft.Web%2Fsites%2Fnaay-agent-app1763504937';
-                window.open(azureLogUrl, '_blank');
+                showTab('logs');
+              };
+              
+              // Tab management functions
+              window.showTab = function(tabName) {
+                // Hide all tab contents
+                document.querySelectorAll('.polaris-tab-content').forEach(content => {
+                  content.classList.remove('active');
+                });
+                
+                // Remove active class from all tabs
+                document.querySelectorAll('.polaris-tabs__tab').forEach(tab => {
+                  tab.classList.remove('active');
+                });
+                
+                // Show selected tab content
+                const selectedContent = document.getElementById(tabName + '-tab');
+                if (selectedContent) {
+                  selectedContent.classList.add('active');
+                }
+                
+                // Add active class to selected tab button
+                const selectedTab = event?.target || document.querySelector(\`[onclick="showTab('\${tabName}')"]\`);
+                if (selectedTab) {
+                  selectedTab.classList.add('active');
+                }
+                
+                // Load data for the selected tab
+                switch(tabName) {
+                  case 'conversations':
+                    loadConversations();
+                    break;
+                  case 'analytics':
+                    loadAnalytics();
+                    break;
+                  case 'logs':
+                    loadLogs();
+                    break;
+                  case 'dashboard':
+                    loadDashboardStats();
+                    break;
+                }
+              };
+              
+              // Load dashboard statistics
+              async function loadDashboardStats() {
+                try {
+                  const response = await fetch('/api/admin-bypass/stats?shop=' + encodeURIComponent('${shop || ''}'));
+                  
+                  if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                      const stats = data.data;
+                      document.getElementById('products-count').textContent = stats.products || 0;
+                      document.getElementById('conversations-count').textContent = stats.conversations || 0;
+                      document.getElementById('webhooks-count').textContent = stats.webhooks || 0;
+                      document.getElementById('chat-status').textContent = stats.chatStatus || 'Active';
+                    }
+                  }
+                } catch (error) {
+                  console.error('Error loading dashboard stats:', error);
+                }
+              }
+              
+              // Load conversations
+              async function loadConversations() {
+                const loadingEl = document.getElementById('conversations-loading');
+                const listEl = document.getElementById('conversations-list');
+                const emptyEl = document.getElementById('conversations-empty');
+                
+                loadingEl.style.display = 'block';
+                listEl.style.display = 'none';
+                emptyEl.style.display = 'none';
+                
+                try {
+                  const response = await fetch('/api/admin-bypass/conversations?shop=' + encodeURIComponent('${shop || ''}') + '&limit=20');
+                  
+                  if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.success && data.data.conversations.length > 0) {
+                      renderConversations(data.data.conversations);
+                      listEl.style.display = 'block';
+                    } else {
+                      emptyEl.style.display = 'block';
+                    }
+                  } else {
+                    emptyEl.style.display = 'block';
+                  }
+                } catch (error) {
+                  console.error('Error loading conversations:', error);
+                  emptyEl.style.display = 'block';
+                } finally {
+                  loadingEl.style.display = 'none';
+                }
+              }
+              
+              function renderConversations(conversations) {
+                const listEl = document.getElementById('conversations-list');
+                listEl.innerHTML = conversations.map(conv => {
+                  const lastMessage = conv.messages[conv.messages.length - 1];
+                  const previewText = lastMessage?.user?.substring(0, 100) || 'Sin mensajes';
+                  const timeAgo = new Date(conv.last_message).toLocaleString('es-ES');
+                  
+                  return \`
+                    <div class="conversation-item" onclick="showConversationDetails('\${conv.session_id}')">
+                      <div class="conversation-header">
+                        <span class="conversation-id">ID: \${conv.session_id.substring(0, 12)}...</span>
+                        <span class="conversation-time">\${timeAgo}</span>
+                      </div>
+                      <div class="conversation-preview">\${previewText}\${previewText.length >= 100 ? '...' : ''}</div>
+                      <div style="font-size: 12px; color: #8c9196; margin-top: 4px;">
+                        \${conv.messages.length} mensaje\${conv.messages.length !== 1 ? 's' : ''}
+                      </div>
+                    </div>
+                  \`;
+                }).join('');
+              }
+              
+              window.showConversationDetails = function(sessionId) {
+                // Esta función podría expandir para mostrar detalles de la conversación
+                alert(\`Mostrando detalles de la conversación: \${sessionId}\`);
+              };
+              
+              // Load analytics
+              async function loadAnalytics() {
+                const loadingEl = document.getElementById('analytics-loading');
+                const contentEl = document.getElementById('analytics-content');
+                const emptyEl = document.getElementById('analytics-empty');
+                
+                loadingEl.style.display = 'block';
+                contentEl.style.display = 'none';
+                emptyEl.style.display = 'none';
+                
+                try {
+                  const response = await fetch('/api/admin-bypass/analytics/products?shop=' + encodeURIComponent('${shop || ''}') + '&days=30');
+                  
+                  if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.success && data.data.topProducts.length > 0) {
+                      renderAnalytics(data.data);
+                      contentEl.style.display = 'block';
+                    } else {
+                      emptyEl.style.display = 'block';
+                    }
+                  } else {
+                    emptyEl.style.display = 'block';
+                  }
+                } catch (error) {
+                  console.error('Error loading analytics:', error);
+                  emptyEl.style.display = 'block';
+                } finally {
+                  loadingEl.style.display = 'none';
+                }
+              }
+              
+              function renderAnalytics(data) {
+                document.getElementById('total-conversations').textContent = data.totalConversations;
+                document.getElementById('analytics-period').textContent = \`Últimos \${data.periodDays} días\`;
+                
+                const productsListEl = document.getElementById('products-list');
+                productsListEl.innerHTML = data.topProducts.map(product => \`
+                  <div class="product-item">
+                    <div class="product-name">\${product.name}</div>
+                    <div class="product-mentions">
+                      <span>\${product.mentions} menciones</span>
+                      <span style="color: #008060; font-weight: 600;">(\${product.percentage}%)</span>
+                    </div>
+                  </div>
+                \`).join('');
+              }
+              
+              // Load logs
+              async function loadLogs() {
+                const loadingEl = document.getElementById('logs-loading');
+                const listEl = document.getElementById('logs-list');
+                const emptyEl = document.getElementById('logs-empty');
+                
+                loadingEl.style.display = 'block';
+                listEl.style.display = 'none';
+                emptyEl.style.display = 'none';
+                
+                try {
+                  const level = document.getElementById('log-level-filter')?.value || 'all';
+                  const response = await fetch('/api/admin-bypass/logs?shop=' + encodeURIComponent('${shop || ''}') + '&level=' + level + '&limit=50');
+                  
+                  if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.success && data.data.logs.length > 0) {
+                      renderLogs(data.data.logs);
+                      listEl.style.display = 'block';
+                    } else {
+                      emptyEl.style.display = 'block';
+                    }
+                  } else {
+                    emptyEl.style.display = 'block';
+                  }
+                } catch (error) {
+                  console.error('Error loading logs:', error);
+                  emptyEl.style.display = 'block';
+                } finally {
+                  loadingEl.style.display = 'none';
+                }
+              }
+              
+              function renderLogs(logs) {
+                const listEl = document.getElementById('logs-list');
+                listEl.innerHTML = logs.map(log => {
+                  const timestamp = new Date(log.timestamp).toLocaleString('es-ES');
+                  return \`
+                    <div class="log-item">
+                      <div class="log-timestamp">\${timestamp}</div>
+                      <div class="log-level \${log.level}">\${log.level.toUpperCase()}</div>
+                      <div class="log-message">\${log.message}</div>
+                    </div>
+                  \`;
+                }).join('');
+              }
+              
+              window.filterLogs = function() {
+                loadLogs();
+              };
+              
+              window.refreshLogs = function() {
+                loadLogs();
               };
               
               // Webhook management functions
@@ -936,6 +1432,9 @@ async function startServer() {
                   
                   // Load settings on page load
                   loadSettings(true);
+                  
+                  // Load initial dashboard stats
+                  loadDashboardStats();
                   
                 } catch (error) {
                   console.error('Status check failed:', error);
