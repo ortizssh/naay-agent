@@ -63,7 +63,7 @@ async function startServer() {
     app.use(express.urlencoded({ extended: true }));
 
     // Serve static files for widget
-    app.use('/static', express.static(path.join(__dirname, '../public')));
+    app.use('/static', express.static(path.join(__dirname, 'public')));
 
     // Health check (before auth)
     app.use('/health', healthRoutes);
