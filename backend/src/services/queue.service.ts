@@ -18,7 +18,7 @@ if (config.redis.enabled) {
   try {
     const { Queue, Worker } = require('bullmq');
     const IORedis = require('ioredis');
-    
+
     redis = new IORedis({
       ...config.redis,
       maxRetriesPerRequest: 3,
@@ -188,7 +188,12 @@ export class QueueService {
                 break;
               case 'product_create':
               case 'product_update':
-                await this.processProductSync(shop, accessToken, productId!, job);
+                await this.processProductSync(
+                  shop,
+                  accessToken,
+                  productId!,
+                  job
+                );
                 break;
               case 'product_delete':
                 await this.processProductDelete(shop, productId!);
@@ -358,9 +363,10 @@ export class QueueService {
         // Process embeddings directly
         const content =
           `${product.title} ${product.description} ${product.vendor} ${product.tags.join(' ')}`.trim();
-        
+
         try {
-          const embedding = await this.embeddingService.generateEmbedding(content);
+          const embedding =
+            await this.embeddingService.generateEmbedding(content);
           await this.supabaseService.saveEmbedding({
             shop_domain: shop,
             product_id: product.id,
@@ -376,10 +382,15 @@ export class QueueService {
             },
           });
         } catch (embeddingError) {
-          logger.warn(`Failed to generate embedding for product ${product.id}:`, embeddingError);
+          logger.warn(
+            `Failed to generate embedding for product ${product.id}:`,
+            embeddingError
+          );
         }
 
-        logger.info(`Processed product ${i + 1}/${products.length}: ${product.title}`);
+        logger.info(
+          `Processed product ${i + 1}/${products.length}: ${product.title}`
+        );
       }
 
       logger.info(

@@ -28,14 +28,20 @@ async function startServer() {
     const app = express();
 
     // Security middleware - allow iframe embedding for Shopify
-    app.use(helmet({
-      contentSecurityPolicy: {
-        directives: {
-          frameAncestors: ["'self'", "https://*.shopify.com", "https://admin.shopify.com"],
+    app.use(
+      helmet({
+        contentSecurityPolicy: {
+          directives: {
+            frameAncestors: [
+              "'self'",
+              'https://*.shopify.com',
+              'https://admin.shopify.com',
+            ],
+          },
         },
-      },
-      frameguard: false, // Disable frameguard to allow iframe
-    }));
+        frameguard: false, // Disable frameguard to allow iframe
+      })
+    );
     app.use(
       cors({
         origin:
@@ -49,7 +55,10 @@ async function startServer() {
     // Allow embedding in Shopify iframe
     app.use((req, res, next) => {
       res.setHeader('X-Frame-Options', 'ALLOWALL');
-      res.setHeader('Content-Security-Policy', "frame-ancestors 'self' https://*.shopify.com https://admin.shopify.com;");
+      res.setHeader(
+        'Content-Security-Policy',
+        "frame-ancestors 'self' https://*.shopify.com https://admin.shopify.com;"
+      );
       next();
     });
 
@@ -65,17 +74,24 @@ async function startServer() {
     app.use(express.urlencoded({ extended: true }));
 
     // Serve static files for widget with anti-cache headers
-    app.use('/static', (req, res, next) => {
-      if (req.path.includes('naay-widget.js')) {
-        // Force no caching for widget file
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-        res.setHeader('Last-Modified', new Date().toUTCString());
-        res.setHeader('ETag', 'v2.1.0-' + Date.now());
-      }
-      next();
-    }, express.static(path.join(__dirname, 'public')));
+    app.use(
+      '/static',
+      (req, res, next) => {
+        if (req.path.includes('naay-widget.js')) {
+          // Force no caching for widget file
+          res.setHeader(
+            'Cache-Control',
+            'no-cache, no-store, must-revalidate, max-age=0'
+          );
+          res.setHeader('Pragma', 'no-cache');
+          res.setHeader('Expires', '0');
+          res.setHeader('Last-Modified', new Date().toUTCString());
+          res.setHeader('ETag', 'v2.1.0-' + Date.now());
+        }
+        next();
+      },
+      express.static(path.join(__dirname, 'public'))
+    );
 
     // Health check (before auth)
     app.use('/health', healthRoutes);
@@ -83,7 +99,7 @@ async function startServer() {
     // Root route for Shopify app installation
     app.get('/', (req, res) => {
       const { token, shop, hmac, host, timestamp, embedded } = req.query;
-      
+
       // Debug logging
       logger.info('Root route accessed', {
         query: req.query,
@@ -93,12 +109,13 @@ async function startServer() {
         hasHmac: !!hmac,
         hasHost: !!host,
         userAgent: req.get('User-Agent'),
-        referer: req.get('Referer')
+        referer: req.get('Referer'),
       });
-      
+
       // Check if this is being loaded in Shopify admin iframe
-      const isEmbedded = host || embedded || req.get('Referer')?.includes('admin.shopify.com');
-      
+      const isEmbedded =
+        host || embedded || req.get('Referer')?.includes('admin.shopify.com');
+
       if (isEmbedded) {
         // App is being loaded within Shopify admin - show admin interface
         res.send(`
@@ -1650,14 +1667,20 @@ async function startServer() {
         // Process the app installation in background
         setTimeout(async () => {
           try {
-            logger.info('Processing Shopify app installation', { shop, host, hmac: !!hmac });
-            
+            logger.info('Processing Shopify app installation', {
+              shop,
+              host,
+              hmac: !!hmac,
+            });
+
             // Check if store exists in our database
-            const supabaseService = new (require('@/services/supabase.service')).SupabaseService();
-            const queueService = new (require('@/services/queue.service')).QueueService();
-            
+            const supabaseService =
+              new (require('@/services/supabase.service').SupabaseService)();
+            const queueService =
+              new (require('@/services/queue.service').QueueService)();
+
             let store = await supabaseService.getStore(shop as string);
-            
+
             if (!store) {
               // For App Bridge apps, we need to use a placeholder token initially
               // The real token exchange happens later via API calls from the frontend
@@ -1668,21 +1691,25 @@ async function startServer() {
                 installed_at: new Date(),
                 updated_at: new Date(),
               });
-              
-              logger.info(`Created store entry for App Bridge installation: ${shop}`);
+
+              logger.info(
+                `Created store entry for App Bridge installation: ${shop}`
+              );
             } else {
-              await supabaseService.updateStoreToken(shop as string, store.access_token);
+              await supabaseService.updateStoreToken(
+                shop as string,
+                store.access_token
+              );
               logger.info(`Updated existing store for App Bridge: ${shop}`);
             }
-            
+
             // Don't trigger sync yet - wait for proper token exchange
             logger.info(`App Bridge installation processed for: ${shop}`);
-            
           } catch (error) {
             logger.error('Failed to process app installation:', error);
           }
         }, 1000);
-      
+
         // Show the welcome page immediately
         res.send(`
           <!DOCTYPE html>
@@ -1839,8 +1866,8 @@ async function startServer() {
             health: '/health',
             chat: '/api/chat',
             webhooks: '/api/webhooks',
-            products: '/api/products'
-          }
+            products: '/api/products',
+          },
         });
       }
     });
@@ -1848,13 +1875,13 @@ async function startServer() {
     // Success page after Shopify app installation
     app.get('/success', (req, res) => {
       const { token, shop } = req.query;
-      
+
       logger.info('Success page accessed', {
         query: req.query,
         hasToken: !!token,
-        hasShop: !!shop
+        hasShop: !!shop,
       });
-      
+
       if (token && shop) {
         res.send(`
           <!DOCTYPE html>
@@ -1915,23 +1942,24 @@ async function startServer() {
     // Traditional OAuth install route
     app.get('/install', (req, res) => {
       const { shop } = req.query;
-      
+
       if (!shop) {
         return res.status(400).json({
           success: false,
-          error: 'Shop parameter required'
+          error: 'Shop parameter required',
         });
       }
-      
+
       // Redirect to OAuth flow
       const scopes = 'read_products,write_products,read_orders,read_customers';
       const redirectUri = `${config.shopify.appUrl}/auth/callback`;
-      const installUrl = `https://${shop}/admin/oauth/authorize` +
+      const installUrl =
+        `https://${shop}/admin/oauth/authorize` +
         `?client_id=${config.shopify.apiKey}` +
         `&scope=${scopes}` +
         `&redirect_uri=${redirectUri}` +
         `&state=${Date.now()}`;
-      
+
       res.redirect(installUrl);
     });
 

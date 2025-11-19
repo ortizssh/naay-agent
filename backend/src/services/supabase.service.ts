@@ -72,9 +72,9 @@ export class SupabaseService {
   ): Promise<ShopifyStore> {
     const { data, error } = await this.serviceClient
       .from('stores')
-      .update({ 
-        widget_enabled: enabled, 
-        updated_at: new Date() 
+      .update({
+        widget_enabled: enabled,
+        updated_at: new Date(),
       })
       .eq('shop_domain', shopDomain)
       .select()
@@ -299,18 +299,16 @@ export class SupabaseService {
     is_online: boolean;
     user_id?: string;
   }): Promise<void> {
-    const { error } = await this.serviceClient
-      .from('shopify_sessions')
-      .upsert({
-        shop_domain: session.shop,
-        access_token: session.access_token,
-        scope: session.scope,
-        expires_at: session.expires_at,
-        session_id: session.session_id,
-        is_online: session.is_online,
-        user_id: session.user_id,
-        updated_at: new Date(),
-      });
+    const { error } = await this.serviceClient.from('shopify_sessions').upsert({
+      shop_domain: session.shop,
+      access_token: session.access_token,
+      scope: session.scope,
+      expires_at: session.expires_at,
+      session_id: session.session_id,
+      is_online: session.is_online,
+      user_id: session.user_id,
+      updated_at: new Date(),
+    });
 
     if (error) {
       logger.error('Error upserting session:', error);
@@ -318,15 +316,13 @@ export class SupabaseService {
     }
 
     // Also update or create the store record
-    await this.serviceClient
-      .from('stores')
-      .upsert({
-        shop_domain: session.shop,
-        access_token: session.access_token,
-        scopes: session.scope,
-        installed_at: new Date(),
-        updated_at: new Date(),
-      });
+    await this.serviceClient.from('stores').upsert({
+      shop_domain: session.shop,
+      access_token: session.access_token,
+      scopes: session.scope,
+      installed_at: new Date(),
+      updated_at: new Date(),
+    });
   }
 
   /**
@@ -353,7 +349,10 @@ export class SupabaseService {
   /**
    * Get online session for specific user
    */
-  async getOnlineSession(shopDomain: string, userId: string): Promise<any | null> {
+  async getOnlineSession(
+    shopDomain: string,
+    userId: string
+  ): Promise<any | null> {
     const { data, error } = await this.serviceClient
       .from('shopify_sessions')
       .select('*')

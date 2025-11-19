@@ -32,7 +32,9 @@ router.post(
       // Trigger full sync job
       const job = await queueService.addFullSyncJob(shop, store.access_token);
 
-      logger.info(`Manual sync triggered for shop: ${shop}`, { jobId: job?.id || 'direct' });
+      logger.info(`Manual sync triggered for shop: ${shop}`, {
+        jobId: job?.id || 'direct',
+      });
 
       res.json({
         success: true,
@@ -125,7 +127,9 @@ router.get(
         if (typeof cart_products === 'string') {
           cartProductIds = cart_products.split(',');
         } else if (Array.isArray(cart_products)) {
-          cartProductIds = cart_products.map(p => typeof p === 'string' ? p : String(p));
+          cartProductIds = cart_products.map(p =>
+            typeof p === 'string' ? p : String(p)
+          );
         }
       }
 

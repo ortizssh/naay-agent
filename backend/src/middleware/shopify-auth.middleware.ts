@@ -35,7 +35,7 @@ export const validateSessionToken = async (
   try {
     // Try to get session token from Authorization header or query parameter
     let sessionToken = req.headers.authorization?.replace('Bearer ', '');
-    
+
     if (!sessionToken) {
       sessionToken = req.query.session as string;
     }
@@ -45,8 +45,11 @@ export const validateSessionToken = async (
     }
 
     // Decode and verify the session token
-    const payload = jwt.verify(sessionToken, config.shopify.apiSecret) as SessionTokenPayload;
-    
+    const payload = jwt.verify(
+      sessionToken,
+      config.shopify.apiSecret
+    ) as SessionTokenPayload;
+
     // Validate token structure and claims
     if (!payload.dest || !payload.sub || !payload.aud || !payload.iss) {
       throw new AppError('Invalid session token structure', 401);
@@ -54,7 +57,7 @@ export const validateSessionToken = async (
 
     // Extract shop domain from dest (removes https:// and trailing slash)
     const shopDomain = payload.dest.replace('https://', '').replace(/\/$/, '');
-    
+
     // Validate audience (should match our API key)
     if (payload.aud !== config.shopify.apiKey) {
       throw new AppError('Invalid session token audience', 401);
@@ -73,7 +76,10 @@ export const validateSessionToken = async (
     // Check if store exists in our database
     const store = await supabaseService.getStore(shopDomain);
     if (!store) {
-      throw new AppError('Store not found - app may need to be reinstalled', 404);
+      throw new AppError(
+        'Store not found - app may need to be reinstalled',
+        404
+      );
     }
 
     // Store session information in database for tracking
@@ -88,7 +94,7 @@ export const validateSessionToken = async (
     logger.debug('Session token validated successfully', {
       shop: shopDomain,
       userId: payload.sub,
-      sessionId: payload.sid
+      sessionId: payload.sid,
     });
 
     next();
@@ -126,7 +132,7 @@ export const validateLegacyToken = (
 
     logger.debug('Legacy token validated successfully', {
       shop: decoded.shop,
-      storeId: decoded.sub
+      storeId: decoded.sub,
     });
 
     next();
@@ -147,34 +153,47 @@ export const validateAuth = async (
 ): Promise<void> => {
   try {
     // Check for session token first (modern authentication)
-    const sessionToken = req.headers.authorization?.replace('Bearer ', '') || req.query.session as string;
-    
+    const sessionToken =
+      req.headers.authorization?.replace('Bearer ', '') ||
+      (req.query.session as string);
+
     logger.debug('Validating auth', {
       hasAuthHeader: !!req.headers.authorization,
       hasSessionParam: !!req.query.session,
-      tokenPreview: sessionToken ? sessionToken.substring(0, 20) + '...' : 'none'
+      tokenPreview: sessionToken
+        ? sessionToken.substring(0, 20) + '...'
+        : 'none',
     });
-    
+
     if (sessionToken && sessionToken.split('.').length === 3) {
       // Try to validate as session token
       try {
         // Manual JWT decode for inspection (just the payload part)
         const parts = sessionToken.split('.');
-        const payload = parts.length === 3 ? JSON.parse(Buffer.from(parts[1], 'base64').toString()) : null;
-        
+        const payload =
+          parts.length === 3
+            ? JSON.parse(Buffer.from(parts[1], 'base64').toString())
+            : null;
+
         // Check if this looks like a Shopify session token
-        if (payload && (payload.dest || payload.aud === config.shopify.apiKey)) {
+        if (
+          payload &&
+          (payload.dest || payload.aud === config.shopify.apiKey)
+        ) {
           logger.debug('Detected session token, validating...');
           return await validateSessionToken(req, res, next);
         }
-        
+
         // Check if this looks like our legacy JWT
         if (payload && payload.shop && payload.sub) {
           logger.debug('Detected legacy token, validating...');
           return validateLegacyToken(req, res, next);
         }
       } catch (err) {
-        logger.warn('Token decode failed, trying legacy validation:', err.message);
+        logger.warn(
+          'Token decode failed, trying legacy validation:',
+          err.message
+        );
         // If token decode fails, try legacy anyway
       }
     }
@@ -189,22 +208,28 @@ export const validateAuth = async (
 };
 
 // Helper function to save session information for tracking
-async function saveSessionInfo(payload: SessionTokenPayload, sessionToken: string): Promise<void> {
+async function saveSessionInfo(
+  payload: SessionTokenPayload,
+  sessionToken: string
+): Promise<void> {
   try {
     const shopDomain = payload.dest.replace('https://', '').replace(/\/$/, '');
-    
+
     const { error } = await (supabaseService as any).serviceClient
       .from('shopify_sessions')
-      .upsert({
-        session_id: payload.sid,
-        shop_domain: shopDomain,
-        user_id: payload.sub,
-        expires_at: new Date(payload.exp * 1000),
-        last_used: new Date(),
-        session_token_hash: sessionToken.split('.').slice(0, 2).join('.') // Store header.payload only for tracking
-      }, {
-        onConflict: 'session_id'
-      });
+      .upsert(
+        {
+          session_id: payload.sid,
+          shop_domain: shopDomain,
+          user_id: payload.sub,
+          expires_at: new Date(payload.exp * 1000),
+          last_used: new Date(),
+          session_token_hash: sessionToken.split('.').slice(0, 2).join('.'), // Store header.payload only for tracking
+        },
+        {
+          onConflict: 'session_id',
+        }
+      );
 
     if (error) {
       logger.warn('Failed to save session info:', error);
@@ -222,9 +247,10 @@ export const extractShop = (
 ): void => {
   try {
     // Try to get shop from query parameter, header, or subdomain
-    const shop = req.query.shop as string || 
-                 req.headers['x-shopify-shop-domain'] as string ||
-                 req.get('X-Shopify-Shop-Domain');
+    const shop =
+      (req.query.shop as string) ||
+      (req.headers['x-shopify-shop-domain'] as string) ||
+      req.get('X-Shopify-Shop-Domain');
 
     if (shop) {
       (req as any).shop = shop;

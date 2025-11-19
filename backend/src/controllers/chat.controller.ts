@@ -374,78 +374,76 @@ async function getSessionInfo(sessionId: string): Promise<any> {
 }
 
 // Simple widget endpoint (for easy integration)
-router.post(
-  '/',
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      // Validate request body
-      const { error, value } = widgetMessageSchema.validate(req.body);
-      if (error) {
-        throw new AppError(
-          `Validation error: ${error.details[0].message}`,
-          400
-        );
-      }
+router.post('/', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Validate request body
+    const { error, value } = widgetMessageSchema.validate(req.body);
+    if (error) {
+      throw new AppError(`Validation error: ${error.details[0].message}`, 400);
+    }
 
-      const { message, shop, conversationId, context } = value;
+    const { message, shop, conversationId, context } = value;
 
-      logger.info(`Widget chat message received`, {
-        shop,
-        conversationId,
-        messageLength: message.length,
-        hasContext: !!context,
-      });
+    logger.info(`Widget chat message received`, {
+      shop,
+      conversationId,
+      messageLength: message.length,
+      hasContext: !!context,
+    });
 
-      // Verify the shop exists
-      const store = await supabaseService.getStore(shop);
-      if (!store) {
-        throw new AppError('Store not found', 404);
-      }
+    // Verify the shop exists
+    const store = await supabaseService.getStore(shop);
+    if (!store) {
+      throw new AppError('Store not found', 404);
+    }
 
-      // Generate or use existing conversation ID
-      const sessionId = conversationId || `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Generate or use existing conversation ID
+    const sessionId =
+      conversationId ||
+      `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      // Process message with AI agent
-      const agentResponse = await aiAgentService.processMessage(
-        message,
-        sessionId,
-        shop,
-        context?.cartId || '',
-        context
-      );
+    // Process message with AI agent
+    const agentResponse = await aiAgentService.processMessage(
+      message,
+      sessionId,
+      shop,
+      context?.cartId || '',
+      context
+    );
 
-      // Log analytics event
-      await logChatEvent(shop, sessionId, 'widget_message', {
-        messageLength: message.length,
-        hasContext: !!context,
-        responseLength: agentResponse.messages.join(' ').length,
-      });
+    // Log analytics event
+    await logChatEvent(shop, sessionId, 'widget_message', {
+      messageLength: message.length,
+      hasContext: !!context,
+      responseLength: agentResponse.messages.join(' ').length,
+    });
 
-      // Return simplified response for widget
-      const response = agentResponse.messages.length > 0 
-        ? agentResponse.messages[0] 
+    // Return simplified response for widget
+    const response =
+      agentResponse.messages.length > 0
+        ? agentResponse.messages[0]
         : '¡Hola! Soy tu asistente de Naay. ¿En qué puedo ayudarte?';
 
-      res.json({
-        success: true,
-        data: {
-          response: response,
-          conversationId: sessionId,
-          actions: agentResponse.actions,
-        },
-      });
-    } catch (error) {
-      logger.error('Widget chat error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Error interno del servidor',
-        data: {
-          response: 'Lo siento, hubo un error al procesar tu mensaje. Por favor intenta de nuevo.',
-          conversationId: null,
-        }
-      });
-    }
+    res.json({
+      success: true,
+      data: {
+        response: response,
+        conversationId: sessionId,
+        actions: agentResponse.actions,
+      },
+    });
+  } catch (error) {
+    logger.error('Widget chat error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor',
+      data: {
+        response:
+          'Lo siento, hubo un error al procesar tu mensaje. Por favor intenta de nuevo.',
+        conversationId: null,
+      },
+    });
   }
-);
+});
 
 export default router;

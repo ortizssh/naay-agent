@@ -445,33 +445,38 @@ export class ShopifyService {
 
   async createWebhooks(shop: string, accessToken: string): Promise<void> {
     const client = this.getAdminClient(shop, accessToken);
-    
+
     const webhooks = [
       {
         topic: 'PRODUCTS_CREATE',
         endpoint: `${config.shopify.appUrl}/api/webhooks/products/create`,
-        format: 'JSON'
+        format: 'JSON',
       },
       {
-        topic: 'PRODUCTS_UPDATE', 
+        topic: 'PRODUCTS_UPDATE',
         endpoint: `${config.shopify.appUrl}/api/webhooks/products/update`,
-        format: 'JSON'
+        format: 'JSON',
       },
       {
         topic: 'PRODUCTS_DELETE',
-        endpoint: `${config.shopify.appUrl}/api/webhooks/products/delete`, 
-        format: 'JSON'
+        endpoint: `${config.shopify.appUrl}/api/webhooks/products/delete`,
+        format: 'JSON',
       },
       {
         topic: 'APP_UNINSTALLED',
         endpoint: `${config.shopify.appUrl}/api/webhooks/app/uninstalled`,
-        format: 'JSON'
-      }
+        format: 'JSON',
+      },
     ];
 
     for (const webhook of webhooks) {
       try {
-        await this.createWebhook(client, webhook.topic, webhook.endpoint, webhook.format);
+        await this.createWebhook(
+          client,
+          webhook.topic,
+          webhook.endpoint,
+          webhook.format
+        );
         logger.info(`Created webhook: ${webhook.topic} for shop: ${shop}`);
       } catch (error) {
         logger.error(`Failed to create webhook ${webhook.topic}:`, error);
@@ -506,12 +511,12 @@ export class ShopifyService {
       topic,
       webhookSubscription: {
         callbackUrl: address,
-        format: format.toUpperCase()
-      }
+        format: format.toUpperCase(),
+      },
     };
 
     const response = await client.request(mutation, { variables });
-    
+
     if (response.data?.webhookSubscriptionCreate?.userErrors?.length > 0) {
       const errors = response.data.webhookSubscriptionCreate.userErrors;
       throw new Error(`Webhook creation failed: ${errors[0].message}`);
@@ -522,7 +527,7 @@ export class ShopifyService {
 
   async listWebhooks(shop: string, accessToken: string): Promise<any[]> {
     const client = this.getAdminClient(shop, accessToken);
-    
+
     try {
       const query = `
         query {
@@ -542,16 +547,24 @@ export class ShopifyService {
       `;
 
       const response = await client.request(query);
-      return response.data?.webhookSubscriptions?.edges?.map((edge: any) => edge.node) || [];
+      return (
+        response.data?.webhookSubscriptions?.edges?.map(
+          (edge: any) => edge.node
+        ) || []
+      );
     } catch (error) {
       logger.error('Error listing webhooks:', error);
       throw new AppError(`Failed to list webhooks: ${error}`, 500);
     }
   }
 
-  async deleteWebhook(shop: string, accessToken: string, webhookId: string): Promise<void> {
+  async deleteWebhook(
+    shop: string,
+    accessToken: string,
+    webhookId: string
+  ): Promise<void> {
     const client = this.getAdminClient(shop, accessToken);
-    
+
     try {
       const mutation = `
         mutation webhookSubscriptionDelete($id: ID!) {
@@ -566,9 +579,9 @@ export class ShopifyService {
       `;
 
       const response = await client.request(mutation, {
-        variables: { id: webhookId }
+        variables: { id: webhookId },
       });
-      
+
       if (response.data?.webhookSubscriptionDelete?.userErrors?.length > 0) {
         const errors = response.data.webhookSubscriptionDelete.userErrors;
         throw new Error(`Webhook deletion failed: ${errors[0].message}`);

@@ -61,7 +61,7 @@ router.post(
 
       // For App Bridge, we need to request access token from Shopify
       // This is a simplified flow - in production you'd verify the HMAC
-      
+
       // Check if store exists, create or update
       let store = await supabaseService.getStore(shop);
 
@@ -75,7 +75,7 @@ router.post(
           updated_at: new Date(),
         });
         logger.info(`Created new store via App Bridge: ${shop}`);
-        
+
         // For App Bridge installations, we can't do OAuth flow
         // We'll need the store owner to manually provide an admin token
         // Or use Shopify's Session Token API
@@ -92,7 +92,6 @@ router.post(
           requiresConfiguration: true,
         },
       });
-
     } catch (error) {
       logger.error('App verification error:', error);
       next(error);
@@ -107,7 +106,7 @@ router.get(
     try {
       logger.info('OAuth callback received', {
         query: req.query,
-        url: req.url
+        url: req.url,
       });
 
       const { code, shop, state } = req.query;
@@ -122,7 +121,7 @@ router.get(
           code: !!code,
           shop: !!shop,
           state: !!state,
-          query: req.query
+          query: req.query,
         });
         throw new AppError('Missing required parameters', 400);
       }
@@ -139,7 +138,7 @@ router.get(
         logger.error('Failed to exchange code for token', {
           shop,
           error: tokenError.message,
-          stack: tokenError.stack
+          stack: tokenError.stack,
         });
         throw new AppError('Failed to obtain access token from Shopify', 500);
       }
@@ -169,7 +168,7 @@ router.get(
         logger.error('Database operation failed', {
           shop,
           error: dbError.message,
-          stack: dbError.stack
+          stack: dbError.stack,
         });
         throw new AppError('Failed to save store information', 500);
       }
@@ -210,21 +209,21 @@ router.get(
         error: error.message,
         stack: error.stack,
         shop: req.query.shop,
-        code: !!req.query.code
+        code: !!req.query.code,
       });
-      
+
       // Send a more user-friendly error response
       if (error instanceof AppError) {
         res.status(error.statusCode).json({
           success: false,
           error: error.message,
-          details: 'OAuth callback failed'
+          details: 'OAuth callback failed',
         });
       } else {
         res.status(500).json({
           success: false,
           error: 'Internal server error during app installation',
-          details: error.message
+          details: error.message,
         });
       }
     }
