@@ -10,9 +10,20 @@
 (function() {
   'use strict';
 
+  // UNIQUE IDENTIFIER FOR VERSION DETECTION 
+  window.__NAAY_WIDGET_VERSION__ = '2.1.0-FINAL-VERIFIED-' + Date.now();
+  window.__NAAY_WIDGET_TIMESTAMP__ = new Date().toISOString();
+  console.log('🔥 NAAY WIDGET VERIFICATION:', {
+    version: window.__NAAY_WIDGET_VERSION__,
+    timestamp: window.__NAAY_WIDGET_TIMESTAMP__,
+    hasPromotionalMessage: true,
+    hasModernDesign: true,
+    source: 'OFFICIAL-AZURE-SERVER'
+  });
+
   // Prevent multiple widget loads
   if (window.NaayWidget) {
-    console.warn('Naay Widget already loaded');
+    console.warn('Naay Widget already loaded, version:', window.__NAAY_WIDGET_VERSION__);
     return;
   }
 
@@ -1047,6 +1058,22 @@
       }
     }
   }
+
+  // Add debug method to NaayWidget class
+  NaayWidget.checkVersion = function() {
+    const info = {
+      version: window.__NAAY_WIDGET_VERSION__ || 'UNKNOWN',
+      timestamp: window.__NAAY_WIDGET_TIMESTAMP__ || 'UNKNOWN', 
+      hasPromotionalMessage: document.querySelector('.naay-widget__promotional-message') !== null,
+      hasModernDesign: document.querySelector('.naay-widget__welcome-features') !== null,
+      widgetLoaded: !!window.NaayWidget,
+      currentTime: new Date().toISOString(),
+      source: 'AZURE-OFFICIAL-SERVER',
+      url: window.location.href
+    };
+    console.log('🔍 NAAY WIDGET DEBUG INFO:', info);
+    return info;
+  };
 
   // Expose to global scope
   window.NaayWidget = NaayWidget;
