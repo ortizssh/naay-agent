@@ -50,9 +50,13 @@
       return;
     }
     
-    // Load the official Naay widget script
+    // Load the official Naay widget script with fallback
     var script = document.createElement('script');
-    script.src = 'https://naay-agent-app1763504937.azurewebsites.net/static/naay-widget.js?v=FINAL_210_VERIFIED&id=' + (Math.random().toString(36) + Math.random().toString(36)).substr(2, 20) + '&t=' + Date.now() + '&force=true';
+    var widgetId = (Math.random().toString(36) + Math.random().toString(36)).substr(2, 20);
+    var timestamp = Date.now();
+    
+    // Primary URL
+    script.src = 'https://naay-agent-app1763504937.azurewebsites.net/static/naay-widget.js?v=FINAL_210_VERIFIED&id=' + widgetId + '&t=' + timestamp + '&force=true';
     script.async = true;
     
     script.onload = function() {
@@ -72,6 +76,40 @@
     
     script.onerror = function() {
       console.error('❌ Failed to load Naay Widget script from Azure server');
+      
+      // Try fallback CDN - using GitHub raw content
+      console.log('🔄 Trying fallback CDN...');
+      var fallbackScript = document.createElement('script');
+      fallbackScript.src = 'https://raw.githubusercontent.com/naaystore/widget/main/naay-widget.js?v=FALLBACK&id=' + widgetId + '&t=' + timestamp;
+      fallbackScript.async = true;
+      
+      fallbackScript.onload = function() {
+        console.log('✅ Naay Chat: Widget loaded from fallback CDN');
+        if (window.NaayWidget && window.NaayConfig) {
+          try {
+            new window.NaayWidget(window.NaayConfig);
+            console.log('🎉 Naay Chat: Widget initialized from fallback');
+          } catch (error) {
+            console.error('❌ Failed to initialize from fallback:', error);
+          }
+        }
+      };
+      
+      fallbackScript.onerror = function() {
+        console.error('❌ Both primary and fallback widget sources failed');
+        console.log('🔄 Creating basic chat placeholder...');
+        
+        // Create basic fallback chat button
+        var chatButton = document.createElement('div');
+        chatButton.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#8B5A3C;color:white;border-radius:50px;padding:15px 20px;cursor:pointer;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.3);font-family:Arial,sans-serif;font-size:14px;';
+        chatButton.innerHTML = '💬 Chat Naay';
+        chatButton.onclick = function() {
+          alert('¡Hola! 🌿 Soy tu asistente de Naay. El sistema de chat se está cargando. Por favor, actualiza la página en unos momentos.');
+        };
+        document.body.appendChild(chatButton);
+      };
+      
+      document.head.appendChild(fallbackScript);
     };
     
     // Wait for DOM to be ready before injecting
