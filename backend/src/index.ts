@@ -200,8 +200,10 @@ async function startServer() {
             </div>
             
             <script>
-              // Initialize App Bridge 3.0
+              // Initialize App Bridge 3.0 with Session Token support
               let app = null;
+              let sessionToken = null;
+              let authenticatedFetch = null;
               const host = '${host || ''}';
               
               if (host && typeof AppBridge !== 'undefined') {
@@ -211,12 +213,50 @@ async function startServer() {
                     host: host,
                     forceRedirect: true
                   });
-                  console.log('App Bridge 3.0 initialized successfully');
+                  
+                  // Set up authenticated fetch with session tokens
+                  authenticatedFetch = AppBridge.authenticatedFetch(app);
+                  
+                  // Get session token for API calls
+                  app.subscribe(AppBridge.Action.APP_BRIDGE_WINDOW, (appBridgeWindow) => {
+                    appBridgeWindow.addEventListener('message', (event) => {
+                      if (event.data && event.data.type === 'shopify:session_token') {
+                        sessionToken = event.data.sessionToken;
+                        console.log('Session token received');
+                      }
+                    });
+                  });
+                  
+                  console.log('App Bridge 3.0 initialized with session token support');
                 } catch (error) {
                   console.error('Failed to initialize App Bridge:', error);
                 }
               } else if (!host) {
                 console.warn('No host parameter provided - App Bridge cannot initialize');
+              }
+              
+              // Helper function to make authenticated requests
+              async function makeAuthenticatedRequest(url, options = {}) {
+                if (authenticatedFetch) {
+                  return await authenticatedFetch(url, options);
+                } else if (sessionToken) {
+                  return await fetch(url, {
+                    ...options,
+                    headers: {
+                      ...options.headers,
+                      'Authorization': \`Bearer \${sessionToken}\`
+                    }
+                  });
+                } else {
+                  // Fallback to legacy token
+                  return await fetch(url, {
+                    ...options,
+                    headers: {
+                      ...options.headers,
+                      'Authorization': 'Bearer ${token || ''}'
+                    }
+                  });
+                }
               }
               
               // Function definitions
@@ -228,11 +268,10 @@ async function startServer() {
                   button.textContent = 'Sincronizando...';
                   button.disabled = true;
                   
-                  const response = await fetch('/api/products/sync', { 
+                  const response = await makeAuthenticatedRequest('/api/products/sync', { 
                     method: 'POST',
                     headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': 'Bearer ${token || ''}'
+                      'Content-Type': 'application/json'
                     }
                   });
                   
@@ -276,11 +315,10 @@ async function startServer() {
                   button.textContent = 'Creando...';
                   button.disabled = true;
                   
-                  const response = await fetch('/api/webhooks-admin/create', {
+                  const response = await makeAuthenticatedRequest('/api/webhooks-admin/create', {
                     method: 'POST',
                     headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': 'Bearer ${token || ''}'
+                      'Content-Type': 'application/json'
                     }
                   });
                   
@@ -303,11 +341,10 @@ async function startServer() {
               
               window.testWebhooks = async function() {
                 try {
-                  const response = await fetch('/api/webhooks-admin/test', {
+                  const response = await makeAuthenticatedRequest('/api/webhooks-admin/test', {
                     method: 'POST',
                     headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': 'Bearer ${token || ''}'
+                      'Content-Type': 'application/json'
                     }
                   });
                   
@@ -334,11 +371,10 @@ async function startServer() {
                 const chatStatusNumber = document.querySelector('.stat-number:last-child');
                 
                 try {
-                  const response = await fetch('/api/widget/toggle', {
+                  const response = await makeAuthenticatedRequest('/api/widget/toggle', {
                     method: 'POST',
                     headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': 'Bearer ${token || ''}'
+                      'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                       enabled: toggle.checked,
@@ -395,7 +431,7 @@ async function startServer() {
                     healthData.services?.openai === 'healthy' ? '✅' : '⚠️';
                   
                   // Load widget status
-                  const widgetResponse = await fetch('/api/widget/status?shop=${shop || ''}');
+                  const widgetResponse = await makeAuthenticatedRequest('/api/widget/status?shop=${shop || ''}');
                   const widgetData = await widgetResponse.json();
                   
                   if (widgetData.success) {
@@ -432,11 +468,7 @@ async function startServer() {
               // Function to load webhook status
               async function loadWebhookStatus() {
                 try {
-                  const statsResponse = await fetch('/api/webhooks-admin/stats', {
-                    headers: {
-                      'Authorization': 'Bearer ${token || ''}'
-                    }
-                  });
+                  const statsResponse = await makeAuthenticatedRequest('/api/webhooks-admin/stats');
                   const statsData = await statsResponse.json();
                   
                   if (statsData.success) {

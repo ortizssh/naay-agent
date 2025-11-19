@@ -5,15 +5,24 @@ client_id = "1c7a47abe69b8020f7ed37d3528e0552"
 application_url = "{{ SHOPIFY_APP_URL }}"
 embedded = true
 
+# Modern authentication configuration for 2024
+[app]
+api_version = "2024-10"
+
 [access_scopes]
 # Needed for syncing products and creating webhooks
 scopes = "read_products,write_products,read_orders,read_customers,write_draft_orders"
 
 [auth]
+# Modern authentication redirect URLs for Session Token + OAuth flow
 redirect_urls = [
   "{{ SHOPIFY_APP_URL }}/auth/callback",
   "{{ SHOPIFY_APP_URL }}/auth/shopify/callback",
 ]
+
+# Enable session tokens for embedded apps (App Bridge 3.0)
+[app.authentication]
+enabled = true
 
 [webhooks]
 api_version = "2024-10"

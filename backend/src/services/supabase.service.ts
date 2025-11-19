@@ -284,4 +284,145 @@ export class SupabaseService {
       throw new Error(`Failed to delete product embeddings: ${error.message}`);
     }
   }
+
+  // Modern Session Management Methods for Session Token Authentication
+
+  /**
+   * Store or update session information
+   */
+  async upsertSession(session: {
+    shop: string;
+    access_token: string;
+    scope: string;
+    expires_at: Date;
+    session_id: string;
+    is_online: boolean;
+    user_id?: string;
+  }): Promise<void> {
+    const { error } = await this.serviceClient
+      .from('shopify_sessions')
+      .upsert({
+        shop_domain: session.shop,
+        access_token: session.access_token,
+        scope: session.scope,
+        expires_at: session.expires_at,
+        session_id: session.session_id,
+        is_online: session.is_online,
+        user_id: session.user_id,
+        updated_at: new Date(),
+      });
+
+    if (error) {
+      logger.error('Error upserting session:', error);
+      throw new Error(`Failed to upsert session: ${error.message}`);
+    }
+
+    // Also update or create the store record
+    await this.serviceClient
+      .from('stores')
+      .upsert({
+        shop_domain: session.shop,
+        access_token: session.access_token,
+        scopes: session.scope,
+        installed_at: new Date(),
+        updated_at: new Date(),
+      });
+  }
+
+  /**
+   * Get offline session for Admin API operations
+   */
+  async getOfflineSession(shopDomain: string): Promise<any | null> {
+    const { data, error } = await this.serviceClient
+      .from('shopify_sessions')
+      .select('*')
+      .eq('shop_domain', shopDomain)
+      .eq('is_online', false)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      logger.error('Error fetching offline session:', error);
+      throw new Error(`Failed to fetch offline session: ${error.message}`);
+    }
+
+    return data;
+  }
+
+  /**
+   * Get online session for specific user
+   */
+  async getOnlineSession(shopDomain: string, userId: string): Promise<any | null> {
+    const { data, error } = await this.serviceClient
+      .from('shopify_sessions')
+      .select('*')
+      .eq('shop_domain', shopDomain)
+      .eq('user_id', userId)
+      .eq('is_online', true)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      logger.error('Error fetching online session:', error);
+      throw new Error(`Failed to fetch online session: ${error.message}`);
+    }
+
+    return data;
+  }
+
+  /**
+   * Delete all sessions for a shop (used during uninstallation)
+   */
+  async deleteStoreSessions(shopDomain: string): Promise<void> {
+    const { error } = await this.serviceClient
+      .from('shopify_sessions')
+      .delete()
+      .eq('shop_domain', shopDomain);
+
+    if (error) {
+      logger.error('Error deleting store sessions:', error);
+      throw new Error(`Failed to delete store sessions: ${error.message}`);
+    }
+
+    // Also remove from stores table
+    await this.serviceClient
+      .from('stores')
+      .delete()
+      .eq('shop_domain', shopDomain);
+  }
+
+  /**
+   * Clean up expired sessions
+   */
+  async cleanupExpiredSessions(): Promise<void> {
+    const { error } = await this.serviceClient
+      .from('shopify_sessions')
+      .delete()
+      .lt('expires_at', new Date().toISOString());
+
+    if (error) {
+      logger.error('Error cleaning up expired sessions:', error);
+      throw new Error(`Failed to cleanup expired sessions: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get session by session ID
+   */
+  async getSessionById(sessionId: string): Promise<any | null> {
+    const { data, error } = await this.serviceClient
+      .from('shopify_sessions')
+      .select('*')
+      .eq('session_id', sessionId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      logger.error('Error fetching session by ID:', error);
+      throw new Error(`Failed to fetch session: ${error.message}`);
+    }
+
+    return data;
+  }
 }

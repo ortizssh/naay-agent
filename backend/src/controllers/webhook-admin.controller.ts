@@ -3,14 +3,14 @@ import { ShopifyService } from '@/services/shopify.service';
 import { SupabaseService } from '@/services/supabase.service';
 import { logger } from '@/utils/logger';
 import { AppError } from '@/types';
-import { verifyToken } from './auth.controller';
+import { validateAuth } from '@/middleware/shopify-auth.middleware';
 
 const router = Router();
 const shopifyService = new ShopifyService();
 const supabaseService = new SupabaseService();
 
 // List webhooks for authenticated store
-router.get('/list', verifyToken, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/list', validateAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const shop = (req as any).shop;
     
@@ -39,7 +39,7 @@ router.get('/list', verifyToken, async (req: Request, res: Response, next: NextF
 });
 
 // Create/recreate webhooks for authenticated store
-router.post('/create', verifyToken, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/create', validateAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const shop = (req as any).shop;
     
@@ -65,7 +65,7 @@ router.post('/create', verifyToken, async (req: Request, res: Response, next: Ne
 });
 
 // Delete a specific webhook
-router.delete('/:webhookId', verifyToken, async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:webhookId', validateAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const shop = (req as any).shop;
     const { webhookId } = req.params;
@@ -93,7 +93,7 @@ router.delete('/:webhookId', verifyToken, async (req: Request, res: Response, ne
 });
 
 // Get webhook statistics and events
-router.get('/stats', verifyToken, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/stats', validateAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const shop = (req as any).shop;
     
@@ -151,7 +151,7 @@ router.get('/stats', verifyToken, async (req: Request, res: Response, next: Next
 });
 
 // Test webhook endpoint connectivity
-router.post('/test', verifyToken, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/test', validateAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const shop = (req as any).shop;
     

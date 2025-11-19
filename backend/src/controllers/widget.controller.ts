@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { SupabaseService } from '@/services/supabase.service';
 import { logger } from '@/utils/logger';
 import { AppError } from '@/types';
-import { verifyToken } from './auth.controller';
+import { validateAuth } from '@/middleware/shopify-auth.middleware';
 
 const router = Router();
 const supabaseService = new SupabaseService();
@@ -43,7 +43,7 @@ router.get('/status', async (req: Request, res: Response, next: NextFunction) =>
 });
 
 // Toggle widget status
-router.post('/toggle', verifyToken, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/toggle', validateAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { enabled, shop } = req.body;
     const authenticatedShop = (req as any).shop;
