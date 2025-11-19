@@ -53,7 +53,7 @@
     }
     
     var script = document.createElement('script');
-    script.src = 'https://naay-agent-app1763504937.azurewebsites.net/static/naay-widget.js';
+    script.src = 'https://naay-agent-app1763504937.azurewebsites.net/static/naay-widget.js?v=' + Date.now();
     script.async = true;
     script.onload = function() {
       if (window.NaayWidget && window.NaayConfig) {
