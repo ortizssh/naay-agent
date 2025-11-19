@@ -47,8 +47,12 @@ jobs:
     - name: Install backend dependencies
       run: |
         cd backend
+        echo "Installing backend dependencies..."
+        cat package.json
         # Use npm install instead of npm ci since package-lock.json might be missing
-        npm install
+        npm install --verbose
+        echo "Backend npm install completed"
+        ls -la
 
     - name: Install widget dependencies
       run: |
@@ -58,10 +62,16 @@ jobs:
         
     - name: Verify backend node_modules exists
       run: |
+        echo "Checking if backend/node_modules exists..."
         ls -la backend/
         if [ ! -d "backend/node_modules" ]; then
-          echo "ERROR: backend/node_modules not found after npm ci"
+          echo "ERROR: backend/node_modules not found after npm install"
+          echo "Contents of backend directory:"
+          find backend -type f -name "*.log" -exec cat {} \;
           exit 1
+        else
+          echo "✅ backend/node_modules found successfully"
+          echo "Node modules count: $(ls backend/node_modules | wc -l)"
         fi
 
     - name: Lint code
