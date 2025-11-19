@@ -174,7 +174,7 @@ export class QueueService {
       // Product sync worker
       const syncWorker = new Worker(
         'product-sync',
-        async (job: Job<SyncJobData>) => {
+        async (job: any) => {
           const { shop, accessToken, type, productId } = job.data;
 
           logger.info(`Processing ${type} job for shop: ${shop}`, {
@@ -215,7 +215,7 @@ export class QueueService {
       // Embedding worker
       const embeddingWorker = new Worker(
         'embeddings',
-        async (job: Job<EmbeddingJobData>) => {
+        async (job: any) => {
           const { shop, productId, variantId, content, metadata } = job.data;
 
           logger.info(`Generating embedding for product: ${productId}`, {
@@ -270,7 +270,7 @@ export class QueueService {
     }
   }
 
-  private async processFullSync(shop: string, accessToken: string, job: Job) {
+  private async processFullSync(shop: string, accessToken: string, job: any) {
     logger.info(`Starting full sync for shop: ${shop}`);
 
     // Update job progress
@@ -395,7 +395,7 @@ export class QueueService {
     shop: string,
     accessToken: string,
     productId: string,
-    job: Job
+    job: any
   ) {
     // Fetch single product from Shopify
     const product = await this.shopifyService.getProduct(
