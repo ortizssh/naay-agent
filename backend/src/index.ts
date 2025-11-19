@@ -89,6 +89,7 @@ async function startServer() {
             <title>Naay Agent - Admin Panel</title>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
             <style>
               body { 
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -160,29 +161,103 @@ async function startServer() {
               
               <div class="section">
                 <h2>📊 Estado del Sistema</h2>
-                <p><strong>Servidor:</strong> ✅ En línea</p>
-                <p><strong>Base de datos:</strong> ⏳ Verificando conexión...</p>
-                <p><strong>OpenAI:</strong> ⏳ Verificando conexión...</p>
+                <p><strong>Servidor:</strong> <span id="server-status">⏳ Verificando...</span></p>
+                <p><strong>Base de datos:</strong> <span id="db-status">⏳ Verificando conexión...</span></p>
+                <p><strong>OpenAI:</strong> <span id="ai-status">⏳ Verificando conexión...</span></p>
                 <p><strong>Última actualización:</strong> ${new Date().toLocaleString('es-ES')}</p>
               </div>
             </div>
             
             <script>
-              function syncProducts() {
-                alert('Sincronización iniciada - revisar logs para seguimiento');
-                fetch('/api/products/sync', { method: 'POST' })
-                  .then(r => r.json())
-                  .then(data => console.log('Sync result:', data))
-                  .catch(err => console.error('Sync error:', err));
+              // Initialize App Bridge 3.0
+              let app = null;
+              const host = '${host || ''}';
+              
+              if (host && typeof AppBridge !== 'undefined') {
+                try {
+                  app = AppBridge.createApp({
+                    apiKey: '${config.shopify.apiKey}',
+                    host: host,
+                    forceRedirect: true
+                  });
+                  console.log('App Bridge 3.0 initialized successfully');
+                } catch (error) {
+                  console.error('Failed to initialize App Bridge:', error);
+                }
+              } else if (!host) {
+                console.warn('No host parameter provided - App Bridge cannot initialize');
               }
               
-              function testChat() {
-                window.open('/api/chat/test', '_blank');
-              }
+              // Function definitions
+              window.syncProducts = async function() {
+                try {
+                  // Show loading state
+                  const button = document.querySelector('button[onclick="syncProducts()"]');
+                  const originalText = button.textContent;
+                  button.textContent = 'Sincronizando...';
+                  button.disabled = true;
+                  
+                  const response = await fetch('/api/products/sync', { 
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': 'Bearer ${token || ''}'
+                    }
+                  });
+                  
+                  const data = await response.json();
+                  
+                  if (data.success) {
+                    alert('✅ Sincronización iniciada correctamente. Revisa los logs para seguimiento.');
+                  } else {
+                    alert('❌ Error en sincronización: ' + data.error);
+                  }
+                  
+                  // Restore button
+                  button.textContent = originalText;
+                  button.disabled = false;
+                  
+                } catch (error) {
+                  console.error('Sync error:', error);
+                  alert('❌ Error de conexión durante la sincronización');
+                }
+              };
               
-              function viewLogs() {
-                alert('Los logs están disponibles en Azure Portal');
-              }
+              window.testChat = function() {
+                if (app) {
+                  // Use App Bridge 3.0 actions
+                  app.dispatch(AppBridge.actions.Navigation.navigate('/api/chat/test'));
+                } else {
+                  window.open('/api/chat/test', '_blank');
+                }
+              };
+              
+              window.viewLogs = function() {
+                const azureLogUrl = 'https://portal.azure.com/#view/WebsitesExtension/LogStreamBlade/resourceId/%2Fsubscriptions%2Fe3b3c1bd-dfeb-4c47-a306-fdcaf6e8b99d%2FresourceGroups%2Fnaay-agent-rg%2Fproviders%2FMicrosoft.Web%2Fsites%2Fnaay-agent-app1763504937';
+                window.open(azureLogUrl, '_blank');
+              };
+              
+              // Check system status on load
+              window.addEventListener('load', async function() {
+                try {
+                  // Check detailed health endpoint
+                  const healthResponse = await fetch('/health/detailed');
+                  const healthData = await healthResponse.json();
+                  
+                  // Update status indicators
+                  document.querySelector('#server-status').textContent = healthData.success ? '✅ En línea' : '❌ Error';
+                  document.querySelector('#db-status').textContent = 
+                    healthData.services?.database === 'healthy' ? '✅ Conectado' : '⚠️ Error de conexión';
+                  document.querySelector('#ai-status').textContent = 
+                    healthData.services?.openai === 'healthy' ? '✅ Conectado' : '⚠️ Error de conexión';
+                  
+                } catch (error) {
+                  console.error('Health check failed:', error);
+                  document.querySelector('#server-status').textContent = '❌ Error';
+                  document.querySelector('#db-status').textContent = '❌ Error';
+                  document.querySelector('#ai-status').textContent = '❌ Error';
+                }
+              });
             </script>
           </body>
           </html>

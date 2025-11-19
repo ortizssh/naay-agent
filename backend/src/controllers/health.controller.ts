@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { SupabaseService } from '@/services/supabase.service';
 import { logger } from '@/utils/logger';
+import { config } from '@/utils/config';
+import OpenAI from 'openai';
 
 const router = Router();
 
@@ -25,6 +27,7 @@ router.get('/detailed', async (req: Request, res: Response) => {
     version: process.env.npm_package_version || '1.0.0',
     services: {
       database: 'unknown',
+      openai: 'unknown',
       memory: {
         used: process.memoryUsage().heapUsed,
         total: process.memoryUsage().heapTotal,
@@ -33,8 +36,8 @@ router.get('/detailed', async (req: Request, res: Response) => {
     },
   };
 
+  // Check Supabase connection
   try {
-    // Check Supabase connection
     const supabaseService = new SupabaseService();
     await (supabaseService as any).serviceClient
       .from('stores')
@@ -44,6 +47,22 @@ router.get('/detailed', async (req: Request, res: Response) => {
   } catch (error) {
     logger.error('Database health check failed:', error);
     health.services.database = 'unhealthy';
+    health.success = false;
+    health.status = 'unhealthy';
+  }
+
+  // Check OpenAI connection
+  try {
+    const openai = new OpenAI({
+      apiKey: config.openai.apiKey,
+    });
+    
+    // Simple test to check if API key is valid
+    await openai.models.list();
+    health.services.openai = 'healthy';
+  } catch (error) {
+    logger.error('OpenAI health check failed:', error);
+    health.services.openai = 'unhealthy';
     health.success = false;
     health.status = 'unhealthy';
   }
