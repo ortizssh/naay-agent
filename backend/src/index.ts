@@ -328,6 +328,29 @@ async function startServer() {
       }
     });
 
+    // Traditional OAuth install route
+    app.get('/install', (req, res) => {
+      const { shop } = req.query;
+      
+      if (!shop) {
+        return res.status(400).json({
+          success: false,
+          error: 'Shop parameter required'
+        });
+      }
+      
+      // Redirect to OAuth flow
+      const scopes = 'read_products,write_products,read_orders,read_customers';
+      const redirectUri = `${config.shopify.appUrl}/auth/callback`;
+      const installUrl = `https://${shop}/admin/oauth/authorize` +
+        `?client_id=${config.shopify.apiKey}` +
+        `&scope=${scopes}` +
+        `&redirect_uri=${redirectUri}` +
+        `&state=${Date.now()}`;
+      
+      res.redirect(installUrl);
+    });
+
     // API Routes
     app.use('/auth', authRoutes);
     app.use('/api/products', productRoutes);
