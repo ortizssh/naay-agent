@@ -1,6 +1,7 @@
 /**
  * Naay AI Chat Widget
- * Version: 1.0.0
+ * Version: 2.0.0 - 2025.11.19
+ * Cache Refresh: Force browser refresh
  * 
  * This script creates a floating chat widget for Shopify stores
  */
@@ -46,7 +47,8 @@
     }
 
     init() {
-      console.log('Initializing Naay Widget for shop:', this.config.shopDomain);
+      console.log('🌿 Initializing Naay Widget v2.0.0 - Cache Refresh:', new Date().getTime());
+      console.log('Shop:', this.config.shopDomain);
       
       // Load settings from server
       this.loadSettings().then(() => {

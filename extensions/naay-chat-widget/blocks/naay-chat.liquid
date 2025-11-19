@@ -10,8 +10,8 @@
 
 <!-- Fallback: Create chat bubble immediately if JS fails -->
 <div id="naay-chat-fallback" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;">
-  <div id="naay-chat-bubble" style="width: 60px; height: 60px; background: {{ block.settings.primary_color | default: '#008060' }}; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: pointer; transition: all 0.3s ease;">
-    <span style="font-size: 24px; color: white;">{{ block.settings.avatar | default: '🤖' }}</span>
+  <div id="naay-chat-bubble" style="width: 60px; height: 60px; background: {{ block.settings.primary_color | default: '#8B5A3C' }}; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: pointer; transition: all 0.3s ease;">
+    <span style="font-size: 24px; color: white;">{{ block.settings.avatar | default: '🌿' }}</span>
   </div>
 </div>
 
@@ -21,11 +21,11 @@
     shopDomain: '{{ shop.permanent_domain }}',
     apiEndpoint: '{{ block.settings.api_endpoint | default: "https://naay-agent-app1763504937.azurewebsites.net" }}',
     position: '{{ block.settings.position | default: "bottom-right" }}',
-    primaryColor: '{{ block.settings.primary_color | default: "#007bff" }}',
-    greeting: '{{ block.settings.greeting | default: "Hi! How can I help you find the perfect products today?" | escape }}',
-    placeholder: '{{ block.settings.placeholder | default: "Type your message..." | escape }}',
+    primaryColor: '{{ block.settings.primary_color | default: "#8B5A3C" }}',
+    greeting: '{{ block.settings.greeting | default: "¡Hola! 🌿 Soy tu asistente de Naay. ¿Cómo puedo ayudarte a encontrar el cuidado perfecto para tu piel?" | escape }}',
+    placeholder: '{{ block.settings.placeholder | default: "Escribe tu mensaje..." | escape }}',
     theme: '{{ block.settings.theme | default: "auto" }}',
-    avatar: '{{ block.settings.avatar | default: "🤖" | escape }}',
+    avatar: '{{ block.settings.avatar | default: "🌿" | escape }}',
     language: '{{ request.locale.iso_code | default: "en" }}',
     
     // Shopify-specific context
@@ -64,7 +64,7 @@
     
     // Try to load full widget
     var script = document.createElement('script');
-    script.src = '{{ block.settings.widget_url | default: "https://naay-agent-app1763504937.azurewebsites.net/static/naay-widget.js" }}';
+    script.src = '{{ block.settings.widget_url | default: "https://naay-agent-app1763504937.azurewebsites.net/static/naay-widget.js" }}?v=' + new Date().getTime();
     script.async = true;
     
     script.onload = function() {
@@ -132,7 +132,7 @@
   #naay-chat-bubble {
     width: 60px !important;
     height: 60px !important;
-    background: {{ block.settings.primary_color | default: '#008060' }} !important;
+    background: {{ block.settings.primary_color | default: '#8B5A3C' }} !important;
     border-radius: 50% !important;
     display: flex !important;
     align-items: center !important;
@@ -224,7 +224,7 @@
       "type": "color",
       "id": "primary_color",
       "label": "Primary Color",
-      "default": "#007bff"
+      "default": "#8B5A3C"
     },
     {
       "type": "select",
@@ -241,7 +241,7 @@
       "type": "text",
       "id": "avatar",
       "label": "Avatar",
-      "default": "🤖",
+      "default": "🌿",
       "info": "Emoji or character to show as avatar"
     },
     {
@@ -252,14 +252,14 @@
       "type": "textarea",
       "id": "greeting",
       "label": "Greeting Message",
-      "default": "Hi! How can I help you find the perfect products today?",
+      "default": "¡Hola! 🌿 Soy tu asistente de Naay. ¿Cómo puedo ayudarte a encontrar el cuidado perfecto para tu piel?",
       "info": "First message customers see when opening chat"
     },
     {
       "type": "text",
       "id": "placeholder",
       "label": "Input Placeholder",
-      "default": "Type your message...",
+      "default": "Escribe tu mensaje...",
       "info": "Placeholder text in the message input"
     },
     {
