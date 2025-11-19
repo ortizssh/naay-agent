@@ -27,26 +27,54 @@ async function startServer() {
 
     const app = express();
 
-    // Security middleware - allow iframe embedding for Shopify
-    app.use(
-      helmet({
-        contentSecurityPolicy: {
-          directives: {
-            frameAncestors: [
-              "'self'",
-              'https://*.shopify.com',
-              'https://admin.shopify.com',
-            ],
+    // Widget-specific middleware BEFORE other security middleware
+    app.use('/static', (req, res, next) => {
+      if (req.path.includes('naay-widget.js')) {
+        // Completely override all security headers for widget script
+        res.removeHeader('X-Frame-Options');
+        res.removeHeader('Content-Security-Policy');
+        res.removeHeader('Cross-Origin-Resource-Policy');
+        res.removeHeader('Cross-Origin-Opener-Policy');
+        
+        // Set permissive headers for widget script loading
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', '*');
+        res.setHeader('Access-Control-Max-Age', '86400');
+        res.setHeader('X-Frame-Options', 'ALLOWALL');
+        res.setHeader('Content-Security-Policy', '');
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+        
+        console.log('Widget script requested - CORS headers set');
+      }
+      next();
+    });
+
+    // Security middleware - allow iframe embedding for Shopify (but not for widget files)
+    app.use((req, res, next) => {
+      if (!req.path.includes('naay-widget.js')) {
+        helmet({
+          contentSecurityPolicy: {
+            directives: {
+              frameAncestors: [
+                "'self'",
+                'https://*.shopify.com',
+                'https://*.shop.app',
+                'https://admin.shopify.com',
+              ],
+            },
           },
-        },
-        frameguard: false, // Disable frameguard to allow iframe
-      })
-    );
+          frameguard: false, // Disable frameguard to allow iframe
+        })(req, res, next);
+      } else {
+        next();
+      }
+    });
     app.use(
       cors({
         origin:
           process.env.NODE_ENV === 'production'
-            ? [config.shopify.appUrl, /.*\.shopify\.com$/]
+            ? [config.shopify.appUrl, /.*\.shopify\.com$/, /.*\.shop\.app$/]
             : ['http://localhost:3000', 'http://localhost:3001'],
         credentials: true,
       })
@@ -57,7 +85,7 @@ async function startServer() {
       res.setHeader('X-Frame-Options', 'ALLOWALL');
       res.setHeader(
         'Content-Security-Policy',
-        "frame-ancestors 'self' https://*.shopify.com https://admin.shopify.com;"
+        "frame-ancestors 'self' https://*.shopify.com https://*.shop.app https://admin.shopify.com;"
       );
       next();
     });
@@ -92,6 +120,35 @@ async function startServer() {
       },
       express.static(path.join(__dirname, 'public'))
     );
+
+    // Public widget endpoint (direct route with CORS)
+    app.get('/widget/naay-widget.js', (req, res) => {
+      try {
+        // Set complete CORS headers
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', '*');
+        res.setHeader('Access-Control-Max-Age', '86400');
+        
+        // Anti-cache headers
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+        res.setHeader('ETag', 'v2.1.0-' + Date.now());
+        
+        // Set content type
+        res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+        
+        console.log('🔥 Widget script served with CORS headers to:', req.get('Origin') || 'no-origin');
+        
+        // Send file using express static file sending
+        res.sendFile(path.join(__dirname, 'public', 'naay-widget.js'));
+        
+      } catch (error) {
+        console.error('Error serving widget:', error);
+        res.status(500).json({ error: 'Failed to serve widget' });
+      }
+    });
 
     // Health check (before auth)
     app.use('/health', healthRoutes);
