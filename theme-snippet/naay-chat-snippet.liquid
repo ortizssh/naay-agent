@@ -1,0 +1,87 @@
+{% comment %}
+  Naay AI Chat Widget - Manual Installation
+  
+  Instructions:
+  1. Copy this code
+  2. Go to Shopify Admin → Online Store → Themes
+  3. Click "Actions" → "Edit code" on your active theme
+  4. Navigate to "Snippets" folder
+  5. Click "Add a new snippet" and name it "naay-chat-widget"
+  6. Paste this code and save
+  7. In theme.liquid, add this before </body>: {% render 'naay-chat-widget' %}
+{% endcomment %}
+
+<div id="naay-chat-container" data-shop="{{ shop.permanent_domain }}" style="display: none;">
+  <!-- Widget will be initialized here by JavaScript -->
+</div>
+
+<script>
+  // Configuration for the Naay Widget
+  window.NaayConfig = {
+    shopDomain: '{{ shop.permanent_domain }}',
+    apiEndpoint: 'https://naay-agent-app1763504937.azurewebsites.net',
+    position: 'bottom-right',
+    primaryColor: '#008060',
+    greeting: '¡Hola! 👋 Soy tu asistente virtual. ¿En qué puedo ayudarte?',
+    placeholder: 'Escribe tu mensaje...',
+    theme: 'auto',
+    avatar: '🤖',
+    language: 'es',
+    
+    // Shopify-specific context
+    context: {
+      customerLoggedIn: {% if customer %}true{% else %}false{% endif %},
+      customerId: {% if customer %}'{{ customer.id }}'{% else %}null{% endif %},
+      customerEmail: {% if customer %}'{{ customer.email | escape }}'{% else %}null{% endif %},
+      currency: '{{ cart.currency.iso_code }}',
+      shopName: '{{ shop.name | escape }}',
+      cartToken: {{ cart.token | json }},
+      cartId: {% if cart.id %}'gid://shopify/Cart/{{ cart.id }}'{% else %}null{% endif %},
+      pageType: '{{ request.page_type }}',
+      productId: {% if product %}'gid://shopify/Product/{{ product.id }}'{% else %}null{% endif %},
+      collectionId: {% if collection %}'gid://shopify/Collection/{{ collection.id }}'{% else %}null{% endif %}
+    }
+  };
+</script>
+
+<!-- Load the Naay Widget -->
+<script>
+  (function() {
+    // Don't load in admin preview or checkout
+    if (window.location.hostname.includes('admin') || window.location.pathname.includes('/checkouts/')) {
+      return;
+    }
+    
+    var script = document.createElement('script');
+    script.src = 'https://naay-agent-app1763504937.azurewebsites.net/static/naay-widget.js';
+    script.async = true;
+    script.onload = function() {
+      if (window.NaayWidget && window.NaayConfig) {
+        try {
+          new window.NaayWidget(window.NaayConfig);
+          document.getElementById('naay-chat-container').style.display = 'block';
+        } catch (error) {
+          console.error('Failed to initialize Naay Widget:', error);
+        }
+      }
+    };
+    script.onerror = function() {
+      console.error('Failed to load Naay Widget script');
+    };
+    document.head.appendChild(script);
+  })();
+</script>
+
+<style>
+  /* Ensure widget doesn't interfere with theme */
+  #naay-chat-container {
+    position: relative;
+    z-index: 9999;
+  }
+  
+  /* Hide widget in admin areas */
+  .shopify-section-header #naay-chat-container,
+  .admin #naay-chat-container {
+    display: none !important;
+  }
+</style>

@@ -3,15 +3,23 @@
   This block embeds the Naay AI chat widget into any Shopify theme
 {% endcomment %}
 
-<div id="naay-chat-container" data-shop="{{ shop.permanent_domain }}" style="display: none;">
-  <!-- Widget will be initialized here by JavaScript -->
+<!-- Naay Chat Widget Container -->
+<div id="naay-chat-container" data-shop="{{ shop.permanent_domain }}">
+  <!-- Chat bubble will be created here -->
+</div>
+
+<!-- Fallback: Create chat bubble immediately if JS fails -->
+<div id="naay-chat-fallback" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;">
+  <div id="naay-chat-bubble" style="width: 60px; height: 60px; background: {{ block.settings.primary_color | default: '#008060' }}; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: pointer; transition: all 0.3s ease;">
+    <span style="font-size: 24px; color: white;">{{ block.settings.avatar | default: '🤖' }}</span>
+  </div>
 </div>
 
 <script>
   // Configuration for the Naay Widget
   window.NaayConfig = {
     shopDomain: '{{ shop.permanent_domain }}',
-    apiEndpoint: '{{ block.settings.api_endpoint | default: "https://api.naay.app" }}',
+    apiEndpoint: '{{ block.settings.api_endpoint | default: "https://naay-agent-app1763504937.azurewebsites.net" }}',
     position: '{{ block.settings.position | default: "bottom-right" }}',
     primaryColor: '{{ block.settings.primary_color | default: "#007bff" }}',
     greeting: '{{ block.settings.greeting | default: "Hi! How can I help you find the perfect products today?" | escape }}',
@@ -39,28 +47,69 @@
 <!-- Load the Naay Widget -->
 <script>
   (function() {
+    console.log('Naay Chat: Initializing widget...');
+    
     // Don't load in admin preview or checkout
     if (window.location.hostname.includes('admin') || window.location.pathname.includes('checkout')) {
+      console.log('Naay Chat: Skipping load in admin/checkout');
       return;
     }
     
+    // Show fallback bubble immediately
+    var fallback = document.getElementById('naay-chat-fallback');
+    if (fallback) {
+      fallback.style.display = 'block';
+      console.log('Naay Chat: Fallback bubble shown');
+    }
+    
+    // Try to load full widget
     var script = document.createElement('script');
-    script.src = '{{ block.settings.widget_url | default: "https://cdn.naay.app/widget/latest/naay-widget.js" }}';
+    script.src = '{{ block.settings.widget_url | default: "https://naay-agent-app1763504937.azurewebsites.net/static/naay-widget.js" }}';
     script.async = true;
+    
     script.onload = function() {
+      console.log('Naay Chat: Widget script loaded');
       if (window.NaayWidget && window.NaayConfig) {
         try {
+          // Hide fallback bubble
+          if (fallback) fallback.style.display = 'none';
+          
+          // Initialize full widget
           new window.NaayWidget(window.NaayConfig);
-          document.getElementById('naay-chat-container').style.display = 'block';
+          console.log('Naay Chat: Widget initialized successfully');
         } catch (error) {
           console.error('Failed to initialize Naay Widget:', error);
+          // Keep fallback bubble visible
+          if (fallback) fallback.style.display = 'block';
         }
       }
     };
+    
     script.onerror = function() {
       console.error('Failed to load Naay Widget script');
+      // Keep fallback bubble visible
+      if (fallback) {
+        fallback.style.display = 'block';
+        // Add click handler to fallback
+        var bubble = document.getElementById('naay-chat-bubble');
+        if (bubble) {
+          bubble.onclick = function() {
+            alert('Chat widget is loading... Please try again in a moment.');
+          };
+        }
+      }
     };
+    
     document.head.appendChild(script);
+    
+    // Timeout fallback
+    setTimeout(function() {
+      if (!window.NaayWidget && fallback) {
+        console.log('Naay Chat: Widget failed to load, keeping fallback');
+        fallback.style.display = 'block';
+      }
+    }, 5000);
+    
   })();
 </script>
 
@@ -68,13 +117,67 @@
   /* Ensure widget doesn't interfere with theme */
   #naay-chat-container {
     position: relative;
-    z-index: 1000;
+    z-index: 9999;
+  }
+  
+  /* Fallback chat bubble styling */
+  #naay-chat-fallback {
+    position: fixed !important;
+    bottom: 20px !important;
+    right: 20px !important;
+    z-index: 9999 !important;
+    pointer-events: auto !important;
+  }
+  
+  #naay-chat-bubble {
+    width: 60px !important;
+    height: 60px !important;
+    background: {{ block.settings.primary_color | default: '#008060' }} !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    border: none !important;
+    outline: none !important;
+  }
+  
+  #naay-chat-bubble:hover {
+    transform: scale(1.1) !important;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.25) !important;
+  }
+  
+  #naay-chat-bubble span {
+    font-size: 24px !important;
+    color: white !important;
+    line-height: 1 !important;
   }
   
   /* Hide widget in admin areas */
   .shopify-section-header #naay-chat-container,
-  .admin #naay-chat-container {
+  .shopify-section-header #naay-chat-fallback,
+  .admin #naay-chat-container,
+  .admin #naay-chat-fallback {
     display: none !important;
+  }
+  
+  /* Mobile responsiveness */
+  @media (max-width: 768px) {
+    #naay-chat-fallback {
+      bottom: 15px !important;
+      right: 15px !important;
+    }
+    
+    #naay-chat-bubble {
+      width: 55px !important;
+      height: 55px !important;
+    }
+    
+    #naay-chat-bubble span {
+      font-size: 20px !important;
+    }
   }
 </style>
 
@@ -88,17 +191,17 @@
       "content": "API Configuration"
     },
     {
-      "type": "url",
+      "type": "text",
       "id": "api_endpoint",
       "label": "API Endpoint",
-      "default": "https://api.naay.app",
+      "default": "https://naay-agent-app1763504937.azurewebsites.net",
       "info": "URL of your Naay backend server"
     },
     {
-      "type": "url", 
+      "type": "text", 
       "id": "widget_url",
       "label": "Widget Script URL",
-      "default": "https://cdn.naay.app/widget/latest/naay-widget.js",
+      "default": "https://naay-agent-app1763504937.azurewebsites.net/static/naay-widget.js",
       "info": "URL of the widget JavaScript file"
     },
     {
@@ -180,17 +283,6 @@
       "id": "custom_css",
       "label": "Custom CSS",
       "info": "Additional CSS for widget customization"
-    }
-  ],
-  "presets": [
-    {
-      "name": "Naay AI Chat",
-      "settings": {
-        "enabled": true,
-        "position": "bottom-right",
-        "primary_color": "#007bff",
-        "greeting": "Hi! How can I help you find the perfect products today?"
-      }
     }
   ]
 }
