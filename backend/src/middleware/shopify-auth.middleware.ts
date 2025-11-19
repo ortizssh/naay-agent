@@ -151,7 +151,9 @@ export const validateAuth = async (
     if (sessionToken && sessionToken.split('.').length === 3) {
       // Try to validate as session token
       try {
-        const payload = jwt.decode(sessionToken, { complete: false }) as any;
+        // Manual JWT decode for inspection (just the payload part)
+        const parts = sessionToken.split('.');
+        const payload = parts.length === 3 ? JSON.parse(Buffer.from(parts[1], 'base64').toString()) : null;
         if (payload && payload.dest && payload.aud) {
           // This looks like a session token, validate it
           return await validateSessionToken(req, res, next);
