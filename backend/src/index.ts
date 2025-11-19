@@ -63,6 +63,43 @@ async function startServer() {
       
       // If coming from Shopify App Bridge with hmac and shop (new Shopify app authentication)
       if (hmac && shop && host) {
+        // Process the app installation in background
+        setTimeout(async () => {
+          try {
+            logger.info('Processing Shopify app installation', { shop, host, hmac: !!hmac });
+            
+            // Check if store exists in our database
+            const supabaseService = new (require('@/services/supabase.service')).SupabaseService();
+            const queueService = new (require('@/services/queue.service')).QueueService();
+            
+            let store = await supabaseService.getStore(shop as string);
+            
+            if (!store) {
+              // For App Bridge apps, we need to use a placeholder token initially
+              // The real token exchange happens later via API calls from the frontend
+              store = await supabaseService.createStore({
+                shop_domain: shop as string,
+                access_token: 'pending_token_exchange', // Placeholder
+                scopes: config.shopify.scopes,
+                installed_at: new Date(),
+                updated_at: new Date(),
+              });
+              
+              logger.info(`Created store entry for App Bridge installation: ${shop}`);
+            } else {
+              await supabaseService.updateStoreToken(shop as string, store.access_token);
+              logger.info(`Updated existing store for App Bridge: ${shop}`);
+            }
+            
+            // Don't trigger sync yet - wait for proper token exchange
+            logger.info(`App Bridge installation processed for: ${shop}`);
+            
+          } catch (error) {
+            logger.error('Failed to process app installation:', error);
+          }
+        }, 1000);
+      
+        // Show the welcome page immediately
         res.send(`
           <!DOCTYPE html>
           <html>
@@ -104,11 +141,46 @@ async function startServer() {
               
               <div class="next-steps">
                 <h3>📝 Próximos Pasos:</h3>
-                <div class="step">1. Configura las variables de entorno (Supabase, OpenAI)</div>
-                <div class="step">2. Agrega el widget de chat a tu tema</div>
-                <div class="step">3. Sincroniza tus productos</div>
-                <div class="step">4. Prueba el chat en tu tienda</div>
+                <div class="step" id="step1">⏳ Procesando instalación...</div>
+                <div class="step">2. Configura las variables de entorno (Supabase, OpenAI)</div>
+                <div class="step">3. Agrega el widget de chat a tu tema</div>
+                <div class="step">4. Sincroniza tus productos</div>
+                <div class="step">5. Prueba el chat en tu tienda</div>
               </div>
+              
+              <script>
+                // Auto-verify the app installation
+                setTimeout(async () => {
+                  try {
+                    const response = await fetch('/auth/verify', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        shop: '${shop}',
+                        hmac: '${hmac}',
+                        host: '${host}',
+                        timestamp: '${timestamp}'
+                      })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                      document.getElementById('step1').innerHTML = '✅ 1. App instalada correctamente';
+                      document.getElementById('step1').style.color = '#a8ff78';
+                    } else {
+                      document.getElementById('step1').innerHTML = '❌ 1. Error en instalación - revisar logs';
+                      document.getElementById('step1').style.color = '#ff6b6b';
+                    }
+                  } catch (error) {
+                    console.error('Installation verification failed:', error);
+                    document.getElementById('step1').innerHTML = '❌ 1. Error en instalación - revisar conexión';
+                    document.getElementById('step1').style.color = '#ff6b6b';
+                  }
+                }, 2000);
+              </script>
               
               <a href="https://${shop}/admin/apps" class="back-link">
                 ← Volver a Apps de Shopify

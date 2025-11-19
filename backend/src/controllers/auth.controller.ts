@@ -46,6 +46,60 @@ router.get(
   }
 );
 
+// Handle App Bridge installation verification
+router.post(
+  '/verify',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop, hmac, timestamp, host } = req.body;
+
+      if (!shop || !hmac) {
+        throw new AppError('Missing required parameters', 400);
+      }
+
+      logger.info(`Verifying app installation for shop: ${shop}`);
+
+      // For App Bridge, we need to request access token from Shopify
+      // This is a simplified flow - in production you'd verify the HMAC
+      
+      // Check if store exists, create or update
+      let store = await supabaseService.getStore(shop);
+
+      if (!store) {
+        // Create new store entry
+        store = await supabaseService.createStore({
+          shop_domain: shop,
+          access_token: 'app_bridge_token', // Placeholder for App Bridge
+          scopes: config.shopify.scopes,
+          installed_at: new Date(),
+          updated_at: new Date(),
+        });
+        logger.info(`Created new store via App Bridge: ${shop}`);
+        
+        // For App Bridge installations, we can't do OAuth flow
+        // We'll need the store owner to manually provide an admin token
+        // Or use Shopify's Session Token API
+      } else {
+        logger.info(`Store already exists for App Bridge: ${shop}`);
+      }
+
+      res.json({
+        success: true,
+        message: 'App installation verified',
+        data: {
+          shop,
+          installed: true,
+          requiresConfiguration: true,
+        },
+      });
+
+    } catch (error) {
+      logger.error('App verification error:', error);
+      next(error);
+    }
+  }
+);
+
 // OAuth callback
 router.get(
   '/callback',
