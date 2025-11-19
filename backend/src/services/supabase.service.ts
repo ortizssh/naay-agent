@@ -66,6 +66,28 @@ export class SupabaseService {
     }
   }
 
+  async updateStoreWidget(
+    shopDomain: string,
+    enabled: boolean
+  ): Promise<Store> {
+    const { data, error } = await this.serviceClient
+      .from('stores')
+      .update({ 
+        widget_enabled: enabled, 
+        updated_at: new Date() 
+      })
+      .eq('shop_domain', shopDomain)
+      .select()
+      .single();
+
+    if (error) {
+      logger.error('Error updating store widget setting:', error);
+      throw new Error(`Failed to update widget setting: ${error.message}`);
+    }
+
+    return data;
+  }
+
   async saveProduct(
     shopDomain: string,
     product: ShopifyProduct

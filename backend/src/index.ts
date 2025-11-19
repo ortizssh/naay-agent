@@ -13,6 +13,7 @@ import productRoutes from '@/controllers/product.controller';
 import webhookRoutes from '@/controllers/webhook.controller';
 import chatRoutes from '@/controllers/chat.controller';
 import healthRoutes from '@/controllers/health.controller';
+import widgetRoutes from '@/controllers/widget.controller';
 
 async function startServer() {
   try {
@@ -146,16 +147,30 @@ async function startServer() {
               </div>
               
               <div class="section">
+                <h2>💬 Widget de Chat</h2>
+                <div style="display: flex; align-items: center; gap: 15px; margin: 15px 0;">
+                  <span>Estado del Widget:</span>
+                  <label style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" id="widget-toggle" onchange="toggleWidget()" style="transform: scale(1.5);">
+                    <span id="widget-status-text">Activado</span>
+                  </label>
+                </div>
+                <p style="color: #666; font-size: 14px;">
+                  Cuando está activado, el widget de chat aparece en tu tienda para que los clientes puedan interactuar con el AI.
+                </p>
+              </div>
+              
+              <div class="section">
                 <h2>⚙️ Configuración</h2>
                 <div class="status warning">
                   ⚠️ Completa la configuración de variables de entorno (Supabase, OpenAI)
                 </div>
                 <p>Para activar todas las funcionalidades del chat AI, configura las siguientes variables:</p>
                 <ul>
-                  <li>✅ SHOPIFY_API_KEY - Configurado</li>
-                  <li>✅ SHOPIFY_API_SECRET - Configurado</li>
-                  <li>⏳ SUPABASE_URL - Revisar configuración</li>
-                  <li>⏳ OPENAI_API_KEY - Revisar configuración</li>
+                  <li><span id="shopify-api-status">⏳ Verificando...</span> SHOPIFY_API_KEY</li>
+                  <li><span id="shopify-secret-status">⏳ Verificando...</span> SHOPIFY_API_SECRET</li>
+                  <li><span id="supabase-status">⏳ Verificando...</span> SUPABASE_URL</li>
+                  <li><span id="openai-status">⏳ Verificando...</span> OPENAI_API_KEY</li>
                 </ul>
               </div>
               
@@ -237,6 +252,51 @@ async function startServer() {
                 window.open(azureLogUrl, '_blank');
               };
               
+              // Widget toggle functionality
+              window.toggleWidget = async function() {
+                const toggle = document.getElementById('widget-toggle');
+                const statusText = document.getElementById('widget-status-text');
+                const chatStatusNumber = document.querySelector('.stat-number:last-child');
+                
+                try {
+                  const response = await fetch('/api/widget/toggle', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': 'Bearer ${token || ''}'
+                    },
+                    body: JSON.stringify({
+                      enabled: toggle.checked,
+                      shop: '${shop || ''}'
+                    })
+                  });
+                  
+                  const data = await response.json();
+                  
+                  if (data.success) {
+                    statusText.textContent = toggle.checked ? 'Activado' : 'Desactivado';
+                    chatStatusNumber.textContent = toggle.checked ? 'Active' : 'Disabled';
+                    
+                    // Update the main chat status indicator
+                    const chatStatusDiv = document.querySelector('.stat:nth-child(3)');
+                    if (toggle.checked) {
+                      chatStatusDiv.style.backgroundColor = '#d4edda';
+                      chatStatusDiv.style.color = '#155724';
+                    } else {
+                      chatStatusDiv.style.backgroundColor = '#f8d7da';
+                      chatStatusDiv.style.color = '#721c24';
+                    }
+                  } else {
+                    alert('❌ Error al cambiar estado del widget: ' + data.error);
+                    toggle.checked = !toggle.checked; // Revert toggle
+                  }
+                } catch (error) {
+                  console.error('Widget toggle error:', error);
+                  alert('❌ Error de conexión al cambiar estado del widget');
+                  toggle.checked = !toggle.checked; // Revert toggle
+                }
+              };
+              
               // Check system status on load
               window.addEventListener('load', async function() {
                 try {
@@ -244,15 +304,47 @@ async function startServer() {
                   const healthResponse = await fetch('/health/detailed');
                   const healthData = await healthResponse.json();
                   
-                  // Update status indicators
+                  // Update system status indicators
                   document.querySelector('#server-status').textContent = healthData.success ? '✅ En línea' : '❌ Error';
                   document.querySelector('#db-status').textContent = 
                     healthData.services?.database === 'healthy' ? '✅ Conectado' : '⚠️ Error de conexión';
                   document.querySelector('#ai-status').textContent = 
                     healthData.services?.openai === 'healthy' ? '✅ Conectado' : '⚠️ Error de conexión';
                   
+                  // Update credential status indicators
+                  document.querySelector('#shopify-api-status').textContent = '✅';
+                  document.querySelector('#shopify-secret-status').textContent = '✅';
+                  document.querySelector('#supabase-status').textContent = 
+                    healthData.services?.database === 'healthy' ? '✅' : '⚠️';
+                  document.querySelector('#openai-status').textContent = 
+                    healthData.services?.openai === 'healthy' ? '✅' : '⚠️';
+                  
+                  // Load widget status
+                  const widgetResponse = await fetch('/api/widget/status?shop=${shop || ''}');
+                  const widgetData = await widgetResponse.json();
+                  
+                  if (widgetData.success) {
+                    const toggle = document.getElementById('widget-toggle');
+                    const statusText = document.getElementById('widget-status-text');
+                    const chatStatusNumber = document.querySelector('.stat-number:last-child');
+                    
+                    toggle.checked = widgetData.data.enabled;
+                    statusText.textContent = widgetData.data.enabled ? 'Activado' : 'Desactivado';
+                    chatStatusNumber.textContent = widgetData.data.enabled ? 'Active' : 'Disabled';
+                    
+                    // Update the main chat status indicator
+                    const chatStatusDiv = document.querySelector('.stat:nth-child(3)');
+                    if (widgetData.data.enabled) {
+                      chatStatusDiv.style.backgroundColor = '#d4edda';
+                      chatStatusDiv.style.color = '#155724';
+                    } else {
+                      chatStatusDiv.style.backgroundColor = '#f8d7da';
+                      chatStatusDiv.style.color = '#721c24';
+                    }
+                  }
+                  
                 } catch (error) {
-                  console.error('Health check failed:', error);
+                  console.error('Status check failed:', error);
                   document.querySelector('#server-status').textContent = '❌ Error';
                   document.querySelector('#db-status').textContent = '❌ Error';
                   document.querySelector('#ai-status').textContent = '❌ Error';
@@ -556,6 +648,7 @@ async function startServer() {
     app.use('/api/products', productRoutes);
     app.use('/api/webhooks', webhookRoutes);
     app.use('/api/chat', chatRoutes);
+    app.use('/api/widget', widgetRoutes);
 
     // 404 handler
     app.use('*', (req, res) => {

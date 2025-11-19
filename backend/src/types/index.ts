@@ -6,7 +6,10 @@ export interface ShopifyStore {
   scopes: string;
   installed_at: Date;
   updated_at: Date;
+  widget_enabled?: boolean;
 }
+
+export type Store = ShopifyStore;
 
 export interface ShopifyProduct {
   id: string;
