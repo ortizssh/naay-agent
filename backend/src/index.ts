@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
 import helmet from 'helmet';
 import { config, validateConfig } from '@/utils/config';
 import { logger } from '@/utils/logger';
@@ -60,6 +61,9 @@ async function startServer() {
     app.use('/api/webhooks', express.raw({ type: 'application/json' }));
     app.use(express.json({ limit: '10mb' }));
     app.use(express.urlencoded({ extended: true }));
+
+    // Serve static files for widget
+    app.use('/static', express.static(path.join(__dirname, '../public')));
 
     // Health check (before auth)
     app.use('/health', healthRoutes);

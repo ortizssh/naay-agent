@@ -89,7 +89,18 @@ router.get('/config', async (req: Request, res: Response, next: NextFunction) =>
     const { shop } = req.query;
 
     if (!shop || typeof shop !== 'string') {
-      throw new AppError('Shop parameter is required', 400);
+      return res.json({
+        success: true,
+        data: {
+          enabled: false,
+          welcome_message: '¡Hola! 👋 Soy tu asistente virtual. ¿En qué puedo ayudarte?',
+          chat_position: 'bottom-right',
+          primaryColor: '#008060',
+          auto_open_chat: false,
+          show_agent_avatar: true,
+          enable_product_recommendations: true
+        }
+      });
     }
 
     logger.info(`Getting widget config for shop: ${shop}`);
@@ -97,40 +108,45 @@ router.get('/config', async (req: Request, res: Response, next: NextFunction) =>
     // Get store from database
     const store = await supabaseService.getStore(shop);
     
-    if (!store) {
-      throw new AppError('Store not found', 404);
+    if (!store || !store.widget_enabled) {
+      return res.json({
+        success: true,
+        data: { enabled: false }
+      });
     }
 
-    // Only return config if widget is enabled
-    const widgetEnabled = store.widget_enabled ?? true;
+    // Get app settings
+    const { data: settings, error } = await (supabaseService as any).serviceClient
+      .from('app_settings')
+      .select('*')
+      .eq('shop_domain', shop)
+      .single();
 
-    if (!widgetEnabled) {
-      res.json({
-        success: true,
-        enabled: false,
-        message: 'Widget is disabled',
-      });
-      return;
+    let config = {
+      enabled: store.widget_enabled,
+      greeting: '¡Hola! 👋 Soy tu asistente virtual. ¿En qué puedo ayudarte?',
+      position: 'bottom-right',
+      primaryColor: '#008060',
+      auto_open_chat: false,
+      show_agent_avatar: true,
+      enable_product_recommendations: true
+    };
+
+    if (settings && !error) {
+      config = {
+        enabled: store.widget_enabled && (settings.chat_enabled !== false),
+        greeting: settings.welcome_message || config.greeting,
+        position: settings.chat_position || config.position,
+        primaryColor: settings.chat_color || config.primaryColor,
+        auto_open_chat: settings.auto_open_chat || false,
+        show_agent_avatar: settings.show_agent_avatar !== false,
+        enable_product_recommendations: settings.enable_product_recommendations !== false
+      };
     }
 
     res.json({
       success: true,
-      enabled: true,
-      data: {
-        shop: shop,
-        apiUrl: process.env.SHOPIFY_APP_URL || 'https://naay-agent-app1763504937.azurewebsites.net',
-        theme: {
-          position: 'bottom-right',
-          primaryColor: '#5c6ac4',
-          backgroundColor: '#ffffff',
-          textColor: '#333333',
-        },
-        messages: {
-          welcome: '¡Hola! 👋 Soy tu asistente virtual. ¿En qué puedo ayudarte?',
-          placeholder: 'Escribe tu mensaje...',
-          sendButton: 'Enviar',
-        },
-      },
+      data: config
     });
   } catch (error) {
     logger.error('Error getting widget config:', error);
