@@ -121,7 +121,7 @@ router.post('/update', validateAuth, async (req: Request, res: Response, next: N
     }
 
     // Prepare update object
-    const updateData = {
+    const updateData: any = {
       updated_at: new Date()
     };
 
