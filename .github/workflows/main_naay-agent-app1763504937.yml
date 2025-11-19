@@ -76,12 +76,8 @@ jobs:
         # Copy backend build
         cp -r backend/dist deploy-package/
         
-        # Only copy node_modules if it exists
-        if [ -d "backend/node_modules" ]; then
-          cp -r backend/node_modules deploy-package/
-        else
-          echo "Backend node_modules not found, skipping..."
-        fi
+        # Always copy node_modules - force include for Azure
+        cp -r backend/node_modules deploy-package/
         
         # Copy root files needed
         cp startup.js deploy-package/
@@ -133,10 +129,10 @@ jobs:
         }
         EOF
         
-        # Create .deployment file to enable Azure build
+        # Create .deployment file to disable Azure build (we include node_modules)
         cat > deploy-package/.deployment << 'EOF'
         [config]
-        SCM_DO_BUILD_DURING_DEPLOYMENT=true
+        SCM_DO_BUILD_DURING_DEPLOYMENT=false
         EOF
         
         # Create web.config for Azure
