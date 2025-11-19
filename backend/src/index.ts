@@ -50,6 +50,23 @@ async function startServer() {
       next();
     });
 
+    // Widget API CORS middleware - for widget API endpoints
+    app.use('/api/widget', (req, res, next) => {
+      // Set CORS headers for all widget API endpoints
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+      res.setHeader('Access-Control-Max-Age', '86400');
+      
+      // Handle OPTIONS preflight
+      if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+      }
+      
+      console.log('Widget API request - CORS headers set for:', req.path);
+      next();
+    });
+
     // Security middleware - allow iframe embedding for Shopify (but not for widget files)
     app.use((req, res, next) => {
       if (!req.path.includes('naay-widget.js')) {
