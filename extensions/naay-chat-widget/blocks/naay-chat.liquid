@@ -64,7 +64,7 @@
     
     // Try to load full widget
     var script = document.createElement('script');
-    script.src = '{{ block.settings.widget_url | default: "https://naay-agent-app1763504937.azurewebsites.net/static/naay-widget.js" }}?v=20251119160000&modern_design=' + Math.random() + '&t=' + new Date().getTime();
+    script.src = '{{ block.settings.widget_url | default: "https://naay-agent-app1763504937.azurewebsites.net/static/naay-widget.js" }}?v=210_modern&bust=' + Math.random().toString(36).substr(2, 9) + '&ts=' + Date.now();
     script.async = true;
     
     script.onload = function() {

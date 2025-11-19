@@ -1,8 +1,9 @@
 /**
  * Naay AI Chat Widget
- * Version: 2.1.0 - 2025.11.19
- * Modern Design with Promotional Message
+ * Version: 2.1.0-FINAL - 2025.11.19.17:00
+ * Modern Design with Promotional Message & Anti-Cache
  * 
+ * ⚠️  OFFICIAL WIDGET - No cache, always fresh load
  * This script creates a modern floating chat widget with promotional message
  */
 
@@ -47,7 +48,7 @@
     }
 
     init() {
-      console.log('🌿 Initializing Naay Widget v2.1.0 - Modern Design:', new Date().getTime());
+      console.log('🌿 Initializing Naay Widget v2.1.0-FINAL - OFFICIAL WIDGET LOADED:', new Date().toISOString());
       console.log('Shop:', this.config.shopDomain);
       
       // Load settings from server

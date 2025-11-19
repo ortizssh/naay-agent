@@ -64,8 +64,18 @@ async function startServer() {
     app.use(express.json({ limit: '10mb' }));
     app.use(express.urlencoded({ extended: true }));
 
-    // Serve static files for widget
-    app.use('/static', express.static(path.join(__dirname, 'public')));
+    // Serve static files for widget with anti-cache headers
+    app.use('/static', (req, res, next) => {
+      if (req.path.includes('naay-widget.js')) {
+        // Force no caching for widget file
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+        res.setHeader('Last-Modified', new Date().toUTCString());
+        res.setHeader('ETag', 'v2.1.0-' + Date.now());
+      }
+      next();
+    }, express.static(path.join(__dirname, 'public')));
 
     // Health check (before auth)
     app.use('/health', healthRoutes);
