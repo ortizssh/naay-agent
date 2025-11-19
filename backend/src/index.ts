@@ -17,6 +17,7 @@ import chatRoutes from '@/controllers/chat.controller';
 import healthRoutes from '@/controllers/health.controller';
 import widgetRoutes from '@/controllers/widget.controller';
 import settingsRoutes from '@/controllers/settings.controller';
+import adminRoutes from '@/controllers/admin.controller';
 
 async function startServer() {
   try {
@@ -1504,6 +1505,7 @@ async function startServer() {
     app.use('/api/chat', chatRoutes);
     app.use('/api/widget', widgetRoutes);
     app.use('/api/settings', settingsRoutes);
+    app.use('/api/admin', adminRoutes);
 
     // 404 handler
     app.use('*', (req, res) => {
