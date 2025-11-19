@@ -15,6 +15,7 @@ import webhookAdminRoutes from '@/controllers/webhook-admin.controller';
 import chatRoutes from '@/controllers/chat.controller';
 import healthRoutes from '@/controllers/health.controller';
 import widgetRoutes from '@/controllers/widget.controller';
+import settingsRoutes from '@/controllers/settings.controller';
 
 async function startServer() {
   try {
@@ -93,109 +94,602 @@ async function startServer() {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
             <style>
+              * {
+                box-sizing: border-box;
+              }
+              
               body { 
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                margin: 0; padding: 20px; background: #f7f7f7; color: #333;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                margin: 0; 
+                padding: 0; 
+                background: #f6f6f7; 
+                color: #202223;
+                font-size: 14px;
+                line-height: 1.4;
               }
-              .container { 
-                max-width: 1200px; margin: 0 auto; background: white;
-                padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+              
+              .polaris-page {
+                padding: 24px;
+                max-width: 1200px;
+                margin: 0 auto;
               }
-              h1 { color: #5c6ac4; margin: 0 0 20px; }
-              .stats { display: flex; gap: 20px; margin: 20px 0; }
-              .stat { background: #f9f9f9; padding: 20px; border-radius: 8px; flex: 1; text-align: center; }
-              .stat-number { font-size: 32px; font-weight: bold; color: #5c6ac4; }
-              .stat-label { font-size: 14px; color: #666; margin-top: 5px; }
-              .section { margin: 30px 0; }
-              .button { 
-                background: #5c6ac4; color: white; padding: 12px 24px; 
-                border: none; border-radius: 4px; cursor: pointer; margin: 10px;
+              
+              .polaris-page__header {
+                display: flex;
+                align-items: center;
+                margin-bottom: 24px;
+                padding-bottom: 16px;
+                border-bottom: 1px solid #e1e3e5;
               }
-              .button:hover { background: #4c5aa0; }
-              .status { padding: 10px; border-radius: 4px; margin: 10px 0; }
-              .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-              .status.warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+              
+              .polaris-page__title {
+                font-size: 24px;
+                font-weight: 600;
+                color: #202223;
+                margin: 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+              }
+              
+              .polaris-layout {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 24px;
+              }
+              
+              @media (min-width: 768px) {
+                .polaris-layout {
+                  grid-template-columns: 2fr 1fr;
+                }
+              }
+              
+              .polaris-card {
+                background: #ffffff;
+                border-radius: 8px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                border: 1px solid #e1e3e5;
+                overflow: hidden;
+              }
+              
+              .polaris-card__header {
+                padding: 20px 20px 16px;
+                border-bottom: 1px solid #e1e3e5;
+              }
+              
+              .polaris-card__title {
+                font-size: 16px;
+                font-weight: 600;
+                color: #202223;
+                margin: 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+              }
+              
+              .polaris-card__content {
+                padding: 20px;
+              }
+              
+              .polaris-stats-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 16px;
+                margin-bottom: 24px;
+              }
+              
+              .polaris-stat-card {
+                background: #ffffff;
+                border-radius: 8px;
+                padding: 20px;
+                text-align: center;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                border: 1px solid #e1e3e5;
+              }
+              
+              .polaris-stat-number {
+                font-size: 28px;
+                font-weight: 700;
+                color: #008060;
+                margin-bottom: 4px;
+              }
+              
+              .polaris-stat-label {
+                font-size: 13px;
+                color: #6d7175;
+                font-weight: 500;
+              }
+              
+              .polaris-button {
+                background: #008060;
+                color: #ffffff;
+                border: 1px solid #008060;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                margin: 4px;
+                text-decoration: none;
+              }
+              
+              .polaris-button:hover {
+                background: #005e46;
+                border-color: #005e46;
+              }
+              
+              .polaris-button--secondary {
+                background: #ffffff;
+                color: #202223;
+                border-color: #c9cccf;
+              }
+              
+              .polaris-button--secondary:hover {
+                background: #f6f6f7;
+                border-color: #8c9196;
+              }
+              
+              .polaris-button--destructive {
+                background: #d72c0d;
+                border-color: #d72c0d;
+              }
+              
+              .polaris-button--destructive:hover {
+                background: #bf2a0a;
+                border-color: #bf2a0a;
+              }
+              
+              .polaris-banner {
+                border-radius: 8px;
+                padding: 16px 20px;
+                margin-bottom: 20px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                border: 1px solid;
+              }
+              
+              .polaris-banner--success {
+                background: #f0f9ff;
+                border-color: #b3e5ff;
+                color: #0570de;
+              }
+              
+              .polaris-banner--warning {
+                background: #fff9f0;
+                border-color: #ffcc99;
+                color: #b45309;
+              }
+              
+              .polaris-banner--critical {
+                background: #fef7f7;
+                border-color: #ffc2c2;
+                color: #d72c0d;
+              }
+              
+              .polaris-banner__icon {
+                font-size: 16px;
+                flex-shrink: 0;
+              }
+              
+              .polaris-toggle {
+                position: relative;
+                display: inline-flex;
+                align-items: center;
+                gap: 12px;
+                margin: 16px 0;
+              }
+              
+              .polaris-toggle__input {
+                position: relative;
+                appearance: none;
+                width: 44px;
+                height: 24px;
+                border-radius: 12px;
+                background: #c9cccf;
+                border: 1px solid #8c9196;
+                cursor: pointer;
+                transition: all 0.2s ease;
+              }
+              
+              .polaris-toggle__input:checked {
+                background: #008060;
+                border-color: #008060;
+              }
+              
+              .polaris-toggle__input::after {
+                content: '';
+                position: absolute;
+                top: 2px;
+                left: 2px;
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                background: #ffffff;
+                transition: transform 0.2s ease;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+              }
+              
+              .polaris-toggle__input:checked::after {
+                transform: translateX(20px);
+              }
+              
+              .polaris-toggle__label {
+                font-size: 14px;
+                font-weight: 500;
+                color: #202223;
+              }
+              
+              .polaris-status-list {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+              }
+              
+              .polaris-status-list li {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 8px 0;
+                border-bottom: 1px solid #f1f2f3;
+              }
+              
+              .polaris-status-list li:last-child {
+                border-bottom: none;
+              }
+              
+              .polaris-status-indicator {
+                font-size: 16px;
+                min-width: 20px;
+              }
+              
+              .polaris-stack {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+              }
+              
+              .polaris-stack--horizontal {
+                flex-direction: row;
+                flex-wrap: wrap;
+                align-items: center;
+              }
+              
+              .polaris-text {
+                font-size: 14px;
+                line-height: 1.4;
+                color: #6d7175;
+              }
+              
+              .polaris-text--body {
+                color: #202223;
+              }
+              
+              .polaris-text--subdued {
+                color: #8c9196;
+              }
+              
+              .polaris-description-list {
+                display: grid;
+                grid-template-columns: 1fr 2fr;
+                gap: 8px 16px;
+                align-items: center;
+              }
+              
+              .polaris-description-list dt {
+                font-weight: 600;
+                color: #202223;
+                font-size: 14px;
+              }
+              
+              .polaris-description-list dd {
+                margin: 0;
+                color: #6d7175;
+                font-size: 14px;
+              }
+              
+              .polaris-webhook-stats {
+                background: #f6f6f7;
+                border-radius: 6px;
+                padding: 16px;
+                margin: 16px 0;
+                border: 1px solid #e1e3e5;
+              }
+              
+              .polaris-icon {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 20px;
+                height: 20px;
+                font-size: 14px;
+              }
+              
+              @media (max-width: 767px) {
+                .polaris-page {
+                  padding: 16px;
+                }
+                
+                .polaris-stats-grid {
+                  grid-template-columns: 1fr;
+                }
+                
+                .polaris-stack--horizontal {
+                  flex-direction: column;
+                  align-items: stretch;
+                }
+                
+                .polaris-description-list {
+                  grid-template-columns: 1fr;
+                  gap: 4px 0;
+                }
+                
+                .polaris-description-list dt {
+                  font-weight: 700;
+                }
+              }
             </style>
           </head>
           <body>
-            <div class="container">
-              <h1>🤖 Naay Agent - Panel de Administración</h1>
-              
-              <div class="status success">
-                ✅ App conectada correctamente a ${shop || 'tu tienda'}
+            <div class="polaris-page">
+              <div class="polaris-page__header">
+                <h1 class="polaris-page__title">
+                  <span class="polaris-icon">🤖</span>
+                  Naay Agent
+                </h1>
               </div>
               
-              <div class="stats">
-                <div class="stat">
-                  <div class="stat-number">0</div>
-                  <div class="stat-label">Productos Sincronizados</div>
-                </div>
-                <div class="stat">
-                  <div class="stat-number">0</div>
-                  <div class="stat-label">Conversaciones</div>
-                </div>
-                <div class="stat">
-                  <div class="stat-number">Active</div>
-                  <div class="stat-label">Estado del Chat</div>
+              <div class="polaris-banner polaris-banner--success">
+                <span class="polaris-banner__icon">✅</span>
+                <div>
+                  <strong>Conexión exitosa</strong> - App conectada correctamente a ${shop || 'tu tienda'}
                 </div>
               </div>
               
-              <div class="section">
-                <h2>🚀 Acciones Rápidas</h2>
-                <button class="button" onclick="syncProducts()">Sincronizar Productos</button>
-                <button class="button" onclick="testChat()">Probar Chat</button>
-                <button class="button" onclick="viewLogs()">Ver Logs</button>
-              </div>
-              
-              <div class="section">
-                <h2>💬 Widget de Chat</h2>
-                <div style="display: flex; align-items: center; gap: 15px; margin: 15px 0;">
-                  <span>Estado del Widget:</span>
-                  <label style="display: flex; align-items: center; gap: 8px;">
-                    <input type="checkbox" id="widget-toggle" onchange="toggleWidget()" style="transform: scale(1.5);">
-                    <span id="widget-status-text">Activado</span>
-                  </label>
+              <div class="polaris-stats-grid">
+                <div class="polaris-stat-card">
+                  <div class="polaris-stat-number">0</div>
+                  <div class="polaris-stat-label">Productos Sincronizados</div>
                 </div>
-                <p style="color: #666; font-size: 14px;">
-                  Cuando está activado, el widget de chat aparece en tu tienda para que los clientes puedan interactuar con el AI.
-                </p>
-              </div>
-              
-              <div class="section">
-                <h2>⚙️ Configuración</h2>
-                <div class="status warning">
-                  ⚠️ Completa la configuración de variables de entorno (Supabase, OpenAI)
+                <div class="polaris-stat-card">
+                  <div class="polaris-stat-number">0</div>
+                  <div class="polaris-stat-label">Conversaciones</div>
                 </div>
-                <p>Para activar todas las funcionalidades del chat AI, configura las siguientes variables:</p>
-                <ul>
-                  <li><span id="shopify-api-status">⏳ Verificando...</span> SHOPIFY_API_KEY</li>
-                  <li><span id="shopify-secret-status">⏳ Verificando...</span> SHOPIFY_API_SECRET</li>
-                  <li><span id="supabase-status">⏳ Verificando...</span> SUPABASE_URL</li>
-                  <li><span id="openai-status">⏳ Verificando...</span> OPENAI_API_KEY</li>
-                </ul>
+                <div class="polaris-stat-card">
+                  <div class="polaris-stat-number">Active</div>
+                  <div class="polaris-stat-label">Estado del Chat</div>
+                </div>
               </div>
               
-              <div class="section">
-                <h2>🔗 Webhooks</h2>
-                <div style="margin: 15px 0;">
-                  <p><strong>Estado de webhooks:</strong> <span id="webhook-status">⏳ Verificando...</span></p>
-                  <div id="webhook-stats" style="display: none; margin: 10px 0; padding: 10px; background: #f9f9f9; border-radius: 4px;">
-                    <p style="margin: 5px 0;"><strong>Total de eventos:</strong> <span id="webhook-total">0</span></p>
-                    <p style="margin: 5px 0;"><strong>Eventos hoy:</strong> <span id="webhook-today">0</span></p>
-                    <p style="margin: 5px 0;"><strong>Pendientes:</strong> <span id="webhook-pending">0</span></p>
+              <div class="polaris-layout">
+                <div class="polaris-stack">
+                  <div class="polaris-card">
+                    <div class="polaris-card__header">
+                      <h2 class="polaris-card__title">
+                        <span class="polaris-icon">🚀</span>
+                        Acciones Rápidas
+                      </h2>
+                    </div>
+                    <div class="polaris-card__content">
+                      <div class="polaris-stack polaris-stack--horizontal">
+                        <button class="polaris-button" onclick="syncProducts()">
+                          Sincronizar Productos
+                        </button>
+                        <button class="polaris-button polaris-button--secondary" onclick="testChat()">
+                          Probar Chat
+                        </button>
+                        <button class="polaris-button polaris-button--secondary" onclick="viewLogs()">
+                          Ver Logs
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <button class="button" onclick="recreateWebhooks()">Recrear Webhooks</button>
-                  <button class="button" onclick="testWebhooks()">Probar Conectividad</button>
+                  
+                  <div class="polaris-card">
+                    <div class="polaris-card__header">
+                      <h2 class="polaris-card__title">
+                        <span class="polaris-icon">💬</span>
+                        Widget de Chat
+                      </h2>
+                    </div>
+                    <div class="polaris-card__content">
+                      <div class="polaris-toggle">
+                        <input type="checkbox" id="widget-toggle" class="polaris-toggle__input" onchange="toggleWidget()">
+                        <label class="polaris-toggle__label" for="widget-toggle">
+                          <span id="widget-status-text">Activado</span>
+                        </label>
+                      </div>
+                      <p class="polaris-text">
+                        Cuando está activado, el widget de chat aparece en tu tienda para que los clientes puedan interactuar con el AI.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div class="polaris-card">
+                    <div class="polaris-card__header">
+                      <h2 class="polaris-card__title">
+                        <span class="polaris-icon">🔗</span>
+                        Gestión de Webhooks
+                      </h2>
+                    </div>
+                    <div class="polaris-card__content">
+                      <div class="polaris-description-list">
+                        <dt>Estado de webhooks:</dt>
+                        <dd><span id="webhook-status">⏳ Verificando...</span></dd>
+                      </div>
+                      
+                      <div id="webhook-stats" class="polaris-webhook-stats" style="display: none;">
+                        <div class="polaris-description-list">
+                          <dt>Total de eventos:</dt>
+                          <dd><span id="webhook-total">0</span></dd>
+                          <dt>Eventos hoy:</dt>
+                          <dd><span id="webhook-today">0</span></dd>
+                          <dt>Pendientes:</dt>
+                          <dd><span id="webhook-pending">0</span></dd>
+                        </div>
+                      </div>
+                      
+                      <div class="polaris-stack polaris-stack--horizontal" style="margin-top: 16px;">
+                        <button class="polaris-button polaris-button--secondary" onclick="recreateWebhooks()">
+                          Recrear Webhooks
+                        </button>
+                        <button class="polaris-button polaris-button--secondary" onclick="testWebhooks()">
+                          Probar Conectividad
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              
-              <div class="section">
-                <h2>📊 Estado del Sistema</h2>
-                <p><strong>Servidor:</strong> <span id="server-status">⏳ Verificando...</span></p>
-                <p><strong>Base de datos:</strong> <span id="db-status">⏳ Verificando conexión...</span></p>
-                <p><strong>OpenAI:</strong> <span id="ai-status">⏳ Verificando conexión...</span></p>
-                <p><strong>Webhooks:</strong> <span id="webhook-connectivity">⏳ Verificando...</span></p>
-                <p><strong>Última actualización:</strong> ${new Date().toLocaleString('es-ES')}</p>
+                
+                <div class="polaris-stack">
+                  <div class="polaris-card">
+                    <div class="polaris-card__header">
+                      <h2 class="polaris-card__title">
+                        <span class="polaris-icon">⚙️</span>
+                        Configuración del Chat
+                      </h2>
+                    </div>
+                    <div class="polaris-card__content">
+                      <form id="settings-form">
+                        <div style="display: grid; gap: 16px;">
+                          <!-- Welcome Message -->
+                          <div class="polaris-form-group">
+                            <label for="welcome-message" class="polaris-label">Mensaje de bienvenida</label>
+                            <textarea 
+                              id="welcome-message" 
+                              name="welcome_message"
+                              class="polaris-input polaris-textarea" 
+                              rows="3" 
+                              placeholder="Mensaje que verán los usuarios al abrir el chat..."
+                              maxlength="500"
+                            ></textarea>
+                            <span class="polaris-help-text">Máximo 500 caracteres</span>
+                          </div>
+
+                          <!-- Chat Position -->
+                          <div class="polaris-form-group">
+                            <label for="chat-position" class="polaris-label">Posición del chat</label>
+                            <select id="chat-position" name="chat_position" class="polaris-input polaris-select">
+                              <option value="bottom-right">Abajo derecha</option>
+                              <option value="bottom-left">Abajo izquierda</option>
+                              <option value="top-right">Arriba derecha</option>
+                              <option value="top-left">Arriba izquierda</option>
+                            </select>
+                          </div>
+
+                          <!-- Chat Color -->
+                          <div class="polaris-form-group">
+                            <label for="chat-color" class="polaris-label">Color del chat</label>
+                            <input 
+                              type="color" 
+                              id="chat-color" 
+                              name="chat_color" 
+                              class="polaris-color-input"
+                              value="#008060"
+                            />
+                          </div>
+
+                          <!-- Checkboxes -->
+                          <div class="polaris-form-group">
+                            <div class="polaris-checkbox-group">
+                              <label class="polaris-checkbox-label">
+                                <input type="checkbox" id="auto-open-chat" name="auto_open_chat" class="polaris-checkbox">
+                                <span class="polaris-checkbox-text">Abrir chat automáticamente</span>
+                              </label>
+                            </div>
+                          </div>
+
+                          <div class="polaris-form-group">
+                            <div class="polaris-checkbox-group">
+                              <label class="polaris-checkbox-label">
+                                <input type="checkbox" id="show-agent-avatar" name="show_agent_avatar" class="polaris-checkbox" checked>
+                                <span class="polaris-checkbox-text">Mostrar avatar del agente</span>
+                              </label>
+                            </div>
+                          </div>
+
+                          <div class="polaris-form-group">
+                            <div class="polaris-checkbox-group">
+                              <label class="polaris-checkbox-label">
+                                <input type="checkbox" id="enable-product-recommendations" name="enable_product_recommendations" class="polaris-checkbox" checked>
+                                <span class="polaris-checkbox-text">Recomendaciones de productos</span>
+                              </label>
+                            </div>
+                          </div>
+
+                          <!-- Action Buttons -->
+                          <div class="polaris-stack polaris-stack--horizontal" style="margin-top: 16px;">
+                            <button type="button" class="polaris-button polaris-button--primary" onclick="saveSettings()">
+                              Guardar Configuración
+                            </button>
+                            <button type="button" class="polaris-button polaris-button--secondary" onclick="loadSettings()">
+                              Recargar
+                            </button>
+                            <button type="button" class="polaris-button polaris-button--destructive" onclick="resetSettings()">
+                              Restablecer
+                            </button>
+                          </div>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                  
+                  <div class="polaris-card">
+                    <div class="polaris-card__header">
+                      <h2 class="polaris-card__title">
+                        <span class="polaris-icon">🔧</span>
+                        Estado de Servicios
+                      </h2>
+                    </div>
+                    <div class="polaris-card__content">
+                      <ul class="polaris-status-list">
+                        <li>
+                          <span id="shopify-api-status" class="polaris-status-indicator">⏳</span>
+                          <span>SHOPIFY_API_KEY</span>
+                        </li>
+                        <li>
+                          <span id="shopify-secret-status" class="polaris-status-indicator">⏳</span>
+                          <span>SHOPIFY_API_SECRET</span>
+                        </li>
+                        <li>
+                          <span id="supabase-status" class="polaris-status-indicator">⏳</span>
+                          <span>SUPABASE_URL</span>
+                        </li>
+                        <li>
+                          <span id="openai-status" class="polaris-status-indicator">⏳</span>
+                          <span>OPENAI_API_KEY</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                  
+                  <div class="polaris-card">
+                    <div class="polaris-card__header">
+                      <h2 class="polaris-card__title">
+                        <span class="polaris-icon">📊</span>
+                        Estado del Sistema
+                      </h2>
+                    </div>
+                    <div class="polaris-card__content">
+                      <div class="polaris-description-list">
+                        <dt>Servidor:</dt>
+                        <dd><span id="server-status">⏳ Verificando...</span></dd>
+                        <dt>Base de datos:</dt>
+                        <dd><span id="db-status">⏳ Verificando...</span></dd>
+                        <dt>OpenAI:</dt>
+                        <dd><span id="ai-status">⏳ Verificando...</span></dd>
+                        <dt>Conectividad:</dt>
+                        <dd><span id="webhook-connectivity">⏳ Verificando...</span></dd>
+                        <dt>Última actualización:</dt>
+                        <dd>${new Date().toLocaleString('es-ES')}</dd>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             
@@ -415,7 +909,7 @@ async function startServer() {
               window.toggleWidget = async function() {
                 const toggle = document.getElementById('widget-toggle');
                 const statusText = document.getElementById('widget-status-text');
-                const chatStatusNumber = document.querySelector('.stat-number:last-child');
+                const chatStatusNumber = document.querySelector('.polaris-stat-card:nth-child(3) .polaris-stat-number');
                 
                 try {
                   const response = await makeAuthenticatedRequest('/api/widget/toggle', {
@@ -436,13 +930,15 @@ async function startServer() {
                     chatStatusNumber.textContent = toggle.checked ? 'Active' : 'Disabled';
                     
                     // Update the main chat status indicator
-                    const chatStatusDiv = document.querySelector('.stat:nth-child(3)');
+                    const chatStatusDiv = document.querySelector('.polaris-stat-card:nth-child(3)');
                     if (toggle.checked) {
-                      chatStatusDiv.style.backgroundColor = '#d4edda';
-                      chatStatusDiv.style.color = '#155724';
+                      chatStatusDiv.style.backgroundColor = '#f0f9ff';
+                      chatStatusDiv.style.border = '1px solid #b3e5ff';
+                      chatStatusNumber.style.color = '#008060';
                     } else {
-                      chatStatusDiv.style.backgroundColor = '#f8d7da';
-                      chatStatusDiv.style.color = '#721c24';
+                      chatStatusDiv.style.backgroundColor = '#fef7f7';
+                      chatStatusDiv.style.border = '1px solid #ffc2c2';
+                      chatStatusNumber.style.color = '#d72c0d';
                     }
                   } else {
                     alert('❌ Error al cambiar estado del widget: ' + data.error);
@@ -484,25 +980,30 @@ async function startServer() {
                   if (widgetData.success) {
                     const toggle = document.getElementById('widget-toggle');
                     const statusText = document.getElementById('widget-status-text');
-                    const chatStatusNumber = document.querySelector('.stat-number:last-child');
+                    const chatStatusNumber = document.querySelector('.polaris-stat-card:nth-child(3) .polaris-stat-number');
                     
                     toggle.checked = widgetData.data.enabled;
                     statusText.textContent = widgetData.data.enabled ? 'Activado' : 'Desactivado';
                     chatStatusNumber.textContent = widgetData.data.enabled ? 'Active' : 'Disabled';
                     
                     // Update the main chat status indicator
-                    const chatStatusDiv = document.querySelector('.stat:nth-child(3)');
+                    const chatStatusDiv = document.querySelector('.polaris-stat-card:nth-child(3)');
                     if (widgetData.data.enabled) {
-                      chatStatusDiv.style.backgroundColor = '#d4edda';
-                      chatStatusDiv.style.color = '#155724';
+                      chatStatusDiv.style.backgroundColor = '#f0f9ff';
+                      chatStatusDiv.style.border = '1px solid #b3e5ff';
+                      chatStatusNumber.style.color = '#008060';
                     } else {
-                      chatStatusDiv.style.backgroundColor = '#f8d7da';
-                      chatStatusDiv.style.color = '#721c24';
+                      chatStatusDiv.style.backgroundColor = '#fef7f7';
+                      chatStatusDiv.style.border = '1px solid #ffc2c2';
+                      chatStatusNumber.style.color = '#d72c0d';
                     }
                   }
                   
                   // Load webhook status
                   loadWebhookStatus();
+                  
+                  // Load settings on page load
+                  loadSettings(true);
                   
                 } catch (error) {
                   console.error('Status check failed:', error);
@@ -532,7 +1033,7 @@ async function startServer() {
                     // Update products synchronized count (approximate from webhook events)
                     const productEvents = ['products/create', 'products/update'].reduce((sum, topic) => 
                       sum + (stats.topicBreakdown[topic] || 0), 0);
-                    document.querySelector('.stat-number:first-child').textContent = productEvents;
+                    document.querySelector('.polaris-stat-card:first-child .polaris-stat-number').textContent = productEvents;
                   } else {
                     document.querySelector('#webhook-status').textContent = '⚠️ No configurado';
                     document.querySelector('#webhook-connectivity').textContent = '⚠️ Error';
@@ -543,6 +1044,161 @@ async function startServer() {
                   document.querySelector('#webhook-connectivity').textContent = '❌ Error';
                 }
               }
+              
+              // Settings management functions
+              window.saveSettings = async function() {
+                try {
+                  const button = document.querySelector('button[onclick="saveSettings()"]');
+                  const originalText = button.textContent;
+                  button.textContent = 'Guardando...';
+                  button.disabled = true;
+                  
+                  // Gather form data
+                  const formData = {
+                    welcome_message: document.getElementById('welcome-message').value,
+                    chat_position: document.getElementById('chat-position').value,
+                    chat_color: document.getElementById('chat-color').value,
+                    auto_open_chat: document.getElementById('auto-open-chat').checked,
+                    show_agent_avatar: document.getElementById('show-agent-avatar').checked,
+                    enable_product_recommendations: document.getElementById('enable-product-recommendations').checked
+                  };
+                  
+                  const response = await makeAuthenticatedRequest('/api/settings/update', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                  });
+                  
+                  const data = await response.json();
+                  
+                  if (data.success) {
+                    alert('✅ Configuración guardada correctamente');
+                  } else {
+                    alert('❌ Error al guardar configuración: ' + data.error);
+                  }
+                  
+                  // Restore button
+                  button.textContent = originalText;
+                  button.disabled = false;
+                  
+                } catch (error) {
+                  console.error('Save settings error:', error);
+                  alert('❌ Error de conexión al guardar configuración');
+                  
+                  // Restore button
+                  const button = document.querySelector('button[onclick="saveSettings()"]');
+                  button.textContent = 'Guardar Configuración';
+                  button.disabled = false;
+                }
+              };
+              
+              window.loadSettings = async function(silent = false) {
+                try {
+                  const button = document.querySelector('button[onclick="loadSettings()"]');
+                  let originalText = '';
+                  
+                  if (button && !silent) {
+                    originalText = button.textContent;
+                    button.textContent = 'Cargando...';
+                    button.disabled = true;
+                  }
+                  
+                  const response = await makeAuthenticatedRequest('/api/settings/');
+                  const data = await response.json();
+                  
+                  if (data.success && data.data.settings) {
+                    const settings = data.data.settings;
+                    
+                    // Populate form fields
+                    document.getElementById('welcome-message').value = settings.welcome_message || '';
+                    document.getElementById('chat-position').value = settings.chat_position || 'bottom-right';
+                    document.getElementById('chat-color').value = settings.chat_color || '#008060';
+                    document.getElementById('auto-open-chat').checked = settings.auto_open_chat || false;
+                    document.getElementById('show-agent-avatar').checked = settings.show_agent_avatar !== false;
+                    document.getElementById('enable-product-recommendations').checked = settings.enable_product_recommendations !== false;
+                    
+                    if (!silent) {
+                      alert('✅ Configuración recargada correctamente');
+                    }
+                  } else {
+                    if (!silent) {
+                      alert('❌ Error al cargar configuración: ' + (data.error || 'Unknown error'));
+                    }
+                  }
+                  
+                  // Restore button
+                  if (button && !silent) {
+                    button.textContent = originalText;
+                    button.disabled = false;
+                  }
+                  
+                } catch (error) {
+                  console.error('Load settings error:', error);
+                  
+                  if (!silent) {
+                    alert('❌ Error de conexión al cargar configuración');
+                    
+                    // Restore button
+                    const button = document.querySelector('button[onclick="loadSettings()"]');
+                    if (button) {
+                      button.textContent = 'Recargar';
+                      button.disabled = false;
+                    }
+                  }
+                }
+              };
+              
+              window.resetSettings = async function() {
+                if (!confirm('¿Estás seguro de que deseas restablecer todas las configuraciones a sus valores por defecto?')) {
+                  return;
+                }
+                
+                try {
+                  const button = document.querySelector('button[onclick="resetSettings()"]');
+                  const originalText = button.textContent;
+                  button.textContent = 'Restableciendo...';
+                  button.disabled = true;
+                  
+                  const response = await makeAuthenticatedRequest('/api/settings/reset', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json'
+                    }
+                  });
+                  
+                  const data = await response.json();
+                  
+                  if (data.success) {
+                    // Update form with default values
+                    const settings = data.data.settings;
+                    document.getElementById('welcome-message').value = settings.welcome_message || '';
+                    document.getElementById('chat-position').value = settings.chat_position || 'bottom-right';
+                    document.getElementById('chat-color').value = settings.chat_color || '#008060';
+                    document.getElementById('auto-open-chat').checked = settings.auto_open_chat || false;
+                    document.getElementById('show-agent-avatar').checked = settings.show_agent_avatar !== false;
+                    document.getElementById('enable-product-recommendations').checked = settings.enable_product_recommendations !== false;
+                    
+                    alert('✅ Configuración restablecida a valores por defecto');
+                  } else {
+                    alert('❌ Error al restablecer configuración: ' + data.error);
+                  }
+                  
+                  // Restore button
+                  button.textContent = originalText;
+                  button.disabled = false;
+                  
+                } catch (error) {
+                  console.error('Reset settings error:', error);
+                  alert('❌ Error de conexión al restablecer configuración');
+                  
+                  // Restore button
+                  const button = document.querySelector('button[onclick="resetSettings()"]');
+                  button.textContent = 'Restablecer';
+                  button.disabled = false;
+                }
+              };
             </script>
           </body>
           </html>
@@ -843,6 +1499,7 @@ async function startServer() {
     app.use('/api/webhooks-admin', webhookAdminRoutes);
     app.use('/api/chat', chatRoutes);
     app.use('/api/widget', widgetRoutes);
+    app.use('/api/settings', settingsRoutes);
 
     // 404 handler
     app.use('*', (req, res) => {
