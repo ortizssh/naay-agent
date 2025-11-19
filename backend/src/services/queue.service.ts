@@ -1,18 +1,24 @@
-import { Queue, Worker, Job } from 'bullmq';
-import IORedis from 'ioredis';
 import { config } from '@/utils/config';
 import { logger } from '@/utils/logger';
 import { ShopifyService } from './shopify.service';
 import { SupabaseService } from './supabase.service';
 import { EmbeddingService } from './embedding.service';
 
-let redis: IORedis | null = null;
+// Queue types for compatibility
+type Queue = any;
+type Worker = any;
+type Job = any;
+
+let redis: any = null;
 let syncQueue: Queue | null = null;
 let embeddingQueue: Queue | null = null;
 
-// Try to initialize Redis connection only if enabled
+// Only load Redis/BullMQ if enabled (development mode)
 if (config.redis.enabled) {
   try {
+    const { Queue, Worker } = require('bullmq');
+    const IORedis = require('ioredis');
+    
     redis = new IORedis({
       ...config.redis,
       maxRetriesPerRequest: 3,
@@ -46,12 +52,16 @@ if (config.redis.enabled) {
         },
       },
     });
+
+    logger.info('Redis queues initialized for development');
   } catch (error) {
     logger.warn('Redis not available, using direct processing fallback');
     redis = null;
     syncQueue = null;
     embeddingQueue = null;
   }
+} else {
+  logger.info('Redis disabled for production, using direct processing mode');
 }
 
 // Job data interfaces
@@ -153,105 +163,111 @@ export class QueueService {
 
   // Setup workers
   private setupWorkers() {
-    if (!redis || !syncQueue || !embeddingQueue) {
+    if (!config.redis.enabled || !redis || !syncQueue || !embeddingQueue) {
       logger.info('Redis not available, using direct processing mode');
       return;
     }
 
-    // Product sync worker
-    const syncWorker = new Worker(
-      'product-sync',
-      async (job: Job<SyncJobData>) => {
-        const { shop, accessToken, type, productId } = job.data;
+    try {
+      const { Worker } = require('bullmq');
 
-        logger.info(`Processing ${type} job for shop: ${shop}`, {
-          jobId: job.id,
-        });
+      // Product sync worker
+      const syncWorker = new Worker(
+        'product-sync',
+        async (job: Job<SyncJobData>) => {
+          const { shop, accessToken, type, productId } = job.data;
 
-        try {
-          switch (type) {
-            case 'full_sync':
-              await this.processFullSync(shop, accessToken, job);
-              break;
-            case 'product_create':
-            case 'product_update':
-              await this.processProductSync(shop, accessToken, productId!, job);
-              break;
-            case 'product_delete':
-              await this.processProductDelete(shop, productId!);
-              break;
-          }
-
-          logger.info(`Completed ${type} job for shop: ${shop}`, {
+          logger.info(`Processing ${type} job for shop: ${shop}`, {
             jobId: job.id,
           });
-        } catch (error) {
-          logger.error(`Failed ${type} job for shop: ${shop}`, {
-            jobId: job.id,
-            error: error.message,
-          });
-          throw error;
-        }
-      },
-      {
-        connection: redis,
-        concurrency: 2, // Process 2 sync jobs simultaneously
-      }
-    );
 
-    // Embedding worker
-    const embeddingWorker = new Worker(
-      'embeddings',
-      async (job: Job<EmbeddingJobData>) => {
-        const { shop, productId, variantId, content, metadata } = job.data;
+          try {
+            switch (type) {
+              case 'full_sync':
+                await this.processFullSync(shop, accessToken, job);
+                break;
+              case 'product_create':
+              case 'product_update':
+                await this.processProductSync(shop, accessToken, productId!, job);
+                break;
+              case 'product_delete':
+                await this.processProductDelete(shop, productId!);
+                break;
+            }
 
-        logger.info(`Generating embedding for product: ${productId}`, {
-          jobId: job.id,
-        });
-
-        try {
-          const embedding =
-            await this.embeddingService.generateEmbedding(content);
-
-          await this.supabaseService.saveEmbedding({
-            shop_domain: shop,
-            product_id: productId,
-            variant_id: variantId,
-            embedding,
-            content,
-            metadata: metadata as any,
-          });
-
-          logger.info(`Generated embedding for product: ${productId}`, {
-            jobId: job.id,
-          });
-        } catch (error) {
-          logger.error(
-            `Failed to generate embedding for product: ${productId}`,
-            {
+            logger.info(`Completed ${type} job for shop: ${shop}`, {
+              jobId: job.id,
+            });
+          } catch (error) {
+            logger.error(`Failed ${type} job for shop: ${shop}`, {
               jobId: job.id,
               error: error.message,
-            }
-          );
-          throw error;
+            });
+            throw error;
+          }
+        },
+        {
+          connection: redis,
+          concurrency: 2, // Process 2 sync jobs simultaneously
         }
-      },
-      {
-        connection: redis,
-        concurrency: 5, // Process 5 embedding jobs simultaneously
-      }
-    );
+      );
 
-    // Error handlers
-    syncWorker.on('failed', (job, err) => {
-      logger.error(`Sync job ${job?.id} failed:`, err);
-    });
+      // Embedding worker
+      const embeddingWorker = new Worker(
+        'embeddings',
+        async (job: Job<EmbeddingJobData>) => {
+          const { shop, productId, variantId, content, metadata } = job.data;
 
-    embeddingWorker.on('failed', (job, err) => {
-      logger.error(`Embedding job ${job?.id} failed:`, err);
-    });
+          logger.info(`Generating embedding for product: ${productId}`, {
+            jobId: job.id,
+          });
 
-    logger.info('Queue workers started successfully');
+          try {
+            const embedding =
+              await this.embeddingService.generateEmbedding(content);
+
+            await this.supabaseService.saveEmbedding({
+              shop_domain: shop,
+              product_id: productId,
+              variant_id: variantId,
+              embedding,
+              content,
+              metadata: metadata as any,
+            });
+
+            logger.info(`Generated embedding for product: ${productId}`, {
+              jobId: job.id,
+            });
+          } catch (error) {
+            logger.error(
+              `Failed to generate embedding for product: ${productId}`,
+              {
+                jobId: job.id,
+                error: error.message,
+              }
+            );
+            throw error;
+          }
+        },
+        {
+          connection: redis,
+          concurrency: 5, // Process 5 embedding jobs simultaneously
+        }
+      );
+
+      // Error handlers
+      syncWorker.on('failed', (job, err) => {
+        logger.error(`Sync job ${job?.id} failed:`, err);
+      });
+
+      embeddingWorker.on('failed', (job, err) => {
+        logger.error(`Embedding job ${job?.id} failed:`, err);
+      });
+
+      logger.info('Queue workers started successfully');
+    } catch (error) {
+      logger.error('Failed to setup queue workers:', error);
+    }
   }
 
   private async processFullSync(shop: string, accessToken: string, job: Job) {
