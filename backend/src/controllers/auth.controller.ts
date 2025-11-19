@@ -104,7 +104,8 @@ router.get(
       await queueService.addFullSyncJob(shop, accessToken);
 
       // Redirect to app with token
-      const redirectUrl = `${config.shopify.appUrl}?token=${token}&shop=${shop}`;
+      const redirectUrl = `${config.shopify.appUrl}/success?token=${token}&shop=${shop}`;
+      logger.info('Redirecting after successful OAuth', { redirectUrl, shop });
       res.redirect(redirectUrl);
     } catch (error) {
       logger.error('OAuth callback error:', error);
