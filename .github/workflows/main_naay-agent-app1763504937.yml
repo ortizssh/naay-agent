@@ -181,10 +181,10 @@ jobs:
         }
         EOF
         
-        # Create .deployment file to disable Azure build (we include node_modules)
+        # Create .deployment file to enable Azure npm install
         cat > deploy-package/.deployment << 'EOF'
         [config]
-        SCM_DO_BUILD_DURING_DEPLOYMENT=false
+        SCM_DO_BUILD_DURING_DEPLOYMENT=true
         EOF
         
         # Create web.config for Azure
