@@ -686,12 +686,13 @@
         .naay-widget__input-container {
           display: flex !important;
           gap: 12px !important;
-          margin-bottom: 16px !important;
+          margin-bottom: 12px !important;
+          padding: 0 20px !important;
         }
 
         .naay-widget__input {
           flex: 1 !important;
-          padding: 16px 20px !important;
+          padding: 12px 16px !important;
           border: 1px solid rgba(212, 196, 184, 0.3) !important;
           border-radius: 28px !important;
           font-family: var(--naay-font) !important;
@@ -714,8 +715,8 @@
         }
 
         .naay-widget__send {
-          width: 56px !important;
-          height: 56px !important;
+          width: 44px !important;
+          height: 44px !important;
           background: var(--naay-perfect) !important;
           color: var(--naay-white) !important;
           border: none !important;
@@ -774,6 +775,21 @@
           color: var(--naay-black) !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
           border-bottom-left-radius: 6px !important;
+        }
+
+        .naay-widget__message .list-item {
+          margin: 8px 0 !important;
+          padding-left: 8px !important;
+        }
+
+        .naay-widget__message .bullet-item {
+          margin: 6px 0 !important;
+          padding-left: 8px !important;
+        }
+
+        .naay-widget__message strong {
+          font-weight: 600 !important;
+          color: var(--naay-perfect) !important;
         }
 
         /* Responsive Design */
@@ -1098,7 +1114,10 @@
     addMessage(text, sender) {
       const messageDiv = document.createElement('div');
       messageDiv.className = `naay-widget__message naay-widget__message--${sender}`;
-      messageDiv.textContent = text;
+      
+      // Format text with proper line breaks and structure
+      const formattedText = this.formatMessage(text);
+      messageDiv.innerHTML = formattedText;
       
       // Remove welcome message when first real message is added
       const welcome = this.messagesContainer.querySelector('.naay-widget__welcome');
@@ -1110,6 +1129,18 @@
         this.messagesContainer.appendChild(messageDiv);
         this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
       }
+    }
+
+    formatMessage(text) {
+      // Convert numbered lists to proper HTML
+      let formatted = text
+        .replace(/(\d+)\.\s+([^\n]+)/g, '<div class="list-item"><strong>$1.</strong> $2</div>')
+        .replace(/\*\s+([^\n]+)/g, '<div class="bullet-item">• $2</div>')
+        .replace(/\n\n/g, '<br><br>')
+        .replace(/\n/g, '<br>')
+        .replace(/([A-Z][^:]+):/g, '<strong>$1:</strong>');
+      
+      return formatted;
     }
 
     async loadConversationHistory() {
