@@ -182,6 +182,11 @@
           
           <footer class="naay-widget__input-area">
             <div class="naay-widget__input-container">
+              <button class="naay-widget__reset" id="naay-widget-reset" aria-label="Volver al inicio" title="Volver al inicio">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M3 12L21 12M3 12L7 8M3 12L7 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
               <input type="text" id="naay-widget-input" class="naay-widget__input" placeholder="${this.config.placeholder}" aria-label="Escribe tu mensaje">
               <button class="naay-widget__send" id="naay-widget-send" aria-label="Enviar mensaje">
                 <svg viewBox="0 0 24 24" fill="none">
@@ -211,6 +216,7 @@
       this.messagesContainer = this.container.querySelector('#naay-widget-messages');
       this.input = this.container.querySelector('#naay-widget-input');
       this.sendButton = this.container.querySelector('#naay-widget-send');
+      this.resetButton = this.container.querySelector('#naay-widget-reset');
       this.closeButton = this.container.querySelector('#naay-widget-close');
 
       console.log('✨ Luxury DOM Elements found:', {
@@ -450,8 +456,8 @@
           position: absolute !important;
           bottom: 88px !important;
           right: 0 !important;
-          width: 600px !important;
-          height: 500px !important;
+          width: 50vw !important;
+          height: 620px !important;
           background: rgba(248, 249, 248, 0.95) !important;
           backdrop-filter: blur(20px) !important;
           -webkit-backdrop-filter: blur(20px) !important;
@@ -745,6 +751,33 @@
           height: 20px !important;
         }
 
+        /* Reset Button */
+        .naay-widget__reset {
+          width: 36px !important;
+          height: 36px !important;
+          background: rgba(212, 196, 184, 0.1) !important;
+          color: var(--naay-forever) !important;
+          border: 1px solid rgba(212, 196, 184, 0.2) !important;
+          border-radius: 8px !important;
+          cursor: pointer !important;
+          transition: all 0.3s var(--naay-transition) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          flex-shrink: 0 !important;
+        }
+
+        .naay-widget__reset:hover {
+          background: rgba(212, 196, 184, 0.2) !important;
+          transform: translateY(-1px) !important;
+          border-color: rgba(212, 196, 184, 0.4) !important;
+        }
+
+        .naay-widget__reset svg {
+          width: 16px !important;
+          height: 16px !important;
+        }
+
         .naay-widget__powered {
           text-align: center !important;
           font-size: 12px !important;
@@ -792,11 +825,59 @@
           color: var(--naay-perfect) !important;
         }
 
+        /* Typing Indicator */
+        .naay-widget__typing {
+          max-width: 75% !important;
+        }
+
+        .naay-typing-indicator {
+          display: flex !important;
+          align-items: center !important;
+          gap: 8px !important;
+          color: var(--naay-forever) !important;
+          font-size: 13px !important;
+          font-style: italic !important;
+        }
+
+        .naay-typing-dots {
+          display: flex !important;
+          gap: 4px !important;
+          align-items: center !important;
+        }
+
+        .naay-dot {
+          width: 6px !important;
+          height: 6px !important;
+          background: var(--naay-forever) !important;
+          border-radius: 50% !important;
+          animation: naay-typing-bounce 1.4s infinite ease-in-out both !important;
+        }
+
+        .naay-dot:nth-child(1) { animation-delay: -0.32s !important; }
+        .naay-dot:nth-child(2) { animation-delay: -0.16s !important; }
+
+        @keyframes naay-typing-bounce {
+          0%, 80%, 100% {
+            transform: scale(0.8) !important;
+            opacity: 0.6 !important;
+          }
+          40% {
+            transform: scale(1) !important;
+            opacity: 1 !important;
+          }
+        }
+
         /* Responsive Design */
+        @media (max-width: 1200px) {
+          .naay-widget__chat {
+            width: 60vw !important;
+          }
+        }
+
         @media (max-width: 768px) {
           .naay-widget__chat {
             width: calc(100vw - 24px) !important;
-            height: calc(100vh - 140px) !important;
+            height: calc(100vh - 120px) !important;
             right: 12px !important;
             bottom: 100px !important;
           }
@@ -812,7 +893,7 @@
         @media (max-width: 480px) {
           .naay-widget__chat {
             width: calc(100vw - 16px) !important;
-            height: calc(100vh - 120px) !important;
+            height: calc(100vh - 100px) !important;
             right: 8px !important;
             bottom: 88px !important;
             border-radius: 8px !important;
@@ -982,6 +1063,17 @@
         });
       }
 
+      // Reset button click - volver al inicio
+      if (this.resetButton) {
+        this.resetButton.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('✨ Reset button clicked!');
+          this.resetConversation();
+        });
+        console.log('✅ Reset button event listener added');
+      }
+
       // Feature cards click
       const featureCards = this.container.querySelectorAll('.naay-widget__feature[data-message]');
       featureCards.forEach(card => {
@@ -1048,6 +1140,9 @@
       // Add user message to UI
       this.addMessage(text, 'user');
 
+      // Add typing indicator
+      const typingIndicator = this.addTypingIndicator();
+
       // Disable send button while processing
       if (this.sendButton) {
         this.sendButton.disabled = true;
@@ -1083,6 +1178,9 @@
         const data = await response.json();
         console.log('🌿 Naay Chat: API Response data:', data);
         
+        // Remove typing indicator
+        this.removeTypingIndicator(typingIndicator);
+        
         if (data.success && data.data) {
           this.addMessage(data.data.response || 'Lo siento, no pude procesar tu mensaje.', 'assistant');
           this.conversationId = data.data.conversationId;
@@ -1093,6 +1191,9 @@
         }
       } catch (error) {
         console.error('❌ Naay Chat: Network error sending message:', error);
+        
+        // Remove typing indicator on error
+        this.removeTypingIndicator(typingIndicator);
         
         // Check if it's a CORS error
         if (error.name === 'TypeError' && error.message.includes('fetch')) {
@@ -1131,6 +1232,34 @@
       }
     }
 
+    addTypingIndicator() {
+      const typingDiv = document.createElement('div');
+      typingDiv.className = 'naay-widget__message naay-widget__message--assistant naay-widget__typing';
+      typingDiv.innerHTML = `
+        <div class="naay-typing-indicator">
+          <span>Escribiendo</span>
+          <div class="naay-typing-dots">
+            <div class="naay-dot"></div>
+            <div class="naay-dot"></div>
+            <div class="naay-dot"></div>
+          </div>
+        </div>
+      `;
+      
+      if (this.messagesContainer) {
+        this.messagesContainer.appendChild(typingDiv);
+        this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+      }
+      
+      return typingDiv;
+    }
+
+    removeTypingIndicator(typingElement) {
+      if (typingElement && typingElement.parentNode) {
+        typingElement.parentNode.removeChild(typingElement);
+      }
+    }
+
     formatMessage(text) {
       // Convert numbered lists to proper HTML
       let formatted = text
@@ -1141,6 +1270,35 @@
         .replace(/([A-Z][^:]+):/g, '<strong>$1:</strong>');
       
       return formatted;
+    }
+
+    resetConversation() {
+      // Clear all messages except welcome
+      if (this.messagesContainer) {
+        // Remove all messages
+        const messages = this.messagesContainer.querySelectorAll('.naay-widget__message:not(.naay-widget__welcome)');
+        messages.forEach(message => message.remove());
+        
+        // Show welcome message again
+        const welcome = this.messagesContainer.querySelector('.naay-widget__welcome');
+        if (welcome) {
+          welcome.style.display = 'block';
+        }
+        
+        // Scroll to top
+        this.messagesContainer.scrollTop = 0;
+      }
+      
+      // Clear input
+      if (this.input) {
+        this.input.value = '';
+      }
+      
+      // Reset conversation state
+      this.messages = [];
+      this.conversationId = null;
+      
+      console.log('✅ Conversation reset to welcome state');
     }
 
     async loadConversationHistory() {
