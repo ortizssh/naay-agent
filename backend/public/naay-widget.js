@@ -978,29 +978,44 @@
       }
 
       try {
+        const apiUrl = `${this.config.apiEndpoint}/api/chat`;
+        const payload = {
+          message: text,
+          shop: this.config.shopDomain,
+          conversationId: this.conversationId,
+          context: this.config.context || {}
+        };
+
+        console.log('🌿 Naay Chat: Sending message to API', {
+          url: apiUrl,
+          payload: payload,
+          shopDomain: this.config.shopDomain
+        });
+
         // Send to API
-        const response = await fetch(`${this.config.apiEndpoint}/api/chat`, {
+        const response = await fetch(apiUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            message: text,
-            conversationId: this.conversationId,
-            shopDomain: this.config.shopDomain
-          })
+          body: JSON.stringify(payload)
         });
 
+        console.log('🌿 Naay Chat: API Response status:', response.status, response.statusText);
+
         const data = await response.json();
+        console.log('🌿 Naay Chat: API Response data:', data);
         
-        if (data.success) {
-          this.addMessage(data.response || 'Lo siento, no pude procesar tu mensaje.', 'assistant');
-          this.conversationId = data.conversationId;
+        if (data.success && data.data) {
+          this.addMessage(data.data.response || 'Lo siento, no pude procesar tu mensaje.', 'assistant');
+          this.conversationId = data.data.conversationId;
+          console.log('✅ Naay Chat: Message processed successfully', data.data.conversationId);
         } else {
+          console.error('❌ Naay Chat: API returned error', data);
           this.addMessage('Lo siento, hubo un error. Por favor intenta de nuevo.', 'assistant');
         }
       } catch (error) {
-        console.error('Error sending message:', error);
+        console.error('❌ Naay Chat: Network error sending message:', error);
         this.addMessage('Lo siento, hubo un error de conexión. Por favor intenta de nuevo.', 'assistant');
       } finally {
         // Re-enable send button
