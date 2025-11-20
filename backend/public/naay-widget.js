@@ -817,6 +817,7 @@
     addEventListeners() {
       // Toggle widget open/close
       this.button.addEventListener('click', () => {
+        console.log('🔥 Naay Widget: Button clicked, current state:', this.isOpen);
         this.toggle();
       });
 
@@ -876,14 +877,24 @@
     }
 
     open() {
+      console.log('🔥 Naay Widget: Opening chat...');
       this.isOpen = true;
       this.container.classList.add('naay-widget--open');
-      this.input.focus();
+      console.log('🔥 Naay Widget: Classes after open:', this.container.className);
+      
+      // Focus input with delay to ensure visibility
+      setTimeout(() => {
+        if (this.input) {
+          this.input.focus();
+        }
+      }, 100);
     }
 
     close() {
+      console.log('🔥 Naay Widget: Closing chat...');
       this.isOpen = false;
       this.container.classList.remove('naay-widget--open');
+      console.log('🔥 Naay Widget: Classes after close:', this.container.className);
     }
 
     async sendMessage() {
