@@ -17,20 +17,69 @@ console.log(`📊 Dist exists: ${distExists}`);
 // Check for key dependencies
 function checkDependencies() {
   try {
-    require.resolve('express');
-    require.resolve('@supabase/supabase-js');
-    require.resolve('openai');
+    // Try multiple possible locations for dependencies
+    const locations = [
+      'express',
+      './node_modules/express',
+      './backend/node_modules/express',
+    ];
+    
+    let foundExpress = false;
+    for (const location of locations) {
+      try {
+        require.resolve(location);
+        foundExpress = true;
+        break;
+      } catch (e) {
+        // Continue trying other locations
+      }
+    }
+    
+    if (!foundExpress) {
+      console.log('❌ Express not found in any location');
+      return false;
+    }
+
+    // Check if basic Node.js modules work (simpler test)
+    require('fs');
+    require('path');
+    require('http');
+    
     console.log('✅ Core dependencies found');
     return true;
   } catch (error) {
     console.log('❌ Core dependencies missing:', error.message);
+    
+    // Debug info
+    console.log('Available modules in current directory:');
+    try {
+      const fs = require('fs');
+      if (fs.existsSync('./node_modules')) {
+        console.log('- node_modules exists at root');
+        const modules = fs.readdirSync('./node_modules');
+        console.log(`- Found ${modules.length} modules:`, modules.slice(0, 10));
+      } else {
+        console.log('- No node_modules at root');
+      }
+      
+      if (fs.existsSync('./backend/node_modules')) {
+        console.log('- backend/node_modules exists');
+        const backendModules = fs.readdirSync('./backend/node_modules');
+        console.log(`- Found ${backendModules.length} backend modules:`, backendModules.slice(0, 10));
+      } else {
+        console.log('- No backend/node_modules');
+      }
+    } catch (debugError) {
+      console.log('Error during debug:', debugError.message);
+    }
+    
     return false;
   }
 }
 
 const hasDependencies = checkDependencies();
 
-if (distExists && hasDependencies) {
+if (distExists) {
   console.log('✅ Loading full Naay Agent application from backend/dist/index.js');
   try {
     // Set production environment
@@ -39,15 +88,27 @@ if (distExists && hasDependencies) {
     // Load the compiled backend application
     require('./backend/dist/index.js');
     
+    console.log('✅ Naay Agent application loaded successfully!');
+    
   } catch (error) {
     console.error('❌ Failed to load main application:', error.message);
     console.error('Error stack:', error.stack);
+    
+    // If it's a dependency error, give more info
+    if (error.code === 'MODULE_NOT_FOUND') {
+      console.log('🔍 Module not found details:', {
+        module: error.message,
+        paths: error.paths ? error.paths.slice(0, 5) : 'none'
+      });
+    }
+    
     console.log('🔄 Falling back to basic server...');
     createFallbackServer();
   }
 } else {
-  console.log('❌ Application not ready - missing dist or dependencies');
-  console.log(`Dist exists: ${distExists}, Dependencies: ${hasDependencies}`);
+  console.log('❌ Application not ready - backend/dist/index.js not found');
+  console.log(`Working directory: ${__dirname}`);
+  console.log(`Expected at: ${distPath}`);
   createFallbackServer();
 }
 
