@@ -41,7 +41,7 @@
 <!-- Load the Naay Widget -->
 <script>
   (function() {
-    console.log('🌿 Naay Chat: Initializing widget v2.1...');
+    console.log('🌿 Naay Chat: Initializing widget v3.0-LUXURY...');
     
     // Don't load in admin preview or checkout
     if (window.location.hostname.includes('admin') || window.location.pathname.includes('checkout')) {
@@ -51,7 +51,7 @@
     
     // Load the official Naay widget script
     var script = document.createElement('script');
-    script.src = 'https://naay-agent-app1763504937.azurewebsites.net/static/naay-widget.js?v=FINAL_210_VERIFIED&id=' + (Math.random().toString(36) + Math.random().toString(36)).substr(2, 20) + '&t=' + Date.now() + '&force=true';
+    script.src = 'https://naay-agent-app1763504937.azurewebsites.net/static/naay-widget.js?v=LUXURY_300&id=' + (Math.random().toString(36) + Math.random().toString(36)).substr(2, 20) + '&t=' + Date.now() + '&force=true';
     script.async = true;
     
     script.onload = function() {
@@ -93,7 +93,7 @@
 
 {% schema %}
 {
-  "name": "Naay AI Chat v2.1",
+  "name": "Naay AI Chat v3.0-LUXURY",
   "target": "body",
   "settings": [
     {
