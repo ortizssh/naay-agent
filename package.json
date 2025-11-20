@@ -3,10 +3,6 @@
   "version": "1.0.0",
   "description": "Agente conversacional IA integrado con Shopify + Supabase + pgvector",
   "main": "app.js",
-  "workspaces": [
-    "backend",
-    "frontend-admin"
-  ],
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:admin\"",
     "dev:backend": "cd backend && npm run dev",
@@ -16,6 +12,7 @@
     "build:backend": "cd backend && npm run build",
     "build:admin": "cd frontend-admin && npm run build",
     "start": "node app.js",
+    "postinstall": "echo '📦 Azure postinstall: $(date)' && echo 'Dependencies installed successfully'",
     "azure:install": "echo '🔧 Azure: Installing dependencies...' && npm install --production && cd backend && npm install --production",
     "azure:build": "echo '🔨 Azure: Building backend...' && cd backend && npm run build",
     "azure:setup": "npm run azure:install && npm run azure:build",
