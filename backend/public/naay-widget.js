@@ -65,7 +65,7 @@
     }
 
     init() {
-      console.log('✨ Initializing Naay Flat Widget v3.2.0 - INTERACTIVE CARDS:', new Date().toISOString());
+      console.log('✨ Initializing Naay Flat Widget v3.2.2 - CORS FIXED:', new Date().toISOString());
       console.log('Shop:', this.config.shopDomain);
       
       // Load settings from server
@@ -154,11 +154,6 @@
           <main class="naay-widget__messages" id="naay-widget-messages" role="main">
             <div class="naay-widget__welcome">
               <div class="naay-widget__welcome-header">
-                <div class="naay-widget__welcome-avatar">
-                  <svg class="naay-welcome-icon" viewBox="0 0 24 24" fill="none">
-                    <path d="M6.05 8.05C6.05 6.7 7.1 5.65 8.45 5.65C9.8 5.65 10.85 6.7 10.85 8.05C10.85 9.4 9.8 10.45 8.45 10.45C7.1 10.45 6.05 9.4 6.05 8.05ZM12.55 8.05C12.55 6.7 13.6 5.65 14.95 5.65C16.3 5.65 17.35 6.7 17.35 8.05C17.35 9.4 16.3 10.45 14.95 10.45C13.6 10.45 12.55 9.4 12.55 8.05ZM12 14C8.13 14 5 11.37 5 8.1C5 6.61 5.53 5.24 6.46 4.17C7.39 3.1 8.65 2.4 10.05 2.15C11.45 1.9 12.9 2.12 14.18 2.79C15.46 3.46 16.5 4.54 17.15 5.86C17.8 7.18 18.02 8.67 17.77 10.11C17.52 11.55 16.81 12.87 15.74 13.85C14.67 14.83 13.3 15.41 11.85 15.5C10.4 15.59 8.96 15.19 7.77 14.36L12 14Z" fill="currentColor"/>
-                  </svg>
-                </div>
                 <h3 class="naay-widget__welcome-title">¡Hola! Soy tu asesora personal en Naáy</h3>
               </div>
               <p class="naay-widget__welcome-message">${this.config.greeting}</p>
@@ -195,7 +190,7 @@
               </button>
             </div>
             <div class="naay-widget__powered">
-              <span>Inteligencia artificial • ${this.config.brandName}</span>
+              <span>Powered by Dustkey LLC.</span>
             </div>
           </footer>
         </div>
@@ -605,7 +600,6 @@
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
-          gap: 12px !important;
           margin-bottom: 24px !important;
         }
 
@@ -783,23 +777,107 @@
         }
 
         /* Responsive Design */
-        @media (max-width: 480px) {
+        @media (max-width: 768px) {
           .naay-widget__chat {
-            width: calc(100vw - 32px) !important;
-            height: calc(100vh - 120px) !important;
-            right: 16px !important;
-            bottom: 104px !important;
+            width: calc(100vw - 24px) !important;
+            height: calc(100vh - 140px) !important;
+            right: 12px !important;
+            bottom: 100px !important;
           }
           
           .naay-widget__promotional-message {
-            right: 16px !important;
-            bottom: 104px !important;
-            max-width: calc(100vw - 120px) !important;
+            right: 12px !important;
+            bottom: 100px !important;
+            max-width: calc(100vw - 100px) !important;
+            width: calc(100vw - 100px) !important;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .naay-widget__chat {
+            width: calc(100vw - 16px) !important;
+            height: calc(100vh - 120px) !important;
+            right: 8px !important;
+            bottom: 88px !important;
+            border-radius: 8px !important;
           }
           
+          .naay-widget__promotional-message {
+            right: 8px !important;
+            bottom: 88px !important;
+            max-width: calc(100vw - 88px) !important;
+            width: calc(100vw - 88px) !important;
+            padding: 16px 20px !important;
+          }
+
           .naay-widget__button {
-            width: 64px !important;
-            height: 64px !important;
+            width: 60px !important;
+            height: 60px !important;
+          }
+
+          .naay-widget__feature {
+            padding: 16px !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 12px !important;
+          }
+
+          .naay-widget__feature span {
+            font-size: 13px !important;
+            line-height: 1.3 !important;
+          }
+
+          .naay-widget__welcome-title {
+            font-size: 18px !important;
+          }
+
+          .naay-widget__welcome-message {
+            font-size: 14px !important;
+          }
+
+          .naay-widget__input {
+            font-size: 16px !important;
+          }
+
+          .naay-widget__input-container {
+            padding: 16px !important;
+          }
+        }
+
+        @media (max-width: 360px) {
+          .naay-widget__chat {
+            width: calc(100vw - 12px) !important;
+            right: 6px !important;
+            bottom: 82px !important;
+          }
+          
+          .naay-widget__promotional-message {
+            right: 6px !important;
+            bottom: 82px !important;
+            max-width: calc(100vw - 82px) !important;
+            width: calc(100vw - 82px) !important;
+            padding: 12px 16px !important;
+          }
+
+          .naay-widget__button {
+            width: 56px !important;
+            height: 56px !important;
+          }
+
+          .naay-widget__feature {
+            padding: 12px !important;
+          }
+
+          .naay-widget__promotional-text {
+            font-size: 13px !important;
+          }
+
+          .naay-widget__promotional-subtitle {
+            font-size: 11px !important;
+          }
+
+          .naay-widget__welcome-title {
+            font-size: 16px !important;
           }
         }
 
@@ -972,12 +1050,15 @@
           shopDomain: this.config.shopDomain
         });
 
-        // Send to API
+        // Send to API with enhanced error handling
         const response = await fetch(apiUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
           },
+          mode: 'cors',
+          credentials: 'omit',
           body: JSON.stringify(payload)
         });
 
@@ -996,7 +1077,16 @@
         }
       } catch (error) {
         console.error('❌ Naay Chat: Network error sending message:', error);
-        this.addMessage('Lo siento, hubo un error de conexión. Por favor intenta de nuevo.', 'assistant');
+        
+        // Check if it's a CORS error
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+          console.error('❌ Possible CORS error detected');
+          this.addMessage('Error de configuración del servidor. Por favor contacta al soporte.', 'assistant');
+        } else if (error.message.includes('NetworkError')) {
+          this.addMessage('Error de conexión de red. Verifica tu conexión a internet.', 'assistant');
+        } else {
+          this.addMessage('Lo siento, hubo un error de conexión. Por favor intenta de nuevo.', 'assistant');
+        }
       } finally {
         // Re-enable send button
         if (this.sendButton) {

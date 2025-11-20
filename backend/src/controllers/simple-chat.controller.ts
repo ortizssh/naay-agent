@@ -158,4 +158,86 @@ router.get('/test', async (req: Request, res: Response) => {
   }
 });
 
+// Debug endpoint to check configuration and CORS
+router.get('/debug', async (req: Request, res: Response) => {
+  try {
+    const envVars = {
+      NODE_ENV: process.env.NODE_ENV,
+      PORT: process.env.PORT,
+      HAS_OPENAI_KEY: !!process.env.OPENAI_API_KEY,
+      OPENAI_KEY_LENGTH: process.env.OPENAI_API_KEY?.length || 0,
+      HAS_SUPABASE_URL: !!process.env.SUPABASE_URL,
+      HAS_SHOPIFY_KEY: !!process.env.SHOPIFY_API_KEY
+    };
+
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': res.getHeader('Access-Control-Allow-Origin'),
+      'Access-Control-Allow-Methods': res.getHeader('Access-Control-Allow-Methods'),
+      'Access-Control-Allow-Headers': res.getHeader('Access-Control-Allow-Headers')
+    };
+
+    const requestInfo = {
+      method: req.method,
+      url: req.url,
+      origin: req.get('Origin'),
+      userAgent: req.get('User-Agent'),
+      contentType: req.get('Content-Type')
+    };
+
+    res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      environment: envVars,
+      cors: corsHeaders,
+      request: requestInfo,
+      apiKeyConfigured: !!apiKey,
+      apiKeySource: process.env.OPENAI_API_KEY ? 'env' : 'config'
+    });
+
+  } catch (error: any) {
+    logger.error('Debug endpoint error:', error);
+    
+    res.status(500).json({
+      success: false,
+      error: error?.message || 'Unknown error',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Debug endpoint to verify CORS and environment configuration
+router.get('/debug', async (req: Request, res: Response) => {
+  try {
+    res.set({
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With'
+    });
+
+    res.json({
+      success: true,
+      environment: process.env.NODE_ENV,
+      hasOpenAIKey: !!apiKey,
+      apiKeyLength: apiKey?.length || 0,
+      corsHeaders: {
+        origin: req.headers.origin,
+        method: req.method,
+        userAgent: req.headers['user-agent']
+      },
+      timestamp: new Date().toISOString(),
+      azureInfo: {
+        websiteSiteName: process.env.WEBSITE_SITE_NAME,
+        websiteInstanceId: process.env.WEBSITE_INSTANCE_ID
+      }
+    });
+
+  } catch (error: any) {
+    logger.error('Debug endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 export default router;

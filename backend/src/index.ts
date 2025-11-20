@@ -69,6 +69,23 @@ async function startServer() {
       next();
     });
 
+    // Simple Chat API CORS middleware - for simple chat endpoints
+    app.use('/api/simple-chat', (req, res, next) => {
+      // Set CORS headers for all simple chat API endpoints
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+      res.setHeader('Access-Control-Max-Age', '86400');
+      
+      // Handle OPTIONS preflight
+      if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+      }
+      
+      console.log('Simple Chat API request - CORS headers set for:', req.path);
+      next();
+    });
+
     // Security middleware - allow iframe embedding for Shopify (but not for widget files)
     app.use((req, res, next) => {
       if (!req.path.includes('naay-widget.js')) {
@@ -2050,7 +2067,16 @@ async function startServer() {
     app.use('/api/webhooks', webhookRoutes);
     app.use('/api/webhooks-admin', webhookAdminRoutes);
     app.use('/api/chat', chatRoutes);
+    
+    // CORS configuration specifically for simple-chat endpoint
+    app.use('/api/simple-chat', cors({
+      origin: true, // Allow all origins for widget integration
+      methods: ["GET", "POST", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+      credentials: false
+    }));
     app.use('/api/simple-chat', simpleChatRoutes);
+    
     app.use('/api/widget', widgetRoutes);
     app.use('/api/settings', settingsRoutes);
     app.use('/api/admin', adminRoutes);

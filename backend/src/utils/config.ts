@@ -1,7 +1,14 @@
 import dotenv from 'dotenv';
+import path from 'path';
 import { AppConfig } from '@/types';
 
-dotenv.config({ path: '../.env' });
+// Configure dotenv to look for .env file in the project root
+// In Azure, the .env file should be in the project root, not relative to backend/src
+dotenv.config({ 
+  path: process.env.NODE_ENV === 'production' 
+    ? path.join(__dirname, '../../.env') 
+    : '../.env' 
+});
 
 export const config: AppConfig = {
   shopify: {
