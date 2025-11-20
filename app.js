@@ -81,6 +81,43 @@ const hasDependencies = checkDependencies();
 
 if (distExists) {
   console.log('✅ Loading full Naay Agent application from backend/dist/index.js');
+  
+  // First, let's inspect the file system structure
+  console.log('🔍 File system inspection:');
+  try {
+    console.log('Working directory:', __dirname);
+    console.log('Contents of root:', fs.readdirSync(__dirname).slice(0, 10));
+    
+    const backendPath = path.join(__dirname, 'backend');
+    if (fs.existsSync(backendPath)) {
+      console.log('Contents of backend/:', fs.readdirSync(backendPath).slice(0, 10));
+      
+      const distPath = path.join(backendPath, 'dist');
+      if (fs.existsSync(distPath)) {
+        console.log('Contents of backend/dist/:', fs.readdirSync(distPath).slice(0, 10));
+        const indexPath = path.join(distPath, 'index.js');
+        console.log('index.js exists:', fs.existsSync(indexPath));
+        console.log('index.js size:', fs.existsSync(indexPath) ? fs.statSync(indexPath).size : 'N/A');
+      }
+    }
+    
+    // Check node_modules
+    const nodeModulesPath = path.join(__dirname, 'node_modules');
+    if (fs.existsSync(nodeModulesPath)) {
+      console.log('Root node_modules exists, packages:', fs.readdirSync(nodeModulesPath).length);
+      console.log('Express in root:', fs.existsSync(path.join(nodeModulesPath, 'express')));
+    }
+    
+    const backendNodeModulesPath = path.join(__dirname, 'backend/node_modules');
+    if (fs.existsSync(backendNodeModulesPath)) {
+      console.log('Backend node_modules exists, packages:', fs.readdirSync(backendNodeModulesPath).length);
+      console.log('Express in backend:', fs.existsSync(path.join(backendNodeModulesPath, 'express')));
+    }
+    
+  } catch (inspectionError) {
+    console.log('Error during inspection:', inspectionError.message);
+  }
+  
   try {
     // Set production environment
     process.env.NODE_ENV = process.env.NODE_ENV || 'production';
@@ -99,13 +136,28 @@ if (distExists) {
     
     console.log('🔧 NODE_PATH configured:', process.env.NODE_PATH);
     
+    // Try loading express first to debug
+    console.log('🧪 Testing express resolution...');
+    try {
+      const expressPath = require.resolve('express');
+      console.log('Express found at:', expressPath);
+    } catch (expressError) {
+      console.log('Express not found:', expressError.message);
+    }
+    
     // Change working directory to backend for relative imports
     const originalCwd = process.cwd();
     process.chdir(path.join(__dirname, 'backend'));
     
     console.log('📁 Changed working directory to:', process.cwd());
     
+    // Check if index.js exists from current directory
+    const indexJsPath = path.join(process.cwd(), 'dist', 'index.js');
+    console.log('Index.js path from backend:', indexJsPath);
+    console.log('Index.js exists from backend:', fs.existsSync(indexJsPath));
+    
     // Load the compiled backend application
+    console.log('📥 Attempting to require ./dist/index.js...');
     require('./dist/index.js');
     
     console.log('✅ Naay Agent application loaded successfully!');
@@ -124,7 +176,8 @@ if (distExists) {
       console.log('🔍 Module not found details:', {
         module: error.message,
         paths: error.paths ? error.paths.slice(0, 5) : 'none',
-        NODE_PATH: process.env.NODE_PATH
+        NODE_PATH: process.env.NODE_PATH,
+        currentWorkingDir: process.cwd()
       });
     }
     
