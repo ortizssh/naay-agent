@@ -22,10 +22,9 @@
     "test:admin": "cd frontend-admin && npm run test",
     "lint": "eslint \"backend/src/**/*.{ts,js}\" --fix",
     "lint:fix": "eslint \"backend/src/**/*.{ts,js}\" --fix",
-    "postinstall": "npm run setup:env && npm run build:prod",
+    "postinstall": "echo 'Post-install starting...' && npm run setup:backend",
     "setup:env": "node scripts/setup-env.js || echo 'Setup env skipped'",
-    "build:prod": "npm run install:backend && npm run build:backend || echo 'Build failed but continuing'",
-    "install:backend": "cd backend && npm install",
+    "setup:backend": "cd backend && echo 'Installing backend deps...' && npm install --ignore-scripts && echo 'Building backend...' && npm run build",
     "shopify:generate": "shopify app generate extension",
     "shopify:deploy": "shopify app deploy",
     "shopify:info": "shopify app info"
