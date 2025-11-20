@@ -114,13 +114,17 @@ jobs:
         # Create deployment directory
         mkdir -p deploy-package
         
-        # Copy backend build
-        cp -r backend/dist deploy-package/
+        # Copy backend build maintaining directory structure
+        mkdir -p deploy-package/backend
+        cp -r backend/dist deploy-package/backend/
         
         # Always copy node_modules - force include for Azure
         if [ -d "backend/node_modules" ]; then
           echo "Copying backend/node_modules to deployment package..."
+          # Copy to root level for Azure
           cp -r backend/node_modules deploy-package/
+          # Also copy to backend directory for app.js structure
+          cp -r backend/node_modules deploy-package/backend/
           echo "✅ node_modules copied successfully ($(ls backend/node_modules | wc -l) packages)"
         else
           echo "ERROR: backend/node_modules not found - cannot proceed"
