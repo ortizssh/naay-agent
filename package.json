@@ -2,7 +2,7 @@
   "name": "naay-agent",
   "version": "1.0.0",
   "description": "Agente conversacional IA integrado con Shopify + Supabase + pgvector",
-  "main": "startup.js",
+  "main": "server.js",
   "workspaces": [
     "backend",
     "frontend-admin"
@@ -15,7 +15,7 @@
     "build": "npm run build:backend && npm run build:admin",
     "build:backend": "cd backend && npm run build",
     "build:admin": "cd frontend-admin && npm run build",
-    "start": "node index.js",
+    "start": "node server.js",
     "azure:install": "echo '🔧 Azure: Installing dependencies...' && npm install --production && cd backend && npm install --production",
     "azure:build": "echo '🔨 Azure: Building backend...' && cd backend && npm run build",
     "azure:setup": "npm run azure:install && npm run azure:build",

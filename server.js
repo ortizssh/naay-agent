@@ -1,4 +1,4 @@
-// Simple Azure entry point - only Node.js built-ins
+// Simple Azure server - only Node.js built-ins
 const http = require('http');
 const port = process.env.PORT || 8080;
 
@@ -19,16 +19,17 @@ const server = http.createServer((req, res) => {
   
   const response = {
     status: 'online',
-    message: 'Naay Agent is running',
+    message: 'Naay Agent is running successfully!',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'production',
     port: port,
-    version: '1.0.0'
+    version: '1.0.0',
+    deployment_success: true
   };
   
   res.end(JSON.stringify(response, null, 2));
 });
 
 server.listen(port, () => {
-  console.log(`✅ Naay Agent running on port ${port}`);
+  console.log(`✅ Naay Agent running successfully on port ${port}`);
 });
