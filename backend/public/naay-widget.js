@@ -107,11 +107,6 @@
       this.container.innerHTML = `
         <div class="naay-widget__promotional-message" id="naay-promotional-message" role="dialog" aria-label="Mensaje promocional">
           <div class="naay-widget__promotional-content">
-            <div class="naay-widget__promotional-icon">
-              <svg class="naay-leaf-icon" viewBox="0 0 24 24" fill="none">
-                <path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22L6.66 19.7C7.14 19.87 7.64 20 8 20C19 20 22 3 22 3C21 5 14 5.25 9 6.25C4 7.25 2 11.5 2 15.5C2 15.5 2 16.5 3 16.5S4 15.5 4 15.5C4 14.5 5.5 10.25 17 8Z" fill="currentColor"/>
-              </svg>
-            </div>
             <div class="naay-widget__promotional-text">
               ¿Necesitas ayuda especializada?
               <span class="naay-widget__promotional-subtitle">Pregúntanos sobre cuidado natural</span>
@@ -308,7 +303,8 @@
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
           border-radius: 8px !important;
           padding: 20px 24px !important;
-          max-width: 280px !important;
+          max-width: 380px !important;
+          width: 380px !important;
           box-shadow: var(--naay-shadow-medium) !important;
           cursor: pointer !important;
           transition: all var(--naay-duration) var(--naay-transition) !important;
@@ -324,34 +320,11 @@
         }
 
         .naay-widget__promotional-content {
-          display: flex !important;
-          align-items: flex-start !important;
-          gap: 16px !important;
+          display: block !important;
         }
 
-        .naay-widget__promotional-icon {
-          width: 28px !important;
-          height: 28px !important;
-          background: var(--naay-fresh) !important;
-          border-radius: 10px !important;
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-          flex-shrink: 0 !important;
-        }
 
-        .naay-leaf-icon {
-          width: 16px !important;
-          height: 16px !important;
-          color: var(--naay-white) !important;
-          animation: naayLeafFloat 3s ease-in-out infinite !important;
-        }
 
-        @keyframes naayLeafFloat {
-          0%, 100% { transform: rotate(0deg) translateY(0px); }
-          33% { transform: rotate(1deg) translateY(-2px); }
-          66% { transform: rotate(-1deg) translateY(1px); }
-        }
 
         .naay-widget__promotional-text {
           flex: 1 !important;
