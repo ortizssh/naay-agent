@@ -153,7 +153,7 @@ jobs:
           "description": "Naay Agent - Production Deploy",
           "main": "app.js",
           "scripts": {
-            "start": "node app.js",
+            "start": "REDIS_ENABLED=false node app.js",
             "build": "echo 'Build completed in CI'",
             "postinstall": "echo 'Production dependencies installed'"
           },

@@ -30,6 +30,12 @@ class RedisCacheService implements CacheService {
   private isRedisConnected = false;
 
   constructor() {
+    // Skip Redis initialization if disabled
+    if (!config.redis?.enabled) {
+      logger.info('Redis disabled, using memory cache only');
+      return;
+    }
+
     try {
       this.redis = new Redis({
         host: config.redis?.host || 'localhost',
