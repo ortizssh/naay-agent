@@ -85,8 +85,28 @@ if (distExists) {
     // Set production environment
     process.env.NODE_ENV = process.env.NODE_ENV || 'production';
     
+    // Fix NODE_PATH to include root node_modules for compiled backend
+    const originalNodePath = process.env.NODE_PATH || '';
+    const rootNodeModules = path.join(__dirname, 'node_modules');
+    const backendNodeModules = path.join(__dirname, 'backend/node_modules');
+    
+    process.env.NODE_PATH = [rootNodeModules, backendNodeModules, originalNodePath]
+      .filter(p => p)
+      .join(path.delimiter);
+    
+    // Refresh module cache to pick up new NODE_PATH
+    require('module').Module._initPaths();
+    
+    console.log('🔧 NODE_PATH configured:', process.env.NODE_PATH);
+    
+    // Change working directory to backend for relative imports
+    const originalCwd = process.cwd();
+    process.chdir(path.join(__dirname, 'backend'));
+    
+    console.log('📁 Changed working directory to:', process.cwd());
+    
     // Load the compiled backend application
-    require('./backend/dist/index.js');
+    require('../dist/index.js');
     
     console.log('✅ Naay Agent application loaded successfully!');
     
@@ -94,11 +114,17 @@ if (distExists) {
     console.error('❌ Failed to load main application:', error.message);
     console.error('Error stack:', error.stack);
     
+    // Restore original working directory
+    try {
+      process.chdir(__dirname);
+    } catch (e) {}
+    
     // If it's a dependency error, give more info
     if (error.code === 'MODULE_NOT_FOUND') {
       console.log('🔍 Module not found details:', {
         module: error.message,
-        paths: error.paths ? error.paths.slice(0, 5) : 'none'
+        paths: error.paths ? error.paths.slice(0, 5) : 'none',
+        NODE_PATH: process.env.NODE_PATH
       });
     }
     
