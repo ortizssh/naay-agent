@@ -15,6 +15,8 @@
     "build": "npm run build:backend && npm run build:admin",
     "build:backend": "cd backend && npm run build",
     "build:admin": "cd frontend-admin && npm run build",
+    "build:azure": "node build-azure.js",
+    "start": "node index.js",
     "test": "npm run test:backend && npm run test:admin",
     "test:backend": "cd backend && npm run test",
     "test:admin": "cd frontend-admin && npm run test",
@@ -25,6 +27,9 @@
     "shopify:generate": "shopify app generate extension",
     "shopify:deploy": "shopify app deploy",
     "shopify:info": "shopify app info"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^6.21.0",
