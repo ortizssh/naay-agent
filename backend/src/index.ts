@@ -20,6 +20,7 @@ import widgetRoutes from '@/controllers/widget.controller';
 import settingsRoutes from '@/controllers/settings.controller';
 import adminRoutes from '@/controllers/admin.controller';
 import adminBypassRoutes from '@/controllers/admin-bypass.controller';
+import simpleChatRoutes from '@/controllers/simple-chat.controller';
 
 async function startServer() {
   try {
@@ -2049,6 +2050,7 @@ async function startServer() {
     app.use('/api/webhooks', webhookRoutes);
     app.use('/api/webhooks-admin', webhookAdminRoutes);
     app.use('/api/chat', chatRoutes);
+    app.use('/api/simple-chat', simpleChatRoutes);
     app.use('/api/widget', widgetRoutes);
     app.use('/api/settings', settingsRoutes);
     app.use('/api/admin', adminRoutes);

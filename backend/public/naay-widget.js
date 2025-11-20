@@ -65,7 +65,7 @@
     }
 
     init() {
-      console.log('✨ Initializing Naay Luxury Widget v3.0.1 - API FIX DEPLOYED:', new Date().toISOString());
+      console.log('✨ Initializing Naay Flat Widget v3.1.0 - SIMPLIFIED API:', new Date().toISOString());
       console.log('Shop:', this.config.shopDomain);
       
       // Load settings from server
@@ -306,7 +306,7 @@
           backdrop-filter: blur(20px) !important;
           -webkit-backdrop-filter: blur(20px) !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
-          border-radius: 16px !important;
+          border-radius: 8px !important;
           padding: 20px 24px !important;
           max-width: 280px !important;
           box-shadow: var(--naay-shadow-medium) !important;
@@ -332,7 +332,7 @@
         .naay-widget__promotional-icon {
           width: 28px !important;
           height: 28px !important;
-          background: linear-gradient(135deg, var(--naay-fresh), var(--naay-hydra)) !important;
+          background: var(--naay-fresh) !important;
           border-radius: 10px !important;
           display: flex !important;
           align-items: center !important;
@@ -398,7 +398,7 @@
           width: 72px !important;
           height: 72px !important;
           border-radius: 50% !important;
-          background: linear-gradient(135deg, var(--naay-perfect), var(--naay-rich)) !important;
+          background: var(--naay-perfect) !important;
           border: none !important;
           cursor: pointer !important;
           position: relative !important;
@@ -413,7 +413,7 @@
         .naay-widget__button:hover {
           transform: translateY(-6px) scale(1.08) !important;
           box-shadow: var(--naay-shadow-strong) !important;
-          background: linear-gradient(135deg, var(--naay-rich), var(--naay-radiant)) !important;
+          background: var(--naay-rich) !important;
         }
 
         .naay-widget__button-content {
@@ -462,7 +462,7 @@
           width: 100% !important;
           height: 100% !important;
           border-radius: 50% !important;
-          background: linear-gradient(135deg, var(--naay-perfect), var(--naay-rich)) !important;
+          background: var(--naay-perfect) !important;
           animation: naayPulse 2s infinite !important;
           z-index: 1 !important;
         }
@@ -482,12 +482,12 @@
           position: absolute !important;
           bottom: 88px !important;
           right: 0 !important;
-          width: 420px !important;
+          width: 520px !important;
           height: 640px !important;
           background: rgba(248, 249, 248, 0.95) !important;
           backdrop-filter: blur(20px) !important;
           -webkit-backdrop-filter: blur(20px) !important;
-          border-radius: 24px !important;
+          border-radius: 12px !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
           box-shadow: var(--naay-shadow-strong) !important;
           display: none !important;
@@ -515,15 +515,9 @@
           opacity: 1 !important;
         }
 
-        /* Luxury Header */
+        /* Header Hidden */
         .naay-widget__header {
-          background: linear-gradient(135deg, var(--naay-perfect), var(--naay-rich)) !important;
-          color: var(--naay-white) !important;
-          padding: 24px 32px !important;
-          display: flex !important;
-          justify-content: space-between !important;
-          align-items: center !important;
-          position: relative !important;
+          display: none !important;
         }
 
         .naay-widget__brand {
@@ -537,7 +531,7 @@
           height: 48px !important;
           background: rgba(255, 255, 255, 0.15) !important;
           backdrop-filter: blur(10px) !important;
-          border-radius: 16px !important;
+          border-radius: 8px !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
@@ -645,8 +639,8 @@
         .naay-widget__welcome-avatar {
           width: 56px !important;
           height: 56px !important;
-          background: linear-gradient(135deg, var(--naay-hydra), var(--naay-delicate)) !important;
-          border-radius: 18px !important;
+          background: var(--naay-hydra) !important;
+          border-radius: 12px !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
@@ -688,7 +682,7 @@
           gap: 16px !important;
           padding: 20px !important;
           background: rgba(255, 255, 255, 0.7) !important;
-          border-radius: 16px !important;
+          border-radius: 8px !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
           transition: all 0.3s var(--naay-transition) !important;
         }
@@ -754,10 +748,10 @@
         .naay-widget__send {
           width: 56px !important;
           height: 56px !important;
-          background: linear-gradient(135deg, var(--naay-perfect), var(--naay-rich)) !important;
+          background: var(--naay-perfect) !important;
           color: var(--naay-white) !important;
           border: none !important;
-          border-radius: 28px !important;
+          border-radius: 12px !important;
           cursor: pointer !important;
           transition: all 0.3s var(--naay-transition) !important;
           display: flex !important;
@@ -768,7 +762,7 @@
         .naay-widget__send:hover {
           transform: translateY(-2px) scale(1.05) !important;
           box-shadow: var(--naay-shadow-medium) !important;
-          background: linear-gradient(135deg, var(--naay-rich), var(--naay-radiant)) !important;
+          background: var(--naay-rich) !important;
         }
 
         .naay-widget__send:disabled {
@@ -794,14 +788,14 @@
         .naay-widget__message {
           margin: 16px 0 !important;
           padding: 16px 20px !important;
-          border-radius: 18px !important;
+          border-radius: 10px !important;
           font-size: 15px !important;
           line-height: 1.5 !important;
           max-width: 85% !important;
         }
 
         .naay-widget__message--user {
-          background: linear-gradient(135deg, var(--naay-perfect), var(--naay-rich)) !important;
+          background: var(--naay-perfect) !important;
           color: var(--naay-white) !important;
           margin-left: auto !important;
           border-bottom-right-radius: 6px !important;
@@ -978,12 +972,10 @@
       }
 
       try {
-        const apiUrl = `${this.config.apiEndpoint}/api/chat`;
+        const apiUrl = `${this.config.apiEndpoint}/api/simple-chat`;
         const payload = {
           message: text,
-          shop: this.config.shopDomain,
-          conversationId: this.conversationId,
-          context: this.config.context || {}
+          shop: this.config.shopDomain
         };
 
         console.log('🌿 Naay Chat: Sending message to API', {
