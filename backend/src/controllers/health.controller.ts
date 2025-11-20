@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { SupabaseService } from '@/services/supabase.service';
+import { monitoringService } from '@/services/monitoring.service';
 import { logger } from '@/utils/logger';
 import { config } from '@/utils/config';
 import OpenAI from 'openai';
@@ -111,6 +112,81 @@ router.get('/live', (req: Request, res: Response) => {
     status: 'alive',
     timestamp: new Date().toISOString(),
   });
+});
+
+// Metrics endpoint
+router.get('/metrics', (req: Request, res: Response) => {
+  try {
+    const metrics = monitoringService.getMetricsSummary();
+
+    res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      metrics
+    });
+  } catch (error) {
+    logger.error('Metrics endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve metrics',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Health status endpoint
+router.get('/status', (req: Request, res: Response) => {
+  try {
+    const healthStatus = monitoringService.getHealthStatus();
+
+    const statusCode = healthStatus.overall === 'healthy' ? 200 :
+                      healthStatus.overall === 'degraded' ? 200 : 503;
+
+    res.status(statusCode).json({
+      success: healthStatus.overall === 'healthy',
+      status: healthStatus.overall,
+      timestamp: healthStatus.timestamp,
+      services: healthStatus.services
+    });
+  } catch (error) {
+    logger.error('Health status endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      status: 'error',
+      error: 'Failed to retrieve health status',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// External service check endpoint
+router.get('/external-check', async (req: Request, res: Response) => {
+  try {
+    const { url, timeout } = req.query;
+
+    if (!url || typeof url !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'URL parameter is required'
+      });
+    }
+
+    const timeoutNum = timeout ? parseInt(timeout as string) : 5000;
+    const result = await monitoringService.checkExternalService(url, timeoutNum);
+
+    res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      check: result
+    });
+  } catch (error) {
+    logger.error('External check endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to perform external check',
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 export default router;

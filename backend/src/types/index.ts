@@ -178,6 +178,8 @@ export interface ShopifyWebhook {
   created_at: Date;
 }
 
+export type ShopifyWebhookPayload = Record<string, any>;
+
 // Queue Types
 export interface QueueJob {
   id: string;
@@ -217,31 +219,293 @@ export interface AppConfig {
     jwtSecret: string;
   };
   redis: {
-    url: string;
+    url?: string;
+    host: string;
+    port: number;
+    password?: string;
     enabled: boolean;
   };
 }
 
-// Error Types
+// Enhanced Error Types and Codes for Shopify App
+export enum ErrorCode {
+  // General Errors
+  INTERNAL_ERROR = 'INTERNAL_ERROR',
+  VALIDATION_ERROR = 'VALIDATION_ERROR',
+  AUTHENTICATION_ERROR = 'AUTHENTICATION_ERROR',
+  AUTHORIZATION_ERROR = 'AUTHORIZATION_ERROR',
+  NOT_FOUND = 'NOT_FOUND',
+  RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
+  
+  // Shopify-specific Errors
+  SHOPIFY_AUTH_ERROR = 'SHOPIFY_AUTH_ERROR',
+  SHOPIFY_API_ERROR = 'SHOPIFY_API_ERROR',
+  SHOPIFY_WEBHOOK_ERROR = 'SHOPIFY_WEBHOOK_ERROR',
+  SHOPIFY_SESSION_EXPIRED = 'SHOPIFY_SESSION_EXPIRED',
+  SHOPIFY_SHOP_NOT_FOUND = 'SHOPIFY_SHOP_NOT_FOUND',
+  SHOPIFY_PERMISSION_DENIED = 'SHOPIFY_PERMISSION_DENIED',
+  SHOPIFY_RATE_LIMIT = 'SHOPIFY_RATE_LIMIT',
+  SHOPIFY_UNINSTALLED = 'SHOPIFY_UNINSTALLED',
+  
+  // AI/Embedding Errors
+  OPENAI_API_ERROR = 'OPENAI_API_ERROR',
+  EMBEDDING_GENERATION_ERROR = 'EMBEDDING_GENERATION_ERROR',
+  INTENT_ANALYSIS_ERROR = 'INTENT_ANALYSIS_ERROR',
+  AI_RESPONSE_ERROR = 'AI_RESPONSE_ERROR',
+  AI_TIMEOUT = 'AI_TIMEOUT',
+  
+  // Database Errors
+  DATABASE_ERROR = 'DATABASE_ERROR',
+  SUPABASE_ERROR = 'SUPABASE_ERROR',
+  CACHE_ERROR = 'CACHE_ERROR',
+  
+  // Product/Search Errors
+  PRODUCT_SYNC_ERROR = 'PRODUCT_SYNC_ERROR',
+  SEARCH_ERROR = 'SEARCH_ERROR',
+  EMBEDDING_NOT_FOUND = 'EMBEDDING_NOT_FOUND',
+  PRODUCT_NOT_FOUND = 'PRODUCT_NOT_FOUND',
+}
+
 export class AppError extends Error {
+  public readonly code: ErrorCode;
+  public readonly statusCode: number;
+  public readonly isOperational: boolean;
+  public readonly shopDomain?: string;
+  public readonly metadata?: Record<string, any>;
+
   constructor(
-    public message: string,
-    public statusCode: number = 500,
-    public code?: string
+    message: string,
+    statusCode: number = 500,
+    code: ErrorCode = ErrorCode.INTERNAL_ERROR,
+    isOperational: boolean = true,
+    shopDomain?: string,
+    metadata?: Record<string, any>
   ) {
     super(message);
+    
     this.name = 'AppError';
+    this.code = code;
+    this.statusCode = statusCode;
+    this.isOperational = isOperational;
+    this.shopDomain = shopDomain;
+    this.metadata = metadata;
+
+    Error.captureStackTrace(this, this.constructor);
+  }
+
+  toJSON() {
+    return {
+      name: this.name,
+      message: this.message,
+      code: this.code,
+      statusCode: this.statusCode,
+      shopDomain: this.shopDomain,
+      metadata: this.metadata,
+      timestamp: new Date().toISOString()
+    };
   }
 }
 
+// Shopify-specific error classes
 export class ShopifyError extends AppError {
-  constructor(message: string, statusCode: number = 500) {
-    super(message, statusCode, 'SHOPIFY_ERROR');
+  constructor(
+    message: string, 
+    statusCode: number = 500,
+    code: ErrorCode = ErrorCode.SHOPIFY_API_ERROR,
+    shopDomain?: string,
+    metadata?: Record<string, any>
+  ) {
+    super(message, statusCode, code, true, shopDomain, metadata);
+    this.name = 'ShopifyError';
+  }
+}
+
+export class ShopifyAuthError extends AppError {
+  constructor(
+    message: string = 'Shopify authentication failed',
+    shopDomain?: string,
+    metadata?: Record<string, any>
+  ) {
+    super(message, 401, ErrorCode.SHOPIFY_AUTH_ERROR, true, shopDomain, metadata);
+    this.name = 'ShopifyAuthError';
+  }
+}
+
+export class ShopifyRateLimitError extends AppError {
+  public readonly resetTime: Date;
+
+  constructor(
+    resetTime: Date,
+    shopDomain?: string,
+    message: string = 'Shopify API rate limit exceeded'
+  ) {
+    super(
+      `${message}. Reset at: ${resetTime.toISOString()}`,
+      429,
+      ErrorCode.SHOPIFY_RATE_LIMIT,
+      true,
+      shopDomain,
+      { resetTime }
+    );
+    this.name = 'ShopifyRateLimitError';
+    this.resetTime = resetTime;
+  }
+}
+
+export class ShopifyWebhookError extends AppError {
+  constructor(
+    message: string,
+    shopDomain?: string,
+    metadata?: Record<string, any>
+  ) {
+    super(message, 400, ErrorCode.SHOPIFY_WEBHOOK_ERROR, true, shopDomain, metadata);
+    this.name = 'ShopifyWebhookError';
   }
 }
 
 export class SupabaseError extends AppError {
-  constructor(message: string, statusCode: number = 500) {
-    super(message, statusCode, 'SUPABASE_ERROR');
+  constructor(
+    message: string, 
+    statusCode: number = 500,
+    metadata?: Record<string, any>
+  ) {
+    super(message, statusCode, ErrorCode.SUPABASE_ERROR, true, undefined, metadata);
+    this.name = 'SupabaseError';
+  }
+}
+
+// AI-specific error classes
+export class AIError extends AppError {
+  constructor(
+    message: string,
+    code: ErrorCode = ErrorCode.AI_RESPONSE_ERROR,
+    metadata?: Record<string, any>
+  ) {
+    super(message, 500, code, true, undefined, metadata);
+    this.name = 'AIError';
+  }
+}
+
+export class EmbeddingError extends AppError {
+  constructor(
+    message: string,
+    metadata?: Record<string, any>
+  ) {
+    super(message, 500, ErrorCode.EMBEDDING_GENERATION_ERROR, true, undefined, metadata);
+    this.name = 'EmbeddingError';
+  }
+}
+
+// Validation error class
+export class ValidationError extends AppError {
+  public readonly field?: string;
+
+  constructor(
+    message: string,
+    field?: string,
+    metadata?: Record<string, any>
+  ) {
+    super(message, 400, ErrorCode.VALIDATION_ERROR, true, undefined, metadata);
+    this.name = 'ValidationError';
+    this.field = field;
+  }
+}
+
+// Rate limiting error for general API
+export class RateLimitError extends AppError {
+  public readonly limit: number;
+  public readonly resetTime: Date;
+
+  constructor(
+    limit: number,
+    resetTime: Date,
+    shopDomain?: string
+  ) {
+    super(
+      `Rate limit exceeded. Limit: ${limit} requests. Try again after ${resetTime.toISOString()}`,
+      429,
+      ErrorCode.RATE_LIMIT_EXCEEDED,
+      true,
+      shopDomain,
+      { limit, resetTime }
+    );
+    this.name = 'RateLimitError';
+    this.limit = limit;
+    this.resetTime = resetTime;
+  }
+}
+
+// Intent Analysis Type
+export interface IntentAnalysis {
+  intent: string;
+  confidence: number;
+  entities: Record<string, any>;
+  context: Record<string, any>;
+}
+
+// Enhanced API Response Types
+export interface APIResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: {
+    message: string;
+    code: ErrorCode;
+    details?: any;
+    shopDomain?: string;
+  };
+  metadata?: {
+    timestamp: string;
+    shop?: string;
+    requestId?: string;
+    processingTime?: number;
+    version?: string;
+  };
+}
+
+// Shopify-specific enhanced types
+export interface ShopifySessionData {
+  shop: string;
+  accessToken: string;
+  scopes: string;
+  expiresAt?: Date;
+  userId?: string;
+  isOnline: boolean;
+  installedAt: Date;
+  updatedAt: Date;
+}
+
+// Performance Monitoring Types for Shopify
+export interface PerformanceMetric {
+  name: string;
+  value: number;
+  unit: 'ms' | 'count' | 'bytes' | 'percentage';
+  shop?: string;
+  endpoint?: string;
+  timestamp: Date;
+  tags?: Record<string, string>;
+}
+
+// Enhanced Chat Context for Shopify
+export interface ChatContext {
+  sessionId: string;
+  shop: string;
+  customerId?: string;
+  cartId?: string;
+  previousMessages: ChatMessage[];
+  userPreferences?: Record<string, any>;
+  shopifyContext?: {
+    currency: string;
+    timezone: string;
+    locale: string;
+    plan: string;
+  };
+}
+
+// Extended Request interface for webhooks
+declare global {
+  namespace Express {
+    export interface Request {
+      rawBody?: Buffer;
+    }
   }
 }

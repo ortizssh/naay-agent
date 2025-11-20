@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import { config } from '@/utils/config';
 import { logger } from '@/utils/logger';
 import { AppError } from '@/types';
+import { cacheService } from './cache.service';
 
 export class EmbeddingService {
   private openai: OpenAI;
@@ -21,6 +22,14 @@ export class EmbeddingService {
         throw new AppError('Empty text provided for embedding', 400);
       }
 
+      const cacheKey = `embedding:${Buffer.from(cleanText).toString('base64')}`;
+
+      // Try to get from cache first
+      const cached = await cacheService.get<number[]>(cacheKey);
+      if (cached) {
+        return cached;
+      }
+
       // Generate embedding using OpenAI
       const response = await this.openai.embeddings.create({
         model: config.openai.embeddingModel,
@@ -33,6 +42,9 @@ export class EmbeddingService {
       }
 
       const embedding = response.data[0].embedding;
+
+      // Cache the result for 24 hours
+      await cacheService.set(cacheKey, embedding, { ttl: 24 * 60 * 60 });
 
       logger.debug(
         `Generated embedding for text: "${cleanText.substring(0, 50)}..."`,

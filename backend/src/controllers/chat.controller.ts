@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { AIAgentService } from '@/services/ai-agent.service';
 import { SupabaseService } from '@/services/supabase.service';
 import { ShopifyService } from '@/services/shopify.service';
+import { monitoringService } from '@/services/monitoring.service';
 import { chatRateLimiter } from '@/middleware/rateLimiter';
 import { verifyToken } from './auth.controller';
 import { logger } from '@/utils/logger';
@@ -73,13 +74,11 @@ router.post(
         hasCartId: !!cart_id,
       });
 
-      // Process message with AI agent
-      const agentResponse = await aiAgentService.processMessage(
-        message,
-        session_id,
-        shop,
-        cart_id,
-        context
+      // Process message with AI agent (with performance monitoring)
+      const agentResponse = await monitoringService.measurePerformance(
+        'chat_message_processing',
+        () => aiAgentService.processMessage(message, session_id, shop, cart_id, context),
+        { shop, hasCartId: cart_id ? 'true' : 'false' }
       );
 
       // Execute any cart actions if present

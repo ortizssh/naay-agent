@@ -7,6 +7,7 @@ import { logger } from '@/utils/logger';
 import { errorHandler } from '@/middleware/errorHandler';
 import { rateLimiter } from '@/middleware/rateLimiter';
 import { requestLogger } from '@/middleware/requestLogger';
+import { securityHeaders, sanitizeInput, auditLog } from '@/middleware/security';
 
 // Route imports
 import authRoutes from '@/controllers/auth.controller';
@@ -112,6 +113,11 @@ async function startServer() {
 
     // Request logging
     app.use(requestLogger);
+
+    // Security middleware
+    app.use(securityHeaders);
+    app.use(sanitizeInput);
+    app.use(auditLog);
 
     // Body parsing middleware
     app.use('/api/webhooks', express.raw({ type: 'application/json' }));

@@ -27,10 +27,11 @@ export const config: AppConfig = {
     jwtSecret: process.env.JWT_SECRET || 'default-secret',
   },
   redis: {
-    url: process.env.REDIS_URL || 'redis://localhost:6379',
-    enabled:
-      process.env.REDIS_ENABLED !== 'false' &&
-      process.env.NODE_ENV !== 'production',
+    url: process.env.REDIS_URL,
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379'),
+    password: process.env.REDIS_PASSWORD,
+    enabled: process.env.REDIS_ENABLED !== 'false',
   },
 };
 
