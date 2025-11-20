@@ -129,7 +129,7 @@ jobs:
         fi
         
         # Copy root files needed
-        cp startup.js deploy-package/
+        cp app.js deploy-package/
         
         # Copy test deployment as fallback
         cp -r test-deploy deploy-package/ 2>/dev/null || echo "No test-deploy folder"
@@ -147,9 +147,9 @@ jobs:
           "name": "naay-agent-production",
           "version": "1.0.0",
           "description": "Naay Agent - Production Deploy",
-          "main": "startup.js",
+          "main": "app.js",
           "scripts": {
-            "start": "node startup.js",
+            "start": "node app.js",
             "build": "echo 'Build completed in CI'",
             "postinstall": "echo 'Production dependencies installed'"
           },
@@ -190,7 +190,7 @@ jobs:
           <system.webServer>
             <webSocket enabled="false" />
             <handlers>
-              <add name="iisnode" path="startup.js" verb="*" modules="iisnode"/>
+              <add name="iisnode" path="app.js" verb="*" modules="iisnode"/>
             </handlers>
             <rewrite>
               <rules>
@@ -198,7 +198,7 @@ jobs:
                   <conditions>
                     <add input="{REQUEST_FILENAME}" matchType="IsFile" negate="True"/>
                   </conditions>
-                  <action type="Rewrite" url="startup.js"/>
+                  <action type="Rewrite" url="app.js"/>
                 </rule>
               </rules>
             </rewrite>
