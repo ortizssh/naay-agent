@@ -1,7 +1,9 @@
 // Azure entry point - NO direct dependencies
 console.log('🚀 Starting Naay Agent on Azure...');
-console.log('Environment:', process.env.NODE_ENV || 'development');
-console.log('Port:', process.env.PORT || 8080);
+console.log('📅 Deploy timestamp:', new Date().toISOString());
+console.log('🔧 Environment:', process.env.NODE_ENV || 'development');
+console.log('🌐 Port:', process.env.PORT || 8080);
+console.log('📂 Working directory:', process.cwd());
 
 // Create basic HTTP server first to avoid module errors
 const http = require('http');
@@ -32,6 +34,7 @@ try {
       environment: process.env.NODE_ENV || 'development',
       port: port,
       hasExpress: hasExpress,
+      deployment_id: Date.now(),
       files: {
         'package.json': fs.existsSync(path.join(__dirname, 'package.json')),
         'backend/package.json': fs.existsSync(path.join(__dirname, 'backend', 'package.json')),
@@ -39,7 +42,11 @@ try {
         'backend/node_modules': fs.existsSync(path.join(__dirname, 'backend', 'node_modules')),
         'backend/dist': fs.existsSync(path.join(__dirname, 'backend', 'dist')),
       },
-      message_details: 'App will restart automatically when deployment completes. This is normal during first deployment.',
+      package_scripts: {
+        postinstall: 'Configured to run azure:setup',
+        azure_setup: 'Installs deps and builds backend'
+      },
+      message_details: 'Azure postinstall hook should run azure:setup. If this message persists, check Azure deployment logs.',
     };
     
     res.end(JSON.stringify(response, null, 2));
