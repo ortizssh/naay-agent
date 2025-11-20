@@ -159,7 +159,7 @@
                     <path d="M6.05 8.05C6.05 6.7 7.1 5.65 8.45 5.65C9.8 5.65 10.85 6.7 10.85 8.05C10.85 9.4 9.8 10.45 8.45 10.45C7.1 10.45 6.05 9.4 6.05 8.05ZM12.55 8.05C12.55 6.7 13.6 5.65 14.95 5.65C16.3 5.65 17.35 6.7 17.35 8.05C17.35 9.4 16.3 10.45 14.95 10.45C13.6 10.45 12.55 9.4 12.55 8.05ZM12 14C8.13 14 5 11.37 5 8.1C5 6.61 5.53 5.24 6.46 4.17C7.39 3.1 8.65 2.4 10.05 2.15C11.45 1.9 12.9 2.12 14.18 2.79C15.46 3.46 16.5 4.54 17.15 5.86C17.8 7.18 18.02 8.67 17.77 10.11C17.52 11.55 16.81 12.87 15.74 13.85C14.67 14.83 13.3 15.41 11.85 15.5C10.4 15.59 8.96 15.19 7.77 14.36L12 14Z" fill="currentColor"/>
                   </svg>
                 </div>
-                <h3 class="naay-widget__welcome-title">¡Hola! Soy tu experta en Naay</h3>
+                <h3 class="naay-widget__welcome-title">¡Hola! Soy tu asesora personal en Naáy</h3>
               </div>
               <p class="naay-widget__welcome-message">${this.config.greeting}</p>
               <div class="naay-widget__welcome-features">
