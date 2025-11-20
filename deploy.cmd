@@ -52,7 +52,7 @@ IF NOT DEFINED KUDU_SYNC_CMD (
 :: Deployment
 :: ----------
 
-echo Handling node.js deployment.
+echo Handling node.js deployment for Naay Agent...
 
 :: 1. KuduSync
 IF /I "%IN_PLACE_DEPLOYMENT%" NEQ "1" (
@@ -63,22 +63,22 @@ IF /I "%IN_PLACE_DEPLOYMENT%" NEQ "1" (
 :: 2. Select node version
 call :SelectNodeVersion
 
-:: 3. Install npm packages for ROOT
+:: 3. Install ROOT dependencies (NO postinstall hooks to avoid loops)
 IF EXIST "%DEPLOYMENT_TARGET%\package.json" (
   pushd "%DEPLOYMENT_TARGET%"
-  echo Installing root npm packages...
-  call :ExecuteCmd npm install --production
+  echo Installing root dependencies...
+  call :ExecuteCmd npm install --production --ignore-scripts
   IF !ERRORLEVEL! NEQ 0 goto error
   popd
 )
 
-:: 4. Install npm packages for BACKEND
+:: 4. Install BACKEND dependencies and build
 IF EXIST "%DEPLOYMENT_TARGET%\backend\package.json" (
   pushd "%DEPLOYMENT_TARGET%\backend"
-  echo Installing backend npm packages...
-  call :ExecuteCmd npm install --production
+  echo Installing backend dependencies...
+  call :ExecuteCmd npm install --production --ignore-scripts
   IF !ERRORLEVEL! NEQ 0 goto error
-  echo Building backend...
+  echo Building TypeScript backend...
   call :ExecuteCmd npm run build
   IF !ERRORLEVEL! NEQ 0 goto error
   popd

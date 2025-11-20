@@ -24,7 +24,6 @@
     "test:admin": "cd frontend-admin && npm run test",
     "lint": "eslint \"backend/src/**/*.{ts,js}\" --fix",
     "lint:fix": "eslint \"backend/src/**/*.{ts,js}\" --fix",
-    "postinstall": "echo '📦 Post-install: $(date)' && npm run azure:setup",
     "setup:env": "node scripts/setup-env.js || echo 'Setup env skipped'",
     "shopify:generate": "shopify app generate extension",
     "shopify:deploy": "shopify app deploy",
