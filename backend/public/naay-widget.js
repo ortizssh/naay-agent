@@ -65,7 +65,7 @@
     }
 
     init() {
-      console.log('✨ Initializing Naay Flat Widget v3.1.0 - SIMPLIFIED API:', new Date().toISOString());
+      console.log('✨ Initializing Naay Flat Widget v3.2.0 - INTERACTIVE CARDS:', new Date().toISOString());
       console.log('Shop:', this.config.shopDomain);
       
       // Load settings from server
@@ -108,7 +108,7 @@
         <div class="naay-widget__promotional-message" id="naay-promotional-message" role="dialog" aria-label="Mensaje promocional">
           <div class="naay-widget__promotional-content">
             <div class="naay-widget__promotional-text">
-              ¿Necesitas ayuda especializada?
+              ¿Necesitas ayuda?
               <span class="naay-widget__promotional-subtitle">Pregúntanos sobre cuidado natural</span>
             </div>
           </div>
@@ -163,23 +163,23 @@
               </div>
               <p class="naay-widget__welcome-message">${this.config.greeting}</p>
               <div class="naay-widget__welcome-features">
-                <div class="naay-widget__feature">
+                <div class="naay-widget__feature" data-message="¿Qué productos recomiendas para mi tipo de piel?">
                   <svg class="naay-feature-icon" viewBox="0 0 20 20" fill="none">
                     <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                   <span>Recomendaciones personalizadas para tu piel</span>
                 </div>
-                <div class="naay-widget__feature">
+                <div class="naay-widget__feature" data-message="¿Cuáles son los ingredientes naturales más efectivos?">
                   <svg class="naay-feature-icon" viewBox="0 0 20 20" fill="none">
                     <path d="M13 10V3L4 14H11L11 21L20 10H13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                   <span>Respuestas inmediatas de expertos</span>
                 </div>
-                <div class="naay-widget__feature">
+                <div class="naay-widget__feature" data-message="¿Puedes ayudarme a elegir productos para mi rutina?">
                   <svg class="naay-feature-icon" viewBox="0 0 20 20" fill="none">
                     <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19C17 19.6 16.6 20 16 20H14C13.4 20 13 19.6 13 19V13M17 13H13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
-                  <span>Ayuda especializada con tu compra</span>
+                  <span>Ayuda con tu compra</span>
                 </div>
               </div>
             </div>
@@ -455,8 +455,8 @@
           position: absolute !important;
           bottom: 88px !important;
           right: 0 !important;
-          width: 520px !important;
-          height: 640px !important;
+          width: 600px !important;
+          height: 500px !important;
           background: rgba(248, 249, 248, 0.95) !important;
           backdrop-filter: blur(20px) !important;
           -webkit-backdrop-filter: blur(20px) !important;
@@ -658,6 +658,7 @@
           border-radius: 8px !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
           transition: all 0.3s var(--naay-transition) !important;
+          cursor: pointer !important;
         }
 
         .naay-widget__feature:hover {
@@ -886,6 +887,20 @@
           this.sendMessage();
         });
       }
+
+      // Feature cards click
+      const featureCards = this.container.querySelectorAll('.naay-widget__feature[data-message]');
+      featureCards.forEach(card => {
+        card.addEventListener('click', (e) => {
+          e.preventDefault();
+          const message = card.getAttribute('data-message');
+          if (message && this.input) {
+            this.input.value = message;
+            this.sendMessage();
+          }
+        });
+      });
+      console.log('✅ Feature cards event listeners added:', featureCards.length);
 
       // Escape key to close
       document.addEventListener('keydown', (e) => {
