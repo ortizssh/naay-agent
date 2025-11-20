@@ -65,7 +65,7 @@
     }
 
     init() {
-      console.log('✨ Initializing Naay Luxury Widget v3.0.0 - OFFICIAL DESIGN LOADED:', new Date().toISOString());
+      console.log('✨ Initializing Naay Luxury Widget v3.0.1 - API FIX DEPLOYED:', new Date().toISOString());
       console.log('Shop:', this.config.shopDomain);
       
       // Load settings from server
