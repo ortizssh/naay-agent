@@ -106,7 +106,7 @@ if (distExists) {
     console.log('📁 Changed working directory to:', process.cwd());
     
     // Load the compiled backend application
-    require('../dist/index.js');
+    require('./dist/index.js');
     
     console.log('✅ Naay Agent application loaded successfully!');
     
