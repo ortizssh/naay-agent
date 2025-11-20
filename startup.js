@@ -7,7 +7,7 @@ console.log('Port:', process.env.PORT || 8080);
 const fs = require('fs');
 const path = require('path');
 
-const distPath = path.join(__dirname, 'dist', 'index.js');
+const distPath = path.join(__dirname, 'backend', 'dist', 'index.js');
 const fallbackPath = path.join(__dirname, 'test-deploy', 'index.js');
 
 // Check for dependencies first
@@ -23,8 +23,8 @@ function checkDependencies() {
 const hasDependencies = checkDependencies();
 
 if (fs.existsSync(distPath) && hasDependencies) {
-  console.log('✅ Loading main application from dist/index.js');
-  require('./dist/index.js');
+  console.log('✅ Loading main application from backend/dist/index.js');
+  require('./backend/dist/index.js');
 } else if (fs.existsSync(fallbackPath) && hasDependencies) {
   console.log('⚠️ Main app not found, loading test deployment from test-deploy/index.js');
   require('./test-deploy/index.js');
@@ -47,9 +47,11 @@ if (fs.existsSync(distPath) && hasDependencies) {
       environment: process.env.NODE_ENV || 'development',
       port: port,
       files_found: {
-        'dist/index.js': fs.existsSync(distPath),
+        'backend/dist/index.js': fs.existsSync(distPath),
         'test-deploy/index.js': fs.existsSync(fallbackPath),
         'package.json': fs.existsSync(path.join(__dirname, 'package.json')),
+        'backend/node_modules': fs.existsSync(path.join(__dirname, 'backend', 'node_modules')),
+        'node_modules': fs.existsSync(path.join(__dirname, 'node_modules')),
         'dependencies': hasDependencies
       },
       next_steps: hasDependencies ? [

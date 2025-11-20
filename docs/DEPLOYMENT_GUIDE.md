@@ -11,7 +11,7 @@ Guía completa para desplegar Naay Agent en tu Shopify Dev Store y posteriorment
    - Necesario para crear apps de Shopify
 
 2. **Shopify Development Store**
-   - Crear desde Partner Dashboard
+   - Crear desde Partner Dashboard 
    - Habilitar "Development Store" settings
 
 3. **Supabase Account**
