@@ -221,6 +221,14 @@
             
             <div class="naay-widget__chat" id="naay-widget-chat" role="dialog" aria-label="Chat de Naay">
               <div class="naay-widget__simple-header">
+                <!-- Cart Toggle Button - Small in Top Left -->
+                <button class="naay-widget__cart-toggle-btn" id="naay-widget-cart-toggle-btn" aria-label="Ver carrito">
+                  <svg class="naay-cart-toggle-icon" viewBox="0 0 24 24" fill="none">
+                    <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19C17 19.6 16.6 20 16 20H14C13.4 20 13 19.6 13 19V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <span class="naay-cart-toggle-count" id="naay-widget-cart-count">0</span>
+                </button>
+                
                 <button class="naay-widget__close" id="naay-widget-close" aria-label="Cerrar chat">
                   <svg viewBox="0 0 24 24" fill="none">
                     <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/>
@@ -309,6 +317,8 @@
       // Cart elements - new layout structure
       this.cartToggle = this.container.querySelector('#naay-cart-toggle');
       this.cartBadge = this.container.querySelector('#naay-cart-badge');
+      this.cartSmallToggle = this.container.querySelector('#naay-widget-cart-toggle-btn'); // Small cart button in chat
+      this.cartSmallCount = this.container.querySelector('#naay-widget-cart-count'); // Count badge for small button
       this.cartPanel = this.container.querySelector('#naay-cart-panel');
       this.cartContent = this.container.querySelector('#naay-cart-content');
       this.cartEmpty = this.container.querySelector('#naay-cart-empty');
@@ -1517,20 +1527,21 @@
         /* Cart Toggle Button in Conversation */
         .naay-widget__cart-toggle-btn {
           position: absolute !important;
-          top: 16px !important;
-          left: 16px !important;
+          top: 12px !important;
+          left: 12px !important;
           background: rgba(255, 255, 255, 0.95) !important;
           border: 1px solid rgba(212, 196, 184, 0.3) !important;
-          border-radius: 12px !important;
-          padding: 12px !important;
+          border-radius: 8px !important;
+          padding: 6px !important;
           cursor: pointer !important;
           transition: all 0.3s var(--naay-transition) !important;
-          box-shadow: 0 2px 12px rgba(168, 130, 107, 0.1) !important;
+          box-shadow: 0 2px 8px rgba(168, 130, 107, 0.1) !important;
           z-index: 5 !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
-          position: relative !important;
+          width: 28px !important;
+          height: 28px !important;
         }
 
         .naay-widget__cart-toggle-btn:hover {
@@ -1541,27 +1552,27 @@
         }
 
         .naay-cart-toggle-icon {
-          width: 20px !important;
-          height: 20px !important;
+          width: 16px !important;
+          height: 16px !important;
           color: var(--naay-perfect) !important;
         }
 
         .naay-cart-toggle-count {
           position: absolute !important;
-          top: -6px !important;
-          right: -6px !important;
+          top: -4px !important;
+          right: -4px !important;
           background: var(--naay-perfect) !important;
           color: var(--naay-white) !important;
           border-radius: 50% !important;
-          font-size: 10px !important;
+          font-size: 8px !important;
           font-weight: var(--naay-font-weight-bold) !important;
-          min-width: 18px !important;
-          height: 18px !important;
+          width: 14px !important;
+          height: 14px !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
           line-height: 1 !important;
-          border: 2px solid var(--naay-white) !important;
+          border: 1px solid var(--naay-white) !important;
         }
 
         .naay-cart-toggle-count:empty {
@@ -2685,6 +2696,17 @@
         console.log('✅ Cart toggle event listener added');
       }
 
+      // Cart toggle - small toggle inside chat
+      if (this.cartSmallToggle) {
+        this.cartSmallToggle.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('✨ Small cart toggle clicked!');
+          this.toggleCart();
+        });
+        console.log('✅ Small cart toggle event listener added');
+      }
+
       
       // Cart close button
       if (this.cartClose) {
@@ -3663,7 +3685,7 @@
         });
       }
       
-      // Update cart badge
+      // Update cart badge - main button
       if (this.cartBadge) {
         if (itemCount > 0) {
           this.cartBadge.textContent = itemCount;
@@ -3671,6 +3693,17 @@
         } else {
           this.cartBadge.textContent = '0';
           this.cartBadge.style.display = 'none';
+        }
+      }
+
+      // Update cart badge - small button in chat
+      if (this.cartSmallCount) {
+        if (itemCount > 0) {
+          this.cartSmallCount.textContent = itemCount;
+          this.cartSmallCount.style.display = 'flex';
+        } else {
+          this.cartSmallCount.textContent = '0';
+          this.cartSmallCount.style.display = 'none';
         }
       }
       

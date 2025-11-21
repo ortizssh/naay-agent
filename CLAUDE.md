@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
+
 ## Project Overview
 
 Naay Agent is a Shopify AI assistant that combines a Node.js backend, Shopify theme extensions, and AI-powered chat capabilities. It provides semantic product search, cart management, and conversational commerce through a chat widget that integrates directly into Shopify stores.
@@ -51,7 +57,16 @@ npm run start               # Start production server
 npm test                    # Run Jest tests
 npm run test:watch          # Jest in watch mode
 npm run test:coverage       # Generate coverage report
+
+# Single test commands
+npm test -- --testNamePattern="specific test name"
+npx jest path/to/test.js    # Run single test file
 ```
+
+### Critical Configuration Notes
+- TypeScript strict mode is **disabled** (`strict: false`) - be aware when making type changes
+- Path aliases use `@/` prefix (e.g., `@/services/`, `@/types/`)
+- Environment config validation in `backend/src/utils/config.ts` with detailed error logging
 
 ## Architecture Overview
 
@@ -91,6 +106,7 @@ npm run test:coverage       # Generate coverage report
 - `embedding.service.ts` - Vector embeddings generation
 - `queue.service.ts` - Background job management
 - `cart.service.ts` - Shopping cart operations
+- `cache.service.ts` - Redis caching with memory fallback
 
 **Key Patterns**
 - Clean architecture with separation of concerns
@@ -98,6 +114,8 @@ npm run test:coverage       # Generate coverage report
 - Service layer for business logic
 - Queue-based async processing for product sync
 - Event-driven webhook processing
+- Type casting used extensively in services (requires careful refactoring)
+- Dual-layer caching (Redis + memory fallback) for resilience
 
 ### Database Schema
 
@@ -108,6 +126,11 @@ npm run test:coverage       # Generate coverage report
 - `product_embeddings` - Vector embeddings for semantic search
 - `conversations` - Chat session history
 - `webhook_events` - Webhook processing log
+
+**Database Access Patterns**:
+- Direct Supabase client calls in services (not abstracted through repositories)
+- Type casting used for database operations: `(supabaseService as any).serviceClient`
+- Row-level security policies enforce multi-tenant data isolation
 
 **Key Features**:
 - pgvector extension for similarity search
@@ -175,10 +198,20 @@ SUPABASE_SERVICE_KEY=      # Service role key
 
 # OpenAI
 OPENAI_API_KEY=            # API key for GPT-4 + embeddings
+OPENAI_MODEL=              # Optional: gpt-4 (default)
+EMBEDDING_MODEL=           # Optional: text-embedding-3-small (default)
+
+# Redis (Optional - falls back to memory cache)
+REDIS_URL=                 # Full Redis connection string (preferred)
+REDIS_HOST=localhost       # Redis host (fallback)
+REDIS_PORT=6379           # Redis port (fallback)
+REDIS_PASSWORD=           # Redis password (if required)
+REDIS_ENABLED=true        # Set to 'false' to disable Redis
 
 # Runtime
 NODE_ENV=development|production
 PORT=3000
+JWT_SECRET=               # JWT signing secret
 ```
 
 ### TypeScript Configuration
@@ -252,6 +285,12 @@ extensions/naay-chat-widget/
 - OpenAI API rate limits and token usage
 - Supabase connection pooling
 - Redis availability for queue processing
+
+### Code Quality Considerations
+- **Type Safety**: Many service methods use `(service as any)` type casting - requires careful refactoring
+- **Error Handling**: Inconsistent error handling patterns across controllers - some use try/catch, others rely on middleware
+- **Validation**: Webhook verification uses manual header parsing - consider using middleware
+- **Cache Implementation**: Redis service has extensive type casting that should be refactored for better type safety
 
 ## Performance Considerations
 
