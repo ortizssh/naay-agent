@@ -323,7 +323,13 @@
         chat: !!this.chat,
         input: !!this.input,
         promotional: !!this.promotionalMessage,
-        cart: !!this.cartSidebar
+        cartPanel: !!this.cartPanel,
+        cartEmpty: !!this.cartEmpty,
+        cartItems: !!this.cartItems,
+        cartFooter: !!this.cartFooter,
+        cartTotal: !!this.cartTotal,
+        cartToggle: !!this.cartToggle,
+        cartBadge: !!this.cartBadge
       });
     }
 
@@ -1992,13 +1998,13 @@
 
         /* Cart Toggle Button - Vertical Left */
         .naay-cart-toggle {
-          width: 72px !important;
-          height: 72px !important;
+          width: 60px !important;
+          height: 620px !important;
           background: rgba(248, 249, 248, 0.95) !important;
           backdrop-filter: blur(20px) !important;
           -webkit-backdrop-filter: blur(20px) !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
-          border-radius: 12px !important;
+          border-radius: 12px 0 0 12px !important;
           color: var(--naay-perfect) !important;
           cursor: pointer !important;
           transition: all var(--naay-duration) var(--naay-transition) !important;
@@ -2006,13 +2012,12 @@
           flex-direction: column !important;
           align-items: center !important;
           justify-content: center !important;
-          gap: 4px !important;
+          gap: 8px !important;
           box-shadow: var(--naay-shadow-strong) !important;
           position: absolute !important;
-          left: -88px !important;
-          top: 50% !important;
-          transform: translateY(-50%) !important;
-          z-index: 1001 !important;
+          left: -60px !important;
+          bottom: 0 !important;
+          z-index: 999998 !important;
           overflow: hidden !important;
           /* Hidden by default when widget is closed */
           opacity: 0 !important;
@@ -2028,7 +2033,7 @@
         }
 
         .naay-cart-toggle:hover {
-          transform: translateY(-50%) translateX(-2px) scale(1.05) !important;
+          transform: translateX(-2px) !important;
           box-shadow: 0 12px 28px rgba(139, 93, 75, 0.35), 0 4px 12px rgba(139, 93, 75, 0.2) !important;
           background: rgba(255, 255, 255, 0.98) !important;
         }
@@ -2049,21 +2054,21 @@
         }
 
         .naay-cart-toggle__icon {
-          width: 20px !important;
-          height: 20px !important;
+          width: 24px !important;
+          height: 24px !important;
           stroke-width: 2 !important;
         }
 
         .naay-cart-toggle__badge {
           position: absolute !important;
-          top: -6px !important;
+          top: 20px !important;
           right: -6px !important;
           background: var(--naay-perfect) !important;
           color: var(--naay-white) !important;
           border-radius: 50% !important;
-          width: 18px !important;
-          height: 18px !important;
-          font-size: 9px !important;
+          width: 20px !important;
+          height: 20px !important;
+          font-size: 10px !important;
           font-weight: bold !important;
           display: flex !important;
           align-items: center !important;
@@ -2073,17 +2078,17 @@
           transition: all 0.2s var(--naay-transition) !important;
         }
 
-        /* Cart Panel - Slides from right */
+        /* Cart Panel - Slides from left */
         .naay-cart-panel {
           position: absolute !important;
           bottom: 0 !important;
-          right: -400px !important;
+          left: -400px !important;
           width: 400px !important;
-          height: 500px !important;
+          height: 620px !important;
           background: rgba(248, 249, 248, 0.95) !important;
           backdrop-filter: blur(20px) !important;
           -webkit-backdrop-filter: blur(20px) !important;
-          border-radius: 12px !important;
+          border-radius: 0 12px 12px 0 !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
           box-shadow: var(--naay-shadow-strong) !important;
           display: flex !important;
@@ -2094,15 +2099,15 @@
           transition: all var(--naay-duration) var(--naay-transition) !important;
           pointer-events: none !important;
           z-index: 999997 !important;
-          transform: translateX(32px) translateY(16px) scale(0.95) !important;
+          transform: translateX(-32px) scale(0.95) !important;
         }
 
         .naay-cart-panel--open {
-          right: 0 !important;
+          left: -60px !important;
           opacity: 1 !important;
           visibility: visible !important;
           pointer-events: auto !important;
-          transform: translateX(0) translateY(0) scale(1) !important;
+          transform: translateX(0) scale(1) !important;
         }
 
 
@@ -2463,16 +2468,21 @@
           .naay-cart-panel {
             width: 90vw !important;
             max-width: 350px !important;
-            right: -350px !important;
+            left: -350px !important;
+            height: 400px !important;
           }
           
           .naay-cart-toggle {
-            width: 60px !important;
-            height: 60px !important;
-            left: -76px !important;
+            width: 50px !important;
+            height: 400px !important;
+            left: -50px !important;
             opacity: 0 !important;
             visibility: hidden !important;
             pointer-events: none !important;
+          }
+          
+          .naay-cart-panel--open {
+            left: -50px !important;
           }
           
           .naay-widget--open .naay-cart-toggle {
@@ -2491,17 +2501,21 @@
           .naay-cart-panel {
             width: 95vw !important;
             max-width: none !important;
-            height: 400px !important;
-            right: -95vw !important;
+            height: 350px !important;
+            left: -95vw !important;
           }
           
           .naay-cart-toggle {
-            width: 56px !important;
-            height: 56px !important;
-            left: -72px !important;
+            width: 45px !important;
+            height: 350px !important;
+            left: -45px !important;
             opacity: 0 !important;
             visibility: hidden !important;
             pointer-events: none !important;
+          }
+          
+          .naay-cart-panel--open {
+            left: -45px !important;
           }
           
           .naay-widget--open .naay-cart-toggle {
@@ -3505,6 +3519,13 @@
 
     updateCartDisplay() {
       console.log('🛒 Updating cart display. Current cart data:', this.cartData);
+      console.log('🔍 Cart DOM elements check:', {
+        cartEmpty: !!this.cartEmpty,
+        cartItems: !!this.cartItems,
+        cartFooter: !!this.cartFooter,
+        cartTotal: !!this.cartTotal,
+        cartBadge: !!this.cartBadge
+      });
       
       // Ensure cartData.items is an array
       if (!Array.isArray(this.cartData.items)) {
@@ -3572,11 +3593,19 @@
     }
 
     renderCartItems() {
-      if (!this.cartItems) return;
+      console.log('🎨 Rendering cart items. Items count:', this.cartData.items.length);
+      console.log('🎨 Cart items container exists:', !!this.cartItems);
+      
+      if (!this.cartItems) {
+        console.error('❌ Cart items container not found!');
+        return;
+      }
       
       this.cartItems.innerHTML = '';
+      console.log('🎨 Cleared cart items container');
       
-      this.cartData.items.forEach(item => {
+      this.cartData.items.forEach((item, index) => {
+        console.log(`🎨 Rendering item ${index + 1}:`, item);
         const itemElement = document.createElement('div');
         itemElement.className = 'naay-cart-panel__item';
         
@@ -3656,7 +3685,10 @@
         }
         
         this.cartItems.appendChild(itemElement);
+        console.log(`✅ Item ${index + 1} added to cart container`);
       });
+      
+      console.log('🎨 Finished rendering all cart items. Total items rendered:', this.cartData.items.length);
     }
 
     proceedToCheckout() {
