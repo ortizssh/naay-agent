@@ -46,6 +46,7 @@ export function validateConfig(): void {
   const required = [
     'SHOPIFY_API_KEY',
     'SHOPIFY_API_SECRET',
+    'SHOPIFY_WEBHOOK_SECRET',
     'SUPABASE_URL',
     'SUPABASE_SERVICE_KEY',
     'OPENAI_API_KEY',

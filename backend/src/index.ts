@@ -80,8 +80,27 @@ async function startServer() {
 
     // Chat API CORS middleware - for main chat endpoints
     app.use('/api/chat', (req, res, next) => {
-      // Set CORS headers for all chat API endpoints
-      res.setHeader('Access-Control-Allow-Origin', '*');
+      const origin = req.get('Origin');
+      
+      // Allow requests from Shopify domains only
+      const allowedOrigins = [
+        /^https:\/\/[a-zA-Z0-9-]+\.myshopify\.com$/,
+        /^https:\/\/[a-zA-Z0-9-]+\.shopify\.com$/,
+        /^https:\/\/admin\.shopify\.com$/
+      ];
+      
+      let allowOrigin = false;
+      if (origin) {
+        allowOrigin = allowedOrigins.some(pattern => pattern.test(origin));
+      }
+      
+      if (allowOrigin) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Vary', 'Origin');
+      } else if (!origin) {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+      }
+      
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
       res.setHeader(
         'Access-Control-Allow-Headers',
@@ -94,14 +113,33 @@ async function startServer() {
         return res.status(200).end();
       }
 
-      console.log('Chat API request - CORS headers set for:', req.path);
+      console.log('Chat API request - CORS headers set for:', req.path, 'Origin:', origin, 'Allowed:', allowOrigin);
       next();
     });
 
-    // Simple Chat API CORS middleware - for simple chat endpoints
+    // Simple Chat API CORS middleware - for simple chat endpoints  
     app.use('/api/simple-chat', (req, res, next) => {
-      // Set CORS headers for all simple chat API endpoints
-      res.setHeader('Access-Control-Allow-Origin', '*');
+      const origin = req.get('Origin');
+      
+      // Allow requests from Shopify domains only
+      const allowedOrigins = [
+        /^https:\/\/[a-zA-Z0-9-]+\.myshopify\.com$/,
+        /^https:\/\/[a-zA-Z0-9-]+\.shopify\.com$/,
+        /^https:\/\/admin\.shopify\.com$/
+      ];
+      
+      let allowOrigin = false;
+      if (origin) {
+        allowOrigin = allowedOrigins.some(pattern => pattern.test(origin));
+      }
+      
+      if (allowOrigin) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Vary', 'Origin');
+      } else if (!origin) {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+      }
+      
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
       res.setHeader(
         'Access-Control-Allow-Headers',
@@ -114,14 +152,34 @@ async function startServer() {
         return res.status(200).end();
       }
 
-      console.log('Simple Chat API request - CORS headers set for:', req.path);
+      console.log('Simple Chat API request - CORS headers set for:', req.path, 'Origin:', origin, 'Allowed:', allowOrigin);
       next();
     });
 
     // Public APIs CORS middleware - for cart and products endpoints
     app.use('/api/public', (req, res, next) => {
-      // Set CORS headers for all public API endpoints
-      res.setHeader('Access-Control-Allow-Origin', '*');
+      const origin = req.get('Origin');
+      
+      // Allow requests from Shopify domains only
+      const allowedOrigins = [
+        /^https:\/\/[a-zA-Z0-9-]+\.myshopify\.com$/,
+        /^https:\/\/[a-zA-Z0-9-]+\.shopify\.com$/,
+        /^https:\/\/admin\.shopify\.com$/
+      ];
+      
+      let allowOrigin = false;
+      if (origin) {
+        allowOrigin = allowedOrigins.some(pattern => pattern.test(origin));
+      }
+      
+      if (allowOrigin) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Vary', 'Origin'); // Important for caching
+      } else if (!origin) {
+        // Allow requests without origin (e.g., from Shopify admin)
+        res.setHeader('Access-Control-Allow-Origin', '*');
+      }
+      
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
       res.setHeader(
         'Access-Control-Allow-Headers',
@@ -134,7 +192,7 @@ async function startServer() {
         return res.status(200).end();
       }
 
-      console.log('Public API request - CORS headers set for:', req.path);
+      console.log('Public API request - CORS headers set for:', req.path, 'Origin:', origin, 'Allowed:', allowOrigin);
       next();
     });
 
