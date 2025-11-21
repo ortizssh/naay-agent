@@ -20,9 +20,15 @@
     source: 'OFFICIAL-LUXURY-DESIGN'
   });
 
-  // Prevent multiple widget loads
-  if (window.NaayWidget) {
-    console.warn('Naay Widget already loaded, version:', window.__NAAY_WIDGET_VERSION__);
+  // Prevent multiple widget loads - check for both class and instance
+  if (window.NaayWidget && window.naayWidget) {
+    console.warn('Naay Widget already loaded and instantiated, version:', window.__NAAY_WIDGET_VERSION__);
+    return;
+  }
+  
+  // Check if DOM already has widget
+  if (document.querySelector('.naay-widget')) {
+    console.warn('Naay Widget DOM already exists, skipping initialization');
     return;
   }
 
@@ -63,7 +69,6 @@
       
       // Cart state - visible only when chat is open
       this.cartVisible = false;
-      this.cartMinimized = false;
       this.cartId = null; // Shopify cart ID
       this.cartData = {
         items: [],
@@ -141,87 +146,33 @@
           <div class="naay-widget__button-pulse"></div>
         </button>
         
-        <div class="naay-widget__cart-panel" id="naay-widget-cart" role="complementary" aria-label="Carrito de compras">
-          <header class="naay-cart__header">
-            <h3 class="naay-cart__title">
-              <svg class="naay-cart__icon" viewBox="0 0 24 24" fill="none">
+        <div class="naay-widget__chat" id="naay-widget-chat" role="dialog" aria-label="Chat de Naay">
+          <div class="naay-widget__simple-header">
+            <button class="naay-widget__cart-button" id="naay-cart-button" aria-label="Abrir carrito" title="Mi Carrito">
+              <svg viewBox="0 0 24 24" fill="none">
                 <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19C17 19.6 16.6 20 16 20H14C13.4 20 13 19.6 13 19V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              Mi Carrito
-            </h3>
-            <div class="naay-cart__actions">
-              <button class="naay-cart__minimize" id="naay-cart-minimize" aria-label="Minimizar carrito">
-                <svg viewBox="0 0 24 24" fill="none">
-                  <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </button>
-              <button class="naay-cart__toggle" id="naay-cart-toggle" aria-label="Cerrar carrito">
-                <svg viewBox="0 0 24 24" fill="none">
-                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </button>
-            </div>
-          </header>
-          
-          <div class="naay-cart__content" id="naay-cart-content">
-            <div class="naay-cart__empty" id="naay-cart-empty">
-              <svg class="naay-cart__empty-icon" viewBox="0 0 24 24" fill="none">
-                <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M12 8V12M12 16H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              <p class="naay-cart__empty-text">Tu carrito está vacío</p>
-              <span class="naay-cart__empty-subtitle">¡Agrega productos para comenzar!</span>
-            </div>
-            
-            <div class="naay-cart__items" id="naay-cart-items" style="display: none;">
-              <!-- Los productos se agregarán dinámicamente aquí -->
-            </div>
-          </div>
-          
-          <footer class="naay-cart__footer" id="naay-cart-footer" style="display: none;">
-            <div class="naay-cart__total">
-              <span class="naay-cart__total-label">Total:</span>
-              <span class="naay-cart__total-amount" id="naay-cart-total">$0.00</span>
-            </div>
-            <button class="naay-cart__checkout" id="naay-cart-checkout">
-              <svg viewBox="0 0 24 24" fill="none">
-                <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              Ir al Checkout
+              <span class="naay-widget__cart-count" id="naay-cart-count">0</span>
             </button>
-          </footer>
-        </div>
-        
-        <div class="naay-widget__chat" id="naay-widget-chat" role="dialog" aria-labelledby="naay-chat-header">
-          <header class="naay-widget__header" id="naay-chat-header">
-            <div class="naay-widget__brand">
-              <div class="naay-widget__brand-avatar">
-                <svg class="naay-brand-icon" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 13L13 11L11 13L9 11L7 13L5 11L3 13V15L5 13L7 15L9 13L11 15L13 13L15 15L21 9Z" fill="currentColor"/>
-                </svg>
-              </div>
-              <div class="naay-widget__brand-info">
-                <h2 class="naay-widget__brand-name">${this.config.brandName}</h2>
-                <p class="naay-widget__brand-tagline">Cosmética Ecológica Funcional</p>
-                <div class="naay-widget__status">
-                  <div class="naay-widget__status-dot" aria-hidden="true"></div>
-                  <span>Asistente especializado disponible</span>
-                </div>
-              </div>
-            </div>
             <button class="naay-widget__close" id="naay-widget-close" aria-label="Cerrar chat">
               <svg viewBox="0 0 24 24" fill="none">
                 <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/>
               </svg>
             </button>
-          </header>
+          </div>
           
           <main class="naay-widget__messages" id="naay-widget-messages" role="main">
+            <div class="naay-widget__cart-toggle-btn" id="naay-cart-toggle-btn" aria-label="Abrir/Cerrar carrito">
+              <svg class="naay-cart-toggle-icon" viewBox="0 0 24 24" fill="none">
+                <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19C17 19.6 16.6 20 16 20H14C13.4 20 13 19.6 13 19V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span class="naay-cart-toggle-count" id="naay-cart-toggle-count">0</span>
+            </div>
+            
             <div class="naay-widget__welcome">
               <div class="naay-widget__welcome-header">
-                <h3 class="naay-widget__welcome-title">¡Hola! Soy tu asesora personal en Naáy</h3>
+                <h3 class="naay-widget__welcome-title">¡Hola! ¿En qué puedo ayudarte?</h3>
               </div>
-              <p class="naay-widget__welcome-message">${this.config.greeting}</p>
               <div class="naay-widget__welcome-features">
                 <div class="naay-widget__feature" data-message="¿Qué productos recomiendas para mi tipo de piel?">
                   <svg class="naay-feature-icon" viewBox="0 0 20 20" fill="none">
@@ -244,6 +195,41 @@
               </div>
             </div>
           </main>
+          
+          <!-- Cart Modal Slide -->
+          <div class="naay-cart__modal" id="naay-cart-modal" role="dialog" aria-labelledby="naay-cart-title" aria-hidden="true">
+            <div class="naay-cart__backdrop" id="naay-cart-backdrop"></div>
+            <div class="naay-cart__slide" id="naay-cart-slide">
+              
+              <div class="naay-cart__content" id="naay-cart-content">
+                <div class="naay-cart__empty" id="naay-cart-empty">
+                  <svg class="naay-cart__empty-icon" viewBox="0 0 24 24" fill="none">
+                    <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 8V12M12 16H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <p class="naay-cart__empty-text">Tu carrito está vacío</p>
+                  <span class="naay-cart__empty-subtitle">¡Agrega productos para comenzar!</span>
+                </div>
+                
+                <div class="naay-cart__items" id="naay-cart-items" style="display: none;">
+                  <!-- Los productos se agregarán dinámicamente aquí -->
+                </div>
+              </div>
+              
+              <footer class="naay-cart__footer" id="naay-cart-footer" style="display: none;">
+                <div class="naay-cart__total">
+                  <span class="naay-cart__total-label">Total:</span>
+                  <span class="naay-cart__total-amount" id="naay-cart-total">$0.00</span>
+                </div>
+                <button class="naay-cart__checkout" id="naay-cart-checkout">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Ir al Checkout
+                </button>
+              </footer>
+            </div>
+          </div>
           
           <footer class="naay-widget__input-area">
             <div class="naay-widget__input-container">
@@ -289,14 +275,18 @@
       this.resetButton = this.container.querySelector('#naay-widget-reset');
       this.closeButton = this.container.querySelector('#naay-widget-close');
 
-      // Cart elements
-      this.cartPanel = this.container.querySelector('#naay-widget-cart');
-      this.cartToggle = this.container.querySelector('#naay-cart-toggle');
-      this.cartMinimize = this.container.querySelector('#naay-cart-minimize');
+      // Cart elements - now using modal structure
+      this.cartModal = this.container.querySelector('#naay-cart-modal');
+      this.cartBackdrop = this.container.querySelector('#naay-cart-backdrop');
+      this.cartSlide = this.container.querySelector('#naay-cart-slide');
       this.cartContent = this.container.querySelector('#naay-cart-content');
       this.cartEmpty = this.container.querySelector('#naay-cart-empty');
       this.cartItems = this.container.querySelector('#naay-cart-items');
       this.cartFooter = this.container.querySelector('#naay-cart-footer');
+      
+      // Cart toggle button in conversation
+      this.cartToggleBtn = this.container.querySelector('#naay-cart-toggle-btn');
+      this.cartToggleCount = this.container.querySelector('#naay-cart-toggle-count');
       this.cartTotal = this.container.querySelector('#naay-cart-total');
       this.cartCheckout = this.container.querySelector('#naay-cart-checkout');
 
@@ -594,7 +584,79 @@
           visibility: hidden !important;
         }
 
-        /* Luxury Cart Panel - positioned to the left of chat */
+        /* Cart Modal - Slide from left inside chat */
+        .naay-cart__modal {
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
+          display: none !important;
+          z-index: 1000 !important;
+          pointer-events: none !important;
+          opacity: 0 !important;
+          visibility: hidden !important;
+          transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+        }
+        .naay-cart__modal--open {
+          display: block !important;
+          opacity: 1 !important;
+          visibility: visible !important;
+          pointer-events: auto !important;
+        }
+        .naay-cart__backdrop {
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
+          background: rgba(0, 0, 0, 0.2) !important;
+          backdrop-filter: blur(2px) !important;
+          cursor: pointer !important;
+        }
+        .naay-cart__slide {
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          width: 360px !important;
+          height: 100% !important;
+          background: rgba(248, 249, 248, 0.98) !important;
+          backdrop-filter: blur(20px) !important;
+          -webkit-backdrop-filter: blur(20px) !important;
+          border-radius: 0 16px 16px 0 !important;
+          border: 1px solid rgba(168, 130, 107, 0.15) !important;
+          border-left: none !important;
+          box-shadow: 
+            4px 0 32px rgba(168, 130, 107, 0.12),
+            2px 0 16px rgba(168, 130, 107, 0.08) !important;
+          display: flex !important;
+          flex-direction: column !important;
+          overflow: hidden !important;
+          transform: translateX(-100%) !important;
+          transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+        }
+        .naay-cart__modal--open .naay-cart__slide {
+          transform: translateX(0) !important;
+        }
+        .naay-cart__close {
+          background: rgba(255, 255, 255, 0.15) !important;
+          border: none !important;
+          border-radius: 8px !important;
+          padding: 8px !important;
+          color: var(--naay-white) !important;
+          cursor: pointer !important;
+          transition: all 0.2s var(--naay-transition) !important;
+        }
+        .naay-cart__close:hover {
+          background: rgba(255, 255, 255, 0.25) !important;
+          transform: scale(1.1) !important;
+        }
+        .naay-cart__close svg {
+          width: 14px !important;
+          height: 14px !important;
+        }
+        
+        /* Legacy cart panel styles - to be removed */
         .naay-widget__cart-panel {
           position: absolute !important;
           bottom: 88px !important;
@@ -1332,85 +1394,72 @@
           box-shadow: 0 6px 20px rgba(168, 130, 107, 0.4) !important;
         }
 
-        /* Header Hidden */
-        .naay-widget__header {
-          display: none !important;
-        }
-
-        .naay-widget__brand {
-          display: flex !important;
-          align-items: center !important;
-          gap: 16px !important;
-        }
-
-        .naay-widget__brand-avatar {
-          width: 48px !important;
-          height: 48px !important;
-          background: rgba(255, 255, 255, 0.15) !important;
-          backdrop-filter: blur(10px) !important;
-          border-radius: 8px !important;
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-        }
-
-        .naay-brand-icon {
-          width: 24px !important;
-          height: 24px !important;
-          color: var(--naay-white) !important;
-        }
-
-        .naay-widget__brand-name {
-          font-size: 20px !important;
-          font-weight: var(--naay-font-weight-semibold) !important;
-          margin: 0 0 2px 0 !important;
-          letter-spacing: -0.02em !important;
-        }
-
-        .naay-widget__brand-tagline {
-          font-size: 13px !important;
-          font-weight: var(--naay-font-weight-regular) !important;
-          opacity: 0.9 !important;
-          margin: 0 0 6px 0 !important;
-        }
-
-        .naay-widget__status {
+        /* Simple Header */
+        .naay-widget__simple-header {
+          position: absolute !important;
+          top: 12px !important;
+          right: 12px !important;
           display: flex !important;
           align-items: center !important;
           gap: 8px !important;
-          font-size: 12px !important;
-          font-weight: var(--naay-font-weight-medium) !important;
-          opacity: 0.9 !important;
+          z-index: 10 !important;
         }
 
-        .naay-widget__status-dot {
-          width: 10px !important;
-          height: 10px !important;
+        .naay-widget__cart-button {
+          position: relative !important;
+          background: rgba(255, 255, 255, 0.9) !important;
+          border: 1px solid rgba(212, 196, 184, 0.2) !important;
+          border-radius: 8px !important;
+          padding: 8px !important;
+          color: var(--naay-perfect) !important;
+          cursor: pointer !important;
+          transition: all 0.2s var(--naay-transition) !important;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .naay-widget__cart-button:hover {
+          background: var(--naay-white) !important;
+          transform: scale(1.05) !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+        }
+
+        .naay-widget__cart-button svg {
+          width: 16px !important;
+          height: 16px !important;
+        }
+
+        .naay-widget__cart-count {
+          position: absolute !important;
+          top: -4px !important;
+          right: -4px !important;
+          background: var(--naay-perfect) !important;
+          color: var(--naay-white) !important;
           border-radius: 50% !important;
-          background: var(--naay-fresh) !important;
-          box-shadow: 0 0 8px rgba(143, 166, 142, 0.6) !important;
-          animation: naayStatusPulse 2s infinite !important;
-        }
-
-        @keyframes naayStatusPulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.6; }
+          font-size: 10px !important;
+          font-weight: var(--naay-font-weight-bold) !important;
+          min-width: 16px !important;
+          height: 16px !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          line-height: 1 !important;
         }
 
         .naay-widget__close {
-          background: rgba(255, 255, 255, 0.1) !important;
-          border: none !important;
-          color: var(--naay-white) !important;
+          background: rgba(255, 255, 255, 0.9) !important;
+          border: 1px solid rgba(212, 196, 184, 0.2) !important;
+          color: var(--naay-perfect) !important;
           cursor: pointer !important;
-          padding: 12px !important;
-          border-radius: 12px !important;
+          padding: 8px !important;
+          border-radius: 8px !important;
           transition: all 0.2s var(--naay-transition) !important;
-          backdrop-filter: blur(10px) !important;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
         }
 
         .naay-widget__close:hover {
-          background: rgba(255, 255, 255, 0.2) !important;
-          transform: scale(1.1) !important;
+          background: var(--naay-white) !important;
+          transform: scale(1.05) !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
         }
 
         .naay-widget__close svg {
@@ -1426,6 +1475,61 @@
           background: transparent !important;
           scrollbar-width: thin !important;
           scrollbar-color: var(--naay-delicate) transparent !important;
+          position: relative !important;
+        }
+
+        /* Cart Toggle Button in Conversation */
+        .naay-widget__cart-toggle-btn {
+          position: absolute !important;
+          top: 16px !important;
+          left: 16px !important;
+          background: rgba(255, 255, 255, 0.95) !important;
+          border: 1px solid rgba(212, 196, 184, 0.3) !important;
+          border-radius: 12px !important;
+          padding: 12px !important;
+          cursor: pointer !important;
+          transition: all 0.3s var(--naay-transition) !important;
+          box-shadow: 0 2px 12px rgba(168, 130, 107, 0.1) !important;
+          z-index: 5 !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          position: relative !important;
+        }
+
+        .naay-widget__cart-toggle-btn:hover {
+          background: var(--naay-white) !important;
+          border-color: var(--naay-perfect) !important;
+          transform: translateY(-2px) !important;
+          box-shadow: 0 4px 16px rgba(168, 130, 107, 0.2) !important;
+        }
+
+        .naay-cart-toggle-icon {
+          width: 20px !important;
+          height: 20px !important;
+          color: var(--naay-perfect) !important;
+        }
+
+        .naay-cart-toggle-count {
+          position: absolute !important;
+          top: -6px !important;
+          right: -6px !important;
+          background: var(--naay-perfect) !important;
+          color: var(--naay-white) !important;
+          border-radius: 50% !important;
+          font-size: 10px !important;
+          font-weight: var(--naay-font-weight-bold) !important;
+          min-width: 18px !important;
+          height: 18px !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          line-height: 1 !important;
+          border: 2px solid var(--naay-white) !important;
+        }
+
+        .naay-cart-toggle-count:empty {
+          display: none !important;
         }
 
         .naay-widget__messages::-webkit-scrollbar {
@@ -1942,15 +2046,27 @@
         console.log('✅ Cart toggle event listener added');
       }
 
-      // Cart minimize
-      if (this.cartMinimize) {
-        this.cartMinimize.addEventListener('click', (e) => {
+      
+      // Cart modal backdrop - close on click
+      if (this.cartBackdrop) {
+        this.cartBackdrop.addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
-          console.log('✨ Cart minimize clicked!');
-          this.toggleCartMinimize();
+          console.log('✨ Cart backdrop clicked!');
+          this.hideCart();
         });
-        console.log('✅ Cart minimize event listener added');
+        console.log('✅ Cart backdrop event listener added');
+      }
+      
+      // Cart toggle button in conversation
+      if (this.cartToggleBtn) {
+        this.cartToggleBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('✨ Cart toggle in conversation clicked!');
+          this.toggleCart();
+        });
+        console.log('✅ Cart toggle in conversation event listener added');
       }
 
       // Cart checkout
@@ -1992,8 +2108,8 @@
       this.button.setAttribute('aria-expanded', 'true');
       console.log('✅ Classes after open:', this.container.className);
       
-      // Show cart when chat opens
-      this.showCart();
+      // Cart only shows when opened via cart button - not automatically
+      // this.showCart(); // Removed automatic cart opening
       
       // Focus input with delay for smooth animation
       setTimeout(() => {
@@ -2007,8 +2123,10 @@
       console.log('✨ Closing luxury chat...');
       this.isOpen = false;
       
-      // Hide cart when chat closes
-      this.hideCart();
+      // Hide cart if it's open when chat closes
+      if (this.cartVisible) {
+        this.hideCart();
+      }
       
       // Add closing animation class first
       this.container.classList.add('naay-widget--closing');
@@ -2566,29 +2684,25 @@
       }
     }
 
-    toggleCartMinimize() {
-      this.cartMinimized = !this.cartMinimized;
-      console.log('🛒 Cart minimize toggled:', this.cartMinimized);
-      
-      if (this.cartMinimized) {
-        this.cartPanel.classList.add('naay-widget__cart-panel--minimized');
-      } else {
-        this.cartPanel.classList.remove('naay-widget__cart-panel--minimized');
-      }
-    }
 
     showCart() {
-      console.log('🛒 Showing cart...');
+      console.log('🛒 Showing cart modal...');
       this.cartVisible = true;
-      this.container.classList.add('naay-widget--cart-open');
-      console.log('✅ Cart shown');
+      if (this.cartModal) {
+        this.cartModal.classList.add('naay-cart__modal--open');
+        this.cartModal.setAttribute('aria-hidden', 'false');
+      }
+      console.log('✅ Cart modal shown');
     }
 
     hideCart() {
-      console.log('🛒 Hiding cart...');
+      console.log('🛒 Hiding cart modal...');
       this.cartVisible = false;
-      this.container.classList.remove('naay-widget--cart-open');
-      console.log('✅ Cart hidden');
+      if (this.cartModal) {
+        this.cartModal.classList.remove('naay-cart__modal--open');
+        this.cartModal.setAttribute('aria-hidden', 'true');
+      }
+      console.log('✅ Cart modal hidden');
     }
 
     async addToCart(product) {
@@ -2831,6 +2945,21 @@
         this.renderCartItems();
       }
       
+      // Update cart counters in both locations
+      const cartCount = this.container.querySelector('#naay-cart-count');
+      if (cartCount) {
+        cartCount.textContent = itemCount > 0 ? itemCount : '0';
+      }
+      
+      if (this.cartToggleCount) {
+        if (itemCount > 0) {
+          this.cartToggleCount.textContent = itemCount;
+          this.cartToggleCount.style.display = 'flex';
+        } else {
+          this.cartToggleCount.style.display = 'none';
+        }
+      }
+      
       console.log('🛒 Cart display updated:', this.cartData);
     }
 
@@ -3027,6 +3156,12 @@
     
     setupShopifyCartSync() {
       console.log('🔄 Setting up Shopify cart synchronization...');
+      
+      // Prevent duplicate sync intervals
+      if (this.cartSyncInterval) {
+        console.log('🔄 Cart sync already running, skipping setup');
+        return;
+      }
       
       // Listen for Shopify cart updates if available
       if (window.addEventListener) {

@@ -25,6 +25,71 @@ const supabaseService = new SupabaseService();
 // In production, this should use a proper database or cache
 const conversationStore: Record<string, Array<{ role: string; content: string }>> = {};
 
+// Function to search for products
+async function searchProducts(shop: string, query: string, limit: number = 5, skinType?: string) {
+  try {
+    logger.info('Function searchProducts called', { shop, query, limit, skinType });
+    
+    const products = await supabaseService.searchProductsSemantic(
+      shop,
+      query,
+      limit,
+      { skinType }
+    );
+
+    return products.map(product => ({
+      id: product.id,
+      title: product.title,
+      description: product.description,
+      price: product.price,
+      vendor: product.vendor,
+      productType: product.product_type,
+      tags: product.tags,
+      images: product.images?.[0] || null,
+      available: product.variants?.some(v => v.available) || false,
+      similarity: product.similarity,
+    }));
+  } catch (error) {
+    logger.error('Error in searchProducts function:', error);
+    return [];
+  }
+}
+
+// Function to get product recommendations
+async function getProductRecommendations(shop: string, skinType?: string, concerns?: string[], limit: number = 5) {
+  try {
+    logger.info('Function getProductRecommendations called', { shop, skinType, concerns, limit });
+    
+    let query = '';
+    if (skinType) query += `productos para piel ${skinType} `;
+    if (concerns && concerns.length > 0) query += concerns.join(' ') + ' ';
+    if (!query.trim()) query = 'productos recomendados cuidado piel natural';
+
+    const products = await supabaseService.searchProductsSemantic(
+      shop,
+      query.trim(),
+      limit,
+      { skinType }
+    );
+
+    return products.map(product => ({
+      id: product.id,
+      title: product.title,
+      description: product.description,
+      price: product.price,
+      vendor: product.vendor,
+      productType: product.product_type,
+      tags: product.tags,
+      images: product.images?.[0] || null,
+      available: product.variants?.some(v => v.available) || false,
+      recommendationScore: product.similarity,
+    }));
+  } catch (error) {
+    logger.error('Error in getProductRecommendations function:', error);
+    return [];
+  }
+}
+
 // Simple chat endpoint that directly connects to OpenAI
 router.post('/', async (req: Request, res: Response) => {
   try {
@@ -137,22 +202,150 @@ Cuando un usuario interactúe:
 * Colaboración con hospitales y asociaciones dermatológicas.
 * Producción sostenible y ética.
 
-**DEBES UTILIZAR LA BASE DE DATOS VECTORIAL EN TUS HERRAMIENTAS CADA VEZ QUE RESPONDAS UN MENSAJE**`,
+**INSTRUCCIONES CRÍTICAS:**
+
+🚨 **SOLO PRODUCTOS REALES**: NUNCA inventes, menciones o recomiendes productos que no existan en el catálogo actual de Shopify. SIEMPRE debes buscar en la base de datos de productos reales antes de hacer cualquier recomendación.
+
+🔍 **OBLIGATORIO**: Antes de responder cualquier consulta sobre productos, DEBES usar las herramientas disponibles (search_products o get_product_recommendations) para buscar productos reales que coincidan con las necesidades del usuario.
+
+❌ **PROHIBIDO**: 
+- Inventar nombres de productos que no existen
+- Crear descripciones de productos inexistentes
+- Mencionar productos "ejemplo" o "hipotéticos"
+- Sugerir productos sin verificar que existan en stock
+
+✅ **PERMITIDO**:
+- Solo recomendar productos que aparezcan en los resultados de búsqueda
+- Explicar beneficios de ingredientes naturales en general
+- Dar consejos de cuidado de la piel sin mencionar productos específicos si no hay coincidencias en la base de datos
+- Sugerir que el usuario reformule su consulta si no encuentras productos adecuados
+
+🛠️ **USO DE HERRAMIENTAS OBLIGATORIO**:
+- Para consultas como "¿tienes cremas para piel seca?" → Usar search_products con query="crema piel seca"
+- Para preguntas como "¿qué me recomiendas para mi piel grasa?" → Usar get_product_recommendations con skin_type="grasa"
+- Para dudas específicas como "productos anti-edad" → Usar search_products con query="anti-edad"
+- SIEMPRE usar las herramientas antes de responder sobre productos específicos
+
+**Si no encuentras productos reales que coincidan con la consulta, explica que no tienes productos específicos disponibles actualmente y ofrece consejos generales de cuidado de la piel.**`,
         },
         ...conversationStore[currentConversationId], // Include conversation history
     ];
 
-    // Direct OpenAI call with conversation context
+    // Define tools for product search
+    const tools = [
+      {
+        type: "function" as const,
+        function: {
+          name: "search_products",
+          description: "Busca productos específicos en el catálogo de Shopify basado en una consulta de texto",
+          parameters: {
+            type: "object",
+            properties: {
+              query: {
+                type: "string",
+                description: "Término de búsqueda para encontrar productos (ej: 'crema facial', 'limpiador', 'anti-edad')"
+              },
+              skin_type: {
+                type: "string",
+                description: "Tipo de piel del usuario (ej: 'seca', 'grasa', 'mixta', 'sensible')",
+                enum: ["seca", "grasa", "mixta", "sensible", "normal"]
+              },
+              limit: {
+                type: "number",
+                description: "Número máximo de productos a devolver",
+                default: 5
+              }
+            },
+            required: ["query"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "get_product_recommendations",
+          description: "Obtiene recomendaciones de productos basadas en el tipo de piel y preocupaciones específicas",
+          parameters: {
+            type: "object",
+            properties: {
+              skin_type: {
+                type: "string",
+                description: "Tipo de piel del usuario",
+                enum: ["seca", "grasa", "mixta", "sensible", "normal"]
+              },
+              concerns: {
+                type: "array",
+                items: {
+                  type: "string"
+                },
+                description: "Lista de preocupaciones de la piel (ej: ['anti-edad', 'acné', 'manchas'])"
+              },
+              limit: {
+                type: "number",
+                description: "Número máximo de productos a recomendar",
+                default: 3
+              }
+            }
+          }
+        }
+      }
+    ];
+
+    // Call OpenAI with tools
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: messages,
+      tools: tools,
+      tool_choice: "auto",
       max_tokens: 500,
       temperature: 0.7,
     });
 
-    const response =
-      completion.choices[0]?.message?.content ||
-      '¡Hola! Soy tu asistente de Naay. ¿En qué puedo ayudarte con tu cuidado de la piel?';
+    let response = completion.choices[0]?.message?.content || '¡Hola! Soy tu asistente de Naay. ¿En qué puedo ayudarte con tu cuidado de la piel?';
+
+    // Handle function calls
+    if (completion.choices[0]?.message?.tool_calls) {
+      const toolCalls = completion.choices[0].message.tool_calls;
+      let toolResults: any[] = [];
+
+      for (const toolCall of toolCalls) {
+        if (toolCall.function.name === 'search_products') {
+          const args = JSON.parse(toolCall.function.arguments);
+          const products = await searchProducts(shop, args.query, args.limit, args.skin_type);
+          toolResults.push({
+            tool_call_id: toolCall.id,
+            role: 'tool' as const,
+            content: JSON.stringify(products)
+          });
+        } else if (toolCall.function.name === 'get_product_recommendations') {
+          const args = JSON.parse(toolCall.function.arguments);
+          const products = await getProductRecommendations(shop, args.skin_type, args.concerns, args.limit);
+          toolResults.push({
+            tool_call_id: toolCall.id,
+            role: 'tool' as const,
+            content: JSON.stringify(products)
+          });
+        }
+      }
+
+      // If we have tool results, make another call to get the final response
+      if (toolResults.length > 0) {
+        const messagesWithTools = [
+          ...messages,
+          completion.choices[0].message,
+          ...toolResults
+        ];
+
+        const finalCompletion = await openai.chat.completions.create({
+          model: 'gpt-3.5-turbo',
+          messages: messagesWithTools,
+          max_tokens: 500,
+          temperature: 0.7,
+        });
+
+        response = finalCompletion.choices[0]?.message?.content || response;
+      }
+    }
 
     // Store assistant's response in conversation history
     conversationStore[currentConversationId].push({
