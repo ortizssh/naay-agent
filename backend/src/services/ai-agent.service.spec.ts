@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import { AIAgentService } from './ai-agent.service';
 import { EmbeddingService } from './embedding.service';
 import { SupabaseService } from './supabase.service';

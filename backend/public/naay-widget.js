@@ -373,7 +373,7 @@
         .naay-widget__promotional-message {
           position: absolute !important;
           bottom: 24px !important;
-          left: 96px !important;
+          right: 96px !important;
           background: var(--naay-white) !important;
           backdrop-filter: blur(20px) !important;
           -webkit-backdrop-filter: blur(20px) !important;
@@ -426,14 +426,14 @@
         .naay-widget__promotional-arrow {
           position: absolute !important;
           top: 50% !important;
-          right: -8px !important;
+          left: -8px !important;
           transform: translateY(-50%) !important;
           width: 0 !important;
           height: 0 !important;
-          border-left: 8px solid var(--naay-white) !important;
+          border-right: 8px solid var(--naay-white) !important;
           border-top: 8px solid transparent !important;
           border-bottom: 8px solid transparent !important;
-          filter: drop-shadow(2px 0 4px rgba(168, 130, 107, 0.1)) !important;
+          filter: drop-shadow(-2px 0 4px rgba(168, 130, 107, 0.1)) !important;
         }
         
         .naay-widget--bottom-left .naay-widget__promotional-arrow {
@@ -572,6 +572,7 @@
           transform: translateY(0) scale(1) !important;
           opacity: 1 !important;
           visibility: visible !important;
+          top: 15px !important;
         }
 
         .naay-widget--closing .naay-widget__chat {
@@ -1665,7 +1666,7 @@
           }
           
           .naay-widget__promotional-message {
-            left: 12px !important;
+            right: 12px !important;
             bottom: 100px !important;
             max-width: calc(100vw - 100px) !important;
             width: calc(100vw - 100px) !important;
@@ -1682,7 +1683,7 @@
           }
           
           .naay-widget__promotional-message {
-            left: 8px !important;
+            right: 8px !important;
             bottom: 88px !important;
             max-width: calc(100vw - 88px) !important;
             width: calc(100vw - 88px) !important;
@@ -1731,7 +1732,7 @@
           }
           
           .naay-widget__promotional-message {
-            left: 6px !important;
+            right: 6px !important;
             bottom: 82px !important;
             max-width: calc(100vw - 82px) !important;
             width: calc(100vw - 82px) !important;
