@@ -2096,17 +2096,17 @@
           transition: all 0.2s var(--naay-transition) !important;
         }
 
-        /* Cart Panel - Slides from right to left */
+        /* Cart Panel - Slides from right to left, aligned with chat */
         .naay-cart-panel {
           position: absolute !important;
-          bottom: 0 !important;
+          bottom: 88px !important;
           left: -400px !important;
           width: 400px !important;
           height: 620px !important;
           background: rgba(248, 249, 248, 0.95) !important;
           backdrop-filter: blur(20px) !important;
           -webkit-backdrop-filter: blur(20px) !important;
-          border-radius: 0 12px 12px 0 !important;
+          border-radius: 12px !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
           box-shadow: var(--naay-shadow-strong) !important;
           display: flex !important;
@@ -2114,14 +2114,14 @@
           overflow: hidden !important;
           opacity: 0 !important;
           visibility: hidden !important;
-          transition: all var(--naay-duration) var(--naay-transition) !important;
+          transition: all 0.4s var(--naay-transition) !important;
           pointer-events: none !important;
           z-index: 999997 !important;
           transform: translateX(-32px) scale(0.95) !important;
         }
 
         .naay-cart-panel--open {
-          left: -460px !important;
+          left: -410px !important;
           opacity: 1 !important;
           visibility: visible !important;
           pointer-events: auto !important;
