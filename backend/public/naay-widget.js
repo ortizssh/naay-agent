@@ -1434,11 +1434,14 @@
         /* Simple Header */
         .naay-widget__simple-header {
           position: absolute !important;
-          top: 12px !important;
-          right: 12px !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          height: 52px !important;
           display: flex !important;
           align-items: center !important;
-          gap: 8px !important;
+          justify-content: space-between !important;
+          padding: 12px !important;
           z-index: 10 !important;
         }
 
@@ -1507,7 +1510,7 @@
         /* Luxury Messages Area */
         .naay-widget__messages {
           flex: 1 !important;
-          padding: 32px !important;
+          padding: 64px 32px 32px 32px !important;
           overflow-y: auto !important;
           background: transparent !important;
           scrollbar-width: thin !important;
@@ -1517,9 +1520,7 @@
 
         /* Cart Toggle Button in Conversation */
         .naay-widget__cart-toggle-btn {
-          position: absolute !important;
-          top: 12px !important;
-          left: 12px !important;
+          position: relative !important;
           background: rgba(255, 255, 255, 0.95) !important;
           border: 1px solid rgba(212, 196, 184, 0.3) !important;
           border-radius: 8px !important;
@@ -1527,7 +1528,6 @@
           cursor: pointer !important;
           transition: all 0.3s var(--naay-transition) !important;
           box-shadow: 0 2px 8px rgba(168, 130, 107, 0.1) !important;
-          z-index: 5 !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
