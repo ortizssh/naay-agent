@@ -183,6 +183,83 @@ class MonitoringService {
   }
 
   /**
+   * Legacy method alias for measureOperation
+   */
+  async measurePerformance<T>(
+    operationName: string,
+    operation: () => Promise<T>,
+    metadata?: Record<string, string>
+  ): Promise<T> {
+    return this.measureOperation(operationName, operation, metadata);
+  }
+
+  /**
+   * Record Shopify API request
+   */
+  recordShopifyRequest(
+    endpoint: string,
+    method: string,
+    statusCode: number,
+    duration: number,
+    shop?: string
+  ): void {
+    this.recordMetric({
+      name: 'shopify_request',
+      value: duration,
+      unit: 'ms',
+      shop,
+      tags: {
+        endpoint,
+        method,
+        statusCode: statusCode.toString(),
+        success: statusCode < 400 ? 'true' : 'false'
+      }
+    });
+  }
+
+  /**
+   * Record webhook processing
+   */
+  recordWebhookProcessing(
+    webhook: string,
+    duration: number,
+    success: boolean,
+    shop?: string
+  ): void {
+    this.recordMetric({
+      name: 'webhook_processing',
+      value: duration,
+      unit: 'ms',
+      shop,
+      tags: {
+        webhook,
+        success: success.toString()
+      }
+    });
+  }
+
+  /**
+   * Record Shopify rate limit information
+   */
+  recordShopifyRateLimit(
+    remaining: number,
+    limit: number,
+    shop?: string
+  ): void {
+    const percentage = limit > 0 ? (remaining / limit) * 100 : 0;
+    this.recordMetric({
+      name: 'shopify_rate_limit',
+      value: percentage,
+      unit: 'percentage',
+      shop,
+      tags: {
+        remaining: remaining.toString(),
+        limit: limit.toString()
+      }
+    });
+  }
+
+  /**
    * Health check for monitoring systems
    */
   getHealthStatus(): {
@@ -256,6 +333,10 @@ class MonitoringService {
 
 // Singleton instance
 export const monitoringService = new MonitoringService();
+
+// Legacy exports for compatibility
+export { MonitoringService };
+export { MonitoringService as ShopifyMonitoring };
 
 // Export helper function for common use cases
 export function withVectorSearchTracking<T>(

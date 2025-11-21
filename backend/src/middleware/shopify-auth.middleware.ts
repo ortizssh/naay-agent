@@ -5,7 +5,7 @@ import { SupabaseService } from '@/services/supabase.service';
 import { logger } from '@/utils/logger';
 import { AppError, ShopifyAuthError, ShopifySessionData, ErrorCode } from '@/types';
 import { cacheService } from '@/services/cache.service';
-import { ShopifyMonitoring } from '@/services/monitoring.service';
+import { monitoringService } from '@/services/monitoring.service';
 
 interface SessionTokenPayload {
   iss: string;
@@ -281,7 +281,7 @@ export class EnhancedShopifyAuth {
       const cachedSession = await cacheService.getShopifySession(shop);
       if (cachedSession && this.isSessionValid(cachedSession)) {
         const authTime = Date.now() - startTime;
-        ShopifyMonitoring.recordShopifyRequest(shop, 'session_cache_hit', authTime, true);
+        monitoringService.recordShopifyRequest('session_cache_hit', 'GET', 200, authTime, shop);
         return cachedSession;
       }
 
@@ -290,7 +290,7 @@ export class EnhancedShopifyAuth {
         const sessionData = await this.validateAndCacheSession(shop, sessionToken);
         if (sessionData) {
           const authTime = Date.now() - startTime;
-          ShopifyMonitoring.recordShopifyRequest(shop, 'session_validation', authTime, true);
+          monitoringService.recordShopifyRequest('session_validation', 'GET', 200, authTime, shop);
           return sessionData;
         }
       }
@@ -311,17 +311,17 @@ export class EnhancedShopifyAuth {
         await cacheService.cacheShopifySession(shop, sessionData, this.SESSION_TTL);
         
         const authTime = Date.now() - startTime;
-        ShopifyMonitoring.recordShopifyRequest(shop, 'session_db_fallback', authTime, true);
+        monitoringService.recordShopifyRequest('session_db_fallback', 'GET', 200, authTime, shop);
         return sessionData;
       }
 
       const authTime = Date.now() - startTime;
-      ShopifyMonitoring.recordShopifyRequest(shop, 'session_not_found', authTime, false);
+      monitoringService.recordShopifyRequest('session_not_found', 'GET', 404, authTime, shop);
       return null;
     } catch (error) {
       const authTime = Date.now() - startTime;
       logger.error('Session validation failed', { shop, error: error.message });
-      ShopifyMonitoring.recordShopifyRequest(shop, 'session_validation', authTime, false);
+      monitoringService.recordShopifyRequest('session_validation', 'GET', 401, authTime, shop);
       return null;
     }
   }
@@ -413,7 +413,7 @@ export class EnhancedShopifyAuth {
 
         // Record successful auth
         const authTime = Date.now() - startTime;
-        ShopifyMonitoring.recordShopifyRequest(shop || 'anonymous', 'auth_middleware', authTime, true);
+        monitoringService.recordShopifyRequest('auth_middleware', 'GET', 200, authTime, shop || 'anonymous');
 
         next();
       } catch (error) {
@@ -427,7 +427,7 @@ export class EnhancedShopifyAuth {
           method: req.method
         });
 
-        ShopifyMonitoring.recordShopifyRequest(shop, 'auth_middleware', authTime, false);
+        monitoringService.recordShopifyRequest('auth_middleware', 'GET', 401, authTime, shop);
 
         if (error instanceof ShopifyAuthError) {
           return res.status(401).json({

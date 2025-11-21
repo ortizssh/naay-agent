@@ -22,6 +22,9 @@ export interface CacheService {
   cacheShopifySession(shop: string, sessionData: any, ttl?: number): Promise<void>;
   getShopifySession(shop: string): Promise<any>;
   invalidateShopCache(shop: string): Promise<void>;
+  
+  // Metrics
+  getMetrics(): any;
 }
 
 class RedisCacheService implements CacheService {
@@ -45,25 +48,7 @@ class RedisCacheService implements CacheService {
       const redisUrl = process.env.REDIS_URL;
       
       if (redisUrl) {
-        this.redis = new Redis(redisUrl, {
-          // Enhanced retry configuration for production
-          retryDelayOnFailover: 1000,
-          maxRetriesPerRequest: null, // Required for BullMQ compatibility
-          retryDelayOnClusterDown: 300,
-          enableOfflineQueue: false,
-          
-          // Connection pooling and performance
-          lazyConnect: true,
-          maxLoadingTimeout: 5000,
-          connectTimeout: 10000,
-          commandTimeout: 5000,
-          
-          // Reconnection strategy
-          reconnectOnError: (err) => {
-            const targetError = 'READONLY';
-            return err.message.includes(targetError);
-          }
-        });
+        this.redis = new Redis(redisUrl);
       } else {
         // Fallback to individual config values
         this.redis = new Redis({
@@ -94,19 +79,16 @@ class RedisCacheService implements CacheService {
         });
       }
 
-      this.redis.on('connect', () => {
+      (this.redis as any).on('connect', () => {
         this.isRedisConnected = true;
-        logger.info('Redis cache connected successfully', {
-          host: config.redis?.host,
-          port: config.redis?.port
-        });
+        logger.info('Redis cache connected successfully');
       });
 
-      this.redis.on('ready', () => {
+      (this.redis as any).on('ready', () => {
         logger.info('Redis ready for commands');
       });
 
-      this.redis.on('error', (error) => {
+      (this.redis as any).on('error', (error: any) => {
         this.isRedisConnected = false;
         logger.warn('Redis cache error, falling back to memory cache:', {
           error: error.message,
@@ -114,7 +96,7 @@ class RedisCacheService implements CacheService {
         });
       });
 
-      this.redis.on('close', () => {
+      (this.redis as any).on('close', () => {
         this.isRedisConnected = false;
         logger.warn('Redis connection closed');
       });
@@ -134,7 +116,7 @@ class RedisCacheService implements CacheService {
     try {
       // Try Redis first
       if (this.isRedisConnected && this.redis) {
-        const value = await this.redis.get(key);
+        const value = await (this.redis as any).get(key);
         if (value) {
           this.hitCount++;
           return JSON.parse(value);
@@ -171,7 +153,7 @@ class RedisCacheService implements CacheService {
 
       // Set in Redis if connected
       if (this.isRedisConnected && this.redis) {
-        await this.redis.setex(key, ttl, serialized);
+        await (this.redis as any).setex(key, ttl, serialized);
       }
 
       // Always set in memory cache as backup
@@ -194,8 +176,8 @@ class RedisCacheService implements CacheService {
 
   async del(key: string): Promise<void> {
     try {
-      if (this.isRedisConnected) {
-        await this.redis.del(key);
+      if (this.isRedisConnected && this.redis) {
+        await (this.redis as any).del(key);
       }
       this.fallbackCache.delete(key);
     } catch (error) {
@@ -210,7 +192,7 @@ class RedisCacheService implements CacheService {
           // Use SCAN instead of KEYS for production safety
           await this.scanAndDelete(pattern);
         } else {
-          await this.redis.flushall();
+          await (this.redis as any).flushall();
         }
       }
 
@@ -237,20 +219,20 @@ class RedisCacheService implements CacheService {
 
     let cursor = '0';
     do {
-      const result = await this.redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+      const result = await (this.redis as any).scan(cursor, 'MATCH', pattern, 'COUNT', 100);
       cursor = result[0];
       const keys = result[1];
       
       if (keys.length > 0) {
-        await this.redis.del(...keys);
+        await (this.redis as any).del(...keys);
       }
     } while (cursor !== '0');
   }
 
   async mget<T>(keys: string[]): Promise<Array<T | null>> {
     try {
-      if (this.isRedisConnected) {
-        const values = await this.redis.mget(...keys);
+      if (this.isRedisConnected && this.redis) {
+        const values = await (this.redis as any).mget(...keys);
         return values.map(value => value ? JSON.parse(value) : null);
       }
 
@@ -272,8 +254,8 @@ class RedisCacheService implements CacheService {
     try {
       const ttl = options.ttl || 3600;
 
-      if (this.isRedisConnected) {
-        const pipeline = this.redis.pipeline();
+      if (this.isRedisConnected && this.redis) {
+        const pipeline = (this.redis as any).pipeline();
         for (const [key, value] of entries) {
           pipeline.setex(key, ttl, JSON.stringify(value));
         }

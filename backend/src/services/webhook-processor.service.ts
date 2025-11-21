@@ -10,7 +10,7 @@ import {
   ShopifyWebhookPayload 
 } from '@/types';
 import { cacheService } from './cache.service';
-import { ShopifyMonitoring } from './monitoring.service';
+import { monitoringService } from './monitoring.service';
 import { recordShopifyRateLimit } from '@/middleware/rateLimiter';
 
 export interface WebhookProcessingResult {
@@ -79,7 +79,7 @@ export class WebhookProcessor {
 
       // Record metrics
       const processingTime = Date.now() - startTime;
-      ShopifyMonitoring.recordWebhookProcessing(shop, topic, processingTime, result.success);
+      monitoringService.recordWebhookProcessing(topic, processingTime, result.success, shop);
 
       return {
         ...result,
@@ -96,7 +96,7 @@ export class WebhookProcessor {
           await recordShopifyRateLimit(shop, resetTime);
         }
 
-        ShopifyMonitoring.recordShopifyRateLimit(shop, `webhook:${topic}`);
+        monitoringService.recordShopifyRateLimit(0, 100, shop);
 
         return {
           success: false,
@@ -119,7 +119,7 @@ export class WebhookProcessor {
         stack: error.stack
       });
 
-      ShopifyMonitoring.recordWebhookProcessing(shop, topic, processingTime, false);
+      monitoringService.recordWebhookProcessing(topic, processingTime, false, shop);
 
       // Mark webhook as failed
       await this.markWebhookFailed(webhookId, shop, error.message);
@@ -329,7 +329,7 @@ export class WebhookProcessor {
     });
 
     // Track order analytics
-    ShopifyMonitoring.recordShopifyRequest(shop, 'order_create', 0, true);
+    monitoringService.recordShopifyRequest('order_create', 'POST', 200, 0, shop);
 
     return {
       success: true,
