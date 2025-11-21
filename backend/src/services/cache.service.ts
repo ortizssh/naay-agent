@@ -25,9 +25,13 @@ export interface CacheService {
 }
 
 class RedisCacheService implements CacheService {
-  private redis: any; // Using any to avoid ioredis type issues
+  private redis: Redis | null = null;  // Proper type safety
   private fallbackCache = new Map<string, { value: any; expires: number }>();
   private isRedisConnected = false;
+  private hitCount = 0;
+  private missCount = 0;
+  private memoryUsage = 0;
+  private maxMemorySize = 50 * 1024 * 1024; // 50MB limit for memory cache
 
   constructor() {
     // Skip Redis initialization if disabled
@@ -37,27 +41,90 @@ class RedisCacheService implements CacheService {
     }
 
     try {
-      this.redis = new Redis({
-        host: config.redis?.host || 'localhost',
-        port: config.redis?.port || 6379,
-        password: config.redis?.password,
-        retryDelayOnFailover: 100,
-        maxRetriesPerRequest: 3,
-        lazyConnect: true,
-      });
+      // Use REDIS_URL if available (preferred for cloud services)
+      const redisUrl = process.env.REDIS_URL;
+      
+      if (redisUrl) {
+        this.redis = new Redis(redisUrl, {
+          // Enhanced retry configuration for production
+          retryDelayOnFailover: 1000,
+          maxRetriesPerRequest: null, // Required for BullMQ compatibility
+          retryDelayOnClusterDown: 300,
+          enableOfflineQueue: false,
+          
+          // Connection pooling and performance
+          lazyConnect: true,
+          maxLoadingTimeout: 5000,
+          connectTimeout: 10000,
+          commandTimeout: 5000,
+          
+          // Reconnection strategy
+          reconnectOnError: (err) => {
+            const targetError = 'READONLY';
+            return err.message.includes(targetError);
+          }
+        });
+      } else {
+        // Fallback to individual config values
+        this.redis = new Redis({
+          host: config.redis?.host || 'localhost',
+          port: config.redis?.port || 6379,
+          password: config.redis?.password,
+          db: 0,
+          family: 4,
+          keepAlive: 30000,
+          
+          // Enhanced retry configuration for production
+          retryDelayOnFailover: 1000,
+          maxRetriesPerRequest: null, // Required for BullMQ compatibility
+          retryDelayOnClusterDown: 300,
+          enableOfflineQueue: false,
+          
+          // Connection pooling and performance
+          lazyConnect: true,
+          maxLoadingTimeout: 5000,
+          connectTimeout: 10000,
+          commandTimeout: 5000,
+          
+          // Reconnection strategy
+          reconnectOnError: (err) => {
+            const targetError = 'READONLY';
+            return err.message.includes(targetError);
+          }
+        });
+      }
 
       this.redis.on('connect', () => {
         this.isRedisConnected = true;
-        logger.info('Redis cache connected successfully');
+        logger.info('Redis cache connected successfully', {
+          host: config.redis?.host,
+          port: config.redis?.port
+        });
+      });
+
+      this.redis.on('ready', () => {
+        logger.info('Redis ready for commands');
       });
 
       this.redis.on('error', (error) => {
         this.isRedisConnected = false;
-        logger.warn('Redis cache error, falling back to memory cache:', error.message);
+        logger.warn('Redis cache error, falling back to memory cache:', {
+          error: error.message,
+          code: error.code
+        });
       });
 
-      // Cleanup memory cache periodically
-      setInterval(() => this.cleanupMemoryCache(), 60 * 1000); // Every minute
+      this.redis.on('close', () => {
+        this.isRedisConnected = false;
+        logger.warn('Redis connection closed');
+      });
+
+      // Cleanup memory cache every 5 minutes
+      setInterval(() => this.cleanupMemoryCache(), 5 * 60 * 1000);
+
+      // Log metrics every 10 minutes
+      setInterval(() => this.logMetrics(), 10 * 60 * 1000);
+
     } catch (error) {
       logger.warn('Failed to initialize Redis, using memory cache only:', error);
     }
@@ -65,9 +132,11 @@ class RedisCacheService implements CacheService {
 
   async get<T>(key: string): Promise<T | null> {
     try {
-      if (this.isRedisConnected) {
+      // Try Redis first
+      if (this.isRedisConnected && this.redis) {
         const value = await this.redis.get(key);
         if (value) {
+          this.hitCount++;
           return JSON.parse(value);
         }
       }
@@ -75,17 +144,21 @@ class RedisCacheService implements CacheService {
       // Fallback to memory cache
       const cached = this.fallbackCache.get(key);
       if (cached && cached.expires > Date.now()) {
+        this.hitCount++;
         return cached.value;
       }
 
       // Remove expired entry
       if (cached) {
         this.fallbackCache.delete(key);
+        this.updateMemoryUsage();
       }
 
+      this.missCount++;
       return null;
     } catch (error) {
-      logger.error('Cache get error:', error);
+      this.missCount++;
+      logger.error('Cache get error:', { key, error: error.message });
       return null;
     }
   }
@@ -96,7 +169,8 @@ class RedisCacheService implements CacheService {
     try {
       const serialized = JSON.stringify(value);
 
-      if (this.isRedisConnected) {
+      // Set in Redis if connected
+      if (this.isRedisConnected && this.redis) {
         await this.redis.setex(key, ttl, serialized);
       }
 
@@ -106,13 +180,15 @@ class RedisCacheService implements CacheService {
         expires: Date.now() + (ttl * 1000)
       });
 
-      // Limit memory cache size
-      if (this.fallbackCache.size > 1000) {
-        const firstKey = this.fallbackCache.keys().next().value;
-        this.fallbackCache.delete(firstKey);
+      this.updateMemoryUsage();
+
+      // Intelligent memory management
+      if (this.memoryUsage > this.maxMemorySize) {
+        this.evictLeastRecentlyUsed();
       }
+
     } catch (error) {
-      logger.error('Cache set error:', error);
+      logger.error('Cache set error:', { key, error: error.message });
     }
   }
 
@@ -129,12 +205,10 @@ class RedisCacheService implements CacheService {
 
   async clear(pattern?: string): Promise<void> {
     try {
-      if (this.isRedisConnected) {
+      if (this.isRedisConnected && this.redis) {
         if (pattern) {
-          const keys = await this.redis.keys(pattern);
-          if (keys.length > 0) {
-            await this.redis.del(...keys);
-          }
+          // Use SCAN instead of KEYS for production safety
+          await this.scanAndDelete(pattern);
         } else {
           await this.redis.flushall();
         }
@@ -142,17 +216,35 @@ class RedisCacheService implements CacheService {
 
       if (pattern) {
         // Clear matching keys from memory cache
+        const searchPattern = pattern.replace(/\*/g, '');
         for (const key of this.fallbackCache.keys()) {
-          if (key.includes(pattern.replace('*', ''))) {
+          if (key.includes(searchPattern)) {
             this.fallbackCache.delete(key);
           }
         }
       } else {
         this.fallbackCache.clear();
       }
+      
+      this.updateMemoryUsage();
     } catch (error) {
-      logger.error('Cache clear error:', error);
+      logger.error('Cache clear error:', { pattern, error: error.message });
     }
+  }
+
+  private async scanAndDelete(pattern: string): Promise<void> {
+    if (!this.redis) return;
+
+    let cursor = '0';
+    do {
+      const result = await this.redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+      cursor = result[0];
+      const keys = result[1];
+      
+      if (keys.length > 0) {
+        await this.redis.del(...keys);
+      }
+    } while (cursor !== '0');
   }
 
   async mget<T>(keys: string[]): Promise<Array<T | null>> {
@@ -237,6 +329,81 @@ class RedisCacheService implements CacheService {
 
   async invalidateShopCache(shop: string): Promise<void> {
     await this.clear(`*${shop}*`);
+  }
+
+  // Enhanced cache warming for popular products
+  async warmCache(shopDomain: string): Promise<void> {
+    try {
+      // This would typically load popular/recent products from DB
+      logger.info('Cache warming started for shop', { shop: shopDomain });
+      
+      // Example: Pre-load shop data
+      await this.cacheShopData(shopDomain, { warmed: true, timestamp: Date.now() }, 7200);
+      
+    } catch (error) {
+      logger.error('Cache warming failed:', { shop: shopDomain, error });
+    }
+  }
+
+  // Cache tags for intelligent invalidation
+  async invalidateByTag(tag: string): Promise<void> {
+    const pattern = `*:tag:${tag}:*`;
+    await this.clear(pattern);
+  }
+
+  // Metrics and monitoring methods
+  private updateMemoryUsage(): void {
+    this.memoryUsage = 0;
+    for (const [key, cached] of this.fallbackCache.entries()) {
+      // Rough estimation: key length + JSON stringified value length * 2 bytes per char
+      const size = (key.length + JSON.stringify(cached.value).length) * 2;
+      this.memoryUsage += size;
+    }
+  }
+
+  private evictLeastRecentlyUsed(): void {
+    // Simple LRU: remove oldest entries (this could be improved with proper LRU algorithm)
+    const entriesToRemove = Math.floor(this.fallbackCache.size * 0.1); // Remove 10%
+    let removed = 0;
+    
+    for (const [key] of this.fallbackCache.entries()) {
+      if (removed >= entriesToRemove) break;
+      this.fallbackCache.delete(key);
+      removed++;
+    }
+    
+    this.updateMemoryUsage();
+    logger.info('Cache LRU eviction completed', { removed, newSize: this.fallbackCache.size });
+  }
+
+  private logMetrics(): void {
+    const totalRequests = this.hitCount + this.missCount;
+    const hitRatio = totalRequests > 0 ? (this.hitCount / totalRequests) * 100 : 0;
+
+    logger.info('Cache metrics', {
+      hitRatio: `${hitRatio.toFixed(2)}%`,
+      hits: this.hitCount,
+      misses: this.missCount,
+      totalRequests,
+      memoryUsage: `${(this.memoryUsage / 1024 / 1024).toFixed(2)}MB`,
+      memoryCacheSize: this.fallbackCache.size,
+      redisConnected: this.isRedisConnected
+    });
+  }
+
+  getMetrics() {
+    const totalRequests = this.hitCount + this.missCount;
+    const hitRatio = totalRequests > 0 ? (this.hitCount / totalRequests) : 0;
+
+    return {
+      hitRatio,
+      hits: this.hitCount,
+      misses: this.missCount,
+      totalRequests,
+      memoryUsage: this.memoryUsage,
+      memoryCacheSize: this.fallbackCache.size,
+      redisConnected: this.isRedisConnected
+    };
   }
 }
 

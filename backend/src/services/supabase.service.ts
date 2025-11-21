@@ -1,6 +1,8 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { config } from '@/utils/config';
 import { logger } from '@/utils/logger';
+import { withVectorSearchTracking } from './monitoring.service';
+import { cacheService } from './cache.service';
 import {
   ShopifyStore,
   ShopifyProduct,
@@ -146,7 +148,7 @@ export class SupabaseService {
       .from('product_embeddings')
       .upsert({
         ...embedding,
-        embedding: `[${embedding.embedding.join(',')}]`,
+        embedding: embedding.embedding,  // Store as array, not string
       });
 
     if (error) {
@@ -161,23 +163,50 @@ export class SupabaseService {
     embedding: number[],
     limit: number = 10
   ): Promise<any[]> {
-    const { data, error } = await this.serviceClient.rpc(
-      'search_products_semantic',
-      {
-        shop_domain: shopDomain,
-        query_text: query,
-        query_embedding: `[${embedding.join(',')}]`,
-        match_threshold: 0.7,
-        match_count: limit,
-      }
+    // Use monitoring service to track performance
+    return withVectorSearchTracking(
+      shopDomain,
+      async () => {
+        // Check cache first
+        const cacheKey = `search:${shopDomain}:${query}:${limit}`;
+        const cached = await cacheService.get(cacheKey);
+        if (cached) {
+          logger.info('Vector search cache hit', { shopDomain, query });
+          return cached;
+        }
+
+        try {
+          // Use the actual implemented schema (stores table with shop_domain)
+          // Call function with correct parameters matching actual schema
+          const { data, error } = await this.serviceClient.rpc(
+            'search_products_semantic',
+            {
+              shop_domain: shopDomain,        // Use shop_domain as implemented
+              query_text: query,              // Include query text
+              query_embedding: embedding,     // Pass array directly
+              match_threshold: 0.7,
+              match_count: limit,
+            }
+          );
+
+          if (error) {
+            logger.error('Error searching products:', error);
+            throw new Error(`Failed to search products: ${error.message}`);
+          }
+
+          const results = data || [];
+          
+          // Cache results for 5 minutes
+          await cacheService.set(cacheKey, results, { ttl: 300 });
+          
+          return results;
+        } catch (error) {
+          logger.error('Vector search failed:', error);
+          throw error;
+        }
+      },
+      { query, limit, cached: false }
     );
-
-    if (error) {
-      logger.error('Error searching products:', error);
-      throw new Error(`Failed to search products: ${error.message}`);
-    }
-
-    return data || [];
   }
 
   async createChatSession(

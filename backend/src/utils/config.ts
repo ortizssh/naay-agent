@@ -2,12 +2,11 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { AppConfig } from '@/types';
 
-// Configure dotenv to look for .env file in the project root
-// In Azure, the .env file should be in the project root, not relative to backend/src
+// Configure dotenv to look for .env file in the backend directory
 dotenv.config({ 
   path: process.env.NODE_ENV === 'production' 
     ? path.join(__dirname, '../../.env') 
-    : '../.env' 
+    : path.join(__dirname, '../../.env') // Load from backend/.env
 });
 
 export const config: AppConfig = {

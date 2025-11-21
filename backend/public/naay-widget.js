@@ -31,7 +31,7 @@
       this.config = {
         shopDomain: '',
         apiEndpoint: 'https://naay-agent-app1763504937.azurewebsites.net',
-        position: 'bottom-right',
+        position: 'bottom-left',
         // Naay Brand Colors from Design Guidelines
         everyday: '#E8B5A1',    // Soft coral
         fresh: '#8FA68E',       // Sage green  
@@ -206,6 +206,11 @@
 
       // Append to document
       document.body.appendChild(this.container);
+      
+      // Add initial fade-in animation
+      setTimeout(() => {
+        this.container.classList.add('naay-widget--loaded');
+      }, 100);
     }
 
     setupElements() {
@@ -271,6 +276,14 @@
           font-feature-settings: 'cv11', 'cv02', 'cv03', 'cv04' !important;
           -webkit-font-smoothing: antialiased !important;
           -moz-osx-font-smoothing: grayscale !important;
+          opacity: 0 !important;
+          transform: translateY(20px) !important;
+          transition: all 600ms var(--naay-transition) !important;
+        }
+
+        .naay-widget--loaded {
+          opacity: 1 !important;
+          transform: translateY(0) !important;
         }
 
         .naay-widget--bottom-right {
@@ -297,7 +310,7 @@
         .naay-widget__promotional-message {
           position: absolute !important;
           bottom: 24px !important;
-          right: 96px !important;
+          left: 96px !important;
           background: var(--naay-white) !important;
           backdrop-filter: blur(20px) !important;
           -webkit-backdrop-filter: blur(20px) !important;
@@ -311,11 +324,11 @@
           transition: all var(--naay-duration) var(--naay-transition) !important;
           opacity: 1 !important;
           visibility: visible !important;
-          transform: translateY(0) !important;
+          transform: translateY(0) scale(1) !important;
         }
 
         .naay-widget__promotional-message:hover {
-          transform: translateY(-4px) !important;
+          transform: translateY(-4px) scale(1.02) !important;
           box-shadow: var(--naay-shadow-strong) !important;
           border-color: rgba(212, 196, 184, 0.3) !important;
         }
@@ -333,18 +346,18 @@
 
         .naay-widget__promotional-text {
           color: var(--naay-perfect) !important;
-          font-size: 15px !important;
+          font-size: 13px !important;
           font-weight: var(--naay-font-weight-semibold) !important;
-          line-height: 1.4 !important;
+          line-height: 1.3 !important;
           margin: 0 !important;
         }
 
         .naay-widget__promotional-subtitle {
           display: block !important;
           color: var(--naay-delicate) !important;
-          font-size: 13px !important;
+          font-size: 11px !important;
           font-weight: var(--naay-font-weight-regular) !important;
-          margin-top: 4px !important;
+          margin-top: 2px !important;
         }
 
         .naay-widget__promotional-arrow {
@@ -359,12 +372,19 @@
           border-bottom: 8px solid transparent !important;
           filter: drop-shadow(2px 0 4px rgba(168, 130, 107, 0.1)) !important;
         }
+        
+        .naay-widget--bottom-left .naay-widget__promotional-arrow {
+          right: auto !important;
+          left: -8px !important;
+          border-left: 8px solid transparent !important;
+          border-right: 8px solid var(--naay-white) !important;
+        }
 
         .naay-widget--open .naay-widget__promotional-message {
           opacity: 0 !important;
           visibility: hidden !important;
           pointer-events: none !important;
-          transform: translateY(8px) !important;
+          transform: translateY(16px) scale(0.95) !important;
         }
 
         /* Ultra-Luxury Chat Button */
@@ -455,7 +475,7 @@
         .naay-widget__chat {
           position: absolute !important;
           bottom: 88px !important;
-          right: 0 !important;
+          left: 0 !important;
           width: 50vw !important;
           height: 620px !important;
           background: rgba(248, 249, 248, 0.95) !important;
@@ -467,14 +487,15 @@
           display: none !important;
           flex-direction: column !important;
           overflow: hidden !important;
-          transform: translateY(24px) scale(0.95) !important;
+          transform: translateY(32px) scale(0.9) !important;
           opacity: 0 !important;
+          visibility: hidden !important;
           transition: all var(--naay-duration) var(--naay-transition) !important;
         }
 
-        .naay-widget--bottom-left .naay-widget__chat {
-          right: auto !important;
-          left: 0 !important;
+        .naay-widget--bottom-right .naay-widget__chat {
+          left: auto !important;
+          right: 0 !important;
         }
 
         .naay-widget--top-right .naay-widget__chat,
@@ -487,6 +508,13 @@
           display: flex !important;
           transform: translateY(0) scale(1) !important;
           opacity: 1 !important;
+          visibility: visible !important;
+        }
+
+        .naay-widget--closing .naay-widget__chat {
+          transform: translateY(16px) scale(0.95) !important;
+          opacity: 0 !important;
+          visibility: hidden !important;
         }
 
         /* Header Hidden */
@@ -626,7 +654,7 @@
         }
 
         .naay-widget__welcome-title {
-          font-size: 24px !important;
+          font-size: 20px !important;
           font-weight: var(--naay-font-weight-semibold) !important;
           color: var(--naay-perfect) !important;
           margin: 0 !important;
@@ -635,10 +663,10 @@
 
         .naay-widget__welcome-message {
           color: var(--naay-black) !important;
-          font-size: 16px !important;
+          font-size: 14px !important;
           font-weight: var(--naay-font-weight-regular) !important;
-          line-height: 1.6 !important;
-          margin: 0 0 32px 0 !important;
+          line-height: 1.5 !important;
+          margin: 0 0 24px 0 !important;
           opacity: 0.8 !important;
         }
 
@@ -676,9 +704,9 @@
 
         .naay-widget__feature span {
           color: var(--naay-perfect) !important;
-          font-size: 14px !important;
+          font-size: 12px !important;
           font-weight: var(--naay-font-weight-medium) !important;
-          line-height: 1.4 !important;
+          line-height: 1.3 !important;
         }
 
         /* Ultra-Modern Input Area */
@@ -698,11 +726,11 @@
 
         .naay-widget__input {
           flex: 1 !important;
-          padding: 12px 16px !important;
+          padding: 10px 14px !important;
           border: 1px solid rgba(212, 196, 184, 0.3) !important;
           border-radius: 28px !important;
           font-family: var(--naay-font) !important;
-          font-size: 15px !important;
+          font-size: 13px !important;
           font-weight: var(--naay-font-weight-regular) !important;
           background: var(--naay-white) !important;
           color: var(--naay-black) !important;
@@ -788,11 +816,11 @@
 
         /* Message Styles */
         .naay-widget__message {
-          margin: 16px 0 !important;
-          padding: 16px 20px !important;
-          border-radius: 10px !important;
-          font-size: 15px !important;
-          line-height: 1.5 !important;
+          margin: 12px 0 !important;
+          padding: 12px 16px !important;
+          border-radius: 8px !important;
+          font-size: 13px !important;
+          line-height: 1.4 !important;
           max-width: 85% !important;
         }
 
@@ -878,12 +906,12 @@
           .naay-widget__chat {
             width: calc(100vw - 24px) !important;
             height: calc(100vh - 120px) !important;
-            right: 12px !important;
+            left: 12px !important;
             bottom: 100px !important;
           }
           
           .naay-widget__promotional-message {
-            right: 12px !important;
+            left: 12px !important;
             bottom: 100px !important;
             max-width: calc(100vw - 100px) !important;
             width: calc(100vw - 100px) !important;
@@ -894,13 +922,13 @@
           .naay-widget__chat {
             width: calc(100vw - 16px) !important;
             height: calc(100vh - 100px) !important;
-            right: 8px !important;
+            left: 8px !important;
             bottom: 88px !important;
             border-radius: 8px !important;
           }
           
           .naay-widget__promotional-message {
-            right: 8px !important;
+            left: 8px !important;
             bottom: 88px !important;
             max-width: calc(100vw - 88px) !important;
             width: calc(100vw - 88px) !important;
@@ -944,12 +972,12 @@
         @media (max-width: 360px) {
           .naay-widget__chat {
             width: calc(100vw - 12px) !important;
-            right: 6px !important;
+            left: 6px !important;
             bottom: 82px !important;
           }
           
           .naay-widget__promotional-message {
-            right: 6px !important;
+            left: 6px !important;
             bottom: 82px !important;
             max-width: calc(100vw - 82px) !important;
             width: calc(100vw - 82px) !important;
@@ -1108,26 +1136,34 @@
     open() {
       console.log('✨ Opening luxury chat...');
       this.isOpen = true;
-      this.container.classList.remove('naay-widget--closed');
+      this.container.classList.remove('naay-widget--closed', 'naay-widget--closing');
       this.container.classList.add('naay-widget--open');
       this.button.setAttribute('aria-expanded', 'true');
       console.log('✅ Classes after open:', this.container.className);
       
-      // Focus input with delay
+      // Focus input with delay for smooth animation
       setTimeout(() => {
         if (this.input) {
           this.input.focus();
         }
-      }, 400);
+      }, 450);
     }
 
     close() {
       console.log('✨ Closing luxury chat...');
       this.isOpen = false;
+      
+      // Add closing animation class first
+      this.container.classList.add('naay-widget--closing');
       this.container.classList.remove('naay-widget--open');
-      this.container.classList.add('naay-widget--closed');
       this.button.setAttribute('aria-expanded', 'false');
-      console.log('✅ Classes after close:', this.container.className);
+      
+      // After animation completes, add closed class and remove closing
+      setTimeout(() => {
+        this.container.classList.remove('naay-widget--closing');
+        this.container.classList.add('naay-widget--closed');
+        console.log('✅ Classes after close:', this.container.className);
+      }, 400); // Match transition duration
     }
 
     async sendMessage() {
@@ -1264,10 +1300,11 @@
       // Convert numbered lists to proper HTML
       let formatted = text
         .replace(/(\d+)\.\s+([^\n]+)/g, '<div class="list-item"><strong>$1.</strong> $2</div>')
-        .replace(/\*\s+([^\n]+)/g, '<div class="bullet-item">• $2</div>')
+        .replace(/\*\s+([^\n]+)/g, '<div class="bullet-item">• $1</div>')
         .replace(/\n\n/g, '<br><br>')
         .replace(/\n/g, '<br>')
-        .replace(/([A-Z][^:]+):/g, '<strong>$1:</strong>');
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/([A-ZÁ-Ú][^:]{2,30}):/g, '<strong>$1:</strong>');
       
       return formatted;
     }

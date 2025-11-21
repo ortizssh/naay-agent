@@ -19,12 +19,23 @@ if (config.redis.enabled) {
     const { Queue, Worker } = require('bullmq');
     const IORedis = require('ioredis');
 
-    redis = new IORedis({
-      ...config.redis,
-      maxRetriesPerRequest: 3,
-      retryDelayOnFailover: 100,
-      lazyConnect: true,
-    });
+    // Use REDIS_URL if available (for Redis Cloud), otherwise use individual config
+    if (config.redis.url) {
+      redis = new IORedis(config.redis.url, {
+        maxRetriesPerRequest: null, // Required for BullMQ
+        retryDelayOnFailover: 100,
+        lazyConnect: true,
+      });
+    } else {
+      redis = new IORedis({
+        host: config.redis.host,
+        port: config.redis.port,
+        password: config.redis.password,
+        maxRetriesPerRequest: null, // Required for BullMQ
+        retryDelayOnFailover: 100,
+        lazyConnect: true,
+      });
+    }
 
     // Queue definitions
     syncQueue = new Queue('product-sync', {
