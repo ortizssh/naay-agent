@@ -572,7 +572,6 @@
           transform: translateY(0) scale(1) !important;
           opacity: 1 !important;
           visibility: visible !important;
-          top: 15px !important;
         }
 
         .naay-widget--closing .naay-widget__chat {
@@ -2117,9 +2116,7 @@
         image = '',
         vendor = 'Naay',
         tags = [],
-        available = true,
-        handle = '',
-        variants = []
+        available = true
       } = product;
 
       const hasDiscount = comparePrice && parseFloat(comparePrice) > parseFloat(price);
