@@ -373,7 +373,7 @@
         .naay-widget {
           position: fixed !important;
           bottom: 20px !important;
-          left: 20px !important;
+          right: 20px !important;
           z-index: 999999 !important;
           font-family: var(--naay-font) !important;
           font-feature-settings: 'cv11', 'cv02', 'cv03', 'cv04' !important;
@@ -2020,7 +2020,7 @@
           backdrop-filter: blur(20px) !important;
           -webkit-backdrop-filter: blur(20px) !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
-          border-radius: 0 12px 12px 0 !important;
+          border-radius: 12px 0 0 12px !important;
           color: var(--naay-perfect) !important;
           cursor: pointer !important;
           transition: all var(--naay-duration) var(--naay-transition) !important;
@@ -2031,7 +2031,7 @@
           gap: 8px !important;
           box-shadow: var(--naay-shadow-strong) !important;
           position: absolute !important;
-          right: -60px !important;
+          left: -60px !important;
           bottom: 0 !important;
           z-index: 999998 !important;
           overflow: hidden !important;
@@ -2094,17 +2094,17 @@
           transition: all 0.2s var(--naay-transition) !important;
         }
 
-        /* Cart Panel - Slides from right */
+        /* Cart Panel - Slides from right to left */
         .naay-cart-panel {
           position: absolute !important;
           bottom: 0 !important;
-          right: -400px !important;
+          left: -400px !important;
           width: 400px !important;
           height: 620px !important;
           background: rgba(248, 249, 248, 0.95) !important;
           backdrop-filter: blur(20px) !important;
           -webkit-backdrop-filter: blur(20px) !important;
-          border-radius: 12px 0 0 12px !important;
+          border-radius: 0 12px 12px 0 !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
           box-shadow: var(--naay-shadow-strong) !important;
           display: flex !important;
@@ -2115,11 +2115,11 @@
           transition: all var(--naay-duration) var(--naay-transition) !important;
           pointer-events: none !important;
           z-index: 999997 !important;
-          transform: translateX(32px) scale(0.95) !important;
+          transform: translateX(-32px) scale(0.95) !important;
         }
 
         .naay-cart-panel--open {
-          right: -60px !important;
+          left: -460px !important;
           opacity: 1 !important;
           visibility: visible !important;
           pointer-events: auto !important;
@@ -2214,6 +2214,16 @@
         .naay-cart-panel__empty-subtitle {
           font-size: 14px !important;
           color: var(--naay-text-secondary) !important;
+        }
+
+        /* FORCE HIDE empty state when there are items */
+        .naay-cart-panel__items--visible ~ .naay-cart-panel__empty,
+        .naay-cart-panel__empty[style*="display: none"] {
+          display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+          height: 0 !important;
+          overflow: hidden !important;
         }
 
         /* Items Container */
@@ -2478,27 +2488,27 @@
         @media (max-width: 768px) {
           .naay-widget {
             bottom: 10px !important;
-            left: 10px !important;
+            right: 10px !important;
           }
           
           .naay-cart-panel {
             width: 90vw !important;
             max-width: 350px !important;
-            right: -350px !important;
+            left: -350px !important;
             height: 400px !important;
           }
           
           .naay-cart-toggle {
             width: 50px !important;
             height: 400px !important;
-            right: -50px !important;
+            left: -50px !important;
             opacity: 0 !important;
             visibility: hidden !important;
             pointer-events: none !important;
           }
           
           .naay-cart-panel--open {
-            right: -50px !important;
+            left: -450px !important;
           }
           
           .naay-widget--open .naay-cart-toggle {
@@ -2511,27 +2521,27 @@
         @media (max-width: 480px) {
           .naay-widget {
             bottom: 5px !important;
-            left: 5px !important;
+            right: 5px !important;
           }
           
           .naay-cart-panel {
             width: 95vw !important;
             max-width: none !important;
             height: 350px !important;
-            right: -95vw !important;
+            left: -95vw !important;
           }
           
           .naay-cart-toggle {
             width: 45px !important;
             height: 350px !important;
-            right: -45px !important;
+            left: -45px !important;
             opacity: 0 !important;
             visibility: hidden !important;
             pointer-events: none !important;
           }
           
           .naay-cart-panel--open {
-            right: -45px !important;
+            left: -440px !important;
           }
           
           .naay-widget--open .naay-cart-toggle {
@@ -2721,6 +2731,7 @@
           handle: 'producto-prueba'
         };
         this.addToCartLocal(testProduct);
+        this.forceHideEmptyMessage(); // Force hide after test
         this.showCart();
       };
       
@@ -3441,6 +3452,9 @@
       
       // Update cart display to reflect changes
       this.updateCartDisplay();
+      
+      // Force hide empty message after any cart update
+      this.forceHideEmptyMessage();
     }
 
     // Sync local cart data from Shopify cart
@@ -3610,10 +3624,27 @@
         } else {
           // Show items
           console.log('📋 HIDING EMPTY STATE - SHOWING ITEMS');
-          this.cartEmpty.style.display = 'none';
-          this.cartItems.style.display = 'flex';
-          this.cartItems.classList.add('naay-cart-panel__items--visible');
-          this.cartFooter.style.display = 'block';
+          
+          // FORCE HIDE empty state with multiple methods
+          if (this.cartEmpty) {
+            this.cartEmpty.style.display = 'none';
+            this.cartEmpty.style.visibility = 'hidden';
+            this.cartEmpty.style.opacity = '0';
+            this.cartEmpty.style.height = '0';
+            this.cartEmpty.style.overflow = 'hidden';
+          }
+          
+          // Show items container
+          if (this.cartItems) {
+            this.cartItems.style.display = 'flex';
+            this.cartItems.classList.add('naay-cart-panel__items--visible');
+          }
+          
+          // Show footer
+          if (this.cartFooter) {
+            this.cartFooter.style.display = 'block';
+          }
+          
           console.log('📋 Showing cart with items');
           
           // Update total
@@ -3743,6 +3774,29 @@
       });
       
       console.log('🎨 Finished rendering all cart items. Total items rendered:', this.cartData.items.length);
+    }
+
+    forceHideEmptyMessage() {
+      console.log('🚫 Force hiding empty cart message');
+      
+      if (this.cartEmpty) {
+        // Multiple methods to ensure it's hidden
+        this.cartEmpty.style.display = 'none';
+        this.cartEmpty.style.visibility = 'hidden'; 
+        this.cartEmpty.style.opacity = '0';
+        this.cartEmpty.style.height = '0';
+        this.cartEmpty.style.overflow = 'hidden';
+        this.cartEmpty.style.position = 'absolute';
+        this.cartEmpty.style.left = '-9999px';
+        
+        // Remove from DOM flow
+        this.cartEmpty.setAttribute('hidden', 'true');
+        this.cartEmpty.setAttribute('aria-hidden', 'true');
+        
+        console.log('✅ Empty message forcefully hidden');
+      } else {
+        console.warn('⚠️ Cart empty element not found for hiding');
+      }
     }
 
     proceedToCheckout() {
