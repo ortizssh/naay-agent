@@ -2,24 +2,9 @@ import { adminApiClient, storefrontApiClient } from '@shopify/admin-api-client';
 import { createStorefrontApiClient } from '@shopify/storefront-api-client';
 import { config } from '@/utils/config';
 import { logger } from '@/utils/logger';
-import { ShopifyProduct, ShopifyCart, ShopifyVariant, AppError } from '@/types';
+import { ShopifyProduct, ShopifyCart, ShopifyVariant, AppError, ProductSearchFilters } from '@/types';
 import crypto from 'crypto';
 
-// Product search filters interface
-interface ProductSearchFilters {
-  query?: string;
-  vendor?: string;
-  productType?: string;
-  tags?: string[];
-  priceRange?: {
-    min?: number;
-    max?: number;
-  };
-  availability?: boolean;
-  sortKey?: 'CREATED_AT' | 'UPDATED_AT' | 'TITLE' | 'PRICE' | 'VENDOR' | 'PRODUCT_TYPE' | 'BEST_SELLING';
-  reverse?: boolean;
-  limit?: number;
-}
 
 // Storefront API search interface
 interface StorefrontSearchFilters {
@@ -37,7 +22,15 @@ interface StorefrontSearchFilters {
       max?: number;
     };
   }[];
-  sortKey?: 'RELEVANCE' | 'BEST_SELLING' | 'CREATED_AT' | 'ID' | 'PRICE' | 'TITLE' | 'UPDATED_AT' | 'VENDOR';
+  sortKey?:
+    | 'RELEVANCE'
+    | 'BEST_SELLING'
+    | 'CREATED_AT'
+    | 'ID'
+    | 'PRICE'
+    | 'TITLE'
+    | 'UPDATED_AT'
+    | 'VENDOR';
   reverse?: boolean;
   first?: number;
 }
@@ -118,9 +111,13 @@ export class ShopifyService {
         sortKey: filters.sortKey === 'PRICE' ? 'PRICE' : 'RELEVANCE',
         reverse: filters.reverse,
         productFilters: [
-          ...(filters.availability !== undefined ? [{ available: filters.availability }] : []),
+          ...(filters.availability !== undefined
+            ? [{ available: filters.availability }]
+            : []),
           ...(filters.vendor ? [{ vendor: filters.vendor }] : []),
-          ...(filters.productType ? [{ productType: filters.productType }] : []),
+          ...(filters.productType
+            ? [{ productType: filters.productType }]
+            : []),
           ...(filters.priceRange ? [{ price: filters.priceRange }] : []),
         ],
       });
@@ -137,7 +134,7 @@ export class ShopifyService {
     const products: ShopifyProduct[] = [];
     let cursor = null;
     const limit = Math.min(filters.limit || 50, 250);
-    
+
     try {
       // Build query string for Admin API
       let queryString = '';
@@ -145,17 +142,23 @@ export class ShopifyService {
         queryString += `title:*${filters.query}* OR description:*${filters.query}* OR tag:${filters.query}`;
       }
       if (filters.vendor) {
-        queryString += queryString ? ` AND vendor:${filters.vendor}` : `vendor:${filters.vendor}`;
+        queryString += queryString
+          ? ` AND vendor:${filters.vendor}`
+          : `vendor:${filters.vendor}`;
       }
       if (filters.productType) {
-        queryString += queryString ? ` AND product_type:${filters.productType}` : `product_type:${filters.productType}`;
+        queryString += queryString
+          ? ` AND product_type:${filters.productType}`
+          : `product_type:${filters.productType}`;
       }
       if (filters.tags && filters.tags.length > 0) {
         const tagQuery = filters.tags.map(tag => `tag:${tag}`).join(' OR ');
         queryString += queryString ? ` AND (${tagQuery})` : `(${tagQuery})`;
       }
       if (filters.availability !== undefined) {
-        queryString += queryString ? ` AND available:${filters.availability}` : `available:${filters.availability}`;
+        queryString += queryString
+          ? ` AND available:${filters.availability}`
+          : `available:${filters.availability}`;
       }
 
       do {
@@ -237,11 +240,17 @@ export class ShopifyService {
             .filter((product: any) => {
               // Additional filtering for price range if specified
               if (filters.priceRange) {
-                const minPrice = parseFloat(product.priceRange.minVariantPrice.amount);
-                const maxPrice = parseFloat(product.priceRange.maxVariantPrice.amount);
-                
-                if (filters.priceRange.min && minPrice < filters.priceRange.min) return false;
-                if (filters.priceRange.max && maxPrice > filters.priceRange.max) return false;
+                const minPrice = parseFloat(
+                  product.priceRange.minVariantPrice.amount
+                );
+                const maxPrice = parseFloat(
+                  product.priceRange.maxVariantPrice.amount
+                );
+
+                if (filters.priceRange.min && minPrice < filters.priceRange.min)
+                  return false;
+                if (filters.priceRange.max && maxPrice > filters.priceRange.max)
+                  return false;
               }
               return true;
             })
@@ -303,7 +312,7 @@ export class ShopifyService {
     filters: StorefrontSearchFilters
   ): Promise<ShopifyProduct[]> {
     const client = this.getStorefrontClient(shop, storefrontToken);
-    
+
     try {
       const query = `
         query SearchProducts($query: String!, $first: Int!, $sortKey: SearchSortKeys, $reverse: Boolean, $productFilters: [ProductFilter!]) {
@@ -637,10 +646,14 @@ export class ShopifyService {
     try {
       // For now, we'll use a simple approach based on tags and product type
       // In a production environment, you'd want to implement more sophisticated ML-based recommendations
-      
+
       if (options.productId) {
         // Get the base product to find related items
-        const baseProduct = await this.getProduct(shop, accessToken, options.productId);
+        const baseProduct = await this.getProduct(
+          shop,
+          accessToken,
+          options.productId
+        );
         if (!baseProduct) {
           throw new AppError('Base product not found for recommendations', 404);
         }
@@ -652,27 +665,36 @@ export class ShopifyService {
 
         if (options.intent === 'related') {
           filters.productType = baseProduct.product_type;
-        } else if (options.intent === 'complementary' && baseProduct.tags.length > 0) {
+        } else if (
+          options.intent === 'complementary' &&
+          baseProduct.tags.length > 0
+        ) {
           filters.tags = baseProduct.tags.slice(0, 3); // Use first 3 tags
         }
 
-        const products = await this.searchProductsAdmin(shop, accessToken, filters);
-        
+        const products = await this.searchProductsAdmin(
+          shop,
+          accessToken,
+          filters
+        );
+
         // Filter out the base product and score by relevance
         const recommendations = products
           .filter(p => p.id !== baseProduct.id)
           .map(product => {
             let score = 0;
-            
+
             // Score based on shared tags
-            const sharedTags = baseProduct.tags.filter(tag => product.tags.includes(tag));
+            const sharedTags = baseProduct.tags.filter(tag =>
+              product.tags.includes(tag)
+            );
             score += sharedTags.length * 10;
-            
+
             // Score based on same product type
             if (product.product_type === baseProduct.product_type) {
               score += 20;
             }
-            
+
             // Score based on same vendor
             if (product.vendor === baseProduct.vendor) {
               score += 15;
@@ -681,7 +703,11 @@ export class ShopifyService {
             return {
               ...product,
               score,
-              reason: this.getRecommendationReason(sharedTags, product, baseProduct),
+              reason: this.getRecommendationReason(
+                sharedTags,
+                product,
+                baseProduct
+              ),
             };
           })
           .sort((a, b) => (b.score || 0) - (a.score || 0))
@@ -1532,7 +1558,11 @@ export class ShopifyService {
       }
 
       // Return the updated cart by fetching it again
-      return this.getCart(shop, storefrontToken, cartId) as Promise<ExtendedShopifyCart>;
+      return this.getCart(
+        shop,
+        storefrontToken,
+        cartId
+      ) as Promise<ExtendedShopifyCart>;
     } catch (error) {
       logger.error('Error updating cart buyer identity:', error);
       throw new AppError(`Failed to update cart buyer identity: ${error}`, 500);

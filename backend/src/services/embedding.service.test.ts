@@ -5,14 +5,14 @@ import { AppError, EmbeddingError } from '@/types';
 jest.mock('./cache.service', () => ({
   cacheService: {
     get: jest.fn(),
-    set: jest.fn()
-  }
+    set: jest.fn(),
+  },
 }));
 
 const mockOpenAI = {
   embeddings: {
-    create: jest.fn()
-  }
+    create: jest.fn(),
+  },
 };
 
 jest.mock('openai', () => {
@@ -23,9 +23,9 @@ jest.mock('@/utils/config', () => ({
   config: {
     openai: {
       apiKey: 'test-api-key',
-      embeddingModel: 'text-embedding-3-small'
-    }
-  }
+      embeddingModel: 'text-embedding-3-small',
+    },
+  },
 }));
 
 describe('EmbeddingService', () => {
@@ -45,9 +45,9 @@ describe('EmbeddingService', () => {
 
       mockCacheService.get.mockResolvedValue(null);
       mockCacheService.set.mockResolvedValue(undefined);
-      
+
       mockOpenAI.embeddings.create.mockResolvedValue({
-        data: [{ embedding: expectedEmbedding }]
+        data: [{ embedding: expectedEmbedding }],
       });
 
       const result = await embeddingService.generateEmbedding(testText);
@@ -56,7 +56,7 @@ describe('EmbeddingService', () => {
       expect(mockOpenAI.embeddings.create).toHaveBeenCalledWith({
         model: 'text-embedding-3-small',
         input: testText,
-        encoding_format: 'float'
+        encoding_format: 'float',
       });
       expect(mockCacheService.set).toHaveBeenCalled();
     });
@@ -75,49 +75,58 @@ describe('EmbeddingService', () => {
     });
 
     it('should clean text before generating embedding', async () => {
-      const dirtyText = '<p>Nike <script>alert("xss")</script> sneakers</p>\n\n  with   extra   spaces  ';
+      const dirtyText =
+        '<p>Nike <script>alert("xss")</script> sneakers</p>\n\n  with   extra   spaces  ';
       const expectedCleanText = 'Nike sneakers with extra spaces';
       const expectedEmbedding = [0.1, 0.2, 0.3];
 
       mockCacheService.get.mockResolvedValue(null);
       mockCacheService.set.mockResolvedValue(undefined);
-      
+
       mockOpenAI.embeddings.create.mockResolvedValue({
-        data: [{ embedding: expectedEmbedding }]
+        data: [{ embedding: expectedEmbedding }],
       });
 
       await embeddingService.generateEmbedding(dirtyText);
 
       expect(mockOpenAI.embeddings.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          input: expectedCleanText
+          input: expectedCleanText,
         })
       );
     });
 
     it('should throw EmbeddingError for empty text', async () => {
-      await expect(embeddingService.generateEmbedding('')).rejects.toThrow(AppError);
-      await expect(embeddingService.generateEmbedding('   ')).rejects.toThrow(AppError);
+      await expect(embeddingService.generateEmbedding('')).rejects.toThrow(
+        AppError
+      );
+      await expect(embeddingService.generateEmbedding('   ')).rejects.toThrow(
+        AppError
+      );
     });
 
     it('should handle OpenAI API errors', async () => {
       const testText = 'Test text';
       mockCacheService.get.mockResolvedValue(null);
-      
+
       mockOpenAI.embeddings.create.mockRejectedValue(new Error('API Error'));
 
-      await expect(embeddingService.generateEmbedding(testText)).rejects.toThrow(AppError);
+      await expect(
+        embeddingService.generateEmbedding(testText)
+      ).rejects.toThrow(AppError);
     });
 
     it('should handle empty embedding response', async () => {
       const testText = 'Test text';
       mockCacheService.get.mockResolvedValue(null);
-      
+
       mockOpenAI.embeddings.create.mockResolvedValue({
-        data: []
+        data: [],
       });
 
-      await expect(embeddingService.generateEmbedding(testText)).rejects.toThrow(AppError);
+      await expect(
+        embeddingService.generateEmbedding(testText)
+      ).rejects.toThrow(AppError);
     });
 
     it('should limit text length to prevent token overflow', async () => {
@@ -126,9 +135,9 @@ describe('EmbeddingService', () => {
 
       mockCacheService.get.mockResolvedValue(null);
       mockCacheService.set.mockResolvedValue(undefined);
-      
+
       mockOpenAI.embeddings.create.mockResolvedValue({
-        data: [{ embedding: expectedEmbedding }]
+        data: [{ embedding: expectedEmbedding }],
       });
 
       await embeddingService.generateEmbedding(longText);
@@ -145,11 +154,11 @@ describe('EmbeddingService', () => {
       const expectedEmbeddings = [
         [0.1, 0.2, 0.3],
         [0.4, 0.5, 0.6],
-        [0.7, 0.8, 0.9]
+        [0.7, 0.8, 0.9],
       ];
 
       mockOpenAI.embeddings.create.mockResolvedValue({
-        data: expectedEmbeddings.map(embedding => ({ embedding }))
+        data: expectedEmbeddings.map(embedding => ({ embedding })),
       });
 
       const result = await embeddingService.generateBatchEmbeddings(texts);
@@ -158,7 +167,7 @@ describe('EmbeddingService', () => {
       expect(mockOpenAI.embeddings.create).toHaveBeenCalledWith({
         model: 'text-embedding-3-small',
         input: texts,
-        encoding_format: 'float'
+        encoding_format: 'float',
       });
     });
 
@@ -171,10 +180,13 @@ describe('EmbeddingService', () => {
     it('should filter out empty texts', async () => {
       const texts = ['Valid text', '', '   ', 'Another valid text'];
       const expectedCleanTexts = ['Valid text', 'Another valid text'];
-      const expectedEmbeddings = [[0.1, 0.2], [0.3, 0.4]];
+      const expectedEmbeddings = [
+        [0.1, 0.2],
+        [0.3, 0.4],
+      ];
 
       mockOpenAI.embeddings.create.mockResolvedValue({
-        data: expectedEmbeddings.map(embedding => ({ embedding }))
+        data: expectedEmbeddings.map(embedding => ({ embedding })),
       });
 
       const result = await embeddingService.generateBatchEmbeddings(texts);
@@ -182,19 +194,21 @@ describe('EmbeddingService', () => {
       expect(result).toEqual(expectedEmbeddings);
       expect(mockOpenAI.embeddings.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          input: expectedCleanTexts
+          input: expectedCleanTexts,
         })
       );
     });
 
     it('should throw error when response length mismatch', async () => {
       const texts = ['Text 1', 'Text 2', 'Text 3'];
-      
+
       mockOpenAI.embeddings.create.mockResolvedValue({
-        data: [{ embedding: [0.1, 0.2] }] // Only 1 embedding for 3 texts
+        data: [{ embedding: [0.1, 0.2] }], // Only 1 embedding for 3 texts
       });
 
-      await expect(embeddingService.generateBatchEmbeddings(texts)).rejects.toThrow(AppError);
+      await expect(
+        embeddingService.generateBatchEmbeddings(texts)
+      ).rejects.toThrow(AppError);
     });
   });
 
@@ -202,18 +216,23 @@ describe('EmbeddingService', () => {
     it('should find similar embeddings above threshold', async () => {
       const queryEmbedding = [1, 0, 0]; // Normalized vector
       const candidateEmbeddings = [
-        [1, 0, 0],     // Perfect match (similarity = 1)
+        [1, 0, 0], // Perfect match (similarity = 1)
         [0.9, 0.436, 0], // High similarity (~0.9)
-        [0, 1, 0],     // Low similarity (0)
-        [0.8, 0.6, 0]  // Medium similarity (~0.8)
+        [0, 1, 0], // Low similarity (0)
+        [0.8, 0.6, 0], // Medium similarity (~0.8)
       ];
 
-      const result = await embeddingService.searchSimilar(queryEmbedding, candidateEmbeddings);
+      const result = await embeddingService.searchSimilar(
+        queryEmbedding,
+        candidateEmbeddings
+      );
 
       // Should return results above 0.7 threshold, sorted by similarity
       expect(result.length).toBeGreaterThan(0);
-      expect(result[0].similarity).toBeGreaterThanOrEqual(result[1]?.similarity || 0);
-      
+      expect(result[0].similarity).toBeGreaterThanOrEqual(
+        result[1]?.similarity || 0
+      );
+
       // All results should be above threshold
       result.forEach(item => {
         expect(item.similarity).toBeGreaterThan(0.7);
@@ -224,14 +243,17 @@ describe('EmbeddingService', () => {
       const queryEmbedding = [1, 0, 0];
       const candidateEmbeddings: number[][] = [];
 
-      const result = await embeddingService.searchSimilar(queryEmbedding, candidateEmbeddings);
+      const result = await embeddingService.searchSimilar(
+        queryEmbedding,
+        candidateEmbeddings
+      );
       expect(result).toEqual([]);
     });
 
     it('should handle dimension mismatch error', async () => {
       const queryEmbedding = [1, 0, 0]; // 3 dimensions
       const candidateEmbeddings = [
-        [1, 0] // 2 dimensions - mismatch
+        [1, 0], // 2 dimensions - mismatch
       ];
 
       await expect(
@@ -247,12 +269,14 @@ describe('EmbeddingService', () => {
         description: 'Comfortable running shoes',
         vendor: 'Nike',
         product_type: 'Footwear',
-        tags: ['running', 'sports', 'comfortable']
+        tags: ['running', 'sports', 'comfortable'],
       };
 
       const result = embeddingService.prepareProductContent(product);
 
-      expect(result).toBe('Nike Air Max Comfortable running shoes Nike Footwear running sports comfortable');
+      expect(result).toBe(
+        'Nike Air Max Comfortable running shoes Nike Footwear running sports comfortable'
+      );
     });
 
     it('should prepare variant content for embedding', async () => {
@@ -261,13 +285,13 @@ describe('EmbeddingService', () => {
         description: 'Comfortable running shoes',
         vendor: 'Nike',
         product_type: 'Footwear',
-        tags: ['running', 'sports']
+        tags: ['running', 'sports'],
       };
 
       const variant = {
         title: 'Size 10',
         price: '129.99',
-        sku: 'NIKE-AM-10'
+        sku: 'NIKE-AM-10',
       };
 
       const result = embeddingService.prepareVariantContent(product, variant);
@@ -285,13 +309,13 @@ describe('EmbeddingService', () => {
         description: 'Basic product',
         vendor: 'Test',
         product_type: 'General',
-        tags: []
+        tags: [],
       };
 
       const variant = {
         title: 'Default Title',
         price: '10.00',
-        sku: ''
+        sku: '',
       };
 
       const result = embeddingService.prepareVariantContent(product, variant);
@@ -307,7 +331,7 @@ describe('EmbeddingService', () => {
         description: null,
         vendor: '',
         product_type: '',
-        tags: undefined
+        tags: undefined,
       };
 
       const result = embeddingService.prepareProductContent(product);
@@ -319,7 +343,7 @@ describe('EmbeddingService', () => {
   describe('Cosine Similarity Calculation', () => {
     it('should calculate correct cosine similarity', async () => {
       const embeddingService = new EmbeddingService();
-      
+
       // Access private method for testing
       const cosineSimilarity = (embeddingService as any).cosineSimilarity;
 

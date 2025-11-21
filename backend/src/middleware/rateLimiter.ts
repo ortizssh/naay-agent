@@ -54,26 +54,31 @@ export const webhookRateLimiter = rateLimit({
 });
 
 // Enhanced Shopify-specific rate limiters
-export const createShopRateLimit = (requests: number, windowMs: number, endpoint?: string) => {
+export const createShopRateLimit = (
+  requests: number,
+  windowMs: number,
+  endpoint?: string
+) => {
   return rateLimit({
     windowMs,
     max: requests,
     keyGenerator: (req: Request) => {
-      const shop = (req.query.shop as string) || 
-                   (req.body?.shop) || 
-                   (req.headers['x-shopify-shop-domain'] as string) ||
-                   'anonymous';
+      const shop =
+        (req.query.shop as string) ||
+        req.body?.shop ||
+        (req.headers['x-shopify-shop-domain'] as string) ||
+        'anonymous';
       return `shop:${shop}:${endpoint || req.route?.path || req.path}`;
     },
     handler: (req: Request, res: Response) => {
-      const shop = (req.query.shop as string) || (req.body?.shop);
-      
+      const shop = (req.query.shop as string) || req.body?.shop;
+
       logger.warn(`Shop rate limit exceeded: ${endpoint}`, {
         shop,
         endpoint: endpoint || req.path,
         ip: req.ip,
         limit: requests,
-        windowMs
+        windowMs,
       });
 
       const resetTime = new Date(Date.now() + windowMs);
@@ -81,19 +86,19 @@ export const createShopRateLimit = (requests: number, windowMs: number, endpoint
 
       res.status(429).json({
         success: false,
-        error: error.toJSON()
+        error: error.toJSON(),
       });
     },
     message: {
       success: false,
       error: `Shop rate limit exceeded for ${endpoint}. Try again later.`,
-      code: ErrorCode.RATE_LIMIT_EXCEEDED
-    }
+      code: ErrorCode.RATE_LIMIT_EXCEEDED,
+    },
   });
 };
 
 // Specialized rate limiters for different endpoints
-export const productSyncRateLimit = createShopRateLimit(10, 60 * 1000, 'sync'); // 10 requests per minute  
+export const productSyncRateLimit = createShopRateLimit(10, 60 * 1000, 'sync'); // 10 requests per minute
 export const adminRateLimit = createShopRateLimit(30, 60 * 1000, 'admin'); // 30 requests per minute
 export const widgetRateLimit = createShopRateLimit(200, 60 * 1000, 'widget'); // 200 requests per minute
 
@@ -106,42 +111,46 @@ export const advancedRateLimit = (
 ) => {
   return async (req: Request, res: Response, next: Function) => {
     try {
-      const shop = (req.query.shop as string) || (req.body?.shop);
+      const shop = (req.query.shop as string) || req.body?.shop;
       const key = `rate_limit:${identifier}:${shop || req.ip}`;
       const now = Date.now();
       const windowStart = now - windowMs;
 
       // Get request timestamps from cache
       const requests = (await cacheService.get<number[]>(key)) || [];
-      
+
       // Remove old requests outside the window
-      const validRequests = requests.filter(timestamp => timestamp > windowStart);
-      
+      const validRequests = requests.filter(
+        timestamp => timestamp > windowStart
+      );
+
       // Check if limit exceeded
       if (validRequests.length >= limit) {
         const resetTime = new Date(Math.min(...validRequests) + windowMs);
-        
+
         logger.warn(`Advanced rate limit exceeded: ${identifier}`, {
           shop,
           identifier,
           requests: validRequests.length,
           limit,
-          ip: req.ip
+          ip: req.ip,
         });
 
-        const error = shop 
+        const error = shop
           ? new ShopifyRateLimitError(resetTime, shop, errorMessage)
           : new RateLimitError(limit, resetTime, shop);
 
         return res.status(429).json({
           success: false,
-          error: error.toJSON()
+          error: error.toJSON(),
         });
       }
 
       // Add current request timestamp
       validRequests.push(now);
-      await cacheService.set(key, validRequests, { ttl: Math.ceil(windowMs / 1000) });
+      await cacheService.set(key, validRequests, {
+        ttl: Math.ceil(windowMs / 1000),
+      });
 
       next();
     } catch (error) {
@@ -152,9 +161,13 @@ export const advancedRateLimit = (
 };
 
 // Shopify API-aware rate limiting that respects Shopify's API limits
-export const shopifyApiRateLimit = async (req: Request, res: Response, next: Function) => {
-  const shop = (req.query.shop as string) || (req.body?.shop);
-  
+export const shopifyApiRateLimit = async (
+  req: Request,
+  res: Response,
+  next: Function
+) => {
+  const shop = (req.query.shop as string) || req.body?.shop;
+
   if (!shop) {
     return next();
   }
@@ -162,8 +175,10 @@ export const shopifyApiRateLimit = async (req: Request, res: Response, next: Fun
   try {
     // Check if we have a recent Shopify rate limit hit
     const shopifyLimitKey = `shopify_rate_limit:${shop}`;
-    const shopifyLimit = await cacheService.get<{ resetTime: string }>(shopifyLimitKey);
-    
+    const shopifyLimit = await cacheService.get<{ resetTime: string }>(
+      shopifyLimitKey
+    );
+
     if (shopifyLimit && new Date(shopifyLimit.resetTime) > new Date()) {
       const error = new ShopifyRateLimitError(
         new Date(shopifyLimit.resetTime),
@@ -173,7 +188,7 @@ export const shopifyApiRateLimit = async (req: Request, res: Response, next: Fun
 
       return res.status(429).json({
         success: false,
-        error: error.toJSON()
+        error: error.toJSON(),
       });
     }
 
@@ -188,14 +203,21 @@ export const shopifyApiRateLimit = async (req: Request, res: Response, next: Fun
 export const recordShopifyRateLimit = async (shop: string, resetTime: Date) => {
   try {
     const key = `shopify_rate_limit:${shop}`;
-    const ttl = Math.max(1, Math.ceil((resetTime.getTime() - Date.now()) / 1000));
-    
-    await cacheService.set(key, { resetTime: resetTime.toISOString() }, { ttl });
-    
+    const ttl = Math.max(
+      1,
+      Math.ceil((resetTime.getTime() - Date.now()) / 1000)
+    );
+
+    await cacheService.set(
+      key,
+      { resetTime: resetTime.toISOString() },
+      { ttl }
+    );
+
     logger.warn('Shopify API rate limit recorded', {
       shop,
       resetTime: resetTime.toISOString(),
-      ttl
+      ttl,
     });
   } catch (error) {
     logger.error('Error recording Shopify rate limit:', error);

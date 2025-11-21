@@ -77,7 +77,14 @@ router.post(
       // Process message with AI agent (with performance monitoring)
       const agentResponse = await monitoringService.measurePerformance(
         'chat_message_processing',
-        () => aiAgentService.processMessage(message, session_id, shop, cart_id, context),
+        () =>
+          aiAgentService.processMessage(
+            message,
+            session_id,
+            shop,
+            cart_id,
+            context
+          ),
         { shop, hasCartId: cart_id ? 'true' : 'false' }
       );
 
@@ -91,7 +98,7 @@ router.post(
             cart_id || '',
             store.access_token
           );
-          
+
           // Update the response metadata with the new cart ID if one was created
           if (updatedCartId && updatedCartId !== cart_id) {
             agentResponse.metadata = {
@@ -302,11 +309,11 @@ async function executeCartActions(
   accessToken: string
 ): Promise<string> {
   let currentCartId = cartId;
-  
+
   for (const action of actions) {
     try {
       switch (action.type) {
-        case 'cart.create':
+        case 'cart.create': {
           // Create a new cart
           const newCart = await shopifyService.createCart(
             shop,
@@ -320,6 +327,7 @@ async function executeCartActions(
             cartId: currentCartId,
           });
           break;
+        }
 
         case 'cart.add':
           // Add items to cart via Storefront API
@@ -336,7 +344,7 @@ async function executeCartActions(
               attributes: action.params.attributes || [],
             },
           ]);
-          
+
           logger.info('Items added to cart:', {
             type: action.type,
             shop,
@@ -355,7 +363,7 @@ async function executeCartActions(
               currentCartId,
               action.params.lines
             );
-            
+
             logger.info('Cart lines updated:', {
               type: action.type,
               shop,
@@ -374,7 +382,7 @@ async function executeCartActions(
               currentCartId,
               action.params.lineIds
             );
-            
+
             logger.info('Items removed from cart:', {
               type: action.type,
               shop,
@@ -393,7 +401,7 @@ async function executeCartActions(
               currentCartId,
               action.params.buyerIdentity
             );
-            
+
             logger.info('Cart buyer identity updated:', {
               type: action.type,
               shop,
@@ -410,7 +418,7 @@ async function executeCartActions(
       throw error;
     }
   }
-  
+
   return currentCartId;
 }
 

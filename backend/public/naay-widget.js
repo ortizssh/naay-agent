@@ -858,6 +858,419 @@
           height: 16px !important;
         }
 
+        /* ======= PRODUCT RECOMMENDATION WIDGET STYLES ======= */
+
+        .naay-product-card {
+          background: var(--naay-white) !important;
+          border-radius: 16px !important;
+          border: 1px solid rgba(212, 196, 184, 0.2) !important;
+          overflow: hidden !important;
+          box-shadow: 0 4px 16px rgba(168, 130, 107, 0.1) !important;
+          transition: all 0.3s var(--naay-transition) !important;
+          margin: 16px 0 !important;
+          max-width: 380px !important;
+          position: relative !important;
+        }
+
+        .naay-product-card:hover {
+          transform: translateY(-4px) !important;
+          box-shadow: 0 8px 24px rgba(168, 130, 107, 0.15) !important;
+        }
+
+        .naay-product-card__header {
+          display: flex !important;
+          justify-content: space-between !important;
+          align-items: center !important;
+          padding: 12px 16px 0 16px !important;
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          z-index: 2 !important;
+        }
+
+        .naay-product-card__vendor {
+          background: rgba(248, 249, 248, 0.95) !important;
+          backdrop-filter: blur(10px) !important;
+          color: var(--naay-perfect) !important;
+          font-size: 12px !important;
+          font-weight: var(--naay-font-weight-medium) !important;
+          padding: 4px 8px !important;
+          border-radius: 6px !important;
+          border: 1px solid rgba(212, 196, 184, 0.3) !important;
+        }
+
+        .naay-product-card__discount {
+          background: linear-gradient(135deg, #dc2626, #ef4444) !important;
+          color: var(--naay-white) !important;
+          font-size: 12px !important;
+          font-weight: var(--naay-font-weight-semibold) !important;
+          padding: 4px 8px !important;
+          border-radius: 6px !important;
+          box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3) !important;
+        }
+
+        .naay-product-card__media {
+          position: relative !important;
+          width: 100% !important;
+          height: 200px !important;
+          overflow: hidden !important;
+          background: var(--naay-sage) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+
+        .naay-product-card__image {
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: cover !important;
+          transition: transform 0.3s var(--naay-transition) !important;
+        }
+
+        .naay-product-card:hover .naay-product-card__image {
+          transform: scale(1.05) !important;
+        }
+
+        .naay-product-card__placeholder {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          width: 64px !important;
+          height: 64px !important;
+          color: var(--naay-perfect) !important;
+          opacity: 0.5 !important;
+        }
+
+        .naay-product-card__placeholder svg {
+          width: 100% !important;
+          height: 100% !important;
+        }
+
+        .naay-product-card__overlay {
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          background: rgba(26, 26, 26, 0.4) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          opacity: 0 !important;
+          transition: opacity 0.3s var(--naay-transition) !important;
+        }
+
+        .naay-product-card:hover .naay-product-card__overlay {
+          opacity: 1 !important;
+        }
+
+        .naay-product-card__quick-view {
+          background: rgba(248, 249, 248, 0.95) !important;
+          backdrop-filter: blur(10px) !important;
+          border: none !important;
+          border-radius: 50% !important;
+          width: 48px !important;
+          height: 48px !important;
+          color: var(--naay-perfect) !important;
+          cursor: pointer !important;
+          transition: all 0.2s var(--naay-transition) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+
+        .naay-product-card__quick-view:hover {
+          background: var(--naay-white) !important;
+          transform: scale(1.1) !important;
+        }
+
+        .naay-product-card__quick-view svg {
+          width: 20px !important;
+          height: 20px !important;
+        }
+
+        .naay-product-card__content {
+          padding: 20px !important;
+        }
+
+        .naay-product-card__title {
+          font-size: 16px !important;
+          font-weight: var(--naay-font-weight-semibold) !important;
+          line-height: 1.4 !important;
+          margin: 0 0 8px 0 !important;
+          color: var(--naay-black) !important;
+          display: -webkit-box !important;
+          -webkit-line-clamp: 2 !important;
+          -webkit-box-orient: vertical !important;
+          overflow: hidden !important;
+        }
+
+        .naay-product-card__description {
+          font-size: 13px !important;
+          line-height: 1.5 !important;
+          color: var(--naay-perfect) !important;
+          margin: 0 0 16px 0 !important;
+          opacity: 0.8 !important;
+          display: -webkit-box !important;
+          -webkit-line-clamp: 2 !important;
+          -webkit-box-orient: vertical !important;
+          overflow: hidden !important;
+        }
+
+        .naay-product-card__price-section {
+          display: flex !important;
+          justify-content: space-between !important;
+          align-items: flex-start !important;
+          margin-bottom: 16px !important;
+        }
+
+        .naay-product-card__pricing {
+          display: flex !important;
+          align-items: center !important;
+          gap: 8px !important;
+        }
+
+        .naay-product-card__price {
+          font-size: 18px !important;
+          font-weight: var(--naay-font-weight-bold) !important;
+          color: var(--naay-perfect) !important;
+        }
+
+        .naay-product-card__compare-price {
+          font-size: 14px !important;
+          font-weight: var(--naay-font-weight-medium) !important;
+          color: var(--naay-perfect) !important;
+          opacity: 0.6 !important;
+          text-decoration: line-through !important;
+        }
+
+        .naay-product-card__tags {
+          display: flex !important;
+          gap: 6px !important;
+          flex-wrap: wrap !important;
+        }
+
+        .naay-product-card__tag {
+          background: var(--naay-delicate) !important;
+          color: var(--naay-perfect) !important;
+          font-size: 11px !important;
+          font-weight: var(--naay-font-weight-medium) !important;
+          padding: 2px 6px !important;
+          border-radius: 4px !important;
+          text-transform: uppercase !important;
+          letter-spacing: 0.5px !important;
+        }
+
+        .naay-product-card__actions {
+          display: flex !important;
+          gap: 8px !important;
+        }
+
+        .naay-product-card__add-btn {
+          flex: 1 !important;
+          background: linear-gradient(135deg, var(--naay-perfect) 0%, var(--naay-rich) 100%) !important;
+          color: var(--naay-white) !important;
+          border: none !important;
+          border-radius: 10px !important;
+          padding: 12px 16px !important;
+          font-size: 14px !important;
+          font-weight: var(--naay-font-weight-semibold) !important;
+          cursor: pointer !important;
+          transition: all 0.3s var(--naay-transition) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          gap: 8px !important;
+          box-shadow: 0 2px 8px rgba(168, 130, 107, 0.3) !important;
+        }
+
+        .naay-product-card__add-btn:hover {
+          transform: translateY(-2px) !important;
+          box-shadow: 0 4px 12px rgba(168, 130, 107, 0.4) !important;
+        }
+
+        .naay-product-card__add-btn--disabled {
+          background: rgba(168, 130, 107, 0.3) !important;
+          cursor: not-allowed !important;
+          transform: none !important;
+          box-shadow: none !important;
+        }
+
+        .naay-product-card__add-btn--success {
+          background: linear-gradient(135deg, #10b981, #059669) !important;
+        }
+
+        .naay-product-card__add-btn svg {
+          width: 16px !important;
+          height: 16px !important;
+        }
+
+        .naay-spinner {
+          animation: naaySpinner 1s linear infinite !important;
+        }
+
+        @keyframes naaySpinner {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        .naay-product-card__details-btn {
+          background: rgba(168, 130, 107, 0.1) !important;
+          color: var(--naay-perfect) !important;
+          border: 1px solid rgba(168, 130, 107, 0.3) !important;
+          border-radius: 10px !important;
+          padding: 12px 16px !important;
+          font-size: 14px !important;
+          font-weight: var(--naay-font-weight-medium) !important;
+          cursor: pointer !important;
+          transition: all 0.2s var(--naay-transition) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          gap: 6px !important;
+          min-width: 80px !important;
+        }
+
+        .naay-product-card__details-btn:hover {
+          background: rgba(168, 130, 107, 0.2) !important;
+          border-color: var(--naay-perfect) !important;
+        }
+
+        .naay-product-card__details-btn svg {
+          width: 14px !important;
+          height: 14px !important;
+        }
+
+        /* ======= PRODUCT MODAL STYLES ======= */
+
+        .naay-product-modal {
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          width: 100vw !important;
+          height: 100vh !important;
+          z-index: 999999 !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          opacity: 0 !important;
+          visibility: hidden !important;
+          transition: all 0.3s var(--naay-transition) !important;
+        }
+
+        .naay-product-modal--visible {
+          opacity: 1 !important;
+          visibility: visible !important;
+        }
+
+        .naay-product-modal__backdrop {
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
+          background: rgba(26, 26, 26, 0.8) !important;
+          backdrop-filter: blur(4px) !important;
+        }
+
+        .naay-product-modal__content {
+          position: relative !important;
+          background: var(--naay-white) !important;
+          border-radius: 20px !important;
+          max-width: 500px !important;
+          width: 90vw !important;
+          max-height: 80vh !important;
+          overflow: hidden !important;
+          box-shadow: 0 20px 40px rgba(168, 130, 107, 0.2) !important;
+        }
+
+        .naay-product-modal__header {
+          display: flex !important;
+          justify-content: space-between !important;
+          align-items: center !important;
+          padding: 20px 24px !important;
+          border-bottom: 1px solid rgba(212, 196, 184, 0.2) !important;
+          background: var(--naay-sage) !important;
+        }
+
+        .naay-product-modal__header h2 {
+          font-size: 18px !important;
+          font-weight: var(--naay-font-weight-semibold) !important;
+          margin: 0 !important;
+          color: var(--naay-black) !important;
+        }
+
+        .naay-product-modal__close {
+          background: none !important;
+          border: none !important;
+          cursor: pointer !important;
+          padding: 8px !important;
+          border-radius: 8px !important;
+          transition: background 0.2s var(--naay-transition) !important;
+          color: var(--naay-perfect) !important;
+        }
+
+        .naay-product-modal__close:hover {
+          background: rgba(168, 130, 107, 0.1) !important;
+        }
+
+        .naay-product-modal__close svg {
+          width: 20px !important;
+          height: 20px !important;
+        }
+
+        .naay-product-modal__body {
+          padding: 24px !important;
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 20px !important;
+        }
+
+        .naay-product-modal__body img {
+          width: 100% !important;
+          height: 200px !important;
+          object-fit: cover !important;
+          border-radius: 12px !important;
+        }
+
+        .naay-product-modal__info {
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 16px !important;
+        }
+
+        .naay-product-modal__description {
+          font-size: 14px !important;
+          line-height: 1.6 !important;
+          color: var(--naay-perfect) !important;
+          margin: 0 !important;
+        }
+
+        .naay-product-modal__price {
+          font-size: 24px !important;
+          font-weight: var(--naay-font-weight-bold) !important;
+          color: var(--naay-perfect) !important;
+        }
+
+        .naay-product-modal__add-btn {
+          background: linear-gradient(135deg, var(--naay-perfect) 0%, var(--naay-rich) 100%) !important;
+          color: var(--naay-white) !important;
+          border: none !important;
+          border-radius: 12px !important;
+          padding: 16px 24px !important;
+          font-size: 16px !important;
+          font-weight: var(--naay-font-weight-semibold) !important;
+          cursor: pointer !important;
+          transition: all 0.3s var(--naay-transition) !important;
+          box-shadow: 0 4px 16px rgba(168, 130, 107, 0.3) !important;
+        }
+
+        .naay-product-modal__add-btn:hover {
+          transform: translateY(-2px) !important;
+          box-shadow: 0 6px 20px rgba(168, 130, 107, 0.4) !important;
+        }
+
         /* Header Hidden */
         .naay-widget__header {
           display: none !important;
@@ -1670,6 +2083,252 @@
       }
     }
 
+    // ======= PRODUCT RECOMMENDATION WIDGET =======
+
+    addProductRecommendation(product) {
+      console.log('🛍️ Adding product recommendation:', product);
+      
+      const productDiv = document.createElement('div');
+      productDiv.className = 'naay-widget__message naay-widget__message--assistant';
+      
+      // Create product card HTML
+      const productHTML = this.createProductCardHTML(product);
+      productDiv.innerHTML = productHTML;
+      
+      // Add event listeners for the product card
+      this.setupProductCardListeners(productDiv, product);
+      
+      if (this.messagesContainer) {
+        this.messagesContainer.appendChild(productDiv);
+        this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+      }
+      
+      console.log('✅ Product recommendation added to chat');
+    }
+
+    createProductCardHTML(product) {
+      const {
+        id = '',
+        title = 'Producto sin nombre',
+        description = '',
+        price = '0.00',
+        comparePrice = null,
+        image = '',
+        vendor = 'Naay',
+        tags = [],
+        available = true,
+        handle = '',
+        variants = []
+      } = product;
+
+      const hasDiscount = comparePrice && parseFloat(comparePrice) > parseFloat(price);
+      const discountPercent = hasDiscount ? Math.round(((parseFloat(comparePrice) - parseFloat(price)) / parseFloat(comparePrice)) * 100) : 0;
+      
+      return `
+        <div class="naay-product-card" data-product-id="${id}">
+          <div class="naay-product-card__header">
+            <div class="naay-product-card__vendor">${vendor}</div>
+            ${hasDiscount ? `<div class="naay-product-card__discount">-${discountPercent}%</div>` : ''}
+          </div>
+          
+          <div class="naay-product-card__media">
+            ${image ? 
+              `<img class="naay-product-card__image" src="${image}" alt="${title}" loading="lazy">` : 
+              `<div class="naay-product-card__placeholder">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M21 16V8C21 6.9 20.1 6 19 6H5C3.9 6 3 6.9 3 8V16C3 17.1 3.9 18 5 18H19C20.1 18 21 17.1 21 16ZM5 16L8.5 11.5L11 14.5L14.5 10L19 16H5Z" fill="currentColor"/>
+                </svg>
+              </div>`
+            }
+            <div class="naay-product-card__overlay">
+              <button class="naay-product-card__quick-view" data-action="quick-view" title="Vista rápida">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M1 12S5 4 12 4S23 12 23 12S19 20 12 20S1 12 1 12Z" stroke="currentColor" stroke-width="2"/>
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          
+          <div class="naay-product-card__content">
+            <h3 class="naay-product-card__title">${title}</h3>
+            ${description ? `<p class="naay-product-card__description">${description}</p>` : ''}
+            
+            <div class="naay-product-card__price-section">
+              <div class="naay-product-card__pricing">
+                <span class="naay-product-card__price">$${price}</span>
+                ${hasDiscount ? `<span class="naay-product-card__compare-price">$${comparePrice}</span>` : ''}
+              </div>
+              ${tags.length > 0 ? `
+                <div class="naay-product-card__tags">
+                  ${tags.slice(0, 2).map(tag => `<span class="naay-product-card__tag">${tag}</span>`).join('')}
+                </div>
+              ` : ''}
+            </div>
+            
+            <div class="naay-product-card__actions">
+              ${!available ? 
+                `<button class="naay-product-card__add-btn naay-product-card__add-btn--disabled" disabled>
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  Agotado
+                </button>` :
+                `<button class="naay-product-card__add-btn" data-action="add-to-cart" title="Agregar al carrito">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19C17 19.6 16.6 20 16 20H14C13.4 20 13 19.6 13 19V13" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  Agregar al Carrito
+                </button>`
+              }
+              <button class="naay-product-card__details-btn" data-action="view-details" title="Ver detalles">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Detalles
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    setupProductCardListeners(productElement, product) {
+      // Add to cart button
+      const addButton = productElement.querySelector('[data-action="add-to-cart"]');
+      if (addButton) {
+        addButton.addEventListener('click', (e) => {
+          e.preventDefault();
+          this.handleAddToCartFromRecommendation(product, addButton);
+        });
+      }
+
+      // Quick view button
+      const quickViewButton = productElement.querySelector('[data-action="quick-view"]');
+      if (quickViewButton) {
+        quickViewButton.addEventListener('click', (e) => {
+          e.preventDefault();
+          this.showProductQuickView(product);
+        });
+      }
+
+      // View details button
+      const detailsButton = productElement.querySelector('[data-action="view-details"]');
+      if (detailsButton) {
+        detailsButton.addEventListener('click', (e) => {
+          e.preventDefault();
+          this.showProductDetails(product);
+        });
+      }
+    }
+
+    handleAddToCartFromRecommendation(product, buttonElement) {
+      console.log('🛒 Adding product to cart from recommendation:', product.title);
+      
+      // Update button state to loading
+      const originalHTML = buttonElement.innerHTML;
+      buttonElement.innerHTML = `
+        <svg class="naay-spinner" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" opacity="0.3"/>
+          <path d="M22 12C22 6.48 17.52 2 12 2V22C17.52 22 22 17.52 22 12Z" fill="currentColor"/>
+        </svg>
+        Agregando...
+      `;
+      buttonElement.disabled = true;
+
+      // Add to cart
+      this.addToCart({
+        id: product.id,
+        title: product.title,
+        price: product.price,
+        quantity: 1,
+        image: product.image,
+        variantId: product.variants && product.variants[0] ? product.variants[0].id : product.id,
+        handle: product.handle
+      });
+
+      // Update button state to success
+      setTimeout(() => {
+        buttonElement.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          ¡Agregado!
+        `;
+        buttonElement.classList.add('naay-product-card__add-btn--success');
+        
+        // Reset button after 2 seconds
+        setTimeout(() => {
+          buttonElement.innerHTML = originalHTML;
+          buttonElement.disabled = false;
+          buttonElement.classList.remove('naay-product-card__add-btn--success');
+        }, 2000);
+      }, 800);
+    }
+
+    showProductQuickView(product) {
+      console.log('👁️ Showing quick view for:', product.title);
+      
+      // Create quick view modal
+      const modal = document.createElement('div');
+      modal.className = 'naay-product-modal';
+      modal.innerHTML = `
+        <div class="naay-product-modal__backdrop"></div>
+        <div class="naay-product-modal__content">
+          <header class="naay-product-modal__header">
+            <h2>${product.title}</h2>
+            <button class="naay-product-modal__close">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </button>
+          </header>
+          <div class="naay-product-modal__body">
+            ${product.image ? `<img src="${product.image}" alt="${product.title}">` : ''}
+            <div class="naay-product-modal__info">
+              <p class="naay-product-modal__description">${product.description || 'Producto de cosmética natural Naay.'}</p>
+              <div class="naay-product-modal__price">$${product.price}</div>
+              <button class="naay-product-modal__add-btn">Agregar al Carrito</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Add to body
+      document.body.appendChild(modal);
+
+      // Add event listeners
+      const closeBtn = modal.querySelector('.naay-product-modal__close');
+      const backdrop = modal.querySelector('.naay-product-modal__backdrop');
+      const addBtn = modal.querySelector('.naay-product-modal__add-btn');
+
+      const closeModal = () => {
+        modal.remove();
+      };
+
+      closeBtn.addEventListener('click', closeModal);
+      backdrop.addEventListener('click', closeModal);
+      addBtn.addEventListener('click', () => {
+        this.handleAddToCartFromRecommendation(product, addBtn);
+        setTimeout(closeModal, 1500);
+      });
+
+      // Animate in
+      setTimeout(() => modal.classList.add('naay-product-modal--visible'), 10);
+    }
+
+    showProductDetails(product) {
+      console.log('📄 Showing details for:', product.title);
+      
+      // Open product page in new tab
+      if (product.handle) {
+        const productUrl = `https://${this.config.shopDomain}/products/${product.handle}`;
+        window.open(productUrl, '_blank');
+      } else {
+        console.warn('No product handle available for details view');
+      }
+    }
+
     formatMessage(text) {
       // Convert numbered lists to proper HTML
       let formatted = text
@@ -1766,6 +2425,43 @@
       
       this.addToCart(sampleProduct);
       console.log('🧪 Test product added to cart');
+    }
+
+    // Test function to show product recommendations (for development)
+    testProductRecommendation() {
+      const sampleProducts = [
+        {
+          id: 'product-1',
+          title: 'Crema Hidratante Naay con Aloe Vera',
+          description: 'Crema hidratante natural con aloe vera orgánico para todo tipo de pieles.',
+          price: '24.99',
+          comparePrice: '29.99',
+          image: 'https://picsum.photos/300/200?random=1',
+          vendor: 'Naay',
+          tags: ['hidratante', 'aloe vera', 'natural'],
+          available: true,
+          handle: 'crema-hidratante-aloe-vera',
+          variants: [{ id: 'variant-1', price: '24.99' }]
+        },
+        {
+          id: 'product-2',
+          title: 'Sérum Facial Vitamina C',
+          description: 'Sérum antioxidante con vitamina C para iluminar y proteger la piel.',
+          price: '32.50',
+          image: 'https://picsum.photos/300/200?random=2',
+          vendor: 'Naay',
+          tags: ['sérum', 'vitamina c', 'antioxidante'],
+          available: true,
+          handle: 'serum-facial-vitamina-c',
+          variants: [{ id: 'variant-2', price: '32.50' }]
+        }
+      ];
+      
+      sampleProducts.forEach(product => {
+        this.addProductRecommendation(product);
+      });
+      
+      console.log('🧪 Test product recommendations added');
     }
 
     // ======= CART FUNCTIONALITY =======
@@ -1959,12 +2655,12 @@
       console.log('✅ Redirected to checkout');
     }
 
-    // Process cart actions from AI response
+    // Process cart actions and product recommendations from AI response
     processCartActions(actions) {
       if (!actions || !Array.isArray(actions)) return;
       
       actions.forEach(action => {
-        console.log('🛒 Processing cart action:', action);
+        console.log('🛒 Processing action:', action);
         
         switch (action.type) {
           case 'cart.add':
@@ -1988,8 +2684,20 @@
               this.updateQuantity(action.productId, action.quantity);
             }
             break;
+          case 'product.recommend':
+            if (action.product) {
+              this.addProductRecommendation(action.product);
+            }
+            break;
+          case 'product.show':
+            if (action.products && Array.isArray(action.products)) {
+              action.products.forEach(product => {
+                this.addProductRecommendation(product);
+              });
+            }
+            break;
           default:
-            console.warn('Unknown cart action type:', action.type);
+            console.warn('Unknown action type:', action.type);
         }
       });
     }
@@ -2001,14 +2709,20 @@
     const widget = new NaayWidget();
     window.NaayWidget = widget;
     
-    // Expose cart testing function for development
+    // Expose testing functions for development
     window.testNaayCart = () => {
       console.log('🧪 Testing Naay Cart functionality...');
       widget.testCart();
       return 'Cart test completed! Check the widget.';
     };
+
+    window.testNaayProduct = () => {
+      console.log('🧪 Testing Naay Product Recommendations...');
+      widget.testProductRecommendation();
+      return 'Product recommendations test completed! Check the widget.';
+    };
     
-    console.log('✨ Naay Widget initialized! Use window.testNaayCart() to test cart functionality.');
+    console.log('✨ Naay Widget initialized! Use window.testNaayCart() and window.testNaayProduct() to test functionality.');
   });
 
   // Fallback initialization if DOM already loaded
@@ -2020,14 +2734,20 @@
     const widget = new NaayWidget();
     window.NaayWidget = widget;
     
-    // Expose cart testing function for development
+    // Expose testing functions for development
     window.testNaayCart = () => {
       console.log('🧪 Testing Naay Cart functionality...');
       widget.testCart();
       return 'Cart test completed! Check the widget.';
     };
+
+    window.testNaayProduct = () => {
+      console.log('🧪 Testing Naay Product Recommendations...');
+      widget.testProductRecommendation();
+      return 'Product recommendations test completed! Check the widget.';
+    };
     
-    console.log('✨ Naay Widget initialized! Use window.testNaayCart() to test cart functionality.');
+    console.log('✨ Naay Widget initialized! Use window.testNaayCart() and window.testNaayProduct() to test functionality.');
   }
 
   console.log('✨ Naay Luxury Chat: Widget script loaded successfully');

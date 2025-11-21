@@ -11,10 +11,10 @@ jest.mock('ioredis', () => {
     mget: jest.fn(),
     pipeline: jest.fn(() => ({
       setex: jest.fn(),
-      exec: jest.fn()
+      exec: jest.fn(),
     })),
     on: jest.fn(),
-    lazyConnect: true
+    lazyConnect: true,
   }));
 });
 
@@ -86,7 +86,7 @@ describe('CacheService', () => {
       const entries: Array<[string, string]> = [
         ['batch1', 'value1'],
         ['batch2', 'value2'],
-        ['batch3', 'value3']
+        ['batch3', 'value3'],
       ];
 
       await cacheService.mset(entries, { ttl: 300 });
@@ -107,7 +107,7 @@ describe('CacheService', () => {
         id: 'shop-123',
         name: 'Test Shop',
         currency: 'USD',
-        timezone: 'America/New_York'
+        timezone: 'America/New_York',
       };
 
       await cacheService.cacheShopData(testShop, shopData, 600);
@@ -131,7 +131,7 @@ describe('CacheService', () => {
         accessToken: 'shpat_test_token',
         scopes: 'read_products,write_products',
         expiresAt: new Date(Date.now() + 3600000),
-        isOnline: true
+        isOnline: true,
       };
 
       await cacheService.cacheShopifySession(testShop, sessionData, 3600);
@@ -149,7 +149,9 @@ describe('CacheService', () => {
 
       // Verify data exists
       expect(await cacheService.getShopData(testShop)).toEqual(shopData);
-      expect(await cacheService.getShopifySession(testShop)).toEqual(sessionData);
+      expect(await cacheService.getShopifySession(testShop)).toEqual(
+        sessionData
+      );
 
       // Invalidate
       await cacheService.invalidateShopCache(testShop);
@@ -167,7 +169,7 @@ describe('CacheService', () => {
     it('should handle cache errors gracefully', async () => {
       // This test verifies that cache operations don't throw errors
       // even when Redis is unavailable (which it is in this test)
-      
+
       const testKey = 'error:test';
       const testValue = 'error test value';
 
@@ -182,7 +184,7 @@ describe('CacheService', () => {
 
       // Set value (should use memory cache since Redis is mocked)
       await cacheService.set(testKey, testValue);
-      
+
       // Get value (should retrieve from memory cache)
       const result = await cacheService.get(testKey);
       expect(result).toEqual(testValue);
@@ -196,7 +198,7 @@ describe('CacheService', () => {
       for (let i = 0; i < 1050; i++) {
         promises.push(cacheService.set(`test:${i}`, `value${i}`));
       }
-      
+
       await Promise.all(promises);
 
       // The cache should have automatically pruned to keep only 1000 items
@@ -207,7 +209,7 @@ describe('CacheService', () => {
 
     it('should handle concurrent operations', async () => {
       const operations = [];
-      
+
       // Simulate concurrent cache operations
       for (let i = 0; i < 100; i++) {
         operations.push(cacheService.set(`concurrent:${i}`, `value${i}`));

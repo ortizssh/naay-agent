@@ -120,7 +120,11 @@ export interface AgentResponse {
   metadata?: {
     products_found?: number;
     search_query?: string;
-    search_type?: 'shopify_storefront' | 'shopify_admin' | 'semantic' | 'database_popular';
+    search_type?:
+      | 'shopify_storefront'
+      | 'shopify_admin'
+      | 'semantic'
+      | 'database_popular';
     execution_time?: number;
     intent?: string;
     error?: any;
@@ -128,7 +132,12 @@ export interface AgentResponse {
     cart_id?: string;
     cart_updated?: boolean;
     recommendations_found?: number;
-    recommendation_type?: 'related' | 'complementary' | 'upsell' | 'popular' | 'database_popular';
+    recommendation_type?:
+      | 'related'
+      | 'complementary'
+      | 'upsell'
+      | 'popular'
+      | 'database_popular';
     base_product_id?: string;
     has_cart_id?: boolean;
     status?: string;
@@ -265,7 +274,7 @@ export enum ErrorCode {
   AUTHORIZATION_ERROR = 'AUTHORIZATION_ERROR',
   NOT_FOUND = 'NOT_FOUND',
   RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
-  
+
   // Shopify-specific Errors
   SHOPIFY_AUTH_ERROR = 'SHOPIFY_AUTH_ERROR',
   SHOPIFY_API_ERROR = 'SHOPIFY_API_ERROR',
@@ -275,19 +284,19 @@ export enum ErrorCode {
   SHOPIFY_PERMISSION_DENIED = 'SHOPIFY_PERMISSION_DENIED',
   SHOPIFY_RATE_LIMIT = 'SHOPIFY_RATE_LIMIT',
   SHOPIFY_UNINSTALLED = 'SHOPIFY_UNINSTALLED',
-  
+
   // AI/Embedding Errors
   OPENAI_API_ERROR = 'OPENAI_API_ERROR',
   EMBEDDING_GENERATION_ERROR = 'EMBEDDING_GENERATION_ERROR',
   INTENT_ANALYSIS_ERROR = 'INTENT_ANALYSIS_ERROR',
   AI_RESPONSE_ERROR = 'AI_RESPONSE_ERROR',
   AI_TIMEOUT = 'AI_TIMEOUT',
-  
+
   // Database Errors
   DATABASE_ERROR = 'DATABASE_ERROR',
   SUPABASE_ERROR = 'SUPABASE_ERROR',
   CACHE_ERROR = 'CACHE_ERROR',
-  
+
   // Product/Search Errors
   PRODUCT_SYNC_ERROR = 'PRODUCT_SYNC_ERROR',
   SEARCH_ERROR = 'SEARCH_ERROR',
@@ -311,7 +320,7 @@ export class AppError extends Error {
     metadata?: Record<string, any>
   ) {
     super(message);
-    
+
     this.name = 'AppError';
     this.code = code;
     this.statusCode = statusCode;
@@ -330,7 +339,7 @@ export class AppError extends Error {
       statusCode: this.statusCode,
       shopDomain: this.shopDomain,
       metadata: this.metadata,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 }
@@ -338,7 +347,7 @@ export class AppError extends Error {
 // Shopify-specific error classes
 export class ShopifyError extends AppError {
   constructor(
-    message: string, 
+    message: string,
     statusCode: number = 500,
     code: ErrorCode = ErrorCode.SHOPIFY_API_ERROR,
     shopDomain?: string,
@@ -355,7 +364,14 @@ export class ShopifyAuthError extends AppError {
     shopDomain?: string,
     metadata?: Record<string, any>
   ) {
-    super(message, 401, ErrorCode.SHOPIFY_AUTH_ERROR, true, shopDomain, metadata);
+    super(
+      message,
+      401,
+      ErrorCode.SHOPIFY_AUTH_ERROR,
+      true,
+      shopDomain,
+      metadata
+    );
     this.name = 'ShopifyAuthError';
   }
 }
@@ -387,18 +403,32 @@ export class ShopifyWebhookError extends AppError {
     shopDomain?: string,
     metadata?: Record<string, any>
   ) {
-    super(message, 400, ErrorCode.SHOPIFY_WEBHOOK_ERROR, true, shopDomain, metadata);
+    super(
+      message,
+      400,
+      ErrorCode.SHOPIFY_WEBHOOK_ERROR,
+      true,
+      shopDomain,
+      metadata
+    );
     this.name = 'ShopifyWebhookError';
   }
 }
 
 export class SupabaseError extends AppError {
   constructor(
-    message: string, 
+    message: string,
     statusCode: number = 500,
     metadata?: Record<string, any>
   ) {
-    super(message, statusCode, ErrorCode.SUPABASE_ERROR, true, undefined, metadata);
+    super(
+      message,
+      statusCode,
+      ErrorCode.SUPABASE_ERROR,
+      true,
+      undefined,
+      metadata
+    );
     this.name = 'SupabaseError';
   }
 }
@@ -416,11 +446,15 @@ export class AIError extends AppError {
 }
 
 export class EmbeddingError extends AppError {
-  constructor(
-    message: string,
-    metadata?: Record<string, any>
-  ) {
-    super(message, 500, ErrorCode.EMBEDDING_GENERATION_ERROR, true, undefined, metadata);
+  constructor(message: string, metadata?: Record<string, any>) {
+    super(
+      message,
+      500,
+      ErrorCode.EMBEDDING_GENERATION_ERROR,
+      true,
+      undefined,
+      metadata
+    );
     this.name = 'EmbeddingError';
   }
 }
@@ -429,11 +463,7 @@ export class EmbeddingError extends AppError {
 export class ValidationError extends AppError {
   public readonly field?: string;
 
-  constructor(
-    message: string,
-    field?: string,
-    metadata?: Record<string, any>
-  ) {
+  constructor(message: string, field?: string, metadata?: Record<string, any>) {
     super(message, 400, ErrorCode.VALIDATION_ERROR, true, undefined, metadata);
     this.name = 'ValidationError';
     this.field = field;
@@ -445,11 +475,7 @@ export class RateLimitError extends AppError {
   public readonly limit: number;
   public readonly resetTime: Date;
 
-  constructor(
-    limit: number,
-    resetTime: Date,
-    shopDomain?: string
-  ) {
+  constructor(limit: number, resetTime: Date, shopDomain?: string) {
     super(
       `Rate limit exceeded. Limit: ${limit} requests. Try again after ${resetTime.toISOString()}`,
       429,
@@ -525,7 +551,15 @@ export interface ProductSearchFilters {
     max?: number;
   };
   availability?: boolean;
-  sortKey?: 'CREATED_AT' | 'UPDATED_AT' | 'TITLE' | 'PRICE' | 'VENDOR' | 'PRODUCT_TYPE' | 'BEST_SELLING' | 'RELEVANCE';
+  sortKey?:
+    | 'CREATED_AT'
+    | 'UPDATED_AT'
+    | 'TITLE'
+    | 'PRICE'
+    | 'VENDOR'
+    | 'PRODUCT_TYPE'
+    | 'BEST_SELLING'
+    | 'RELEVANCE';
   reverse?: boolean;
   limit?: number;
 }

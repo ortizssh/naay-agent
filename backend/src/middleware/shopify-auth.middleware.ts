@@ -3,7 +3,12 @@ import jwt from 'jsonwebtoken';
 import { config } from '@/utils/config';
 import { SupabaseService } from '@/services/supabase.service';
 import { logger } from '@/utils/logger';
-import { AppError, ShopifyAuthError, ShopifySessionData, ErrorCode } from '@/types';
+import {
+  AppError,
+  ShopifyAuthError,
+  ShopifySessionData,
+  ErrorCode,
+} from '@/types';
 import { cacheService } from '@/services/cache.service';
 import { monitoringService } from '@/services/monitoring.service';
 
@@ -271,9 +276,12 @@ export class EnhancedShopifyAuth {
   private static readonly SESSION_TTL = 3600; // 1 hour
 
   // Cached session validation with monitoring
-  static async validateCachedSession(shop: string, sessionToken?: string): Promise<ShopifySessionData | null> {
+  static async validateCachedSession(
+    shop: string,
+    sessionToken?: string
+  ): Promise<ShopifySessionData | null> {
     const startTime = Date.now();
-    
+
     if (!shop) return null;
 
     try {
@@ -281,16 +289,31 @@ export class EnhancedShopifyAuth {
       const cachedSession = await cacheService.getShopifySession(shop);
       if (cachedSession && this.isSessionValid(cachedSession)) {
         const authTime = Date.now() - startTime;
-        monitoringService.recordShopifyRequest('session_cache_hit', 'GET', 200, authTime, shop);
+        monitoringService.recordShopifyRequest(
+          'session_cache_hit',
+          'GET',
+          200,
+          authTime,
+          shop
+        );
         return cachedSession;
       }
 
       // If we have a session token, validate it
       if (sessionToken) {
-        const sessionData = await this.validateAndCacheSession(shop, sessionToken);
+        const sessionData = await this.validateAndCacheSession(
+          shop,
+          sessionToken
+        );
         if (sessionData) {
           const authTime = Date.now() - startTime;
-          monitoringService.recordShopifyRequest('session_validation', 'GET', 200, authTime, shop);
+          monitoringService.recordShopifyRequest(
+            'session_validation',
+            'GET',
+            200,
+            authTime,
+            shop
+          );
           return sessionData;
         }
       }
@@ -304,31 +327,59 @@ export class EnhancedShopifyAuth {
           scopes: store.scopes,
           isOnline: false,
           installedAt: store.installed_at,
-          updatedAt: store.updated_at
+          updatedAt: store.updated_at,
         };
 
         // Cache the session
-        await cacheService.cacheShopifySession(shop, sessionData, this.SESSION_TTL);
-        
+        await cacheService.cacheShopifySession(
+          shop,
+          sessionData,
+          this.SESSION_TTL
+        );
+
         const authTime = Date.now() - startTime;
-        monitoringService.recordShopifyRequest('session_db_fallback', 'GET', 200, authTime, shop);
+        monitoringService.recordShopifyRequest(
+          'session_db_fallback',
+          'GET',
+          200,
+          authTime,
+          shop
+        );
         return sessionData;
       }
 
       const authTime = Date.now() - startTime;
-      monitoringService.recordShopifyRequest('session_not_found', 'GET', 404, authTime, shop);
+      monitoringService.recordShopifyRequest(
+        'session_not_found',
+        'GET',
+        404,
+        authTime,
+        shop
+      );
       return null;
     } catch (error) {
       const authTime = Date.now() - startTime;
       logger.error('Session validation failed', { shop, error: error.message });
-      monitoringService.recordShopifyRequest('session_validation', 'GET', 401, authTime, shop);
+      monitoringService.recordShopifyRequest(
+        'session_validation',
+        'GET',
+        401,
+        authTime,
+        shop
+      );
       return null;
     }
   }
 
-  private static async validateAndCacheSession(shop: string, sessionToken: string): Promise<ShopifySessionData | null> {
+  private static async validateAndCacheSession(
+    shop: string,
+    sessionToken: string
+  ): Promise<ShopifySessionData | null> {
     try {
-      const payload = jwt.verify(sessionToken, config.shopify.apiSecret) as SessionTokenPayload;
+      const payload = jwt.verify(
+        sessionToken,
+        config.shopify.apiSecret
+      ) as SessionTokenPayload;
 
       if (payload.dest !== `https://${shop}`) {
         throw new ShopifyAuthError('Session token shop mismatch', shop);
@@ -342,16 +393,23 @@ export class EnhancedShopifyAuth {
         userId: payload.sub,
         expiresAt: new Date(payload.exp * 1000),
         installedAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       // Cache the validated session
       const ttl = Math.max(1, payload.exp - Math.floor(Date.now() / 1000));
-      await cacheService.cacheShopifySession(shop, sessionData, Math.min(ttl, this.SESSION_TTL));
+      await cacheService.cacheShopifySession(
+        shop,
+        sessionData,
+        Math.min(ttl, this.SESSION_TTL)
+      );
 
       return sessionData;
     } catch (error) {
-      logger.warn('Session token validation failed', { shop, error: error.message });
+      logger.warn('Session token validation failed', {
+        shop,
+        error: error.message,
+      });
       return null;
     }
   }
@@ -364,18 +422,27 @@ export class EnhancedShopifyAuth {
   }
 
   // Enhanced authentication middleware with monitoring
-  static createAuthMiddleware(options: {
-    requireAuth?: boolean;
-    allowPublic?: boolean;
-    requiredScopes?: string[];
-  } = {}) {
+  static createAuthMiddleware(
+    options: {
+      requireAuth?: boolean;
+      allowPublic?: boolean;
+      requiredScopes?: string[];
+    } = {}
+  ) {
     return async (req: Request, res: Response, next: NextFunction) => {
       const startTime = Date.now();
-      const { requireAuth = true, allowPublic = false, requiredScopes = [] } = options;
+      const {
+        requireAuth = true,
+        allowPublic = false,
+        requiredScopes = [],
+      } = options;
 
       try {
-        const shop = (req.query.shop as string) || (req.body?.shop) || (req.headers['x-shopify-shop-domain'] as string);
-        
+        const shop =
+          (req.query.shop as string) ||
+          req.body?.shop ||
+          (req.headers['x-shopify-shop-domain'] as string);
+
         if (!shop && requireAuth) {
           throw new ShopifyAuthError('Shop parameter required');
         }
@@ -391,17 +458,26 @@ export class EnhancedShopifyAuth {
         }
 
         // Validate session
-        const sessionData = await this.validateCachedSession(shop, sessionToken);
-        
+        const sessionData = await this.validateCachedSession(
+          shop,
+          sessionToken
+        );
+
         if (!sessionData && requireAuth) {
           throw new ShopifyAuthError('Valid session required', shop);
         }
 
         // Check required scopes
         if (sessionData && requiredScopes.length > 0) {
-          const hasRequiredScopes = this.checkScopes(sessionData.scopes, requiredScopes);
+          const hasRequiredScopes = this.checkScopes(
+            sessionData.scopes,
+            requiredScopes
+          );
           if (!hasRequiredScopes) {
-            throw new ShopifyAuthError(`Missing required scopes: ${requiredScopes.join(', ')}`, shop);
+            throw new ShopifyAuthError(
+              `Missing required scopes: ${requiredScopes.join(', ')}`,
+              shop
+            );
           }
         }
 
@@ -413,7 +489,13 @@ export class EnhancedShopifyAuth {
 
         // Record successful auth
         const authTime = Date.now() - startTime;
-        monitoringService.recordShopifyRequest('auth_middleware', 'GET', 200, authTime, shop || 'anonymous');
+        monitoringService.recordShopifyRequest(
+          'auth_middleware',
+          'GET',
+          200,
+          authTime,
+          shop || 'anonymous'
+        );
 
         next();
       } catch (error) {
@@ -424,10 +506,16 @@ export class EnhancedShopifyAuth {
           shop,
           error: error.message,
           path: req.path,
-          method: req.method
+          method: req.method,
         });
 
-        monitoringService.recordShopifyRequest('auth_middleware', 'GET', 401, authTime, shop);
+        monitoringService.recordShopifyRequest(
+          'auth_middleware',
+          'GET',
+          401,
+          authTime,
+          shop
+        );
 
         if (error instanceof ShopifyAuthError) {
           return res.status(401).json({
@@ -435,8 +523,8 @@ export class EnhancedShopifyAuth {
             error: {
               message: error.message,
               code: error.code,
-              shopDomain: error.shopDomain
-            }
+              shopDomain: error.shopDomain,
+            },
           });
         }
 
@@ -444,14 +532,17 @@ export class EnhancedShopifyAuth {
           success: false,
           error: {
             message: 'Authentication failed',
-            code: ErrorCode.AUTHENTICATION_ERROR
-          }
+            code: ErrorCode.AUTHENTICATION_ERROR,
+          },
         });
       }
     };
   }
 
-  private static checkScopes(userScopes: string, requiredScopes: string[]): boolean {
+  private static checkScopes(
+    userScopes: string,
+    requiredScopes: string[]
+  ): boolean {
     if (!userScopes || requiredScopes.length === 0) return true;
 
     const scopes = userScopes.split(',').map(s => s.trim());
@@ -467,12 +558,12 @@ export class EnhancedShopifyAuth {
   }> {
     try {
       const sessionData = await this.validateCachedSession(shop);
-      
+
       if (!sessionData) {
         return {
           authenticated: false,
           sessionValid: false,
-          lastActivity: null
+          lastActivity: null,
         };
       }
 
@@ -480,14 +571,17 @@ export class EnhancedShopifyAuth {
         authenticated: true,
         sessionValid: this.isSessionValid(sessionData),
         lastActivity: sessionData.updatedAt,
-        scopes: sessionData.scopes?.split(',').map(s => s.trim())
+        scopes: sessionData.scopes?.split(',').map(s => s.trim()),
       };
     } catch (error) {
-      logger.error('Shop auth health check failed', { shop, error: error.message });
+      logger.error('Shop auth health check failed', {
+        shop,
+        error: error.message,
+      });
       return {
         authenticated: false,
         sessionValid: false,
-        lastActivity: null
+        lastActivity: null,
       };
     }
   }

@@ -27,7 +27,7 @@ class MonitoringService {
   constructor() {
     // Clean up old metrics every hour
     setInterval(() => this.cleanupOldMetrics(), 60 * 60 * 1000);
-    
+
     // Log aggregated metrics every 15 minutes
     setInterval(() => this.logAggregatedMetrics(), 15 * 60 * 1000);
   }
@@ -38,7 +38,7 @@ class MonitoringService {
   recordMetric(metric: Omit<PerformanceMetric, 'timestamp'>): void {
     this.metrics.push({
       ...metric,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
 
     // Limit memory usage
@@ -71,14 +71,14 @@ class MonitoringService {
         name: `${operationName}_duration`,
         value: duration,
         unit: 'ms',
-        tags: metadata
+        tags: metadata,
       });
 
       if (duration > 1000) {
         logger.warn('Slow operation detected', {
           operation: operationName,
           duration,
-          metadata
+          metadata,
         });
       }
 
@@ -91,14 +91,14 @@ class MonitoringService {
         name: `${operationName}_error`,
         value: 1,
         unit: 'count',
-        tags: { ...metadata, error: error.message }
+        tags: { ...metadata, error: error.message },
       });
 
       this.recordMetric({
         name: `${operationName}_duration`,
         value: duration,
         unit: 'ms',
-        tags: { ...metadata, status: 'error' }
+        tags: { ...metadata, status: 'error' },
       });
 
       throw error;
@@ -126,12 +126,14 @@ class MonitoringService {
         averageLatency: 0,
         cacheHitRate: 0,
         errorCount: 0,
-        lastSearchTime: new Date()
+        lastSearchTime: new Date(),
       };
 
       shopMetrics.searchCount++;
-      shopMetrics.averageLatency = 
-        (shopMetrics.averageLatency * (shopMetrics.searchCount - 1) + duration) / shopMetrics.searchCount;
+      shopMetrics.averageLatency =
+        (shopMetrics.averageLatency * (shopMetrics.searchCount - 1) +
+          duration) /
+        shopMetrics.searchCount;
       shopMetrics.lastSearchTime = new Date();
 
       this.vectorSearchMetrics.set(shopDomain, shopMetrics);
@@ -142,13 +144,13 @@ class MonitoringService {
         value: duration,
         unit: 'ms',
         shop: shopDomain,
-        tags: metadata
+        tags: metadata,
       });
 
       logger.info('Vector search completed', {
         shop: shopDomain,
         duration,
-        ...metadata
+        ...metadata,
       });
 
       return result;
@@ -168,14 +170,14 @@ class MonitoringService {
         value: 1,
         unit: 'count',
         shop: shopDomain,
-        tags: { ...metadata, error: (error as Error).message }
+        tags: { ...metadata, error: (error as Error).message },
       });
 
       logger.error('Vector search failed', {
         shop: shopDomain,
         duration,
         error: (error as Error).message,
-        ...metadata
+        ...metadata,
       });
 
       throw error;
@@ -212,8 +214,8 @@ class MonitoringService {
         endpoint,
         method,
         statusCode: statusCode.toString(),
-        success: statusCode < 400 ? 'true' : 'false'
-      }
+        success: statusCode < 400 ? 'true' : 'false',
+      },
     });
   }
 
@@ -233,8 +235,8 @@ class MonitoringService {
       shop,
       tags: {
         webhook,
-        success: success.toString()
-      }
+        success: success.toString(),
+      },
     });
   }
 
@@ -254,8 +256,8 @@ class MonitoringService {
       shop,
       tags: {
         remaining: remaining.toString(),
-        limit: limit.toString()
-      }
+        limit: limit.toString(),
+      },
     });
   }
 
@@ -287,10 +289,14 @@ class MonitoringService {
       m => m.timestamp > new Date(Date.now() - 10 * 60 * 1000) // Last 10 minutes
     );
 
-    const searchErrors = recentMetrics.filter(m => m.name.includes('error')).length;
-    const totalSearches = recentMetrics.filter(m => m.name.includes('search')).length;
+    const searchErrors = recentMetrics.filter(m =>
+      m.name.includes('error')
+    ).length;
+    const totalSearches = recentMetrics.filter(m =>
+      m.name.includes('search')
+    ).length;
 
-    if (totalSearches > 0 && (searchErrors / totalSearches) > 0.1) {
+    if (totalSearches > 0 && searchErrors / totalSearches > 0.1) {
       issues.push('High error rate in vector search');
       status = 'unhealthy';
     }
@@ -302,31 +308,31 @@ class MonitoringService {
         cacheMetrics,
         recentErrorCount: searchErrors,
         recentSearchCount: totalSearches,
-        vectorSearchShops: this.vectorSearchMetrics.size
-      }
+        vectorSearchShops: this.vectorSearchMetrics.size,
+      },
     };
   }
 
   private cleanupOldMetrics(): void {
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
     const initialCount = this.metrics.length;
-    
+
     this.metrics = this.metrics.filter(m => m.timestamp > oneHourAgo);
-    
+
     logger.info('Metrics cleanup completed', {
       removed: initialCount - this.metrics.length,
-      remaining: this.metrics.length
+      remaining: this.metrics.length,
     });
   }
 
   private logAggregatedMetrics(): void {
     const health = this.getHealthStatus();
-    
+
     logger.info('Performance metrics summary', {
       health: health.status,
       issues: health.issues,
       totalMetrics: this.metrics.length,
-      vectorSearchShops: this.vectorSearchMetrics.size
+      vectorSearchShops: this.vectorSearchMetrics.size,
     });
   }
 }

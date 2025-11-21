@@ -148,7 +148,7 @@ export class SupabaseService {
       .from('product_embeddings')
       .upsert({
         ...embedding,
-        embedding: embedding.embedding,  // Store as array, not string
+        embedding: embedding.embedding, // Store as array, not string
       });
 
     if (error) {
@@ -181,9 +181,9 @@ export class SupabaseService {
           const { data, error } = await this.serviceClient.rpc(
             'search_products_semantic',
             {
-              shop_domain: shopDomain,        // Use shop_domain as implemented
-              query_text: query,              // Include query text
-              query_embedding: embedding,     // Pass array directly
+              shop_domain: shopDomain, // Use shop_domain as implemented
+              query_text: query, // Include query text
+              query_embedding: embedding, // Pass array directly
               match_threshold: 0.7,
               match_count: limit,
             }
@@ -195,10 +195,10 @@ export class SupabaseService {
           }
 
           const results = data || [];
-          
+
           // Cache results for 5 minutes
           await cacheService.set(cacheKey, results, { ttl: 300 });
-          
+
           return results;
         } catch (error) {
           logger.error('Vector search failed:', error);

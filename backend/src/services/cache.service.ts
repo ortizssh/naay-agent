@@ -13,22 +13,30 @@ export interface CacheService {
   clear(pattern?: string): Promise<void>;
   mget<T>(keys: string[]): Promise<Array<T | null>>;
   mset<T>(entries: Array<[string, T]>, options?: CacheOptions): Promise<void>;
-  
+
   // Shopify-specific methods
   cacheShopData(shop: string, data: any, ttl?: number): Promise<void>;
   getShopData(shop: string): Promise<any>;
-  cacheProductEmbedding(productId: string, embedding: number[], ttl?: number): Promise<void>;
+  cacheProductEmbedding(
+    productId: string,
+    embedding: number[],
+    ttl?: number
+  ): Promise<void>;
   getProductEmbedding(productId: string): Promise<number[] | null>;
-  cacheShopifySession(shop: string, sessionData: any, ttl?: number): Promise<void>;
+  cacheShopifySession(
+    shop: string,
+    sessionData: any,
+    ttl?: number
+  ): Promise<void>;
   getShopifySession(shop: string): Promise<any>;
   invalidateShopCache(shop: string): Promise<void>;
-  
+
   // Metrics
   getMetrics(): any;
 }
 
 class RedisCacheService implements CacheService {
-  private redis: Redis | null = null;  // Proper type safety
+  private redis: Redis | null = null; // Proper type safety
   private fallbackCache = new Map<string, { value: any; expires: number }>();
   private isRedisConnected = false;
   private hitCount = 0;
@@ -46,7 +54,7 @@ class RedisCacheService implements CacheService {
     try {
       // Use REDIS_URL if available (preferred for cloud services)
       const redisUrl = process.env.REDIS_URL;
-      
+
       if (redisUrl) {
         this.redis = new Redis(redisUrl);
       } else {
@@ -58,24 +66,24 @@ class RedisCacheService implements CacheService {
           db: 0,
           family: 4,
           keepAlive: 30000,
-          
+
           // Enhanced retry configuration for production
           retryDelayOnFailover: 1000,
           maxRetriesPerRequest: null, // Required for BullMQ compatibility
           retryDelayOnClusterDown: 300,
           enableOfflineQueue: false,
-          
+
           // Connection pooling and performance
           lazyConnect: true,
           maxLoadingTimeout: 5000,
           connectTimeout: 10000,
           commandTimeout: 5000,
-          
+
           // Reconnection strategy
-          reconnectOnError: (err) => {
+          reconnectOnError: err => {
             const targetError = 'READONLY';
             return err.message.includes(targetError);
-          }
+          },
         });
       }
 
@@ -92,7 +100,7 @@ class RedisCacheService implements CacheService {
         this.isRedisConnected = false;
         logger.warn('Redis cache error, falling back to memory cache:', {
           error: error.message,
-          code: error.code
+          code: error.code,
         });
       });
 
@@ -106,9 +114,11 @@ class RedisCacheService implements CacheService {
 
       // Log metrics every 10 minutes
       setInterval(() => this.logMetrics(), 10 * 60 * 1000);
-
     } catch (error) {
-      logger.warn('Failed to initialize Redis, using memory cache only:', error);
+      logger.warn(
+        'Failed to initialize Redis, using memory cache only:',
+        error
+      );
     }
   }
 
@@ -145,7 +155,11 @@ class RedisCacheService implements CacheService {
     }
   }
 
-  async set<T>(key: string, value: T, options: CacheOptions = {}): Promise<void> {
+  async set<T>(
+    key: string,
+    value: T,
+    options: CacheOptions = {}
+  ): Promise<void> {
     const ttl = options.ttl || 3600; // Default 1 hour
 
     try {
@@ -159,7 +173,7 @@ class RedisCacheService implements CacheService {
       // Always set in memory cache as backup
       this.fallbackCache.set(key, {
         value,
-        expires: Date.now() + (ttl * 1000)
+        expires: Date.now() + ttl * 1000,
       });
 
       this.updateMemoryUsage();
@@ -168,7 +182,6 @@ class RedisCacheService implements CacheService {
       if (this.memoryUsage > this.maxMemorySize) {
         this.evictLeastRecentlyUsed();
       }
-
     } catch (error) {
       logger.error('Cache set error:', { key, error: error.message });
     }
@@ -207,7 +220,7 @@ class RedisCacheService implements CacheService {
       } else {
         this.fallbackCache.clear();
       }
-      
+
       this.updateMemoryUsage();
     } catch (error) {
       logger.error('Cache clear error:', { pattern, error: error.message });
@@ -219,10 +232,16 @@ class RedisCacheService implements CacheService {
 
     let cursor = '0';
     do {
-      const result = await (this.redis as any).scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+      const result = await (this.redis as any).scan(
+        cursor,
+        'MATCH',
+        pattern,
+        'COUNT',
+        100
+      );
       cursor = result[0];
       const keys = result[1];
-      
+
       if (keys.length > 0) {
         await (this.redis as any).del(...keys);
       }
@@ -233,7 +252,7 @@ class RedisCacheService implements CacheService {
     try {
       if (this.isRedisConnected && this.redis) {
         const values = await (this.redis as any).mget(...keys);
-        return values.map(value => value ? JSON.parse(value) : null);
+        return values.map(value => (value ? JSON.parse(value) : null));
       }
 
       // Fallback to memory cache
@@ -250,7 +269,10 @@ class RedisCacheService implements CacheService {
     }
   }
 
-  async mset<T>(entries: Array<[string, T]>, options: CacheOptions = {}): Promise<void> {
+  async mset<T>(
+    entries: Array<[string, T]>,
+    options: CacheOptions = {}
+  ): Promise<void> {
     try {
       const ttl = options.ttl || 3600;
 
@@ -263,11 +285,11 @@ class RedisCacheService implements CacheService {
       }
 
       // Set in memory cache
-      const expiresAt = Date.now() + (ttl * 1000);
+      const expiresAt = Date.now() + ttl * 1000;
       for (const [key, value] of entries) {
         this.fallbackCache.set(key, {
           value,
-          expires: expiresAt
+          expires: expiresAt,
         });
       }
     } catch (error) {
@@ -293,7 +315,11 @@ class RedisCacheService implements CacheService {
     return await this.get(`shop:${shop}:data`);
   }
 
-  async cacheProductEmbedding(productId: string, embedding: number[], ttl = 86400): Promise<void> {
+  async cacheProductEmbedding(
+    productId: string,
+    embedding: number[],
+    ttl = 86400
+  ): Promise<void> {
     await this.set(`embedding:product:${productId}`, embedding, { ttl });
   }
 
@@ -301,7 +327,11 @@ class RedisCacheService implements CacheService {
     return await this.get(`embedding:product:${productId}`);
   }
 
-  async cacheShopifySession(shop: string, sessionData: any, ttl = 3600): Promise<void> {
+  async cacheShopifySession(
+    shop: string,
+    sessionData: any,
+    ttl = 3600
+  ): Promise<void> {
     await this.set(`session:${shop}`, sessionData, { ttl });
   }
 
@@ -318,10 +348,13 @@ class RedisCacheService implements CacheService {
     try {
       // This would typically load popular/recent products from DB
       logger.info('Cache warming started for shop', { shop: shopDomain });
-      
+
       // Example: Pre-load shop data
-      await this.cacheShopData(shopDomain, { warmed: true, timestamp: Date.now() }, 7200);
-      
+      await this.cacheShopData(
+        shopDomain,
+        { warmed: true, timestamp: Date.now() },
+        7200
+      );
     } catch (error) {
       logger.error('Cache warming failed:', { shop: shopDomain, error });
     }
@@ -347,20 +380,24 @@ class RedisCacheService implements CacheService {
     // Simple LRU: remove oldest entries (this could be improved with proper LRU algorithm)
     const entriesToRemove = Math.floor(this.fallbackCache.size * 0.1); // Remove 10%
     let removed = 0;
-    
+
     for (const [key] of this.fallbackCache.entries()) {
       if (removed >= entriesToRemove) break;
       this.fallbackCache.delete(key);
       removed++;
     }
-    
+
     this.updateMemoryUsage();
-    logger.info('Cache LRU eviction completed', { removed, newSize: this.fallbackCache.size });
+    logger.info('Cache LRU eviction completed', {
+      removed,
+      newSize: this.fallbackCache.size,
+    });
   }
 
   private logMetrics(): void {
     const totalRequests = this.hitCount + this.missCount;
-    const hitRatio = totalRequests > 0 ? (this.hitCount / totalRequests) * 100 : 0;
+    const hitRatio =
+      totalRequests > 0 ? (this.hitCount / totalRequests) * 100 : 0;
 
     logger.info('Cache metrics', {
       hitRatio: `${hitRatio.toFixed(2)}%`,
@@ -369,13 +406,13 @@ class RedisCacheService implements CacheService {
       totalRequests,
       memoryUsage: `${(this.memoryUsage / 1024 / 1024).toFixed(2)}MB`,
       memoryCacheSize: this.fallbackCache.size,
-      redisConnected: this.isRedisConnected
+      redisConnected: this.isRedisConnected,
     });
   }
 
   getMetrics() {
     const totalRequests = this.hitCount + this.missCount;
-    const hitRatio = totalRequests > 0 ? (this.hitCount / totalRequests) : 0;
+    const hitRatio = totalRequests > 0 ? this.hitCount / totalRequests : 0;
 
     return {
       hitRatio,
@@ -384,7 +421,7 @@ class RedisCacheService implements CacheService {
       totalRequests,
       memoryUsage: this.memoryUsage,
       memoryCacheSize: this.fallbackCache.size,
-      redisConnected: this.isRedisConnected
+      redisConnected: this.isRedisConnected,
     };
   }
 }

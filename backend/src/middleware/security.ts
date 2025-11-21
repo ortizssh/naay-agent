@@ -2,7 +2,11 @@ import { Request, Response, NextFunction } from 'express';
 import { logger } from '@/utils/logger';
 
 // Security headers middleware
-export const securityHeaders = (req: Request, res: Response, next: NextFunction) => {
+export const securityHeaders = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   // Prevent clickjacking
   res.setHeader('X-Frame-Options', 'DENY');
 
@@ -16,20 +20,28 @@ export const securityHeaders = (req: Request, res: Response, next: NextFunction)
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
   // Permissions policy for sensitive features
-  res.setHeader('Permissions-Policy',
+  res.setHeader(
+    'Permissions-Policy',
     'camera=(), microphone=(), geolocation=(), payment=()'
   );
 
   // HSTS for HTTPS (only in production)
   if (process.env.NODE_ENV === 'production') {
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    res.setHeader(
+      'Strict-Transport-Security',
+      'max-age=31536000; includeSubDomains'
+    );
   }
 
   next();
 };
 
 // Input sanitization middleware
-export const sanitizeInput = (req: Request, res: Response, next: NextFunction) => {
+export const sanitizeInput = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   // Sanitize query parameters
   if (req.query) {
     Object.keys(req.query).forEach(key => {
@@ -67,7 +79,11 @@ function sanitizeObject(obj: any): void {
 }
 
 // Request size limit middleware
-export const requestSizeLimit = (req: Request, res: Response, next: NextFunction) => {
+export const requestSizeLimit = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const contentLength = parseInt(req.headers['content-length'] || '0');
 
   // Limit to 1MB for regular requests
@@ -77,12 +93,12 @@ export const requestSizeLimit = (req: Request, res: Response, next: NextFunction
     logger.warn(`Request size limit exceeded: ${contentLength} bytes`, {
       path: req.path,
       ip: req.ip,
-      userAgent: req.get('User-Agent')
+      userAgent: req.get('User-Agent'),
     });
 
     return res.status(413).json({
       success: false,
-      error: 'Request too large'
+      error: 'Request too large',
     });
   }
 
@@ -101,12 +117,12 @@ export const auditLog = (req: Request, res: Response, next: NextFunction) => {
     userAgent: req.get('User-Agent'),
     shopDomain: req.headers['x-shopify-shop-domain'] || req.query.shop,
     sessionId: req.body?.session_id,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 
   // Log response
   const originalSend = res.send;
-  res.send = function(data) {
+  res.send = function (data) {
     const duration = Date.now() - startTime;
 
     logger.info('API Response', {
@@ -115,7 +131,7 @@ export const auditLog = (req: Request, res: Response, next: NextFunction) => {
       statusCode: res.statusCode,
       duration: `${duration}ms`,
       responseSize: data ? data.length : 0,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     return originalSend.call(this, data);
@@ -137,12 +153,12 @@ export const ipWhitelist = (allowedIPs: string[] = []) => {
       logger.warn(`IP not in whitelist: ${clientIP}`, {
         path: req.path,
         method: req.method,
-        ip: clientIP
+        ip: clientIP,
       });
 
       return res.status(403).json({
         success: false,
-        error: 'Access denied'
+        error: 'Access denied',
       });
     }
 
@@ -157,19 +173,19 @@ export const apiKeyAuth = (validApiKeys: string[] = []) => {
       return next(); // No API key required
     }
 
-    const apiKey = req.headers['x-api-key'] as string ||
-                   req.query.api_key as string;
+    const apiKey =
+      (req.headers['x-api-key'] as string) || (req.query.api_key as string);
 
     if (!apiKey || !validApiKeys.includes(apiKey)) {
       logger.warn('Invalid or missing API key', {
         path: req.path,
         ip: req.ip,
-        hasApiKey: !!apiKey
+        hasApiKey: !!apiKey,
       });
 
       return res.status(401).json({
         success: false,
-        error: 'Invalid API key'
+        error: 'Invalid API key',
       });
     }
 

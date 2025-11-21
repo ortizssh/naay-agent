@@ -7,7 +7,11 @@ import { logger } from '@/utils/logger';
 import { errorHandler } from '@/middleware/errorHandler';
 import { rateLimiter } from '@/middleware/rateLimiter';
 import { requestLogger } from '@/middleware/requestLogger';
-import { securityHeaders, sanitizeInput, auditLog } from '@/middleware/security';
+import {
+  securityHeaders,
+  sanitizeInput,
+  auditLog,
+} from '@/middleware/security';
 
 // Route imports
 import authRoutes from '@/controllers/auth.controller';
@@ -37,7 +41,7 @@ async function startServer() {
         res.removeHeader('Content-Security-Policy');
         res.removeHeader('Cross-Origin-Resource-Policy');
         res.removeHeader('Cross-Origin-Opener-Policy');
-        
+
         // Set permissive headers for widget script loading
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
@@ -46,7 +50,7 @@ async function startServer() {
         res.setHeader('X-Frame-Options', 'ALLOWALL');
         res.setHeader('Content-Security-Policy', '');
         res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-        
+
         console.log('Widget script requested - CORS headers set');
       }
       next();
@@ -57,14 +61,17 @@ async function startServer() {
       // Set CORS headers for all widget API endpoints
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+      res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization, X-Requested-With'
+      );
       res.setHeader('Access-Control-Max-Age', '86400');
-      
+
       // Handle OPTIONS preflight
       if (req.method === 'OPTIONS') {
         return res.status(200).end();
       }
-      
+
       console.log('Widget API request - CORS headers set for:', req.path);
       next();
     });
@@ -74,14 +81,17 @@ async function startServer() {
       // Set CORS headers for all simple chat API endpoints
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+      res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization, X-Requested-With'
+      );
       res.setHeader('Access-Control-Max-Age', '86400');
-      
+
       // Handle OPTIONS preflight
       if (req.method === 'OPTIONS') {
         return res.status(200).end();
       }
-      
+
       console.log('Simple Chat API request - CORS headers set for:', req.path);
       next();
     });
@@ -170,21 +180,26 @@ async function startServer() {
         res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
         res.setHeader('Access-Control-Allow-Headers', '*');
         res.setHeader('Access-Control-Max-Age', '86400');
-        
+
         // Anti-cache headers
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+        res.setHeader(
+          'Cache-Control',
+          'no-cache, no-store, must-revalidate, max-age=0'
+        );
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
         res.setHeader('ETag', 'v2.1.0-' + Date.now());
-        
+
         // Set content type
         res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-        
-        console.log('🔥 Widget script served with CORS headers to:', req.get('Origin') || 'no-origin');
-        
+
+        console.log(
+          '🔥 Widget script served with CORS headers to:',
+          req.get('Origin') || 'no-origin'
+        );
+
         // Send file using express static file sending
         res.sendFile(path.join(__dirname, 'public', 'naay-widget.js'));
-        
       } catch (error) {
         console.error('Error serving widget:', error);
         res.status(500).json({ error: 'Failed to serve widget' });
@@ -2067,16 +2082,19 @@ async function startServer() {
     app.use('/api/webhooks', webhookRoutes);
     app.use('/api/webhooks-admin', webhookAdminRoutes);
     app.use('/api/chat', chatRoutes);
-    
+
     // CORS configuration specifically for simple-chat endpoint
-    app.use('/api/simple-chat', cors({
-      origin: true, // Allow all origins for widget integration
-      methods: ["GET", "POST", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-      credentials: false
-    }));
+    app.use(
+      '/api/simple-chat',
+      cors({
+        origin: true, // Allow all origins for widget integration
+        methods: ['GET', 'POST', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+        credentials: false,
+      })
+    );
     app.use('/api/simple-chat', simpleChatRoutes);
-    
+
     app.use('/api/widget', widgetRoutes);
     app.use('/api/settings', settingsRoutes);
     app.use('/api/admin', adminRoutes);

@@ -4,7 +4,7 @@ import { logger } from '@/utils/logger';
 import { SupabaseService } from './supabase.service';
 import { ShopifyService } from './shopify.service';
 import { EmbeddingService } from './embedding.service';
-import { AgentAction, AgentResponse, ChatMessage, AppError } from '@/types';
+import { AgentAction, AgentResponse, ChatMessage, AppError, ProductSearchFilters } from '@/types';
 
 interface IntentAnalysis {
   intent: string;
@@ -203,16 +203,18 @@ Extract relevant entities from the message and provide confidence score (0-1).`;
       // Extract search filters from intent analysis
       const keywords = intentAnalysis.entities.product_keywords || [];
       const searchQuery = keywords.length > 0 ? keywords.join(' ') : message;
-      
+
       // Build search filters
-      const searchFilters = {
+      const searchFilters: ProductSearchFilters = {
         query: searchQuery,
         vendor: intentAnalysis.entities.vendor,
-        productType: intentAnalysis.entities.category || intentAnalysis.entities.product_type,
+        productType:
+          intentAnalysis.entities.category ||
+          intentAnalysis.entities.product_type,
         tags: intentAnalysis.entities.tags,
         priceRange: intentAnalysis.entities.price_range,
         availability: true, // Only show available products
-        sortKey: 'RELEVANCE' as const,
+        sortKey: 'RELEVANCE',
         limit: 6,
       };
 
@@ -227,14 +229,15 @@ Extract relevant entities from the message and provide confidence score (0-1).`;
       if (products.length === 0) {
         // Try semantic search as fallback
         try {
-          const queryEmbedding = await this.embeddingService.generateEmbedding(searchQuery);
+          const queryEmbedding =
+            await this.embeddingService.generateEmbedding(searchQuery);
           const semanticResults = await this.supabaseService.searchProducts(
             shop,
             searchQuery,
             queryEmbedding,
             3
           );
-          
+
           if (semanticResults.length > 0) {
             const productDescriptions = semanticResults
               .map((product, index) => {
@@ -247,14 +250,18 @@ ${product.description ? product.description.substring(0, 100) + '...' : ''}
 
             return {
               messages: [
-                `I found ${semanticResults.length} products that might interest you:\n\n${productDescriptions}\n\nWould you like more details about any of these products or would you like me to add any to your cart?`
+                `I found ${semanticResults.length} products that might interest you:\n\n${productDescriptions}\n\nWould you like more details about any of these products or would you like me to add any to your cart?`,
               ],
               actions: [],
               metadata: {
                 search_query: searchQuery,
                 products_found: semanticResults.length,
                 search_type: 'semantic',
-                products: semanticResults.map(p => ({ id: p.id, title: p.title, handle: p.handle })),
+                products: semanticResults.map(p => ({
+                  id: p.id,
+                  title: p.title,
+                  handle: p.handle,
+                })),
               },
             };
           }
@@ -280,12 +287,16 @@ ${product.description ? product.description.substring(0, 100) + '...' : ''}
           const mainVariant = product.variants?.[0];
           const price = mainVariant?.price || 'N/A';
           const comparePrice = mainVariant?.compare_at_price;
-          const priceDisplay = comparePrice && parseFloat(comparePrice) > parseFloat(price) 
-            ? `~~$${comparePrice}~~ $${price}` 
-            : `$${price}`;
-          
-          const availability = mainVariant?.inventory_quantity > 0 ? '✅ In Stock' : '❌ Out of Stock';
-          
+          const priceDisplay =
+            comparePrice && parseFloat(comparePrice) > parseFloat(price)
+              ? `~~$${comparePrice}~~ $${price}`
+              : `$${price}`;
+
+          const availability =
+            mainVariant?.inventory_quantity > 0
+              ? '✅ In Stock'
+              : '❌ Out of Stock';
+
           return `${index + 1}. **${product.title}** - ${priceDisplay}
 ${product.vendor ? `*By ${product.vendor}*\n` : ''}${product.description ? product.description.substring(0, 120) + '...' : ''}
 ${availability} | Product ID: ${product.id}`;
@@ -302,18 +313,20 @@ ${availability} | Product ID: ${product.id}`;
           products_found: products.length,
           search_type: 'shopify_storefront',
           execution_time: Date.now(),
-          products: products.map(p => ({ 
-            id: p.id, 
-            title: p.title, 
+          products: products.map(p => ({
+            id: p.id,
+            title: p.title,
             handle: p.handle,
-            variants: p.variants.map(v => ({ id: v.id, price: v.price }))
+            variants: p.variants.map(v => ({ id: v.id, price: v.price })),
           })),
         },
       };
     } catch (error) {
       logger.error('Error handling product search:', error);
       return {
-        messages: ['I had trouble searching for products. Please try again or contact support if the problem persists.'],
+        messages: [
+          'I had trouble searching for products. Please try again or contact support if the problem persists.',
+        ],
         actions: [],
         metadata: { error: error.message },
       };
@@ -334,15 +347,19 @@ ${availability} | Product ID: ${product.id}`;
       }
 
       // Extract product information from the message/intent
-      const productInfo = await this.extractProductFromMessage(message, shop, store.access_token);
-      
+      const productInfo = await this.extractProductFromMessage(
+        message,
+        shop,
+        store.access_token
+      );
+
       if (!productInfo) {
         return {
           messages: [
             'I need more information to add a product to your cart. Please specify:\n' +
-            '• The product name or ID\n' +
-            '• Quantity (optional, defaults to 1)\n\n' +
-            'For example: "Add iPhone 14 to cart" or "Add product 1 from search results"'
+              '• The product name or ID\n' +
+              '• Quantity (optional, defaults to 1)\n\n' +
+              'For example: "Add iPhone 14 to cart" or "Add product 1 from search results"',
           ],
           actions: [],
           metadata: {
@@ -361,7 +378,9 @@ ${availability} | Product ID: ${product.id}`;
           type: 'cart.create',
           params: {
             shop,
-            buyerIdentity: intentAnalysis.entities.email ? { email: intentAnalysis.entities.email } : undefined,
+            buyerIdentity: intentAnalysis.entities.email
+              ? { email: intentAnalysis.entities.email }
+              : undefined,
           },
         });
       }
@@ -379,20 +398,22 @@ ${availability} | Product ID: ${product.id}`;
         },
       });
 
-      const priceDisplay = productInfo.compareAtPrice && parseFloat(productInfo.compareAtPrice) > parseFloat(productInfo.price)
-        ? `~~$${productInfo.compareAtPrice}~~ $${productInfo.price}`
-        : `$${productInfo.price}`;
+      const priceDisplay =
+        productInfo.compareAtPrice &&
+        parseFloat(productInfo.compareAtPrice) > parseFloat(productInfo.price)
+          ? `~~$${productInfo.compareAtPrice}~~ $${productInfo.price}`
+          : `$${productInfo.price}`;
 
       return {
         messages: [
           `Perfect! I've ${cartId ? 'added' : 'created your cart and added'} **${productInfo.productTitle}${productInfo.variantTitle && productInfo.variantTitle !== 'Default Title' ? ` - ${productInfo.variantTitle}` : ''}** to your cart.\n\n` +
-          `💰 Price: ${priceDisplay}\n` +
-          `📦 Quantity: ${quantity}\n\n` +
-          `Would you like to:\n` +
-          `• Continue shopping\n` +
-          `• View your cart\n` +
-          `• Proceed to checkout\n` +
-          `• Get product recommendations?`
+            `💰 Price: ${priceDisplay}\n` +
+            `📦 Quantity: ${quantity}\n\n` +
+            `Would you like to:\n` +
+            `• Continue shopping\n` +
+            `• View your cart\n` +
+            `• Proceed to checkout\n` +
+            `• Get product recommendations?`,
         ],
         actions,
         metadata: {
@@ -407,7 +428,7 @@ ${availability} | Product ID: ${product.id}`;
       logger.error('Error handling add to cart:', error);
       return {
         messages: [
-          'I had trouble adding the item to your cart. Please make sure you\'ve specified a valid product and try again.',
+          "I had trouble adding the item to your cart. Please make sure you've specified a valid product and try again.",
         ],
         actions: [],
         metadata: { error: error.message },
@@ -429,12 +450,20 @@ ${availability} | Product ID: ${product.id}`;
   } | null> {
     try {
       // Try to extract product ID or product number from search results
-      const productIdMatch = message.match(/product\s+(\d+)|id[:\s]+([a-zA-Z0-9_/-]+)/i);
-      const productNumberMatch = message.match(/(?:add\s+)?(?:product\s+)?(\d+)(?:\s+to\s+cart)?/i);
-      
+      const productIdMatch = message.match(
+        /product\s+(\d+)|id[:\s]+([a-zA-Z0-9_/-]+)/i
+      );
+      const productNumberMatch = message.match(
+        /(?:add\s+)?(?:product\s+)?(\d+)(?:\s+to\s+cart)?/i
+      );
+
       if (productIdMatch) {
         const productId = productIdMatch[1] || productIdMatch[2];
-        const product = await this.shopifyService.getProduct(shop, accessToken, productId);
+        const product = await this.shopifyService.getProduct(
+          shop,
+          accessToken,
+          productId
+        );
         if (product && product.variants.length > 0) {
           const variant = product.variants[0];
           return {
@@ -458,7 +487,7 @@ ${availability} | Product ID: ${product.id}`;
           { query: productName, limit: 1 },
           true
         );
-        
+
         if (products.length > 0 && products[0].variants.length > 0) {
           const product = products[0];
           const variant = product.variants[0];
@@ -507,15 +536,19 @@ ${availability} | Product ID: ${product.id}`;
       }
 
       // Get cart details using Storefront API
-      const cart = await this.shopifyService.getCart(shop, store.access_token, cartId);
-      
+      const cart = await this.shopifyService.getCart(
+        shop,
+        store.access_token,
+        cartId
+      );
+
       if (!cart || cart.lines.length === 0) {
         return {
           messages: [
             'Your cart is empty. Would you like me to help you find some products to add?',
           ],
           actions: [],
-          metadata: { 
+          metadata: {
             cart_status: 'empty',
             cart_id: cartId,
           },
@@ -529,12 +562,15 @@ ${availability} | Product ID: ${product.id}`;
           const product = merchandise.product;
           const price = merchandise.price?.amount || '0';
           const total = (parseFloat(price) * line.quantity).toFixed(2);
-          
+
           const options = merchandise.selectedOptions
-            ?.filter((opt: any) => opt.name !== 'Title' && opt.value !== 'Default Title')
+            ?.filter(
+              (opt: any) =>
+                opt.name !== 'Title' && opt.value !== 'Default Title'
+            )
             .map((opt: any) => `${opt.name}: ${opt.value}`)
             .join(', ');
-          
+
           return `${index + 1}. **${product.title}**${options ? ` (${options})` : ''}
 💰 $${price} × ${line.quantity} = $${total}
 🏷️ Line ID: ${line.id}`;
@@ -543,9 +579,12 @@ ${availability} | Product ID: ${product.id}`;
 
       const totalAmount = cart.cost?.totalAmount?.amount || '0';
       const subtotalAmount = cart.cost?.subtotalAmount?.amount || '0';
-      const taxAmount = cart.cost?.totalTaxAmount?.amount || '0';
+      
+      // Calculate tax amount if total > subtotal
+      const taxAmount = (parseFloat(totalAmount) - parseFloat(subtotalAmount)).toFixed(2);
 
-      const cartSummary = `🛒 **Your Cart** (${cart.totalQuantity} items)\n\n${cartItems}\n\n` +
+      const cartSummary =
+        `🛒 **Your Cart** (${cart.totalQuantity} items)\n\n${cartItems}\n\n` +
         `💳 **Order Summary:**\n` +
         `• Subtotal: $${subtotalAmount}\n` +
         (parseFloat(taxAmount) > 0 ? `• Tax: $${taxAmount}\n` : '') +
@@ -596,11 +635,19 @@ ${availability} | Product ID: ${product.id}`;
       }
 
       let baseProductId: string | undefined;
-      let recommendationIntent: 'related' | 'complementary' | 'upsell' | 'popular' = 'popular';
+      let recommendationIntent:
+        | 'related'
+        | 'complementary'
+        | 'upsell'
+        | 'popular' = 'popular';
 
       // Try to get context from cart if available
       if (cartId) {
-        const cart = await this.shopifyService.getCart(shop, store.access_token, cartId);
+        const cart = await this.shopifyService.getCart(
+          shop,
+          store.access_token,
+          cartId
+        );
         if (cart && cart.lines.length > 0) {
           // Use the most recent item in cart as base for recommendations
           const lastItem = cart.lines[cart.lines.length - 1];
@@ -610,9 +657,10 @@ ${availability} | Product ID: ${product.id}`;
       }
 
       // Check if user specified a product for recommendations in their message
-      const productMatch = intentAnalysis.entities.product_id || 
-                          intentAnalysis.entities.product_keywords?.[0];
-      
+      const productMatch =
+        intentAnalysis.entities.product_id ||
+        intentAnalysis.entities.product_keywords?.[0];
+
       if (productMatch && !baseProductId) {
         // Try to find the product
         const products = await this.shopifyService.searchProducts(
@@ -628,15 +676,16 @@ ${availability} | Product ID: ${product.id}`;
       }
 
       // Get recommendations using enhanced Shopify service
-      const recommendations = await this.shopifyService.getProductRecommendations(
-        shop,
-        store.access_token,
-        {
-          productId: baseProductId,
-          intent: recommendationIntent,
-          limit: 4,
-        }
-      );
+      const recommendations =
+        await this.shopifyService.getProductRecommendations(
+          shop,
+          store.access_token,
+          {
+            productId: baseProductId,
+            intent: recommendationIntent,
+            limit: 4,
+          }
+        );
 
       if (recommendations.length === 0) {
         // Fallback to database recommendations if available
@@ -652,7 +701,8 @@ ${availability} | Product ID: ${product.id}`;
           if (!error && dbRecommendations && dbRecommendations.length > 0) {
             const recList = dbRecommendations
               .map((product: any, index: number) => {
-                const price = product.variants?.[0]?.price || product.price || 'N/A';
+                const price =
+                  product.variants?.[0]?.price || product.price || 'N/A';
                 return `${index + 1}. **${product.title}** - $${price}
 ${product.description ? product.description.substring(0, 100) + '...' : ''}`;
               })
@@ -676,12 +726,12 @@ ${product.description ? product.description.substring(0, 100) + '...' : ''}`;
 
         return {
           messages: [
-            cartId 
+            cartId
               ? "I'd love to give you personalized recommendations! Let me know what type of products you're interested in, and I'll find similar items for you."
               : "I'd love to give you personalized recommendations! Once you add some items to your cart or tell me what you're looking for, I can suggest products that go well together.",
           ],
           actions: [],
-          metadata: { 
+          metadata: {
             recommendations_found: 0,
             base_product_id: baseProductId,
           },
@@ -694,22 +744,23 @@ ${product.description ? product.description.substring(0, 100) + '...' : ''}`;
           const mainVariant = product.variants?.[0];
           const price = mainVariant?.price || 'N/A';
           const comparePrice = mainVariant?.compare_at_price;
-          const priceDisplay = comparePrice && parseFloat(comparePrice) > parseFloat(price)
-            ? `~~$${comparePrice}~~ $${price}`
-            : `$${price}`;
+          const priceDisplay =
+            comparePrice && parseFloat(comparePrice) > parseFloat(price)
+              ? `~~$${comparePrice}~~ $${price}`
+              : `$${price}`;
 
           const reason = product.reason || 'Recommended for you';
-          
+
           return `${index + 1}. **${product.title}** - ${priceDisplay}
 ${product.vendor ? `*By ${product.vendor}*\n` : ''}${product.description ? product.description.substring(0, 100) + '...' : ''}
 ✨ ${reason} | Score: ${product.score || 0}`;
         })
         .join('\n\n');
 
-      const contextMessage = baseProductId 
+      const contextMessage = baseProductId
         ? recommendationIntent === 'complementary'
-          ? 'Based on what\'s in your cart, here are products that go well together:'
-          : 'Here are products similar to what you\'re looking at:'
+          ? "Based on what's in your cart, here are products that go well together:"
+          : "Here are products similar to what you're looking at:"
         : 'Here are some popular products you might like:';
 
       return {
