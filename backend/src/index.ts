@@ -76,6 +76,26 @@ async function startServer() {
       next();
     });
 
+    // Chat API CORS middleware - for main chat endpoints
+    app.use('/api/chat', (req, res, next) => {
+      // Set CORS headers for all chat API endpoints
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization, X-Requested-With'
+      );
+      res.setHeader('Access-Control-Max-Age', '86400');
+
+      // Handle OPTIONS preflight
+      if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+      }
+
+      console.log('Chat API request - CORS headers set for:', req.path);
+      next();
+    });
+
     // Simple Chat API CORS middleware - for simple chat endpoints
     app.use('/api/simple-chat', (req, res, next) => {
       // Set CORS headers for all simple chat API endpoints
@@ -107,6 +127,7 @@ async function startServer() {
                 'https://*.shopify.com',
                 'https://*.shop.app',
                 'https://admin.shopify.com',
+                'https://*.myshopify.com',
               ],
             },
           },
@@ -131,7 +152,7 @@ async function startServer() {
       res.setHeader('X-Frame-Options', 'ALLOWALL');
       res.setHeader(
         'Content-Security-Policy',
-        "frame-ancestors 'self' https://*.shopify.com https://*.shop.app https://admin.shopify.com;"
+        "frame-ancestors 'self' https://*.shopify.com https://*.shop.app https://admin.shopify.com https://*.myshopify.com;"
       );
       next();
     });

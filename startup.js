@@ -3,6 +3,10 @@ console.log('🚀 Starting Naay Agent on Azure...');
 console.log('Environment:', process.env.NODE_ENV || 'development');
 console.log('Port:', process.env.PORT || 8080);
 
+// Disable Redis for Azure (no Redis service available by default)
+process.env.REDIS_ENABLED = 'false';
+console.log('🔧 Redis disabled for Azure deployment');
+
 // Check if dist folder exists, otherwise use fallback
 const fs = require('fs');
 const path = require('path');

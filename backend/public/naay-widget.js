@@ -584,7 +584,7 @@
         .naay-widget__cart-panel {
           position: absolute !important;
           bottom: 88px !important;
-          left: calc(-320px - 16px) !important;
+          right: calc(100% + 16px) !important;
           width: 320px !important;
           height: 620px !important;
           background: rgba(248, 249, 248, 0.98) !important;
@@ -604,8 +604,8 @@
         }
 
         .naay-widget--bottom-left .naay-widget__cart-panel {
-          left: auto !important;
-          right: calc(-320px - 16px) !important;
+          right: auto !important;
+          left: calc(100% + 16px) !important;
           transform: translateX(24px) translateY(32px) scale(0.95) !important;
         }
 
@@ -2701,11 +2701,14 @@
     }
   }
 
+  // Expose class for constructor access
+  window.NaayWidget = NaayWidget;
+  
   // Auto-initialize widget
   document.addEventListener('DOMContentLoaded', function() {
     console.log('✨ DOM loaded, initializing Naay Luxury Widget...');
     const widget = new NaayWidget();
-    window.NaayWidget = widget;
+    window.naayWidget = widget;
     
     // Expose testing functions for development
     window.testNaayCart = () => {
@@ -2719,8 +2722,21 @@
       widget.testProductRecommendation();
       return 'Product recommendations test completed! Check the widget.';
     };
+
+    // Additional cart testing functions
+    window.showNaayCart = () => {
+      console.log('🛒 Showing Naay Cart...');
+      widget.showCart();
+      return 'Cart is now visible!';
+    };
+
+    window.hideNaayCart = () => {
+      console.log('🛒 Hiding Naay Cart...');
+      widget.hideCart();
+      return 'Cart is now hidden!';
+    };
     
-    console.log('✨ Naay Widget initialized! Use window.testNaayCart() and window.testNaayProduct() to test functionality.');
+    console.log('✨ Naay Widget initialized! Use window.testNaayCart(), window.testNaayProduct(), window.showNaayCart() and window.hideNaayCart() to test functionality.');
   });
 
   // Fallback initialization if DOM already loaded
@@ -2730,7 +2746,7 @@
     // Document already loaded
     console.log('✨ Document ready, initializing Naay Luxury Widget immediately...');
     const widget = new NaayWidget();
-    window.NaayWidget = widget;
+    window.naayWidget = widget;
     
     // Expose testing functions for development
     window.testNaayCart = () => {

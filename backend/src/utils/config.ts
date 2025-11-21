@@ -51,11 +51,28 @@ export function validateConfig(): void {
     'OPENAI_API_KEY',
   ];
 
+  // Log environment info for debugging
+  console.log('🔍 Environment validation:', {
+    NODE_ENV: process.env.NODE_ENV,
+    hasSupabaseUrl: !!process.env.SUPABASE_URL,
+    hasOpenAIKey: !!process.env.OPENAI_API_KEY,
+    hasShopifyKey: !!process.env.SHOPIFY_API_KEY,
+    totalEnvVars: Object.keys(process.env).length
+  });
+
   const missing = required.filter(key => !process.env[key]);
 
   if (missing.length > 0) {
+    console.error('❌ Missing environment variables:', missing);
+    console.error('Available env vars:', Object.keys(process.env).filter(k => 
+      k.includes('SUPABASE') || k.includes('SHOPIFY') || k.includes('OPENAI')
+    ));
+    
     throw new Error(
-      `Missing required environment variables: ${missing.join(', ')}`
+      `Missing required environment variables: ${missing.join(', ')}. ` +
+      `Check your Azure App Service Configuration settings.`
     );
   }
+  
+  console.log('✅ All required environment variables are present');
 }

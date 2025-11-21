@@ -7,6 +7,9 @@ const path = require('path');
 // Set production environment
 process.env.NODE_ENV = process.env.NODE_ENV || 'production';
 
+// Disable Redis for Azure (no Redis service available by default)
+process.env.REDIS_ENABLED = 'false';
+
 // Set default port for Azure
 const port = process.env.PORT || process.env.WEBSITES_PORT || 3000;
 process.env.PORT = port;
