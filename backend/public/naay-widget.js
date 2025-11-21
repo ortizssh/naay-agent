@@ -739,8 +739,8 @@
         }
 
         .naay-cart__header {
-          background: linear-gradient(135deg, var(--naay-perfect) 0%, var(--naay-rich) 100%) !important;
-          color: var(--naay-white) !important;
+          background: transparent !important;
+          color: var(--naay-black) !important;
           padding: 20px 24px !important;
           display: flex !important;
           align-items: center !important;
@@ -1992,29 +1992,45 @@
 
         /* Cart Toggle Button - Vertical Left */
         .naay-cart-toggle {
-          width: 60px !important;
-          height: 200px !important;
-          background: var(--naay-perfect) !important;
-          border: none !important;
-          border-radius: 12px 0 0 12px !important;
-          color: var(--naay-white) !important;
+          width: 72px !important;
+          height: 72px !important;
+          background: rgba(248, 249, 248, 0.95) !important;
+          backdrop-filter: blur(20px) !important;
+          -webkit-backdrop-filter: blur(20px) !important;
+          border: 1px solid rgba(212, 196, 184, 0.2) !important;
+          border-radius: 12px !important;
+          color: var(--naay-perfect) !important;
           cursor: pointer !important;
           transition: all var(--naay-duration) var(--naay-transition) !important;
           display: flex !important;
           flex-direction: column !important;
           align-items: center !important;
           justify-content: center !important;
-          gap: 8px !important;
-          box-shadow: var(--naay-shadow-medium) !important;
-          order: 1 !important;
-          position: relative !important;
+          gap: 4px !important;
+          box-shadow: var(--naay-shadow-strong) !important;
+          position: absolute !important;
+          left: -88px !important;
+          top: 50% !important;
+          transform: translateY(-50%) !important;
+          z-index: 1001 !important;
           overflow: hidden !important;
+          /* Hidden by default when widget is closed */
+          opacity: 0 !important;
+          visibility: hidden !important;
+          pointer-events: none !important;
+        }
+
+        /* Show cart button only when widget is open */
+        .naay-widget--open .naay-cart-toggle {
+          opacity: 1 !important;
+          visibility: visible !important;
+          pointer-events: auto !important;
         }
 
         .naay-cart-toggle:hover {
-          background: var(--naay-rich) !important;
-          transform: translateY(-2px) !important;
-          box-shadow: var(--naay-shadow-strong) !important;
+          transform: translateY(-50%) translateX(-2px) scale(1.05) !important;
+          box-shadow: 0 12px 28px rgba(139, 93, 75, 0.35), 0 4px 12px rgba(139, 93, 75, 0.2) !important;
+          background: rgba(255, 255, 255, 0.98) !important;
         }
 
         .naay-cart-toggle::before {
@@ -2023,8 +2039,8 @@
           inset: 0 !important;
           border-radius: inherit !important;
           background: var(--naay-perfect) !important;
-          opacity: 0.8 !important;
-          animation: naayPulse 2s infinite !important;
+          opacity: 0.1 !important;
+          animation: naayPulse 3s infinite !important;
           z-index: -1 !important;
         }
 
@@ -2033,34 +2049,35 @@
         }
 
         .naay-cart-toggle__icon {
-          width: 24px !important;
-          height: 24px !important;
+          width: 20px !important;
+          height: 20px !important;
           stroke-width: 2 !important;
         }
 
         .naay-cart-toggle__badge {
           position: absolute !important;
-          top: 10px !important;
-          right: -8px !important;
-          background: #dc3545 !important;
+          top: -6px !important;
+          right: -6px !important;
+          background: var(--naay-perfect) !important;
           color: var(--naay-white) !important;
           border-radius: 50% !important;
-          width: 20px !important;
-          height: 20px !important;
-          font-size: 10px !important;
+          width: 18px !important;
+          height: 18px !important;
+          font-size: 9px !important;
           font-weight: bold !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
           border: 2px solid var(--naay-white) !important;
           box-shadow: var(--naay-shadow-medium) !important;
+          transition: all 0.2s var(--naay-transition) !important;
         }
 
-        /* Cart Panel - Slides from left */
+        /* Cart Panel - Slides from right */
         .naay-cart-panel {
           position: absolute !important;
           bottom: 0 !important;
-          left: -400px !important;
+          right: -400px !important;
           width: 400px !important;
           height: 500px !important;
           background: rgba(248, 249, 248, 0.95) !important;
@@ -2077,23 +2094,23 @@
           transition: all var(--naay-duration) var(--naay-transition) !important;
           pointer-events: none !important;
           z-index: 999997 !important;
-          transform: translateY(32px) scale(0.9) !important;
+          transform: translateX(32px) translateY(16px) scale(0.95) !important;
         }
 
         .naay-cart-panel--open {
-          left: 0 !important;
+          right: 0 !important;
           opacity: 1 !important;
           visibility: visible !important;
           pointer-events: auto !important;
-          transform: translateY(0) scale(1) !important;
+          transform: translateX(0) translateY(0) scale(1) !important;
         }
 
 
         /* Cart Panel Header */
         .naay-cart-panel__header {
           padding: 20px 24px !important;
-          background: var(--naay-perfect) !important;
-          color: var(--naay-white) !important;
+          background: transparent !important;
+          color: var(--naay-black) !important;
           display: flex !important;
           align-items: center !important;
           justify-content: space-between !important;
@@ -2112,21 +2129,22 @@
         .naay-cart-panel__icon {
           width: 20px !important;
           height: 20px !important;
+          color: var(--naay-perfect) !important;
         }
 
         .naay-cart-panel__close {
-          background: rgba(255, 255, 255, 0.15) !important;
+          background: rgba(139, 93, 75, 0.1) !important;
           border: none !important;
           border-radius: 8px !important;
           padding: 8px !important;
-          color: var(--naay-white) !important;
+          color: var(--naay-perfect) !important;
           cursor: pointer !important;
           transition: all 0.2s var(--naay-transition) !important;
         }
 
         .naay-cart-panel__close:hover {
-          background: rgba(255, 255, 255, 0.25) !important;
-          transform: scale(1.1) !important;
+          background: rgba(139, 93, 75, 0.15) !important;
+          transform: scale(1.05) !important;
         }
 
         .naay-cart-panel__close svg {
@@ -2445,12 +2463,22 @@
           .naay-cart-panel {
             width: 90vw !important;
             max-width: 350px !important;
-            left: -350px !important;
+            right: -350px !important;
           }
           
           .naay-cart-toggle {
-            width: 50px !important;
-            height: 150px !important;
+            width: 60px !important;
+            height: 60px !important;
+            left: -76px !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+          }
+          
+          .naay-widget--open .naay-cart-toggle {
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
           }
         }
 
@@ -2464,17 +2492,27 @@
             width: 95vw !important;
             max-width: none !important;
             height: 400px !important;
-            left: -95vw !important;
+            right: -95vw !important;
           }
           
           .naay-cart-toggle {
-            width: 45px !important;
-            height: 120px !important;
+            width: 56px !important;
+            height: 56px !important;
+            left: -72px !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+          }
+          
+          .naay-widget--open .naay-cart-toggle {
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
           }
           
           .naay-cart-toggle__icon {
-            width: 20px !important;
-            height: 20px !important;
+            width: 18px !important;
+            height: 18px !important;
           }
 
           /* Mobile Cart Items */
