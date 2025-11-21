@@ -145,13 +145,6 @@
         <!-- Main Widget Layout Container -->
         <div class="naay-widget-layout" id="naay-widget-layout">
           
-          <!-- Cart Button - Vertical Left -->
-          <button class="naay-cart-toggle" id="naay-cart-toggle" aria-label="Abrir carrito" title="Mi Carrito">
-            <svg class="naay-cart-toggle__icon" viewBox="0 0 24 24" fill="none">
-              <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19C17 19.6 16.6 20 16 20H14C13.4 20 13 19.6 13 19V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <span class="naay-cart-toggle__badge" id="naay-cart-badge">0</span>
-          </button>
           
           <!-- Cart Panel - Slides from left -->
           <div class="naay-cart-panel" id="naay-cart-panel">
@@ -315,8 +308,6 @@
       this.closeButton = this.container.querySelector('#naay-widget-close');
 
       // Cart elements - new layout structure
-      this.cartToggle = this.container.querySelector('#naay-cart-toggle');
-      this.cartBadge = this.container.querySelector('#naay-cart-badge');
       this.cartSmallToggle = this.container.querySelector('#naay-widget-cart-toggle-btn'); // Small cart button in chat
       this.cartSmallCount = this.container.querySelector('#naay-widget-cart-count'); // Count badge for small button
       this.cartPanel = this.container.querySelector('#naay-cart-panel');
@@ -2685,17 +2676,6 @@
       });
       console.log('✅ Feature cards event listeners added:', featureCards.length);
 
-      // Cart toggle - main toggle
-      if (this.cartToggle) {
-        this.cartToggle.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log('✨ Cart toggle clicked!');
-          this.toggleCart();
-        });
-        console.log('✅ Cart toggle event listener added');
-      }
-
       // Cart toggle - small toggle inside chat
       if (this.cartSmallToggle) {
         this.cartSmallToggle.addEventListener('click', (e) => {
@@ -3685,17 +3665,6 @@
         });
       }
       
-      // Update cart badge - main button
-      if (this.cartBadge) {
-        if (itemCount > 0) {
-          this.cartBadge.textContent = itemCount;
-          this.cartBadge.style.display = 'flex';
-        } else {
-          this.cartBadge.textContent = '0';
-          this.cartBadge.style.display = 'none';
-        }
-      }
-
       // Update cart badge - small button in chat
       if (this.cartSmallCount) {
         if (itemCount > 0) {
