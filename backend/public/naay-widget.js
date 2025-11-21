@@ -77,6 +77,7 @@
       this.isOpen = false;
       this.messages = [];
       this.conversationId = this.getStoredConversationId();
+      this.eventListenersAdded = false; // Prevent duplicate event listeners
       
       // Cart state - visible only when chat is open
       this.cartVisible = false;
@@ -2100,7 +2101,7 @@
         .naay-cart-panel {
           position: absolute !important;
           bottom: 88px !important;
-          left: -400px !important;
+          right: 420px !important; /* Position to left of chat with 20px gap */
           width: 400px !important;
           height: 620px !important;
           background: rgba(248, 249, 248, 0.95) !important;
@@ -2117,17 +2118,26 @@
           transition: all 0.4s var(--naay-transition) !important;
           pointer-events: none !important;
           z-index: 999997 !important;
-          transform: translateX(-32px) scale(0.95) !important;
+          transform: translateX(32px) scale(0.95) !important;
         }
 
         .naay-cart-panel--open {
-          left: -410px !important;
           opacity: 1 !important;
           visibility: visible !important;
           pointer-events: auto !important;
           transform: translateX(0) scale(1) !important;
         }
 
+        /* Cart panel positioning for bottom-left widget */
+        .naay-widget--bottom-left .naay-cart-panel {
+          right: auto !important;
+          left: 420px !important; /* Position to right of chat for left-positioned widget */
+          transform: translateX(-32px) scale(0.95) !important;
+        }
+
+        .naay-widget--bottom-left .naay-cart-panel--open {
+          transform: translateX(0) scale(1) !important;
+        }
 
         /* Cart Panel Header */
         .naay-cart-panel__header {
@@ -2597,6 +2607,12 @@
 
     addEventListeners() {
       console.log('✨ Adding luxury event listeners...');
+      
+      // Prevent duplicate event listeners
+      if (this.eventListenersAdded) {
+        console.log('⚠️ Event listeners already added, skipping...');
+        return;
+      }
 
       // Toggle widget open/close
       if (this.button) {
@@ -2738,6 +2754,10 @@
       };
       
       console.log('🧪 Test function available: window.testAddToCart()');
+      
+      // Mark event listeners as added to prevent duplicates
+      this.eventListenersAdded = true;
+      console.log('✅ Event listeners successfully added and flagged');
     }
 
     toggle() {

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Naay Cart Positioning</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+        }
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-buttons {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .test-btn {
+            padding: 10px 15px;
+            background: #E8B5A1;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .test-btn:hover {
+            background: #d4a285;
+        }
+        .info {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🛒 Test Naay Cart Positioning</h1>
+        
+        <div class="info">
+            <h3>Testing Cart Positioning</h3>
+            <p>This page tests the new cart positioning. The cart should appear to the left of the chat widget.</p>
+            <p><strong>Expected behavior:</strong> Cart panel should slide in from the right and position itself to the left of the chat box with proper spacing.</p>
+        </div>
+        
+        <div class="test-buttons">
+            <button class="test-btn" onclick="toggleNaayCart()">🛒 Toggle Cart</button>
+            <button class="test-btn" onclick="showNaayCart()">📂 Show Cart</button>
+            <button class="test-btn" onclick="hideNaayCart()">❌ Hide Cart</button>
+            <button class="test-btn" onclick="testAddToCart()">➕ Test Add to Cart</button>
+            <button class="test-btn" onclick="clearNaayCart()">🗑️ Clear Cart</button>
+        </div>
+        
+        <div class="info">
+            <h4>Current Configuration:</h4>
+            <ul>
+                <li>Widget Position: <span id="widget-position">Loading...</span></li>
+                <li>Cart Visible: <span id="cart-visible">Loading...</span></li>
+                <li>Server: <span id="server-status">Loading...</span></li>
+            </ul>
+        </div>
+
+        <div style="margin-top: 40px; padding: 20px; background: #f9f9f9; border-radius: 5px;">
+            <h4>Testing Instructions:</h4>
+            <ol>
+                <li>Click "Show Cart" to open the cart panel</li>
+                <li>Verify the cart appears to the left of the chat widget</li>
+                <li>Test "Add to Cart" functionality</li>
+                <li>Check responsive behavior on different screen sizes</li>
+                <li>Test cart closing and reopening</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- Naay Widget Script -->
+    <script>
+        // Initialize Naay Widget
+        window.NaayWidget = {
+            init: function(config) {
+                console.log('🚀 Initializing Naay Widget with config:', config);
+                
+                // Load the widget script
+                const script = document.createElement('script');
+                script.src = 'http://localhost:3000/widget/naay-widget.js';
+                script.async = true;
+                script.onload = function() {
+                    console.log('✅ Naay Widget script loaded');
+                    updateStatus();
+                };
+                script.onerror = function() {
+                    console.error('❌ Failed to load Naay Widget script');
+                    document.getElementById('server-status').textContent = 'Error loading widget';
+                };
+                document.head.appendChild(script);
+            }
+        };
+
+        // Update status display
+        function updateStatus() {
+            setTimeout(() => {
+                try {
+                    const widget = window.naayWidget;
+                    if (widget) {
+                        document.getElementById('widget-position').textContent = widget.config?.position || 'Unknown';
+                        document.getElementById('cart-visible').textContent = widget.cartVisible ? 'Yes' : 'No';
+                        document.getElementById('server-status').textContent = 'Connected ✅';
+                    } else {
+                        document.getElementById('server-status').textContent = 'Widget not initialized';
+                    }
+                } catch (error) {
+                    console.warn('Status update error:', error);
+                }
+            }, 1000);
+        }
+
+        // Test functions
+        function toggleNaayCart() {
+            if (window.toggleNaayCart) {
+                window.toggleNaayCart();
+                updateStatus();
+            } else {
+                alert('Widget not loaded yet');
+            }
+        }
+
+        function showNaayCart() {
+            if (window.showNaayCart) {
+                window.showNaayCart();
+                updateStatus();
+            } else {
+                alert('Widget not loaded yet');
+            }
+        }
+
+        function hideNaayCart() {
+            if (window.hideNaayCart) {
+                window.hideNaayCart();
+                updateStatus();
+            } else {
+                alert('Widget not loaded yet');
+            }
+        }
+
+        function testAddToCart() {
+            if (window.testNaayCart) {
+                window.testNaayCart();
+                updateStatus();
+            } else {
+                alert('Widget not loaded yet');
+            }
+        }
+
+        function clearNaayCart() {
+            if (window.clearNaayCart) {
+                window.clearNaayCart();
+                updateStatus();
+            } else {
+                alert('Widget not loaded yet');
+            }
+        }
+
+        // Initialize when page loads
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('🔄 Initializing Naay Widget...');
+            window.NaayWidget.init({
+                shopDomain: 'test-shop.myshopify.com',
+                position: 'bottom-right',
+                apiEndpoint: 'http://localhost:3000'
+            });
+        });
+
+        // Periodic status update
+        setInterval(updateStatus, 3000);
+    </script>
+</body>
+</html>

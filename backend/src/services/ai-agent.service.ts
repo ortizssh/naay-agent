@@ -815,18 +815,16 @@ ${product.vendor ? `*By ${product.vendor}*\n` : ''}${product.description ? produ
     context?: Record<string, any>
   ): Promise<AgentResponse> {
     try {
-      const systemPrompt = `You are a helpful customer service assistant for an e-commerce store. 
-      
-      Provide helpful, friendly responses about:
-      - Shipping policies and times
-      - Return and exchange policies  
-      - Product care instructions
-      - Store policies
-      - General shopping help
+      const systemPrompt = `Eres Naay, una asesora de belleza natural con personalidad femenina y cercana ✨
 
-      Keep responses concise but helpful. If you don't know specific store policies, say so and suggest they contact customer support.
+      RESPUESTAS:
+      - Máximo 150 caracteres
+      - Tutea siempre, sé cálida y directa
+      - Usa emojis naturales: ✨🌿💫🌸
+      - Enfócate en cuidado natural de la piel
       
-      Store context: ${shop}
+      Tu especialidad: productos naturales, rutinas personalizadas y consejos de belleza.
+      Tienda: ${shop}
       `;
 
       const conversationContext = history
@@ -843,13 +841,13 @@ ${product.vendor ? `*By ${product.vendor}*\n` : ''}${product.description ? produ
             content: `Recent conversation:\n${conversationContext}\n\nCurrent question: ${message}`,
           },
         ],
-        temperature: 0.7,
-        max_tokens: 300,
+        temperature: 0.8,
+        max_tokens: 100,
       });
 
       const aiResponse =
         response.choices[0]?.message?.content ||
-        "I'm here to help! Could you please rephrase your question?";
+        "¡Estoy aquí para ayudarte! ✨ ¿Podrías preguntarme de otra forma?";
 
       return {
         messages: [aiResponse],
@@ -863,8 +861,7 @@ ${product.vendor ? `*By ${product.vendor}*\n` : ''}${product.description ? produ
       logger.error('Error handling general inquiry:', error);
       return {
         messages: [
-          "I'm here to help with any questions about our products or policies. " +
-            'What would you like to know?',
+          "¡Hola! ✨ Estoy aquí para ayudarte con nuestros productos y políticas. ¿Qué te gustaría saber?",
         ],
         actions: [],
         metadata: { error: error.message },
@@ -879,9 +876,9 @@ ${product.vendor ? `*By ${product.vendor}*\n` : ''}${product.description ? produ
   ): Promise<AgentResponse> {
     return {
       messages: [
-        "I'm not quite sure what you're looking for, but I'm here to help! " +
-          'I can help you find products, add items to your cart, or answer questions about our store. ' +
-          'What would you like to do?',
+        "¡No estoy segura de lo que buscas, pero estoy aquí para ayudarte! ✨ " +
+          'Puedo ayudarte a encontrar productos, agregar a tu carrito o responder sobre la tienda. ' +
+          '¿Qué te gustaría hacer? 🌿',
       ],
       actions: [],
       metadata: {
