@@ -373,7 +373,7 @@
         .naay-widget {
           position: fixed !important;
           bottom: 20px !important;
-          right: 20px !important;
+          left: 20px !important;
           z-index: 999999 !important;
           font-family: var(--naay-font) !important;
           font-feature-settings: 'cv11', 'cv02', 'cv03', 'cv04' !important;
@@ -1677,10 +1677,19 @@
           gap: 12px !important;
           margin-bottom: 12px !important;
           padding: 0 20px !important;
+          width: 100% !important;
+        }
+
+        .naay-widget__input-wrapper {
+          flex: 1 !important;
+          display: flex !important;
+          width: 100% !important;
         }
 
         .naay-widget__input {
           flex: 1 !important;
+          width: 100% !important;
+          min-width: 0 !important;
           padding: 10px 14px !important;
           border: 1px solid rgba(212, 196, 184, 0.3) !important;
           border-radius: 28px !important;
@@ -1691,6 +1700,7 @@
           color: var(--naay-black) !important;
           outline: none !important;
           transition: all 0.3s var(--naay-transition) !important;
+          box-sizing: border-box !important;
         }
 
         .naay-widget__input:focus {
@@ -1921,6 +1931,12 @@
 
           .naay-widget__input-container {
             padding: 16px !important;
+            width: 100% !important;
+          }
+
+          .naay-widget__input-wrapper {
+            flex: 1 !important;
+            width: 100% !important;
           }
         }
 
@@ -2004,7 +2020,7 @@
           backdrop-filter: blur(20px) !important;
           -webkit-backdrop-filter: blur(20px) !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
-          border-radius: 12px 0 0 12px !important;
+          border-radius: 0 12px 12px 0 !important;
           color: var(--naay-perfect) !important;
           cursor: pointer !important;
           transition: all var(--naay-duration) var(--naay-transition) !important;
@@ -2015,7 +2031,7 @@
           gap: 8px !important;
           box-shadow: var(--naay-shadow-strong) !important;
           position: absolute !important;
-          left: -60px !important;
+          right: -60px !important;
           bottom: 0 !important;
           z-index: 999998 !important;
           overflow: hidden !important;
@@ -2078,17 +2094,17 @@
           transition: all 0.2s var(--naay-transition) !important;
         }
 
-        /* Cart Panel - Slides from left */
+        /* Cart Panel - Slides from right */
         .naay-cart-panel {
           position: absolute !important;
           bottom: 0 !important;
-          left: -400px !important;
+          right: -400px !important;
           width: 400px !important;
           height: 620px !important;
           background: rgba(248, 249, 248, 0.95) !important;
           backdrop-filter: blur(20px) !important;
           -webkit-backdrop-filter: blur(20px) !important;
-          border-radius: 0 12px 12px 0 !important;
+          border-radius: 12px 0 0 12px !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
           box-shadow: var(--naay-shadow-strong) !important;
           display: flex !important;
@@ -2099,11 +2115,11 @@
           transition: all var(--naay-duration) var(--naay-transition) !important;
           pointer-events: none !important;
           z-index: 999997 !important;
-          transform: translateX(-32px) scale(0.95) !important;
+          transform: translateX(32px) scale(0.95) !important;
         }
 
         .naay-cart-panel--open {
-          left: -60px !important;
+          right: -60px !important;
           opacity: 1 !important;
           visibility: visible !important;
           pointer-events: auto !important;
@@ -2462,27 +2478,27 @@
         @media (max-width: 768px) {
           .naay-widget {
             bottom: 10px !important;
-            right: 10px !important;
+            left: 10px !important;
           }
           
           .naay-cart-panel {
             width: 90vw !important;
             max-width: 350px !important;
-            left: -350px !important;
+            right: -350px !important;
             height: 400px !important;
           }
           
           .naay-cart-toggle {
             width: 50px !important;
             height: 400px !important;
-            left: -50px !important;
+            right: -50px !important;
             opacity: 0 !important;
             visibility: hidden !important;
             pointer-events: none !important;
           }
           
           .naay-cart-panel--open {
-            left: -50px !important;
+            right: -50px !important;
           }
           
           .naay-widget--open .naay-cart-toggle {
@@ -2495,27 +2511,27 @@
         @media (max-width: 480px) {
           .naay-widget {
             bottom: 5px !important;
-            right: 5px !important;
+            left: 5px !important;
           }
           
           .naay-cart-panel {
             width: 95vw !important;
             max-width: none !important;
             height: 350px !important;
-            left: -95vw !important;
+            right: -95vw !important;
           }
           
           .naay-cart-toggle {
             width: 45px !important;
             height: 350px !important;
-            left: -45px !important;
+            right: -45px !important;
             opacity: 0 !important;
             visibility: hidden !important;
             pointer-events: none !important;
           }
           
           .naay-cart-panel--open {
-            left: -45px !important;
+            right: -45px !important;
           }
           
           .naay-widget--open .naay-cart-toggle {
@@ -2691,6 +2707,24 @@
           this.hideCart();
         }
       });
+
+      // Add test function to window for debugging cart
+      window.testAddToCart = () => {
+        console.log('🧪 Adding test product to cart...');
+        const testProduct = {
+          id: 'test-product-123',
+          title: 'Producto de Prueba',
+          price: '29.99',
+          quantity: 1,
+          image: 'https://via.placeholder.com/80x80?text=Test',
+          variantId: 'variant-123',
+          handle: 'producto-prueba'
+        };
+        this.addToCartLocal(testProduct);
+        this.showCart();
+      };
+      
+      console.log('🧪 Test function available: window.testAddToCart()');
     }
 
     toggle() {
@@ -3404,6 +3438,9 @@
       }
       
       console.log('✅ Product added to local cart');
+      
+      // Update cart display to reflect changes
+      this.updateCartDisplay();
     }
 
     // Sync local cart data from Shopify cart
@@ -3552,6 +3589,16 @@
       // Update UI based on cart content
       const hasItems = this.cartData.items.length > 0 && itemCount > 0;
       
+      console.log('🔍 Cart UI Update Debug:', {
+        'cartData.items.length': this.cartData.items.length,
+        'itemCount': itemCount,
+        'hasItems': hasItems,
+        'cartEmpty exists': !!this.cartEmpty,
+        'cartItems exists': !!this.cartItems,
+        'cartFooter exists': !!this.cartFooter,
+        'cart items array': this.cartData.items
+      });
+      
       if (this.cartEmpty && this.cartItems && this.cartFooter) {
         if (!hasItems) {
           // Show empty state
@@ -3562,6 +3609,7 @@
           console.log('📋 Showing empty cart state');
         } else {
           // Show items
+          console.log('📋 HIDING EMPTY STATE - SHOWING ITEMS');
           this.cartEmpty.style.display = 'none';
           this.cartItems.style.display = 'flex';
           this.cartItems.classList.add('naay-cart-panel__items--visible');
@@ -3576,6 +3624,12 @@
           // Render cart items
           this.renderCartItems();
         }
+      } else {
+        console.error('❌ Cart DOM elements missing:', {
+          cartEmpty: !!this.cartEmpty,
+          cartItems: !!this.cartItems,
+          cartFooter: !!this.cartFooter
+        });
       }
       
       // Update cart badge
