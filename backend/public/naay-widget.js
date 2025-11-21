@@ -31,7 +31,7 @@
       this.config = {
         shopDomain: '',
         apiEndpoint: 'https://naay-agent-app1763504937.azurewebsites.net',
-        position: 'bottom-left',
+        position: 'bottom-right',
         // Naay Brand Colors from Design Guidelines
         everyday: '#E8B5A1',    // Soft coral
         fresh: '#8FA68E',       // Sage green  
@@ -59,7 +59,7 @@
 
       this.isOpen = false;
       this.messages = [];
-      this.conversationId = null;
+      this.conversationId = this.getStoredConversationId();
 
       this.init();
     }
@@ -1185,10 +1185,11 @@
       }
 
       try {
-        const apiUrl = `${this.config.apiEndpoint}/api/simple-chat`;
+        const apiUrl = `${this.config.apiEndpoint}/api/chat`;
         const payload = {
           message: text,
-          shop: this.config.shopDomain
+          shop: this.config.shopDomain,
+          conversationId: this.conversationId
         };
 
         console.log('🌿 Naay Chat: Sending message to API', {
@@ -1220,6 +1221,7 @@
         if (data.success && data.data) {
           this.addMessage(data.data.response || 'Lo siento, no pude procesar tu mensaje.', 'assistant');
           this.conversationId = data.data.conversationId;
+          this.storeConversationId(this.conversationId);
           console.log('✅ Naay Chat: Message processed successfully', data.data.conversationId);
         } else {
           console.error('❌ Naay Chat: API returned error', data);
@@ -1338,8 +1340,44 @@
       console.log('✅ Conversation reset to welcome state');
     }
 
+    getStoredConversationId() {
+      try {
+        const storageKey = `naay_conversation_${this.config.shopDomain}`;
+        return localStorage.getItem(storageKey);
+      } catch (error) {
+        console.warn('Could not access localStorage for conversation ID:', error);
+        return null;
+      }
+    }
+
+    storeConversationId(conversationId) {
+      try {
+        const storageKey = `naay_conversation_${this.config.shopDomain}`;
+        localStorage.setItem(storageKey, conversationId);
+        console.log('💾 Stored conversation ID:', conversationId);
+      } catch (error) {
+        console.warn('Could not store conversation ID in localStorage:', error);
+      }
+    }
+
+    clearStoredConversationId() {
+      try {
+        const storageKey = `naay_conversation_${this.config.shopDomain}`;
+        localStorage.removeItem(storageKey);
+        console.log('🗑️ Cleared stored conversation ID');
+      } catch (error) {
+        console.warn('Could not clear conversation ID from localStorage:', error);
+      }
+    }
+
     async loadConversationHistory() {
-      console.log('Loading conversation history...');
+      if (this.conversationId) {
+        console.log('📖 Loading conversation history for ID:', this.conversationId);
+        // Add welcome message only if no conversation ID exists
+      } else {
+        console.log('🆕 Starting new conversation');
+        this.addMessage(this.config.greeting, 'assistant');
+      }
     }
   }
 
