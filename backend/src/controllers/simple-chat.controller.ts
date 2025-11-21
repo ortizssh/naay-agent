@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import OpenAI from 'openai';
 import { config } from '@/utils/config';
 import { logger } from '@/utils/logger';
+import { SupabaseService } from '@/services/supabase.service';
 
 const router = Router();
 
@@ -18,10 +19,16 @@ const openai = new OpenAI({
   apiKey: apiKey,
 });
 
+const supabaseService = new SupabaseService();
+
+// In-memory conversation store (for simple implementation)
+// In production, this should use a proper database or cache
+const conversationStore: Record<string, Array<{ role: string; content: string }>> = {};
+
 // Simple chat endpoint that directly connects to OpenAI
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { message, shop } = req.body;
+    const { message, shop, conversationId } = req.body;
 
     if (!message || typeof message !== 'string') {
       return res.status(400).json({
@@ -30,23 +37,42 @@ router.post('/', async (req: Request, res: Response) => {
       });
     }
 
+    // Generate conversation ID if not provided
+    const currentConversationId = conversationId || `simple_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
     logger.info('Simple chat message received', {
       shop: shop || 'unknown',
+      conversationId: currentConversationId,
       messageLength: message.length,
       hasApiKey: !!apiKey,
+      hasHistory: !!conversationStore[currentConversationId],
     });
 
     if (!apiKey) {
       throw new Error('OpenAI API key not configured');
     }
 
-    // Direct OpenAI call
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [
-        {
-          role: 'system',
-          content: `#### 💬 **Rol del Agente**
+    // Get or initialize conversation history
+    if (!conversationStore[currentConversationId]) {
+      conversationStore[currentConversationId] = [];
+    }
+
+    // Add current user message to conversation history
+    conversationStore[currentConversationId].push({
+      role: 'user',
+      content: message,
+    });
+
+    // Keep conversation history manageable (last 20 messages)
+    if (conversationStore[currentConversationId].length > 20) {
+      conversationStore[currentConversationId] = conversationStore[currentConversationId].slice(-20);
+    }
+
+    // Prepare messages for OpenAI (system prompt + conversation history)
+    const messages = [
+      {
+        role: 'system',
+        content: `#### 💬 **Rol del Agente**
 
 Eres **Naáy Assistant**, el asesor virtual de **Naáy**, marca española de cosmética natural y ecológica fundada en Valladolid. Tu misión es ofrecer orientación personalizada sobre el cuidado de la piel y el uso de productos Naáy, reflejando siempre el tono cálido, cercano, profesional y respetuoso con el medio ambiente que caracteriza a la marca.
 
@@ -113,11 +139,13 @@ Cuando un usuario interactúe:
 
 **DEBES UTILIZAR LA BASE DE DATOS VECTORIAL EN TUS HERRAMIENTAS CADA VEZ QUE RESPONDAS UN MENSAJE**`,
         },
-        {
-          role: 'user',
-          content: message,
-        },
-      ],
+        ...conversationStore[currentConversationId], // Include conversation history
+    ];
+
+    // Direct OpenAI call with conversation context
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: messages,
       max_tokens: 500,
       temperature: 0.7,
     });
@@ -126,11 +154,17 @@ Cuando un usuario interactúe:
       completion.choices[0]?.message?.content ||
       '¡Hola! Soy tu asistente de Naay. ¿En qué puedo ayudarte con tu cuidado de la piel?';
 
+    // Store assistant's response in conversation history
+    conversationStore[currentConversationId].push({
+      role: 'assistant',
+      content: response,
+    });
+
     res.json({
       success: true,
       data: {
         response,
-        conversationId: `simple_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        conversationId: currentConversationId, // Return the same conversation ID
       },
     });
   } catch (error: any) {
