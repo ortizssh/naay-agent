@@ -61,8 +61,8 @@
       this.messages = [];
       this.conversationId = this.getStoredConversationId();
       
-      // Cart state
-      this.cartVisible = false;
+      // Cart state - always visible by default
+      this.cartVisible = true;
       this.cartId = null; // Shopify cart ID
       this.cartData = {
         items: [],
@@ -83,11 +83,17 @@
         this.setupElements();
         this.addEventListeners();
         this.loadConversationHistory();
+        this.loadShopifyCart(); // Load existing Shopify cart
+        this.showCart(); // Always show cart on init
+        this.setupShopifyCartSync(); // Setup real-time sync
       }).catch(error => {
         console.error('Failed to load widget settings, using defaults:', error);
         this.createWidget();
         this.setupElements();
         this.addEventListeners();
+        this.loadShopifyCart(); // Load existing Shopify cart
+        this.showCart(); // Always show cart on init
+        this.setupShopifyCartSync(); // Setup real-time sync
       });
     }
 
@@ -2363,9 +2369,10 @@
         this.input.value = '';
       }
       
-      // Reset conversation state
+      // Reset conversation state completely
       this.messages = [];
       this.conversationId = null;
+      this.clearStoredConversationId(); // Clear from localStorage too
       
       console.log('✅ Conversation reset to welcome state');
     }
@@ -2481,11 +2488,9 @@
     // ======= CART FUNCTIONALITY =======
 
     toggleCart() {
-      if (this.cartVisible) {
-        this.hideCart();
-      } else {
-        this.showCart();
-      }
+      // Cart is always visible, so we just log the interaction
+      console.log('🛒 Cart toggle clicked - cart remains visible');
+      // Optionally could implement a minimize/maximize feature here
     }
 
     showCart() {
@@ -2505,8 +2510,15 @@
     async addToCart(product) {
       console.log('🛒 Adding product to cart:', product);
       
+      // First try to add to Shopify native cart if we're on a Shopify store
+      let addedToShopify = false;
+      if (window.location.hostname.includes('myshopify.com') || 
+          window.location.hostname.includes('shopify.com')) {
+        addedToShopify = await this.addToShopifyNativeCart(product.variantId, product.quantity || 1);
+      }
+      
+      // Also add via our API for consistency
       try {
-        // Add to Shopify cart via API
         const response = await fetch(`${this.config.apiEndpoint}/api/public/cart/add`, {
           method: 'POST',
           headers: {
@@ -2527,27 +2539,22 @@
           this.cartId = data.data.cart.id;
           this.syncCartFromShopify(data.data.cart);
           
-          console.log('✅ Product added to Shopify cart:', data.data.cart);
-        } else {
-          console.error('❌ Failed to add to cart:', data);
-          // Fallback to local cart
+          console.log('✅ Product added to Shopify cart via API:', data.data.cart);
+        } else if (!addedToShopify) {
+          console.error('❌ Failed to add to cart via API:', data);
+          // Fallback to local cart only if Shopify native also failed
           this.addToCartLocal(product);
         }
       } catch (error) {
-        console.error('❌ Error adding to cart:', error);
-        // Fallback to local cart
-        this.addToCartLocal(product);
+        console.error('❌ Error adding to cart via API:', error);
+        if (!addedToShopify) {
+          // Fallback to local cart only if Shopify native also failed
+          this.addToCartLocal(product);
+        }
       }
       
       this.updateCartDisplay();
-      this.showCart();
-      
-      // Auto-hide after 3 seconds unless user interacts
-      setTimeout(() => {
-        if (this.cartVisible) {
-          this.hideCart();
-        }
-      }, 3000);
+      // Cart stays visible always
     }
 
     // Fallback method for local cart management
@@ -2842,14 +2849,212 @@
         }
       });
     }
+
+    // ======= SHOPIFY CART SYNCHRONIZATION =======
+    
+    async loadShopifyCart() {
+      console.log('🔄 Loading Shopify cart...');
+      
+      try {
+        // Try to get cart from Shopify's native cart.js if available
+        if (window.fetch && window.location.hostname.includes('myshopify.com') || 
+            window.location.hostname.includes('shopify.com')) {
+          
+          // Use Shopify's cart.js API
+          const response = await fetch('/cart.js');
+          const cartData = await response.json();
+          
+          if (cartData) {
+            console.log('✅ Loaded Shopify cart:', cartData);
+            this.syncFromShopifyNativeCart(cartData);
+            this.updateCartDisplay();
+            return;
+          }
+        }
+        
+        // Fallback: Try to get cart from our API if cartId exists
+        if (this.cartId) {
+          const response = await fetch(`${this.config.apiEndpoint}/api/public/cart/get`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              shop: this.config.shopDomain,
+              cartId: this.cartId
+            }),
+          });
+          
+          const data = await response.json();
+          if (data.success && data.data.cart) {
+            console.log('✅ Loaded cart from API:', data.data.cart);
+            this.syncCartFromShopify(data.data.cart);
+            this.updateCartDisplay();
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error loading Shopify cart:', error);
+      }
+    }
+    
+    syncFromShopifyNativeCart(shopifyCart) {
+      console.log('🔄 Syncing from Shopify native cart:', shopifyCart);
+      
+      // Transform Shopify native cart to our format
+      this.cartData.items = shopifyCart.items?.map(item => ({
+        id: item.variant_id.toString(),
+        title: item.product_title,
+        variantTitle: item.variant_title,
+        price: (item.price / 100).toFixed(2), // Shopify prices are in cents
+        quantity: item.quantity,
+        image: item.image,
+        variantId: item.variant_id.toString(),
+        handle: item.handle,
+        url: item.url
+      })) || [];
+      
+      // Update totals
+      this.cartData.total = (shopifyCart.total_price / 100).toFixed(2); // Convert from cents
+      this.cartData.itemCount = shopifyCart.item_count || 0;
+      
+      console.log('✅ Cart synced from Shopify native cart');
+    }
+    
+    setupShopifyCartSync() {
+      console.log('🔄 Setting up Shopify cart synchronization...');
+      
+      // Listen for Shopify cart updates if available
+      if (window.addEventListener) {
+        // Store event handlers for cleanup
+        this.cartUpdateHandler = (event) => {
+          console.log('🔄 Shopify cart updated event detected:', event.detail);
+          if (event.detail) {
+            this.syncFromShopifyNativeCart(event.detail);
+            this.updateCartDisplay();
+          }
+        };
+        
+        this.visibilityChangeHandler = () => {
+          if (!document.hidden) {
+            this.loadShopifyCart();
+          }
+        };
+        
+        // Listen for cart drawer updates
+        document.addEventListener('cart:updated', this.cartUpdateHandler);
+        
+        // Periodically sync with Shopify cart (every 5 seconds)
+        this.cartSyncInterval = setInterval(() => {
+          this.loadShopifyCart();
+        }, 5000);
+        
+        // Listen for page visibility changes to sync when user returns
+        document.addEventListener('visibilitychange', this.visibilityChangeHandler);
+        
+        console.log('✅ Shopify cart sync listeners setup');
+      }
+    }
+    
+    async addToShopifyNativeCart(variantId, quantity = 1) {
+      console.log('🛒 Adding to Shopify native cart:', { variantId, quantity });
+      
+      try {
+        // Use Shopify's cart API
+        const response = await fetch('/cart/add.js', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: variantId,
+            quantity: quantity
+          }),
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log('✅ Added to Shopify native cart:', result);
+          
+          // Trigger custom event
+          document.dispatchEvent(new CustomEvent('cart:updated'));
+          
+          // Reload cart data
+          await this.loadShopifyCart();
+          
+          return true;
+        } else {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+      } catch (error) {
+        console.error('❌ Error adding to Shopify native cart:', error);
+        return false;
+      }
+    }
+    
+    async removeFromShopifyNativeCart(lineIndex) {
+      console.log('🛒 Removing from Shopify native cart line:', lineIndex);
+      
+      try {
+        const response = await fetch('/cart/change.js', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            line: lineIndex,
+            quantity: 0
+          }),
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log('✅ Removed from Shopify native cart:', result);
+          
+          // Trigger custom event
+          document.dispatchEvent(new CustomEvent('cart:updated'));
+          
+          // Reload cart data
+          await this.loadShopifyCart();
+          
+          return true;
+        } else {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+      } catch (error) {
+        console.error('❌ Error removing from Shopify native cart:', error);
+        return false;
+      }
+    }
+    
+    // Cleanup function
+    destroy() {
+      console.log('🧹 Cleaning up Naay Widget...');
+      
+      // Clear cart sync interval
+      if (this.cartSyncInterval) {
+        clearInterval(this.cartSyncInterval);
+        console.log('✅ Cart sync interval cleared');
+      }
+      
+      // Remove event listeners
+      document.removeEventListener('cart:updated', this.cartUpdateHandler);
+      document.removeEventListener('visibilitychange', this.visibilityChangeHandler);
+      
+      console.log('✅ Naay Widget cleanup completed');
+    }
   }
 
   // Expose class for constructor access
   window.NaayWidget = NaayWidget;
   
-  // Auto-initialize widget
-  document.addEventListener('DOMContentLoaded', function() {
-    console.log('✨ DOM loaded, initializing Naay Luxury Widget...');
+  // Initialize widget function
+  function initializeWidget() {
+    if (window.naayWidget) {
+      console.log('✨ Naay Widget already initialized');
+      return;
+    }
+
+    console.log('✨ Initializing Naay Luxury Widget...');
     const widget = new NaayWidget();
     window.naayWidget = widget;
     
@@ -2880,31 +3085,13 @@
     };
     
     console.log('✨ Naay Widget initialized! Use window.testNaayCart(), window.testNaayProduct(), window.showNaayCart() and window.hideNaayCart() to test functionality.');
-  });
+  }
 
-  // Fallback initialization if DOM already loaded
+  // Single initialization based on document state
   if (document.readyState === 'loading') {
-    // Document still loading, wait for DOMContentLoaded
+    document.addEventListener('DOMContentLoaded', initializeWidget);
   } else {
-    // Document already loaded
-    console.log('✨ Document ready, initializing Naay Luxury Widget immediately...');
-    const widget = new NaayWidget();
-    window.naayWidget = widget;
-    
-    // Expose testing functions for development
-    window.testNaayCart = () => {
-      console.log('🧪 Testing Naay Cart functionality...');
-      widget.testCart();
-      return 'Cart test completed! Check the widget.';
-    };
-
-    window.testNaayProduct = () => {
-      console.log('🧪 Testing Naay Product Recommendations...');
-      widget.testProductRecommendation();
-      return 'Product recommendations test completed! Check the widget.';
-    };
-    
-    console.log('✨ Naay Widget initialized! Use window.testNaayCart() and window.testNaayProduct() to test functionality.');
+    initializeWidget();
   }
 
   console.log('✨ Naay Luxury Chat: Widget script loaded successfully');
