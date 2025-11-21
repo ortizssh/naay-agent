@@ -20,15 +20,26 @@
     source: 'OFFICIAL-LUXURY-DESIGN'
   });
 
+  // Enhanced singleton protection - prevent ANY duplicate loading
+  if (window.__NAAY_WIDGET_LOADING__ || window.__NAAY_WIDGET_INITIALIZED__) {
+    console.warn('⚠️ Naay Widget: Already loading/initialized, preventing duplicate');
+    return;
+  }
+  
+  // Mark as loading immediately to prevent race conditions
+  window.__NAAY_WIDGET_LOADING__ = true;
+  
   // Prevent multiple widget loads - check for both class and instance
   if (window.NaayWidget && window.naayWidget) {
-    console.warn('Naay Widget already loaded and instantiated, version:', window.__NAAY_WIDGET_VERSION__);
+    console.warn('🔒 Naay Widget already loaded and instantiated, version:', window.__NAAY_WIDGET_VERSION__);
+    window.__NAAY_WIDGET_LOADING__ = false;
     return;
   }
   
   // Check if DOM already has widget
   if (document.querySelector('.naay-widget')) {
-    console.warn('Naay Widget DOM already exists, skipping initialization');
+    console.warn('🔒 Naay Widget DOM already exists, skipping initialization');
+    window.__NAAY_WIDGET_LOADING__ = false;
     return;
   }
 
@@ -80,25 +91,25 @@
     }
 
     init() {
-      console.log('✨ Initializing Naay Flat Widget v3.2.2 - CORS FIXED:', new Date().toISOString());
-      console.log('Shop:', this.config.shopDomain);
+      console.log('✨ Initializing Naay Luxury Widget v2.1 with Cart Sidebar:', new Date().toISOString());
+      console.log('🏪 Shop Domain:', this.config.shopDomain);
       
       // Load settings from server
       this.loadSettings().then(() => {
-        this.createWidget();
-        this.setupElements();
-        this.addEventListeners();
-        this.loadConversationHistory();
-        this.loadShopifyCart(); // Load existing Shopify cart
-        this.setupShopifyCartSync(); // Setup real-time sync
+        this.initializeWidget();
       }).catch(error => {
         console.error('Failed to load widget settings, using defaults:', error);
-        this.createWidget();
-        this.setupElements();
-        this.addEventListeners();
-        this.loadShopifyCart(); // Load existing Shopify cart
-        this.setupShopifyCartSync(); // Setup real-time sync
+        this.initializeWidget();
       });
+    }
+
+    initializeWidget() {
+      this.createWidget();
+      this.setupElements();
+      this.addEventListeners();
+      this.loadConversationHistory();
+      this.loadShopifyCart(); // Load existing Shopify cart
+      this.setupShopifyCartSync(); // Setup real-time sync
     }
 
     async loadSettings() {
@@ -117,6 +128,13 @@
     }
 
     createWidget() {
+      // Check if widget already exists in DOM
+      if (document.getElementById('naay-widget')) {
+        console.log('🔒 Widget already exists in DOM, skipping creation');
+        this.container = document.getElementById('naay-widget');
+        return;
+      }
+
       // Create widget container
       this.container = document.createElement('div');
       this.container.id = 'naay-widget';
@@ -348,6 +366,8 @@
 
         .naay-widget {
           position: fixed !important;
+          bottom: 20px !important;
+          right: 20px !important;
           z-index: 999999 !important;
           font-family: var(--naay-font) !important;
           font-feature-settings: 'cv11', 'cv02', 'cv03', 'cv04' !important;
@@ -1964,39 +1984,52 @@
         
         /* Main Widget Layout Container */
         .naay-widget-layout {
-          position: fixed !important;
-          bottom: 20px !important;
-          right: 20px !important;
           display: flex !important;
           align-items: end !important;
           gap: 0 !important;
-          z-index: 999998 !important;
+          position: relative !important;
         }
 
         /* Cart Toggle Button - Vertical Left */
         .naay-cart-toggle {
-          position: relative !important;
           width: 60px !important;
           height: 200px !important;
-          background: linear-gradient(135deg, var(--naay-perfect) 0%, var(--naay-rich) 100%) !important;
+          background: var(--naay-perfect) !important;
           border: none !important;
           border-radius: 12px 0 0 12px !important;
           color: var(--naay-white) !important;
           cursor: pointer !important;
-          transition: all 0.3s var(--naay-transition) !important;
+          transition: all var(--naay-duration) var(--naay-transition) !important;
           display: flex !important;
           flex-direction: column !important;
           align-items: center !important;
           justify-content: center !important;
           gap: 8px !important;
-          box-shadow: -2px 0 20px rgba(168, 130, 107, 0.2) !important;
-          z-index: 999999 !important;
+          box-shadow: var(--naay-shadow-medium) !important;
+          order: 1 !important;
+          position: relative !important;
+          overflow: hidden !important;
         }
 
         .naay-cart-toggle:hover {
-          background: linear-gradient(135deg, var(--naay-rich) 0%, var(--naay-perfect) 100%) !important;
-          transform: translateX(-5px) !important;
-          box-shadow: -5px 0 25px rgba(168, 130, 107, 0.3) !important;
+          background: var(--naay-rich) !important;
+          transform: translateY(-2px) !important;
+          box-shadow: var(--naay-shadow-strong) !important;
+        }
+
+        .naay-cart-toggle::before {
+          content: '' !important;
+          position: absolute !important;
+          inset: 0 !important;
+          border-radius: inherit !important;
+          background: var(--naay-perfect) !important;
+          opacity: 0.8 !important;
+          animation: naayPulse 2s infinite !important;
+          z-index: -1 !important;
+        }
+
+        .naay-cart-panel--open ~ .naay-cart-toggle::before {
+          animation: none !important;
         }
 
         .naay-cart-toggle__icon {
@@ -2007,7 +2040,7 @@
 
         .naay-cart-toggle__badge {
           position: absolute !important;
-          top: 15px !important;
+          top: 10px !important;
           right: -8px !important;
           background: #dc3545 !important;
           color: var(--naay-white) !important;
@@ -2020,44 +2053,46 @@
           align-items: center !important;
           justify-content: center !important;
           border: 2px solid var(--naay-white) !important;
+          box-shadow: var(--naay-shadow-medium) !important;
         }
 
         /* Cart Panel - Slides from left */
         .naay-cart-panel {
           position: absolute !important;
           bottom: 0 !important;
-          right: 60px !important;
+          left: -400px !important;
           width: 400px !important;
           height: 500px !important;
-          background: rgba(248, 249, 248, 0.98) !important;
+          background: rgba(248, 249, 248, 0.95) !important;
           backdrop-filter: blur(20px) !important;
           -webkit-backdrop-filter: blur(20px) !important;
           border-radius: 12px !important;
-          border: 1px solid rgba(168, 130, 107, 0.15) !important;
-          box-shadow: -4px 0 32px rgba(168, 130, 107, 0.12) !important;
+          border: 1px solid rgba(212, 196, 184, 0.2) !important;
+          box-shadow: var(--naay-shadow-strong) !important;
           display: flex !important;
           flex-direction: column !important;
           overflow: hidden !important;
-          transform: translateX(-100%) !important;
           opacity: 0 !important;
           visibility: hidden !important;
-          transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+          transition: all var(--naay-duration) var(--naay-transition) !important;
           pointer-events: none !important;
-          z-index: 999998 !important;
+          z-index: 999997 !important;
+          transform: translateY(32px) scale(0.9) !important;
         }
 
         .naay-cart-panel--open {
-          transform: translateX(0) !important;
+          left: 0 !important;
           opacity: 1 !important;
           visibility: visible !important;
           pointer-events: auto !important;
+          transform: translateY(0) scale(1) !important;
         }
 
 
         /* Cart Panel Header */
         .naay-cart-panel__header {
           padding: 20px 24px !important;
-          background: linear-gradient(135deg, var(--naay-perfect) 0%, var(--naay-rich) 100%) !important;
+          background: var(--naay-perfect) !important;
           color: var(--naay-white) !important;
           display: flex !important;
           align-items: center !important;
@@ -2147,13 +2182,196 @@
           padding: 20px 24px 0 24px !important;
           flex: 1 !important;
           overflow-y: auto !important;
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 16px !important;
+        }
+
+        .naay-cart-panel__items--visible {
+          animation: naay-fade-in 0.3s ease-in-out !important;
+        }
+
+        @keyframes naay-fade-in {
+          from {
+            opacity: 0 !important;
+            transform: translateY(10px) !important;
+          }
+          to {
+            opacity: 1 !important;
+            transform: translateY(0) !important;
+          }
+        }
+
+        /* Cart Item */
+        .naay-cart-panel__item {
+          display: flex !important;
+          gap: 16px !important;
+          padding: 16px !important;
+          background: var(--naay-white) !important;
+          border-radius: 12px !important;
+          border: 1px solid rgba(212, 196, 184, 0.2) !important;
+          box-shadow: 0 2px 8px rgba(168, 130, 107, 0.08) !important;
+          transition: all 0.2s var(--naay-transition) !important;
+        }
+
+        .naay-cart-panel__item:hover {
+          box-shadow: 0 4px 12px rgba(168, 130, 107, 0.12) !important;
+          transform: translateY(-1px) !important;
+        }
+
+        /* Item Image */
+        .naay-cart-panel__item-image-container {
+          flex-shrink: 0 !important;
+          width: 80px !important;
+          height: 80px !important;
+        }
+
+        .naay-cart-panel__item-image {
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: cover !important;
+          border-radius: 8px !important;
+          background: var(--naay-surface) !important;
+        }
+
+        .naay-cart-panel__item-image--placeholder {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          background: rgba(212, 196, 184, 0.1) !important;
+          color: rgba(168, 130, 107, 0.5) !important;
+        }
+
+        .naay-cart-panel__item-image--placeholder svg {
+          width: 32px !important;
+          height: 32px !important;
+        }
+
+        /* Item Details */
+        .naay-cart-panel__item-details {
+          flex: 1 !important;
+          display: flex !important;
+          flex-direction: column !important;
+          justify-content: space-between !important;
+        }
+
+        .naay-cart-panel__item-info {
+          margin-bottom: 12px !important;
+        }
+
+        .naay-cart-panel__item-title {
+          font-size: 14px !important;
+          font-weight: var(--naay-font-weight-semibold) !important;
+          color: var(--naay-text-primary) !important;
+          margin: 0 0 4px 0 !important;
+          line-height: 1.3 !important;
+          display: -webkit-box !important;
+          -webkit-line-clamp: 2 !important;
+          -webkit-box-orient: vertical !important;
+          overflow: hidden !important;
+        }
+
+        .naay-cart-panel__item-variant {
+          font-size: 12px !important;
+          color: var(--naay-text-secondary) !important;
+          margin: 0 0 8px 0 !important;
+          opacity: 0.8 !important;
+        }
+
+        .naay-cart-panel__item-price-info {
+          display: flex !important;
+          align-items: center !important;
+          gap: 8px !important;
+        }
+
+        .naay-cart-panel__item-unit-price {
+          font-size: 12px !important;
+          color: var(--naay-text-secondary) !important;
+        }
+
+        .naay-cart-panel__item-total-price {
+          font-size: 16px !important;
+          font-weight: var(--naay-font-weight-bold) !important;
+          color: var(--naay-perfect) !important;
+        }
+
+        /* Item Controls */
+        .naay-cart-panel__item-controls {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: space-between !important;
+          gap: 12px !important;
+        }
+
+        .naay-cart-panel__item-quantity {
+          display: flex !important;
+          align-items: center !important;
+          gap: 8px !important;
+          background: rgba(212, 196, 184, 0.1) !important;
+          border-radius: 8px !important;
+          padding: 4px !important;
+        }
+
+        .naay-cart-panel__quantity-btn {
+          width: 28px !important;
+          height: 28px !important;
+          border-radius: 6px !important;
+          border: none !important;
+          background: var(--naay-perfect) !important;
+          color: var(--naay-white) !important;
+          cursor: pointer !important;
+          transition: all 0.2s var(--naay-transition) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+
+        .naay-cart-panel__quantity-btn:hover {
+          background: var(--naay-rich) !important;
+          transform: scale(1.1) !important;
+        }
+
+        .naay-cart-panel__quantity-btn svg {
+          width: 14px !important;
+          height: 14px !important;
+        }
+
+        .naay-cart-panel__quantity-value {
+          font-size: 14px !important;
+          font-weight: var(--naay-font-weight-semibold) !important;
+          color: var(--naay-text-primary) !important;
+          min-width: 20px !important;
+          text-align: center !important;
+        }
+
+        .naay-cart-panel__item-remove {
+          background: rgba(220, 53, 69, 0.1) !important;
+          border: none !important;
+          border-radius: 6px !important;
+          padding: 6px !important;
+          color: #dc3545 !important;
+          cursor: pointer !important;
+          transition: all 0.2s var(--naay-transition) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+
+        .naay-cart-panel__item-remove:hover {
+          background: rgba(220, 53, 69, 0.2) !important;
+          transform: scale(1.1) !important;
+        }
+
+        .naay-cart-panel__item-remove svg {
+          width: 14px !important;
+          height: 14px !important;
         }
 
         /* Cart Panel Footer */
         .naay-cart-panel__footer {
           padding: 20px 24px !important;
           background: rgba(248, 249, 248, 0.95) !important;
-          border-top: 1px solid rgba(168, 130, 107, 0.1) !important;
+          border-top: 1px solid rgba(212, 196, 184, 0.2) !important;
           backdrop-filter: blur(10px) !important;
           -webkit-backdrop-filter: blur(10px) !important;
         }
@@ -2164,7 +2382,7 @@
           align-items: center !important;
           margin-bottom: 16px !important;
           padding: 16px 0 !important;
-          border-top: 1px solid rgba(168, 130, 107, 0.15) !important;
+          border-top: 1px solid rgba(212, 196, 184, 0.2) !important;
         }
 
         .naay-cart-panel__total-label {
@@ -2213,12 +2431,13 @@
         /* Chat Container positioning */
         .naay-chat-container {
           position: relative !important;
+          order: 2 !important;
           margin-left: 0 !important;
         }
 
         /* Responsive Design */
         @media (max-width: 768px) {
-          .naay-widget-layout {
+          .naay-widget {
             bottom: 10px !important;
             right: 10px !important;
           }
@@ -2226,6 +2445,7 @@
           .naay-cart-panel {
             width: 90vw !important;
             max-width: 350px !important;
+            left: -350px !important;
           }
           
           .naay-cart-toggle {
@@ -2235,10 +2455,16 @@
         }
 
         @media (max-width: 480px) {
+          .naay-widget {
+            bottom: 5px !important;
+            right: 5px !important;
+          }
+          
           .naay-cart-panel {
             width: 95vw !important;
             max-width: none !important;
             height: 400px !important;
+            left: -95vw !important;
           }
           
           .naay-cart-toggle {
@@ -2249,6 +2475,39 @@
           .naay-cart-toggle__icon {
             width: 20px !important;
             height: 20px !important;
+          }
+
+          /* Mobile Cart Items */
+          .naay-cart-panel__items {
+            padding: 16px 12px 0 12px !important;
+            gap: 12px !important;
+          }
+
+          .naay-cart-panel__item {
+            padding: 12px !important;
+            gap: 12px !important;
+          }
+
+          .naay-cart-panel__item-image-container {
+            width: 60px !important;
+            height: 60px !important;
+          }
+
+          .naay-cart-panel__item-title {
+            font-size: 13px !important;
+          }
+
+          .naay-cart-panel__item-variant {
+            font-size: 11px !important;
+          }
+
+          .naay-cart-panel__item-total-price {
+            font-size: 14px !important;
+          }
+
+          .naay-cart-panel__quantity-btn {
+            width: 24px !important;
+            height: 24px !important;
           }
         }
       `;
@@ -3239,14 +3498,14 @@
           // Show empty state
           this.cartEmpty.style.display = 'flex';
           this.cartItems.style.display = 'none';
-          this.cartItems.classList.remove('naay-cart-sidebar__items--visible');
+          this.cartItems.classList.remove('naay-cart-panel__items--visible');
           this.cartFooter.style.display = 'none';
           console.log('📋 Showing empty cart state');
         } else {
           // Show items
           this.cartEmpty.style.display = 'none';
-          this.cartItems.style.display = 'block';
-          this.cartItems.classList.add('naay-cart-sidebar__items--visible');
+          this.cartItems.style.display = 'flex';
+          this.cartItems.classList.add('naay-cart-panel__items--visible');
           this.cartFooter.style.display = 'block';
           console.log('📋 Showing cart with items');
           
@@ -3281,28 +3540,59 @@
       
       this.cartData.items.forEach(item => {
         const itemElement = document.createElement('div');
-        itemElement.className = 'naay-cart-sidebar__item';
+        itemElement.className = 'naay-cart-panel__item';
+        
+        // Get product image (try different image properties)
+        const imageUrl = item.image || item.featured_image || item.images?.[0] || item.product_image || null;
+        const variantTitle = item.variantTitle && item.variantTitle !== 'Default Title' ? item.variantTitle : '';
+        const unitPrice = parseFloat(item.price) || 0;
+        const totalPrice = unitPrice * item.quantity;
+        
         itemElement.innerHTML = `
-          <div class="naay-cart-sidebar__item-header">
-            <h4 class="naay-cart-sidebar__item-title">${item.title}</h4>
-            <button class="naay-cart-sidebar__item-remove" data-product-id="${item.id}">
-              <svg viewBox="0 0 24 24" fill="none">
-                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
+          <div class="naay-cart-panel__item-image-container">
+            ${imageUrl ? 
+              `<img src="${imageUrl}" alt="${item.title}" class="naay-cart-panel__item-image" loading="lazy">` :
+              `<div class="naay-cart-panel__item-image naay-cart-panel__item-image--placeholder">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M21 19V5C21 3.9 20.1 3 19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19ZM8.5 13.5L11 16.51L14.5 12L19 18H5L8.5 13.5Z" fill="currentColor"/>
+                </svg>
+              </div>`
+            }
           </div>
-          <div class="naay-cart-sidebar__item-details">
-            <div class="naay-cart-sidebar__item-quantity">
-              <button class="naay-cart-sidebar__quantity-btn" data-action="decrease" data-product-id="${item.id}">-</button>
-              <span class="naay-cart-sidebar__quantity-value">${item.quantity}</span>
-              <button class="naay-cart-sidebar__quantity-btn" data-action="increase" data-product-id="${item.id}">+</button>
+          <div class="naay-cart-panel__item-details">
+            <div class="naay-cart-panel__item-info">
+              <h4 class="naay-cart-panel__item-title">${item.title}</h4>
+              ${variantTitle ? `<p class="naay-cart-panel__item-variant">${variantTitle}</p>` : ''}
+              <div class="naay-cart-panel__item-price-info">
+                <span class="naay-cart-panel__item-unit-price">$${unitPrice.toFixed(2)} c/u</span>
+                <span class="naay-cart-panel__item-total-price">$${totalPrice.toFixed(2)}</span>
+              </div>
             </div>
-            <span class="naay-cart-sidebar__item-price">$${(parseFloat(item.price) * item.quantity).toFixed(2)}</span>
+            <div class="naay-cart-panel__item-controls">
+              <div class="naay-cart-panel__item-quantity">
+                <button class="naay-cart-panel__quantity-btn naay-cart-panel__quantity-btn--decrease" data-action="decrease" data-product-id="${item.id}" aria-label="Disminuir cantidad">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                </button>
+                <span class="naay-cart-panel__quantity-value">${item.quantity}</span>
+                <button class="naay-cart-panel__quantity-btn naay-cart-panel__quantity-btn--increase" data-action="increase" data-product-id="${item.id}" aria-label="Aumentar cantidad">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                </button>
+              </div>
+              <button class="naay-cart-panel__item-remove" data-product-id="${item.id}" aria-label="Eliminar producto">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
           </div>
         `;
         
         // Add event listeners for this item
-        const removeBtn = itemElement.querySelector('.naay-cart-sidebar__item-remove');
+        const removeBtn = itemElement.querySelector('.naay-cart-panel__item-remove');
         const decreaseBtn = itemElement.querySelector('[data-action="decrease"]');
         const increaseBtn = itemElement.querySelector('[data-action="increase"]');
         
@@ -3601,13 +3891,17 @@
   // Initialize widget function
   function initializeWidget() {
     if (window.naayWidget) {
-      console.log('✨ Naay Widget already initialized');
+      console.log('🔒 Naay Widget: Already initialized, skipping');
       return;
     }
 
-    console.log('✨ Initializing Naay Luxury Widget...');
+    console.log('🚀 Launching Naay Luxury Widget v2.1...');
     const widget = new NaayWidget();
     window.naayWidget = widget;
+    
+    // Mark as fully initialized
+    window.__NAAY_WIDGET_INITIALIZED__ = true;
+    window.__NAAY_WIDGET_LOADING__ = false;
     
     // Expose testing functions for development
     window.testNaayCart = () => {
