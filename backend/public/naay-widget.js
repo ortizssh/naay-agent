@@ -1964,7 +1964,7 @@
       }
 
       try {
-        const apiUrl = `${this.config.apiEndpoint}/api/chat`;
+        const apiUrl = `${this.config.apiEndpoint}/api/simple-chat`;
         const payload = {
           message: text,
           shop: this.config.shopDomain,
