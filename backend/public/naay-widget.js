@@ -233,7 +233,7 @@
                 
                 <div class="naay-widget__welcome">
                   <div class="naay-widget__welcome-header">
-                    <h3 class="naay-widget__welcome-title">¡Hola! ¿En qué puedo ayudarte?</h3>
+                    <h4 class="naay-widget__welcome-title">¡Hola! Soy tu asesora personal de Naay. ¿En qué puedo ayudarte? ✨🌿</h4>
                   </div>
                   <div class="naay-widget__welcome-features">
                     <div class="naay-widget__feature" data-message="¿Qué productos recomiendas para mi tipo de piel?">
@@ -242,11 +242,11 @@
                       </svg>
                       <span>Recomendaciones personalizadas para tu piel</span>
                     </div>
-                    <div class="naay-widget__feature" data-message="¿Cuáles son los ingredientes naturales más efectivos?">
+                    <div class="naay-widget__feature" data-message="¿Me ayudas a conocer mi tipo de piel?">
                       <svg class="naay-feature-icon" viewBox="0 0 20 20" fill="none">
                         <path d="M13 10V3L4 14H11L11 21L20 10H13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                       </svg>
-                      <span>Respuestas inmediatas de expertos</span>
+                      <span>Test rápido para conocer tu tipo de piel</span>
                     </div>
                     <div class="naay-widget__feature" data-message="¿Puedes ayudarme a elegir productos para mi rutina?">
                       <svg class="naay-feature-icon" viewBox="0 0 20 20" fill="none">
@@ -3406,26 +3406,6 @@
       // Cart stays visible always
     }
 
-    async proceedToCheckout() {
-      console.log('🛒 Proceeding to checkout...');
-      
-      try {
-        // If on Shopify store, redirect to native checkout
-        if (window.location.hostname.includes('myshopify.com') || 
-            window.location.hostname.includes('shopify.com')) {
-          window.location.href = '/cart';
-          return;
-        }
-        
-        // Otherwise, open checkout URL if available from API
-        // This would be the checkout URL from Shopify Storefront API
-        console.log('🛒 Opening checkout in new window...');
-        // Implementation for external checkout would go here
-        
-      } catch (error) {
-        console.error('❌ Error proceeding to checkout:', error);
-      }
-    }
 
     // Fallback method for local cart management
     addToCartLocal(product) {
@@ -3806,16 +3786,48 @@
       
       if (this.cartData.items.length === 0) {
         console.warn('Cart is empty, cannot proceed to checkout');
+        this.addMessage('Tu carrito está vacío. Agrega productos antes de proceder al checkout.', 'assistant');
         return;
       }
       
-      // Create checkout URL based on shop domain
-      const checkoutUrl = `https://${this.config.shopDomain}/cart`;
-      
-      // Open in new window
-      window.open(checkoutUrl, '_blank');
-      
-      console.log('✅ Redirected to checkout');
+      try {
+        // If we have a checkout URL from Shopify Storefront API, use it
+        if (this.cartData.checkoutUrl) {
+          console.log('🛒 Using Shopify checkout URL:', this.cartData.checkoutUrl);
+          window.open(this.cartData.checkoutUrl, '_blank');
+          return;
+        }
+        
+        // Fallback: construct checkout URL based on shop domain
+        const shopDomain = this.config.shopDomain;
+        if (!shopDomain) {
+          console.error('❌ No shop domain configured');
+          this.addMessage('Error: No se pudo obtener la información de la tienda.', 'assistant');
+          return;
+        }
+        
+        // Determine the correct checkout URL format
+        let checkoutUrl;
+        if (window.location.hostname.includes('myshopify.com') || 
+            window.location.hostname.includes('shopify.com')) {
+          // If we're on a Shopify domain, use relative path
+          checkoutUrl = '/cart';
+          window.location.href = checkoutUrl;
+        } else {
+          // External domain, open Shopify store in new window
+          checkoutUrl = `https://${shopDomain}/cart`;
+          window.open(checkoutUrl, '_blank');
+        }
+        
+        console.log('✅ Redirected to checkout:', checkoutUrl);
+        
+        // Show confirmation message
+        this.addMessage('Abriendo checkout... Serás redirigido a completar tu compra.', 'assistant');
+        
+      } catch (error) {
+        console.error('❌ Error proceeding to checkout:', error);
+        this.addMessage('Error al proceder al checkout. Por favor, inténtalo de nuevo.', 'assistant');
+      }
     }
 
     // Process cart actions and product recommendations from AI response
