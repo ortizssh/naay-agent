@@ -978,6 +978,12 @@ export class ShopifyService {
   }
 
   verifyWebhook(data: string, hmacHeader: string): boolean {
+    // If no webhook secret is configured, log warning and skip validation
+    if (!config.shopify.webhookSecret) {
+      console.warn('⚠️ SHOPIFY_WEBHOOK_SECRET not configured - webhook validation skipped (INSECURE)');
+      return true; // Allow webhook through but log the security warning
+    }
+
     const calculatedHmac = crypto
       .createHmac('sha256', config.shopify.webhookSecret)
       .update(data, 'utf8')

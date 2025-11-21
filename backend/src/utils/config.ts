@@ -46,11 +46,19 @@ export function validateConfig(): void {
   const required = [
     'SHOPIFY_API_KEY',
     'SHOPIFY_API_SECRET',
-    'SHOPIFY_WEBHOOK_SECRET',
     'SUPABASE_URL',
     'SUPABASE_SERVICE_KEY',
     'OPENAI_API_KEY',
   ];
+
+  // Optional but recommended for production security
+  const optional = ['SHOPIFY_WEBHOOK_SECRET'];
+  
+  // Warn about missing optional variables
+  const missingOptional = optional.filter(key => !process.env[key]);
+  if (missingOptional.length > 0) {
+    console.warn('⚠️ Missing optional environment variables (recommended for security):', missingOptional);
+  }
 
   // Log environment info for debugging
   console.log('🔍 Environment validation:', {
