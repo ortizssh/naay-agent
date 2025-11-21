@@ -108,6 +108,7 @@ export interface AgentAction {
     | 'cart.add'
     | 'cart.update'
     | 'cart.remove'
+    | 'cart.updateBuyerIdentity'
     | 'product.search'
     | 'product.recommend';
   params: Record<string, any>;
@@ -119,17 +120,45 @@ export interface AgentResponse {
   metadata?: {
     products_found?: number;
     search_query?: string;
+    search_type?: 'shopify_storefront' | 'shopify_admin' | 'semantic' | 'database_popular';
     execution_time?: number;
     intent?: string;
     error?: any;
     cart_status?: string;
     cart_id?: string;
+    cart_updated?: boolean;
     recommendations_found?: number;
+    recommendation_type?: 'related' | 'complementary' | 'upsell' | 'popular' | 'database_popular';
+    base_product_id?: string;
     has_cart_id?: boolean;
-    recommendation_type?: string;
     status?: string;
     response_type?: string;
     clarification_needed?: boolean;
+    source?: string;
+    total_items?: number;
+    total_amount?: string;
+    checkout_url?: string;
+    products?: Array<{
+      id: string;
+      title: string;
+      handle?: string;
+      variants?: Array<{ id: string; price: string }>;
+    }>;
+    recommendations?: Array<{
+      id: string;
+      title: string;
+      score?: number;
+      reason?: string;
+    }>;
+    cart_lines?: Array<{
+      id: string;
+      quantity: number;
+      variant_id: string;
+      product_title: string;
+    }>;
+    product_id?: string;
+    variant_id?: string;
+    quantity?: number;
   };
 }
 
@@ -483,6 +512,58 @@ export interface PerformanceMetric {
   endpoint?: string;
   timestamp: Date;
   tags?: Record<string, string>;
+}
+
+// Product search filters interface
+export interface ProductSearchFilters {
+  query?: string;
+  vendor?: string;
+  productType?: string;
+  tags?: string[];
+  priceRange?: {
+    min?: number;
+    max?: number;
+  };
+  availability?: boolean;
+  sortKey?: 'CREATED_AT' | 'UPDATED_AT' | 'TITLE' | 'PRICE' | 'VENDOR' | 'PRODUCT_TYPE' | 'BEST_SELLING' | 'RELEVANCE';
+  reverse?: boolean;
+  limit?: number;
+}
+
+// Product recommendation interface
+export interface ProductRecommendation extends ShopifyProduct {
+  score?: number;
+  reason?: string;
+}
+
+// Cart line input for adding products to cart
+export interface CartLineInput {
+  merchandiseId: string;
+  quantity: number;
+  attributes?: Array<{
+    key: string;
+    value: string;
+  }>;
+}
+
+// Extended cart interface with additional Storefront API properties
+export interface ExtendedShopifyCart extends ShopifyCart {
+  checkoutUrl?: string;
+  note?: string;
+  attributes?: Array<{
+    key: string;
+    value: string;
+  }>;
+  buyerIdentity?: {
+    email?: string;
+    phone?: string;
+    customerAccessToken?: string;
+  };
+}
+
+// Search result with similarity score for semantic search
+export interface SearchResult extends ShopifyProduct {
+  similarity: number;
 }
 
 // Enhanced Chat Context for Shopify

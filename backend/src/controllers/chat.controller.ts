@@ -82,14 +82,24 @@ router.post(
       );
 
       // Execute any cart actions if present
-      if (agentResponse.actions.length > 0 && cart_id) {
+      let updatedCartId = cart_id;
+      if (agentResponse.actions.length > 0) {
         try {
-          await executeCartActions(
+          updatedCartId = await executeCartActions(
             agentResponse.actions,
             shop,
-            cart_id,
+            cart_id || '',
             store.access_token
           );
+          
+          // Update the response metadata with the new cart ID if one was created
+          if (updatedCartId && updatedCartId !== cart_id) {
+            agentResponse.metadata = {
+              ...agentResponse.metadata,
+              cart_id: updatedCartId,
+              cart_updated: true,
+            };
+          }
         } catch (actionError) {
           logger.error('Error executing cart actions:', actionError);
           // Don't fail the whole request, but add a note to the response
@@ -290,34 +300,108 @@ async function executeCartActions(
   shop: string,
   cartId: string,
   accessToken: string
-): Promise<void> {
+): Promise<string> {
+  let currentCartId = cartId;
+  
   for (const action of actions) {
     try {
       switch (action.type) {
+        case 'cart.create':
+          // Create a new cart
+          const newCart = await shopifyService.createCart(
+            shop,
+            accessToken,
+            action.params.buyerIdentity
+          );
+          currentCartId = newCart.id;
+          logger.info('Cart created:', {
+            type: action.type,
+            shop,
+            cartId: currentCartId,
+          });
+          break;
+
         case 'cart.add':
-          // Implementation for adding to cart via Storefront API
-          logger.info('Cart action executed:', {
+          // Add items to cart via Storefront API
+          if (!currentCartId || currentCartId === 'NEW_CART') {
+            // Create cart first if needed
+            const cart = await shopifyService.createCart(shop, accessToken);
+            currentCartId = cart.id;
+          }
+
+          await shopifyService.addToCart(shop, accessToken, currentCartId, [
+            {
+              merchandiseId: action.params.variantId,
+              quantity: action.params.quantity || 1,
+              attributes: action.params.attributes || [],
+            },
+          ]);
+          
+          logger.info('Items added to cart:', {
             type: action.type,
             shop,
-            cartId,
+            cartId: currentCartId,
+            variantId: action.params.variantId,
+            quantity: action.params.quantity,
           });
           break;
+
         case 'cart.update':
-          // Implementation for updating cart
-          logger.info('Cart action executed:', {
-            type: action.type,
-            shop,
-            cartId,
-          });
+          // Update cart line quantities
+          if (currentCartId && action.params.lines) {
+            await shopifyService.updateCartLines(
+              shop,
+              accessToken,
+              currentCartId,
+              action.params.lines
+            );
+            
+            logger.info('Cart lines updated:', {
+              type: action.type,
+              shop,
+              cartId: currentCartId,
+              lines: action.params.lines,
+            });
+          }
           break;
+
         case 'cart.remove':
-          // Implementation for removing from cart
-          logger.info('Cart action executed:', {
-            type: action.type,
-            shop,
-            cartId,
-          });
+          // Remove items from cart
+          if (currentCartId && action.params.lineIds) {
+            await shopifyService.removeFromCart(
+              shop,
+              accessToken,
+              currentCartId,
+              action.params.lineIds
+            );
+            
+            logger.info('Items removed from cart:', {
+              type: action.type,
+              shop,
+              cartId: currentCartId,
+              lineIds: action.params.lineIds,
+            });
+          }
           break;
+
+        case 'cart.updateBuyerIdentity':
+          // Update buyer identity (email, phone)
+          if (currentCartId && action.params.buyerIdentity) {
+            await shopifyService.updateCartBuyerIdentity(
+              shop,
+              accessToken,
+              currentCartId,
+              action.params.buyerIdentity
+            );
+            
+            logger.info('Cart buyer identity updated:', {
+              type: action.type,
+              shop,
+              cartId: currentCartId,
+            });
+          }
+          break;
+
         default:
           logger.warn('Unknown cart action type:', action.type);
       }
@@ -326,6 +410,8 @@ async function executeCartActions(
       throw error;
     }
   }
+  
+  return currentCartId;
 }
 
 async function logChatEvent(
