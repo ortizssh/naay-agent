@@ -25,6 +25,8 @@ import settingsRoutes from '@/controllers/settings.controller';
 import adminRoutes from '@/controllers/admin.controller';
 import adminBypassRoutes from '@/controllers/admin-bypass.controller';
 import simpleChatRoutes from '@/controllers/simple-chat.controller';
+import publicCartRoutes from '@/controllers/public-cart.controller';
+import publicProductsRoutes from '@/controllers/public-products.controller';
 
 async function startServer() {
   try {
@@ -113,6 +115,26 @@ async function startServer() {
       }
 
       console.log('Simple Chat API request - CORS headers set for:', req.path);
+      next();
+    });
+
+    // Public APIs CORS middleware - for cart and products endpoints
+    app.use('/api/public', (req, res, next) => {
+      // Set CORS headers for all public API endpoints
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization, X-Requested-With'
+      );
+      res.setHeader('Access-Control-Max-Age', '86400');
+
+      // Handle OPTIONS preflight
+      if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+      }
+
+      console.log('Public API request - CORS headers set for:', req.path);
       next();
     });
 
@@ -2115,6 +2137,10 @@ async function startServer() {
       })
     );
     app.use('/api/simple-chat', simpleChatRoutes);
+
+    // Public APIs (no authentication required)
+    app.use('/api/public/cart', publicCartRoutes);
+    app.use('/api/public/products', publicProductsRoutes);
 
     app.use('/api/widget', widgetRoutes);
     app.use('/api/settings', settingsRoutes);

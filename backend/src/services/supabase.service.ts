@@ -3,6 +3,7 @@ import { config } from '@/utils/config';
 import { logger } from '@/utils/logger';
 import { withVectorSearchTracking } from './monitoring.service';
 import { cacheService } from './cache.service';
+import { EmbeddingService } from './embedding.service';
 import {
   ShopifyStore,
   ShopifyProduct,
@@ -14,6 +15,7 @@ import {
 export class SupabaseService {
   private client: SupabaseClient;
   private serviceClient: SupabaseClient;
+  private embeddingService: EmbeddingService;
 
   constructor() {
     this.client = createClient(config.supabase.url, config.supabase.anonKey);
@@ -21,6 +23,7 @@ export class SupabaseService {
       config.supabase.url,
       config.supabase.serviceKey
     );
+    this.embeddingService = new EmbeddingService();
   }
 
   async createStore(store: Omit<ShopifyStore, 'id'>): Promise<ShopifyStore> {
@@ -207,6 +210,81 @@ export class SupabaseService {
       },
       { query, limit, cached: false }
     );
+  }
+
+  // Convenience method for semantic search
+  async searchProductsSemantic(
+    shopDomain: string,
+    query: string,
+    limit: number = 10,
+    filters?: { skinType?: string; category?: string }
+  ): Promise<any[]> {
+    try {
+      // Generate embedding for the query
+      const embedding = await this.embeddingService.generateEmbedding(query);
+      
+      // Search with the embedding
+      return await this.searchProducts(shopDomain, query, embedding, limit);
+    } catch (error) {
+      logger.error('Error in semantic search:', error);
+      throw error;
+    }
+  }
+
+  async getProduct(shopDomain: string, productId: string): Promise<any | null> {
+    try {
+      const { data, error } = await this.serviceClient
+        .from('products')
+        .select(`
+          *,
+          variants (*)
+        `)
+        .eq('shop_domain', shopDomain)
+        .eq('id', productId)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No rows returned
+          return null;
+        }
+        logger.error('Error getting product:', error);
+        throw new Error(`Failed to get product: ${error.message}`);
+      }
+
+      return data;
+    } catch (error) {
+      logger.error('Error getting product:', error);
+      throw error;
+    }
+  }
+
+  async getProductByHandle(shopDomain: string, handle: string): Promise<any | null> {
+    try {
+      const { data, error } = await this.serviceClient
+        .from('products')
+        .select(`
+          *,
+          variants (*)
+        `)
+        .eq('shop_domain', shopDomain)
+        .eq('handle', handle)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No rows returned
+          return null;
+        }
+        logger.error('Error getting product by handle:', error);
+        throw new Error(`Failed to get product by handle: ${error.message}`);
+      }
+
+      return data;
+    } catch (error) {
+      logger.error('Error getting product by handle:', error);
+      throw error;
+    }
   }
 
   async createChatSession(

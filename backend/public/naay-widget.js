@@ -63,6 +63,7 @@
       
       // Cart state
       this.cartVisible = false;
+      this.cartId = null; // Shopify cart ID
       this.cartData = {
         items: [],
         total: 0,
@@ -2426,40 +2427,55 @@
     }
 
     // Test function to show product recommendations (for development)
-    testProductRecommendation() {
-      const sampleProducts = [
-        {
-          id: 'product-1',
-          title: 'Crema Hidratante Naay con Aloe Vera',
-          description: 'Crema hidratante natural con aloe vera orgánico para todo tipo de pieles.',
-          price: '24.99',
-          comparePrice: '29.99',
-          image: 'https://picsum.photos/300/200?random=1',
-          vendor: 'Naay',
-          tags: ['hidratante', 'aloe vera', 'natural'],
-          available: true,
-          handle: 'crema-hidratante-aloe-vera',
-          variants: [{ id: 'variant-1', price: '24.99' }]
-        },
-        {
-          id: 'product-2',
-          title: 'Sérum Facial Vitamina C',
-          description: 'Sérum antioxidante con vitamina C para iluminar y proteger la piel.',
-          price: '32.50',
-          image: 'https://picsum.photos/300/200?random=2',
-          vendor: 'Naay',
-          tags: ['sérum', 'vitamina c', 'antioxidante'],
-          available: true,
-          handle: 'serum-facial-vitamina-c',
-          variants: [{ id: 'variant-2', price: '32.50' }]
-        }
-      ];
+    async testProductRecommendation() {
+      console.log('🧪 Testing real product recommendations...');
       
-      sampleProducts.forEach(product => {
-        this.addProductRecommendation(product);
-      });
+      // Test with real API
+      const products = await this.getRecommendations('grasa', ['hidratación']);
       
-      console.log('🧪 Test product recommendations added');
+      if (products.length > 0) {
+        products.forEach(product => {
+          this.addProductRecommendation(product);
+        });
+        console.log('✅ Real recommendations loaded:', products);
+      } else {
+        console.log('⚠️ No products found, using sample data...');
+        
+        // Fallback to sample products
+        const sampleProducts = [
+          {
+            id: 'product-1',
+            title: 'Crema Hidratante Naay con Aloe Vera',
+            description: 'Crema hidratante natural con aloe vera orgánico para todo tipo de pieles.',
+            price: '24.99',
+            comparePrice: '29.99',
+            image: 'https://picsum.photos/300/200?random=1',
+            vendor: 'Naay',
+            tags: ['hidratante', 'aloe vera', 'natural'],
+            available: true,
+            handle: 'crema-hidratante-aloe-vera',
+            variants: [{ id: 'variant-1', price: '24.99', shopifyVariantId: 'gid://shopify/ProductVariant/1' }]
+          },
+          {
+            id: 'product-2',
+            title: 'Sérum Facial Vitamina C',
+            description: 'Sérum antioxidante con vitamina C para iluminar y proteger la piel.',
+            price: '32.50',
+            image: 'https://picsum.photos/300/200?random=2',
+            vendor: 'Naay',
+            tags: ['sérum', 'vitamina c', 'antioxidante'],
+            available: true,
+            handle: 'serum-facial-vitamina-c',
+            variants: [{ id: 'variant-2', price: '32.50', shopifyVariantId: 'gid://shopify/ProductVariant/2' }]
+          }
+        ];
+        
+        sampleProducts.forEach(product => {
+          this.addProductRecommendation(product);
+        });
+      }
+      
+      console.log('🧪 Product recommendations test completed');
     }
 
     // ======= CART FUNCTIONALITY =======
@@ -2486,8 +2502,57 @@
       console.log('✅ Cart hidden');
     }
 
-    addToCart(product) {
+    async addToCart(product) {
       console.log('🛒 Adding product to cart:', product);
+      
+      try {
+        // Add to Shopify cart via API
+        const response = await fetch(`${this.config.apiEndpoint}/api/public/cart/add`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            shop: this.config.shopDomain,
+            cartId: this.cartId,
+            variantId: product.variantId,
+            quantity: product.quantity || 1,
+          }),
+        });
+
+        const data = await response.json();
+        
+        if (data.success && data.data.cart) {
+          // Update local cart with Shopify cart data
+          this.cartId = data.data.cart.id;
+          this.syncCartFromShopify(data.data.cart);
+          
+          console.log('✅ Product added to Shopify cart:', data.data.cart);
+        } else {
+          console.error('❌ Failed to add to cart:', data);
+          // Fallback to local cart
+          this.addToCartLocal(product);
+        }
+      } catch (error) {
+        console.error('❌ Error adding to cart:', error);
+        // Fallback to local cart
+        this.addToCartLocal(product);
+      }
+      
+      this.updateCartDisplay();
+      this.showCart();
+      
+      // Auto-hide after 3 seconds unless user interacts
+      setTimeout(() => {
+        if (this.cartVisible) {
+          this.hideCart();
+        }
+      }, 3000);
+    }
+
+    // Fallback method for local cart management
+    addToCartLocal(product) {
+      console.log('🛒 Adding product to local cart (fallback):', product);
       
       // Check if product already exists in cart
       const existingItem = this.cartData.items.find(item => item.id === product.id);
@@ -2508,17 +2573,95 @@
         });
       }
       
-      this.updateCartDisplay();
-      this.showCart();
+      console.log('✅ Product added to local cart');
+    }
+
+    // Sync local cart data from Shopify cart
+    syncCartFromShopify(shopifyCart) {
+      console.log('🔄 Syncing cart from Shopify:', shopifyCart);
       
-      // Auto-hide after 3 seconds unless user interacts
-      setTimeout(() => {
-        if (this.cartVisible) {
-          this.hideCart();
+      // Transform Shopify cart lines to our format
+      this.cartData.items = shopifyCart.lines?.edges?.map(edge => ({
+        id: edge.node.id,
+        title: edge.node.merchandise?.product?.title || 'Product',
+        price: edge.node.merchandise?.priceV2?.amount || '0.00',
+        quantity: edge.node.quantity,
+        image: edge.node.merchandise?.image?.url || '',
+        variantId: edge.node.merchandise?.id || '',
+        handle: edge.node.merchandise?.product?.handle || ''
+      })) || [];
+      
+      // Update totals
+      this.cartData.total = shopifyCart.cost?.totalAmount?.amount || '0.00';
+      this.cartData.itemCount = shopifyCart.totalQuantity || 0;
+      
+      console.log('✅ Cart synced with Shopify');
+    }
+
+    // Search for products using the new endpoint
+    async searchProducts(query, skinType) {
+      console.log('🔍 Searching products:', { query, skinType });
+      
+      try {
+        const response = await fetch(`${this.config.apiEndpoint}/api/public/products/search`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            shop: this.config.shopDomain,
+            q: query,
+            limit: 5,
+            skinType: skinType
+          }),
+        });
+
+        const data = await response.json();
+        
+        if (data.success && data.data.products) {
+          console.log('✅ Products found:', data.data.products);
+          return data.data.products;
+        } else {
+          console.error('❌ Failed to search products:', data);
+          return [];
         }
-      }, 3000);
+      } catch (error) {
+        console.error('❌ Error searching products:', error);
+        return [];
+      }
+    }
+
+    // Get product recommendations
+    async getRecommendations(skinType, concerns) {
+      console.log('💡 Getting product recommendations:', { skinType, concerns });
       
-      console.log('✅ Product added to cart');
+      try {
+        const response = await fetch(`${this.config.apiEndpoint}/api/public/products/recommendations`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            shop: this.config.shopDomain,
+            skinType: skinType,
+            concerns: concerns,
+            limit: 3
+          }),
+        });
+
+        const data = await response.json();
+        
+        if (data.success && data.data.products) {
+          console.log('✅ Recommendations found:', data.data.products);
+          return data.data.products;
+        } else {
+          console.error('❌ Failed to get recommendations:', data);
+          return [];
+        }
+      } catch (error) {
+        console.error('❌ Error getting recommendations:', error);
+        return [];
+      }
     }
 
     removeFromCart(productId) {
