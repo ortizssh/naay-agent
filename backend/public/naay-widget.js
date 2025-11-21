@@ -146,14 +146,16 @@
           <div class="naay-widget__button-pulse"></div>
         </button>
         
+        <!-- Cart Button - Outside chat, positioned vertically left -->
+        <button class="naay-widget__cart-btn" id="naay-widget-cart-btn" aria-label="Abrir carrito" title="Mi Carrito">
+          <svg class="naay-widget__cart-icon" viewBox="0 0 24 24" fill="none">
+            <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19C17 19.6 16.6 20 16 20H14C13.4 20 13 19.6 13 19V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="naay-widget__cart-badge" id="naay-widget-cart-badge">0</span>
+        </button>
+
         <div class="naay-widget__chat" id="naay-widget-chat" role="dialog" aria-label="Chat de Naay">
           <div class="naay-widget__simple-header">
-            <button class="naay-widget__cart-button" id="naay-cart-button" aria-label="Abrir carrito" title="Mi Carrito">
-              <svg viewBox="0 0 24 24" fill="none">
-                <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19C17 19.6 16.6 20 16 20H14C13.4 20 13 19.6 13 19V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              <span class="naay-widget__cart-count" id="naay-cart-count">0</span>
-            </button>
             <button class="naay-widget__close" id="naay-widget-close" aria-label="Cerrar chat">
               <svg viewBox="0 0 24 24" fill="none">
                 <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/>
@@ -162,12 +164,6 @@
           </div>
           
           <main class="naay-widget__messages" id="naay-widget-messages" role="main">
-            <div class="naay-widget__cart-toggle-btn" id="naay-cart-toggle-btn" aria-label="Abrir/Cerrar carrito">
-              <svg class="naay-cart-toggle-icon" viewBox="0 0 24 24" fill="none">
-                <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19C17 19.6 16.6 20 16 20H14C13.4 20 13 19.6 13 19V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              <span class="naay-cart-toggle-count" id="naay-cart-toggle-count">0</span>
-            </div>
             
             <div class="naay-widget__welcome">
               <div class="naay-widget__welcome-header">
@@ -196,39 +192,55 @@
             </div>
           </main>
           
-          <!-- Cart Modal Slide -->
-          <div class="naay-cart__modal" id="naay-cart-modal" role="dialog" aria-labelledby="naay-cart-title" aria-hidden="true">
-            <div class="naay-cart__backdrop" id="naay-cart-backdrop"></div>
-            <div class="naay-cart__slide" id="naay-cart-slide">
-              
-              <div class="naay-cart__content" id="naay-cart-content">
-                <div class="naay-cart__empty" id="naay-cart-empty">
-                  <svg class="naay-cart__empty-icon" viewBox="0 0 24 24" fill="none">
-                    <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M12 8V12M12 16H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  <p class="naay-cart__empty-text">Tu carrito está vacío</p>
-                  <span class="naay-cart__empty-subtitle">¡Agrega productos para comenzar!</span>
-                </div>
-                
-                <div class="naay-cart__items" id="naay-cart-items" style="display: none;">
-                  <!-- Los productos se agregarán dinámicamente aquí -->
-                </div>
+        </div>
+
+        <!-- Cart Sidebar Panel - Outside chat layout -->
+        <div class="naay-cart-sidebar" id="naay-cart-sidebar" role="dialog" aria-labelledby="naay-cart-title" aria-hidden="true">
+          <div class="naay-cart-sidebar__backdrop" id="naay-cart-backdrop"></div>
+          <div class="naay-cart-sidebar__panel" id="naay-cart-panel">
+            <header class="naay-cart-sidebar__header">
+              <div class="naay-cart-sidebar__title">
+                <svg class="naay-cart-sidebar__icon" viewBox="0 0 24 24" fill="none">
+                  <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19C17 19.6 16.6 20 16 20H14C13.4 20 13 19.6 13 19V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <h3 id="naay-cart-title">Mi Carrito</h3>
+              </div>
+              <button class="naay-cart-sidebar__close" id="naay-cart-close" aria-label="Cerrar carrito">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/>
+                </svg>
+              </button>
+            </header>
+            
+            <div class="naay-cart-sidebar__content" id="naay-cart-content">
+              <div class="naay-cart-sidebar__empty" id="naay-cart-empty">
+                <svg class="naay-cart-sidebar__empty-icon" viewBox="0 0 24 24" fill="none">
+                  <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <p class="naay-cart-sidebar__empty-text">Tu carrito está vacío</p>
+                <span class="naay-cart-sidebar__empty-subtitle">¡Agrega productos para comenzar a comprar!</span>
               </div>
               
-              <footer class="naay-cart__footer" id="naay-cart-footer" style="display: none;">
-                <div class="naay-cart__total">
-                  <span class="naay-cart__total-label">Total:</span>
-                  <span class="naay-cart__total-amount" id="naay-cart-total">$0.00</span>
-                </div>
-                <button class="naay-cart__checkout" id="naay-cart-checkout">
-                  <svg viewBox="0 0 24 24" fill="none">
-                    <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  Ir al Checkout
-                </button>
-              </footer>
+              <div class="naay-cart-sidebar__items" id="naay-cart-items">
+                <!-- Los productos se agregarán dinámicamente aquí -->
+              </div>
             </div>
+            
+            <footer class="naay-cart-sidebar__footer" id="naay-cart-footer">
+              <div class="naay-cart-sidebar__summary">
+                <div class="naay-cart-sidebar__total">
+                  <span class="naay-cart-sidebar__total-label">Total:</span>
+                  <span class="naay-cart-sidebar__total-amount" id="naay-cart-total">$0.00</span>
+                </div>
+                <button class="naay-cart-sidebar__checkout" id="naay-cart-checkout">
+                  <svg viewBox="0 0 20 20" fill="none">
+                    <path d="M10 2L3 7V18C3 18.6 3.4 19 4 19H16C16.6 19 17 18.6 17 18V7L10 2Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M9 21V10H11V21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Finalizar Compra
+                </button>
+              </div>
+            </footer>
           </div>
           
           <footer class="naay-widget__input-area">
@@ -275,27 +287,26 @@
       this.resetButton = this.container.querySelector('#naay-widget-reset');
       this.closeButton = this.container.querySelector('#naay-widget-close');
 
-      // Cart elements - now using modal structure
-      this.cartModal = this.container.querySelector('#naay-cart-modal');
+      // Cart elements - new sidebar structure
+      this.cartButton = this.container.querySelector('#naay-widget-cart-btn');
+      this.cartBadge = this.container.querySelector('#naay-widget-cart-badge');
+      this.cartSidebar = this.container.querySelector('#naay-cart-sidebar');
       this.cartBackdrop = this.container.querySelector('#naay-cart-backdrop');
-      this.cartSlide = this.container.querySelector('#naay-cart-slide');
+      this.cartPanel = this.container.querySelector('#naay-cart-panel');
       this.cartContent = this.container.querySelector('#naay-cart-content');
       this.cartEmpty = this.container.querySelector('#naay-cart-empty');
       this.cartItems = this.container.querySelector('#naay-cart-items');
       this.cartFooter = this.container.querySelector('#naay-cart-footer');
-      
-      // Cart toggle button in conversation
-      this.cartToggleBtn = this.container.querySelector('#naay-cart-toggle-btn');
-      this.cartToggleCount = this.container.querySelector('#naay-cart-toggle-count');
       this.cartTotal = this.container.querySelector('#naay-cart-total');
       this.cartCheckout = this.container.querySelector('#naay-cart-checkout');
+      this.cartClose = this.container.querySelector('#naay-cart-close');
 
       console.log('✨ Luxury DOM Elements found:', {
         button: !!this.button,
         chat: !!this.chat,
         input: !!this.input,
         promotional: !!this.promotionalMessage,
-        cart: !!this.cartPanel
+        cart: !!this.cartSidebar
       });
     }
 
@@ -2035,19 +2046,18 @@
       });
       console.log('✅ Feature cards event listeners added:', featureCards.length);
 
-      // Cart toggle
-      if (this.cartToggle) {
-        this.cartToggle.addEventListener('click', (e) => {
+      // Cart button - main toggle
+      if (this.cartButton) {
+        this.cartButton.addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
-          console.log('✨ Cart toggle clicked!');
-          this.hideCart();
+          console.log('✨ Cart button clicked!');
+          this.toggleCart();
         });
-        console.log('✅ Cart toggle event listener added');
+        console.log('✅ Cart button event listener added');
       }
 
-      
-      // Cart modal backdrop - close on click
+      // Cart sidebar backdrop - close on click
       if (this.cartBackdrop) {
         this.cartBackdrop.addEventListener('click', (e) => {
           e.preventDefault();
@@ -2058,15 +2068,15 @@
         console.log('✅ Cart backdrop event listener added');
       }
       
-      // Cart toggle button in conversation
-      if (this.cartToggleBtn) {
-        this.cartToggleBtn.addEventListener('click', (e) => {
+      // Cart close button
+      if (this.cartClose) {
+        this.cartClose.addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
-          console.log('✨ Cart toggle in conversation clicked!');
-          this.toggleCart();
+          console.log('✨ Cart close button clicked!');
+          this.hideCart();
         });
-        console.log('✅ Cart toggle in conversation event listener added');
+        console.log('✅ Cart close button event listener added');
       }
 
       // Cart checkout
@@ -2686,23 +2696,25 @@
 
 
     showCart() {
-      console.log('🛒 Showing cart modal...');
+      console.log('🛒 Showing cart sidebar...');
       this.cartVisible = true;
-      if (this.cartModal) {
-        this.cartModal.classList.add('naay-cart__modal--open');
-        this.cartModal.setAttribute('aria-hidden', 'false');
+      if (this.cartSidebar) {
+        this.cartSidebar.classList.add('naay-cart-sidebar--open');
+        this.cartSidebar.setAttribute('aria-hidden', 'false');
       }
-      console.log('✅ Cart modal shown');
+      // Update cart display to show latest items
+      this.updateCartDisplay();
+      console.log('✅ Cart sidebar shown');
     }
 
     hideCart() {
-      console.log('🛒 Hiding cart modal...');
+      console.log('🛒 Hiding cart sidebar...');
       this.cartVisible = false;
-      if (this.cartModal) {
-        this.cartModal.classList.remove('naay-cart__modal--open');
-        this.cartModal.setAttribute('aria-hidden', 'true');
+      if (this.cartSidebar) {
+        this.cartSidebar.classList.remove('naay-cart-sidebar--open');
+        this.cartSidebar.setAttribute('aria-hidden', 'true');
       }
-      console.log('✅ Cart modal hidden');
+      console.log('✅ Cart sidebar hidden');
     }
 
     async addToCart(product) {
@@ -2914,53 +2926,71 @@
     }
 
     updateCartDisplay() {
+      console.log('🛒 Updating cart display. Current cart data:', this.cartData);
+      
+      // Ensure cartData.items is an array
+      if (!Array.isArray(this.cartData.items)) {
+        console.warn('⚠️ Cart items is not an array, resetting to empty array');
+        this.cartData.items = [];
+      }
+      
       // Calculate totals
       let total = 0;
       let itemCount = 0;
       
       this.cartData.items.forEach(item => {
-        total += parseFloat(item.price) * item.quantity;
-        itemCount += item.quantity;
+        const itemPrice = parseFloat(item.price) || 0;
+        const itemQuantity = parseInt(item.quantity) || 0;
+        total += itemPrice * itemQuantity;
+        itemCount += itemQuantity;
       });
       
       this.cartData.total = total;
       this.cartData.itemCount = itemCount;
       
-      // Update UI
-      if (this.cartData.items.length === 0) {
-        this.cartEmpty.style.display = 'flex';
-        this.cartItems.style.display = 'none';
-        this.cartFooter.style.display = 'none';
-      } else {
-        this.cartEmpty.style.display = 'none';
-        this.cartItems.style.display = 'flex';
-        this.cartFooter.style.display = 'block';
-        
-        // Update total
-        if (this.cartTotal) {
-          this.cartTotal.textContent = `$${total.toFixed(2)}`;
-        }
-        
-        // Render cart items
-        this.renderCartItems();
-      }
+      console.log('📊 Cart calculations: items count =', this.cartData.items.length, ', total items =', itemCount, ', total price =', total);
       
-      // Update cart counters in both locations
-      const cartCount = this.container.querySelector('#naay-cart-count');
-      if (cartCount) {
-        cartCount.textContent = itemCount > 0 ? itemCount : '0';
-      }
+      // Update UI based on cart content
+      const hasItems = this.cartData.items.length > 0 && itemCount > 0;
       
-      if (this.cartToggleCount) {
-        if (itemCount > 0) {
-          this.cartToggleCount.textContent = itemCount;
-          this.cartToggleCount.style.display = 'flex';
+      if (this.cartEmpty && this.cartItems && this.cartFooter) {
+        if (!hasItems) {
+          // Show empty state
+          this.cartEmpty.style.display = 'flex';
+          this.cartItems.style.display = 'none';
+          this.cartItems.classList.remove('naay-cart-sidebar__items--visible');
+          this.cartFooter.style.display = 'none';
+          console.log('📋 Showing empty cart state');
         } else {
-          this.cartToggleCount.style.display = 'none';
+          // Show items
+          this.cartEmpty.style.display = 'none';
+          this.cartItems.style.display = 'block';
+          this.cartItems.classList.add('naay-cart-sidebar__items--visible');
+          this.cartFooter.style.display = 'block';
+          console.log('📋 Showing cart with items');
+          
+          // Update total
+          if (this.cartTotal) {
+            this.cartTotal.textContent = `$${total.toFixed(2)}`;
+          }
+          
+          // Render cart items
+          this.renderCartItems();
         }
       }
       
-      console.log('🛒 Cart display updated:', this.cartData);
+      // Update cart badge
+      if (this.cartBadge) {
+        if (itemCount > 0) {
+          this.cartBadge.textContent = itemCount;
+          this.cartBadge.style.display = 'flex';
+        } else {
+          this.cartBadge.textContent = '0';
+          this.cartBadge.style.display = 'none';
+        }
+      }
+      
+      console.log('✅ Cart display updated successfully. Has items:', hasItems, 'Item count:', itemCount);
     }
 
     renderCartItems() {
@@ -2970,28 +3000,28 @@
       
       this.cartData.items.forEach(item => {
         const itemElement = document.createElement('div');
-        itemElement.className = 'naay-cart__item';
+        itemElement.className = 'naay-cart-sidebar__item';
         itemElement.innerHTML = `
-          <div class="naay-cart__item-header">
-            <h4 class="naay-cart__item-title">${item.title}</h4>
-            <button class="naay-cart__item-remove" data-product-id="${item.id}">
+          <div class="naay-cart-sidebar__item-header">
+            <h4 class="naay-cart-sidebar__item-title">${item.title}</h4>
+            <button class="naay-cart-sidebar__item-remove" data-product-id="${item.id}">
               <svg viewBox="0 0 24 24" fill="none">
                 <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </button>
           </div>
-          <div class="naay-cart__item-details">
-            <div class="naay-cart__item-quantity">
-              <button class="naay-cart__quantity-btn" data-action="decrease" data-product-id="${item.id}">-</button>
-              <span class="naay-cart__quantity-value">${item.quantity}</span>
-              <button class="naay-cart__quantity-btn" data-action="increase" data-product-id="${item.id}">+</button>
+          <div class="naay-cart-sidebar__item-details">
+            <div class="naay-cart-sidebar__item-quantity">
+              <button class="naay-cart-sidebar__quantity-btn" data-action="decrease" data-product-id="${item.id}">-</button>
+              <span class="naay-cart-sidebar__quantity-value">${item.quantity}</span>
+              <button class="naay-cart-sidebar__quantity-btn" data-action="increase" data-product-id="${item.id}">+</button>
             </div>
-            <span class="naay-cart__item-price">$${(parseFloat(item.price) * item.quantity).toFixed(2)}</span>
+            <span class="naay-cart-sidebar__item-price">$${(parseFloat(item.price) * item.quantity).toFixed(2)}</span>
           </div>
         `;
         
         // Add event listeners for this item
-        const removeBtn = itemElement.querySelector('.naay-cart__item-remove');
+        const removeBtn = itemElement.querySelector('.naay-cart-sidebar__item-remove');
         const decreaseBtn = itemElement.querySelector('[data-action="decrease"]');
         const increaseBtn = itemElement.querySelector('[data-action="increase"]');
         
@@ -3324,7 +3354,36 @@
       return 'Cart is now hidden!';
     };
     
-    console.log('✨ Naay Widget initialized! Use window.testNaayCart(), window.testNaayProduct(), window.showNaayCart() and window.hideNaayCart() to test functionality.');
+    // Additional testing function for new cart design
+    window.testNewCartDesign = () => {
+      console.log('🎨 Testing new cart sidebar design...');
+      
+      // Add a test product
+      const testProduct = {
+        id: 'test-' + Date.now(),
+        title: 'Test Product - New Cart Design',
+        price: '29.99',
+        variantId: 'test-variant-123',
+        quantity: 1
+      };
+      
+      widget.addToCartLocal(testProduct);
+      widget.showCart();
+      
+      return 'New cart design test completed! Check the sidebar cart.';
+    };
+
+    window.clearNaayCart = () => {
+      console.log('🗑️ Clearing Naay Cart...');
+      widget.cartData.items = [];
+      widget.updateCartDisplay();
+      return 'Cart cleared successfully!';
+    };
+    
+    console.log('✨ Naay Widget initialized! New cart features ready:');
+    console.log('🛒 Use window.testNewCartDesign() to test the new sidebar cart');
+    console.log('📋 Use window.clearNaayCart() to clear cart items');
+    console.log('🔄 Use window.showNaayCart() / window.hideNaayCart() to control visibility');
   }
 
   // Single initialization based on document state
