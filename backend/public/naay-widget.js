@@ -61,8 +61,9 @@
       this.messages = [];
       this.conversationId = this.getStoredConversationId();
       
-      // Cart state - always visible by default
-      this.cartVisible = true;
+      // Cart state - visible only when chat is open
+      this.cartVisible = false;
+      this.cartMinimized = false;
       this.cartId = null; // Shopify cart ID
       this.cartData = {
         items: [],
@@ -84,7 +85,6 @@
         this.addEventListeners();
         this.loadConversationHistory();
         this.loadShopifyCart(); // Load existing Shopify cart
-        this.showCart(); // Always show cart on init
         this.setupShopifyCartSync(); // Setup real-time sync
       }).catch(error => {
         console.error('Failed to load widget settings, using defaults:', error);
@@ -92,7 +92,6 @@
         this.setupElements();
         this.addEventListeners();
         this.loadShopifyCart(); // Load existing Shopify cart
-        this.showCart(); // Always show cart on init
         this.setupShopifyCartSync(); // Setup real-time sync
       });
     }
@@ -150,11 +149,18 @@
               </svg>
               Mi Carrito
             </h3>
-            <button class="naay-cart__toggle" id="naay-cart-toggle" aria-label="Cerrar carrito">
-              <svg viewBox="0 0 24 24" fill="none">
-                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
+            <div class="naay-cart__actions">
+              <button class="naay-cart__minimize" id="naay-cart-minimize" aria-label="Minimizar carrito">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+              <button class="naay-cart__toggle" id="naay-cart-toggle" aria-label="Cerrar carrito">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
           </header>
           
           <div class="naay-cart__content" id="naay-cart-content">
@@ -286,6 +292,7 @@
       // Cart elements
       this.cartPanel = this.container.querySelector('#naay-widget-cart');
       this.cartToggle = this.container.querySelector('#naay-cart-toggle');
+      this.cartMinimize = this.container.querySelector('#naay-cart-minimize');
       this.cartContent = this.container.querySelector('#naay-cart-content');
       this.cartEmpty = this.container.querySelector('#naay-cart-empty');
       this.cartItems = this.container.querySelector('#naay-cart-items');
@@ -587,33 +594,49 @@
           visibility: hidden !important;
         }
 
-        /* Luxury Cart Panel */
+        /* Luxury Cart Panel - positioned to the left of chat */
         .naay-widget__cart-panel {
           position: absolute !important;
           bottom: 88px !important;
-          right: calc(100% + 16px) !important;
-          width: 320px !important;
+          right: calc(100% + 420px) !important; /* Position to left of chat (400px chat width + 20px gap) */
+          width: 360px !important;
           height: 620px !important;
+          /* Same glassmorphism style as chat */
           background: rgba(248, 249, 248, 0.98) !important;
-          backdrop-filter: blur(20px) !important;
-          -webkit-backdrop-filter: blur(20px) !important;
-          border-radius: 16px !important;
-          border: 1px solid rgba(212, 196, 184, 0.3) !important;
-          box-shadow: var(--naay-shadow-strong) !important;
+          backdrop-filter: blur(24px) !important;
+          -webkit-backdrop-filter: blur(24px) !important;
+          border-radius: 20px !important;
+          border: 1px solid rgba(168, 130, 107, 0.15) !important;
+          box-shadow: 
+            0 32px 64px rgba(168, 130, 107, 0.12),
+            0 16px 32px rgba(168, 130, 107, 0.08),
+            0 8px 16px rgba(168, 130, 107, 0.05),
+            inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
           display: none !important;
           flex-direction: column !important;
           overflow: hidden !important;
-          transform: translateX(-24px) translateY(32px) scale(0.95) !important;
+          transform: translateX(-32px) translateY(24px) scale(0.92) !important;
           opacity: 0 !important;
           visibility: hidden !important;
-          transition: all 400ms var(--naay-transition) !important;
-          z-index: 999998 !important;
+          transition: all 450ms cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+          z-index: 999997 !important;
         }
 
         .naay-widget--bottom-left .naay-widget__cart-panel {
           right: auto !important;
-          left: calc(100% + 16px) !important;
-          transform: translateX(24px) translateY(32px) scale(0.95) !important;
+          left: calc(100% + 420px) !important; /* Position to right of chat for left-positioned widget */
+          transform: translateX(32px) translateY(24px) scale(0.92) !important;
+        }
+
+        /* Cart panel minimized state */
+        .naay-widget__cart-panel--minimized {
+          height: 60px !important;
+          overflow: hidden !important;
+        }
+        
+        .naay-widget__cart-panel--minimized .naay-cart__content,
+        .naay-widget__cart-panel--minimized .naay-cart__footer {
+          display: none !important;
         }
 
         .naay-widget--cart-open .naay-widget__cart-panel {
@@ -630,8 +653,8 @@
           display: flex !important;
           align-items: center !important;
           justify-content: space-between !important;
-          border-top-left-radius: 16px !important;
-          border-top-right-radius: 16px !important;
+          border-top-left-radius: 20px !important;
+          border-top-right-radius: 20px !important;
         }
 
         .naay-cart__title {
@@ -666,6 +689,37 @@
         .naay-cart__toggle svg {
           width: 14px !important;
           height: 14px !important;
+        }
+
+        .naay-cart__actions {
+          display: flex !important;
+          align-items: center !important;
+          gap: 8px !important;
+        }
+
+        .naay-cart__minimize {
+          background: rgba(255, 255, 255, 0.15) !important;
+          border: none !important;
+          border-radius: 8px !important;
+          padding: 8px !important;
+          color: var(--naay-white) !important;
+          cursor: pointer !important;
+          transition: all 0.2s var(--naay-transition) !important;
+        }
+
+        .naay-cart__minimize:hover {
+          background: rgba(255, 255, 255, 0.25) !important;
+          transform: scale(1.1) !important;
+        }
+
+        .naay-cart__minimize svg {
+          width: 14px !important;
+          height: 14px !important;
+          transition: transform 0.2s var(--naay-transition) !important;
+        }
+
+        .naay-widget__cart-panel--minimized .naay-cart__minimize svg {
+          transform: rotate(180deg) !important;
         }
 
         .naay-cart__content {
@@ -1883,9 +1937,20 @@
           e.preventDefault();
           e.stopPropagation();
           console.log('✨ Cart toggle clicked!');
-          this.toggleCart();
+          this.hideCart();
         });
         console.log('✅ Cart toggle event listener added');
+      }
+
+      // Cart minimize
+      if (this.cartMinimize) {
+        this.cartMinimize.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('✨ Cart minimize clicked!');
+          this.toggleCartMinimize();
+        });
+        console.log('✅ Cart minimize event listener added');
       }
 
       // Cart checkout
@@ -1927,6 +1992,9 @@
       this.button.setAttribute('aria-expanded', 'true');
       console.log('✅ Classes after open:', this.container.className);
       
+      // Show cart when chat opens
+      this.showCart();
+      
       // Focus input with delay for smooth animation
       setTimeout(() => {
         if (this.input) {
@@ -1938,6 +2006,9 @@
     close() {
       console.log('✨ Closing luxury chat...');
       this.isOpen = false;
+      
+      // Hide cart when chat closes
+      this.hideCart();
       
       // Add closing animation class first
       this.container.classList.add('naay-widget--closing');
@@ -2488,9 +2559,22 @@
     // ======= CART FUNCTIONALITY =======
 
     toggleCart() {
-      // Cart is always visible, so we just log the interaction
-      console.log('🛒 Cart toggle clicked - cart remains visible');
-      // Optionally could implement a minimize/maximize feature here
+      if (this.cartVisible) {
+        this.hideCart();
+      } else {
+        this.showCart();
+      }
+    }
+
+    toggleCartMinimize() {
+      this.cartMinimized = !this.cartMinimized;
+      console.log('🛒 Cart minimize toggled:', this.cartMinimized);
+      
+      if (this.cartMinimized) {
+        this.cartPanel.classList.add('naay-widget__cart-panel--minimized');
+      } else {
+        this.cartPanel.classList.remove('naay-widget__cart-panel--minimized');
+      }
     }
 
     showCart() {
@@ -2555,6 +2639,27 @@
       
       this.updateCartDisplay();
       // Cart stays visible always
+    }
+
+    async proceedToCheckout() {
+      console.log('🛒 Proceeding to checkout...');
+      
+      try {
+        // If on Shopify store, redirect to native checkout
+        if (window.location.hostname.includes('myshopify.com') || 
+            window.location.hostname.includes('shopify.com')) {
+          window.location.href = '/cart';
+          return;
+        }
+        
+        // Otherwise, open checkout URL if available from API
+        // This would be the checkout URL from Shopify Storefront API
+        console.log('🛒 Opening checkout in new window...');
+        // Implementation for external checkout would go here
+        
+      } catch (error) {
+        console.error('❌ Error proceeding to checkout:', error);
+      }
     }
 
     // Fallback method for local cart management
