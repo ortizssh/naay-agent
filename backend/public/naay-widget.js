@@ -2829,20 +2829,20 @@
       }
 
       try {
-        const apiUrl = `${this.config.apiEndpoint}/api/simple-chat`;
+        const apiUrl = 'https://n8n.dustkey.com/webhook/f9c8bcb3-2729-4fe4-8c1a-68474ee4eced/chat';
         const payload = {
           message: text,
           shop: this.config.shopDomain,
           conversationId: this.conversationId
         };
 
-        console.log('🌿 Naay Chat: Sending message to API', {
+        console.log('🌿 Naay Chat: Sending message to n8n webhook', {
           url: apiUrl,
           payload: payload,
           shopDomain: this.config.shopDomain
         });
 
-        // Send to API with enhanced error handling
+        // Send to n8n webhook with enhanced error handling
         const response = await fetch(apiUrl, {
           method: 'POST',
           headers: {
