@@ -226,6 +226,12 @@
                   <span class="naay-cart-toggle-count" id="naay-widget-cart-count">0</span>
                 </button>
                 
+                <button class="naay-widget__back-btn" id="naay-widget-back-btn" aria-label="Volver">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                
                 <button class="naay-widget__close" id="naay-widget-close" aria-label="Cerrar chat">
                   <svg viewBox="0 0 24 24" fill="none">
                     <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/>
@@ -310,6 +316,7 @@
       this.sendButton = this.container.querySelector('#naay-widget-send');
       this.resetButton = this.container.querySelector('#naay-widget-reset');
       this.closeButton = this.container.querySelector('#naay-widget-close');
+      this.backButton = this.container.querySelector('#naay-widget-back-btn');
 
       // Cart elements - new layout structure
       this.cartSmallToggle = this.container.querySelector('#naay-widget-cart-toggle-btn'); // Small cart button in chat
@@ -1004,7 +1011,7 @@
           font-size: 15px !important;
           font-weight: var(--naay-font-weight-semibold) !important;
           cursor: pointer !important;
-          transition: all 0.3s var(--naay-transition) !important;
+          transition: none !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
@@ -1030,7 +1037,7 @@
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
           overflow: hidden !important;
           box-shadow: 0 2px 8px rgba(168, 130, 107, 0.08) !important;
-          transition: all 0.3s var(--naay-transition) !important;
+          transition: none !important;
           margin: 8px 0 !important;
           width: 100% !important;
           max-width: 100% !important;
@@ -1040,10 +1047,7 @@
           min-height: 90px !important;
         }
 
-        .naay-product-card:hover {
-          transform: translateY(-2px) !important;
-          box-shadow: 0 4px 12px rgba(168, 130, 107, 0.12) !important;
-        }
+        /* Hover effects removed */
 
         .naay-product-card__header {
           display: flex !important;
@@ -1085,19 +1089,18 @@
           align-items: center !important;
           justify-content: center !important;
           border-radius: 10px !important;
+          align-self: center !important;
         }
 
         .naay-product-card__image {
           width: 100% !important;
           height: 100% !important;
           object-fit: cover !important;
-          transition: transform 0.3s var(--naay-transition) !important;
+          transition: none !important;
           border-radius: 10px !important;
         }
 
-        .naay-product-card:hover .naay-product-card__image {
-          transform: scale(1.05) !important;
-        }
+        /* Image hover effect removed */
 
         .naay-product-card__placeholder {
           display: flex !important;
@@ -1128,9 +1131,7 @@
           transition: opacity 0.3s var(--naay-transition) !important;
         }
 
-        .naay-product-card:hover .naay-product-card__overlay {
-          opacity: 1 !important;
-        }
+        /* Overlay hover effect removed */
 
         .naay-product-card__quick-view {
           background: rgba(248, 249, 248, 0.95) !important;
@@ -1147,10 +1148,7 @@
           justify-content: center !important;
         }
 
-        .naay-product-card__quick-view:hover {
-          background: var(--naay-white) !important;
-          transform: scale(1.1) !important;
-        }
+        /* Quick view hover effect removed */
 
         .naay-product-card__quick-view svg {
           width: 20px !important;
@@ -1249,7 +1247,7 @@
           font-size: 11px !important;
           font-weight: var(--naay-font-weight-semibold) !important;
           cursor: pointer !important;
-          transition: all 0.3s var(--naay-transition) !important;
+          transition: none !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
@@ -1257,10 +1255,7 @@
           box-shadow: 0 2px 8px rgba(168, 130, 107, 0.3) !important;
         }
 
-        .naay-product-card__add-btn:hover {
-          transform: translateY(-2px) !important;
-          box-shadow: 0 4px 12px rgba(168, 130, 107, 0.4) !important;
-        }
+        /* Add button hover effect removed */
 
         .naay-product-card__add-btn--disabled {
           background: rgba(168, 130, 107, 0.3) !important;
@@ -1304,10 +1299,7 @@
           min-width: 60px !important;
         }
 
-        .naay-product-card__details-btn:hover {
-          background: rgba(168, 130, 107, 0.2) !important;
-          border-color: var(--naay-perfect) !important;
-        }
+        /* Details button hover effect removed */
 
         .naay-product-card__details-btn svg {
           width: 10px !important;
@@ -1328,7 +1320,7 @@
           justify-content: center !important;
           opacity: 0 !important;
           visibility: hidden !important;
-          transition: all 0.3s var(--naay-transition) !important;
+          transition: none !important;
         }
 
         .naay-product-modal--visible {
@@ -1434,7 +1426,7 @@
           font-size: 16px !important;
           font-weight: var(--naay-font-weight-semibold) !important;
           cursor: pointer !important;
-          transition: all 0.3s var(--naay-transition) !important;
+          transition: none !important;
           box-shadow: 0 4px 16px rgba(168, 130, 107, 0.3) !important;
         }
 
@@ -1538,7 +1530,7 @@
           border-radius: 8px !important;
           padding: 6px !important;
           cursor: pointer !important;
-          transition: all 0.3s var(--naay-transition) !important;
+          transition: none !important;
           box-shadow: 0 2px 8px rgba(168, 130, 107, 0.1) !important;
           display: flex !important;
           align-items: center !important;
@@ -1552,6 +1544,36 @@
           border-color: var(--naay-perfect) !important;
           transform: translateY(-2px) !important;
           box-shadow: 0 4px 16px rgba(168, 130, 107, 0.2) !important;
+        }
+
+        /* Back Button in Conversation */
+        .naay-widget__back-btn {
+          position: relative !important;
+          background: rgba(255, 255, 255, 0.95) !important;
+          border: 1px solid rgba(212, 196, 184, 0.3) !important;
+          border-radius: 8px !important;
+          padding: 6px !important;
+          cursor: pointer !important;
+          transition: none !important;
+          box-shadow: 0 2px 8px rgba(168, 130, 107, 0.1) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          width: 28px !important;
+          height: 28px !important;
+        }
+
+        .naay-widget__back-btn:hover {
+          background: var(--naay-white) !important;
+          border-color: var(--naay-perfect) !important;
+          transform: translateY(-2px) !important;
+          box-shadow: 0 4px 16px rgba(168, 130, 107, 0.2) !important;
+        }
+
+        .naay-widget__back-btn svg {
+          width: 14px !important;
+          height: 14px !important;
+          color: var(--naay-perfect) !important;
         }
 
         .naay-cart-toggle-icon {
@@ -1654,7 +1676,7 @@
           background: rgba(255, 255, 255, 0.7) !important;
           border-radius: 8px !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
-          transition: all 0.3s var(--naay-transition) !important;
+          transition: none !important;
           cursor: pointer !important;
         }
 
@@ -1713,7 +1735,7 @@
           background: var(--naay-white) !important;
           color: var(--naay-black) !important;
           outline: none !important;
-          transition: all 0.3s var(--naay-transition) !important;
+          transition: none !important;
           box-sizing: border-box !important;
         }
 
@@ -1735,7 +1757,7 @@
           border: none !important;
           border-radius: 12px !important;
           cursor: pointer !important;
-          transition: all 0.3s var(--naay-transition) !important;
+          transition: none !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
@@ -1767,7 +1789,7 @@
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
           border-radius: 8px !important;
           cursor: pointer !important;
-          transition: all 0.3s var(--naay-transition) !important;
+          transition: none !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
@@ -2507,7 +2529,7 @@
           font-size: 16px !important;
           font-weight: var(--naay-font-weight-bold) !important;
           cursor: pointer !important;
-          transition: all 0.3s var(--naay-transition) !important;
+          transition: none !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
@@ -2697,6 +2719,17 @@
           this.close();
         });
         console.log('✅ Close button event listener added');
+      }
+
+      // Back button
+      if (this.backButton) {
+        this.backButton.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('✨ Back button clicked!');
+          this.resetConversation();
+        });
+        console.log('✅ Back button event listener added');
       }
 
       // Send message on Enter key
@@ -3032,6 +3065,55 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       console.log('🧪 Test functions available:');
       console.log('  - window.testCartFunctionality() - Add test product to cart');
       console.log('  - window.testCartButtons() - Test quantity and remove buttons');
+      
+      // Debug function to check cart panel visibility
+      window.debugCartPanel = function() {
+        console.log('🔍 Cart Panel Debug Info:');
+        console.log('  - Cart panel exists:', !!widget.cartPanel);
+        console.log('  - Cart panel ID:', widget.cartPanel?.id);
+        console.log('  - Cart visible state:', widget.cartVisible);
+        console.log('  - Cart panel classes:', widget.cartPanel?.className);
+        console.log('  - Cart panel style:', widget.cartPanel?.style.cssText);
+        console.log('  - Cart panel computed styles:', widget.cartPanel ? window.getComputedStyle(widget.cartPanel) : 'N/A');
+        console.log('  - Cart toggle button exists:', !!widget.cartSmallToggle);
+        console.log('  - Cart close button exists:', !!widget.cartClose);
+        
+        if (widget.cartPanel) {
+          const rect = widget.cartPanel.getBoundingClientRect();
+          console.log('  - Cart panel position:', rect);
+          console.log('  - Cart panel visible in viewport:', rect.width > 0 && rect.height > 0);
+        }
+        
+        return 'Debug info logged to console';
+      }.bind(this);
+      
+      // Force show cart function
+      window.forceShowCart = function() {
+        console.log('🛒 Force showing cart panel...');
+        
+        if (!widget.cartPanel) {
+          console.error('❌ Cart panel not found!');
+          return 'Cart panel not found in DOM';
+        }
+        
+        // Force visibility
+        widget.cartPanel.style.opacity = '1';
+        widget.cartPanel.style.visibility = 'visible';
+        widget.cartPanel.style.pointerEvents = 'auto';
+        widget.cartPanel.style.transform = 'translateX(0) scale(1)';
+        widget.cartPanel.classList.add('naay-cart-panel--open');
+        widget.cartVisible = true;
+        
+        // Update display
+        widget.updateCartDisplay();
+        
+        console.log('✅ Cart panel forced to show');
+        return 'Cart panel forced visible - check the left side of the chat';
+      }.bind(this);
+      
+      console.log('🧪 Debug functions available:');
+      console.log('  - window.debugCartPanel() - Show cart panel debug info');
+      console.log('  - window.forceShowCart() - Force cart panel to be visible');
       
       // Mark event listeners as added to prevent duplicates
       this.eventListenersAdded = true;
