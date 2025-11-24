@@ -2803,6 +2803,56 @@
       
       console.log('🧪 Test function available: window.testProductRecommendations()');
       
+      // Test function for mixed text and product JSON
+      window.testMixedResponse = function() {
+        console.log('🧪 Testing mixed text and JSON response...');
+        
+        // Simulate the exact response from the screenshot
+        const mixedResponse = `Te recomiendo nuevamente el producto:
+
+### Loving Touch | Aceite de Masaje | My Little One
+
+Este aceite es ideal para cuidar e hidratar la delicada piel de bebés y niños, gracias a su fórmula con aceite de sésamo, caléndula, rosa mosqueta y manzanilla que calma y protege la piel sensible. Perfecto para masajes tras el baño o para calmar irritaciones.
+
+Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda que tengas sobre su uso.
+
+{
+"output": [
+{
+"product": {
+"id": 14890558325102,
+"title": "Loving Touch | Aceite de Masaje | My Little One",
+"image": {
+"src": ""
+},
+"price": 0,
+"handle": "loving-touch-aceite-de-masaje-my-little-one",
+"variant_id": 53019925709166
+}
+}
+]
+}`;
+
+        // Test the automatic detection and parsing
+        const parseResult = widget.parseProductsFromText(mixedResponse);
+        
+        console.log('Parsed result:', parseResult);
+        
+        // Add the clean text
+        if (parseResult.cleanText) {
+          widget.addMessage(parseResult.cleanText, 'assistant');
+        }
+        
+        // Add products if found
+        if (parseResult.products.length > 0) {
+          widget.addProductRecommendations(parseResult.products);
+        }
+        
+        return 'Mixed response test completed! Check the chat.';
+      }.bind(this);
+      
+      console.log('🧪 Test function available: window.testMixedResponse()');
+      
       // Mark event listeners as added to prevent duplicates
       this.eventListenersAdded = true;
       console.log('✅ Event listeners successfully added and flagged');
@@ -2975,8 +3025,26 @@
             assistantMessage = '🔧 El asistente está procesando tu mensaje. El flujo de n8n necesita configurar una respuesta.';
           }
           
+          // Parse products from text if not already found
+          if (!hasProducts) {
+            console.log('🔍 Processing n8n response for JSON detection. Message:', assistantMessage);
+            const parseResult = this.parseProductsFromText(assistantMessage);
+            console.log('🔍 Parse result:', parseResult);
+            if (parseResult.products.length > 0) {
+              hasProducts = true;
+              products = parseResult.products;
+              // Use the clean text without JSON
+              assistantMessage = parseResult.cleanText || '🌿 Te recomiendo estos productos perfectos para ti:';
+              console.log('🔍 Products found! Using clean text:', assistantMessage);
+            } else {
+              console.log('🔍 No products found in text response');
+            }
+          }
+          
           // Add the message
-          this.addMessage(assistantMessage, 'assistant');
+          if (assistantMessage) {
+            this.addMessage(assistantMessage, 'assistant');
+          }
           
           // Add product recommendations if present
           if (hasProducts && products.length > 0) {
@@ -3070,6 +3138,80 @@
     }
 
     // ======= PRODUCT RECOMMENDATION WIDGET =======
+
+    // Extract and parse JSON products from text responses
+    parseProductsFromText(text) {
+      console.log('🔍 JSON Detection: Starting to parse text:', text);
+      const products = [];
+      let cleanText = text;
+      
+      try {
+        // Look for JSON patterns in the text
+        const jsonPatterns = [
+          // Pattern 1: {output: [...]} format
+          /\{\s*"output"\s*:\s*\[[\s\S]*?\]\s*\}/g,
+          // Pattern 2: [{product: {...}}] format  
+          /\[\s*\{\s*"product"\s*:[\s\S]*?\}\s*\]/g,
+          // Pattern 3: Individual {product: {...}} objects
+          /\{\s*"product"\s*:\s*\{[\s\S]*?\}\s*\}/g
+        ];
+        
+        console.log('🔍 JSON Detection: Testing patterns...');
+        
+        for (let i = 0; i < jsonPatterns.length; i++) {
+          const pattern = jsonPatterns[i];
+          console.log(`🔍 JSON Detection: Testing pattern ${i + 1}:`, pattern);
+          
+          let match;
+          while ((match = pattern.exec(text)) !== null) {
+            console.log('🔍 JSON Detection: Found match:', match[0]);
+            try {
+              const jsonStr = match[0];
+              const parsed = JSON.parse(jsonStr);
+              console.log('🔍 JSON Detection: Parsed JSON:', parsed);
+              
+              // Process different JSON structures
+              if (parsed.output && Array.isArray(parsed.output)) {
+                console.log('🔍 JSON Detection: Processing output array format');
+                // Handle {output: [{product: {...}}]} format
+                const outputItems = parsed.output.filter(item => item.product);
+                if (outputItems.length > 0) {
+                  console.log('🔍 JSON Detection: Found products in output array:', outputItems);
+                  products.push(...outputItems.map(item => item.product));
+                  // Remove the JSON from the text
+                  cleanText = cleanText.replace(jsonStr, '').trim();
+                }
+              } else if (Array.isArray(parsed)) {
+                console.log('🔍 JSON Detection: Processing direct array format');
+                // Handle [{product: {...}}] format
+                const productItems = parsed.filter(item => item.product);
+                if (productItems.length > 0) {
+                  console.log('🔍 JSON Detection: Found products in array:', productItems);
+                  products.push(...productItems.map(item => item.product));
+                  cleanText = cleanText.replace(jsonStr, '').trim();
+                }
+              } else if (parsed.product) {
+                console.log('🔍 JSON Detection: Processing individual product format');
+                // Handle individual {product: {...}} format
+                products.push(parsed.product);
+                cleanText = cleanText.replace(jsonStr, '').trim();
+              }
+            } catch (e) {
+              console.log('🔍 JSON Detection: Failed to parse JSON fragment:', e);
+            }
+          }
+        }
+        
+        console.log('🔍 JSON Detection: Final result - Products:', products, 'Clean text:', cleanText);
+      } catch (error) {
+        console.error('🔍 JSON Detection: Error parsing products from text:', error);
+      }
+      
+      return {
+        products: products,
+        cleanText: cleanText.replace(/\n\s*\n/g, '\n').trim()
+      };
+    }
 
     // Handle multiple product recommendations from n8n
     addProductRecommendations(products) {
