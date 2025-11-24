@@ -1023,31 +1023,31 @@
 
         .naay-product-card {
           background: var(--naay-white) !important;
-          border-radius: 16px !important;
+          border-radius: 12px !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
           overflow: hidden !important;
-          box-shadow: 0 4px 16px rgba(168, 130, 107, 0.1) !important;
+          box-shadow: 0 2px 8px rgba(168, 130, 107, 0.08) !important;
           transition: all 0.3s var(--naay-transition) !important;
-          margin: 16px 0 !important;
-          max-width: 380px !important;
+          margin: 8px 0 !important;
+          max-width: 320px !important;
+          width: 100% !important;
           position: relative !important;
+          display: flex !important;
+          flex-direction: row !important;
+          min-height: 120px !important;
         }
 
         .naay-product-card:hover {
-          transform: translateY(-4px) !important;
-          box-shadow: 0 8px 24px rgba(168, 130, 107, 0.15) !important;
+          transform: translateY(-2px) !important;
+          box-shadow: 0 4px 12px rgba(168, 130, 107, 0.12) !important;
         }
 
         .naay-product-card__header {
           display: flex !important;
           justify-content: space-between !important;
-          align-items: center !important;
-          padding: 12px 16px 0 16px !important;
-          position: absolute !important;
-          top: 0 !important;
-          left: 0 !important;
-          right: 0 !important;
-          z-index: 2 !important;
+          align-items: flex-start !important;
+          margin-bottom: 4px !important;
+          position: relative !important;
         }
 
         .naay-product-card__vendor {
@@ -1073,8 +1073,9 @@
 
         .naay-product-card__media {
           position: relative !important;
-          width: 100% !important;
-          height: 200px !important;
+          width: 120px !important;
+          height: 120px !important;
+          flex-shrink: 0 !important;
           overflow: hidden !important;
           background: var(--naay-sage) !important;
           display: flex !important;
@@ -1152,14 +1153,18 @@
         }
 
         .naay-product-card__content {
-          padding: 20px !important;
+          padding: 12px !important;
+          flex: 1 !important;
+          display: flex !important;
+          flex-direction: column !important;
+          justify-content: space-between !important;
         }
 
         .naay-product-card__title {
-          font-size: 16px !important;
+          font-size: 14px !important;
           font-weight: var(--naay-font-weight-semibold) !important;
-          line-height: 1.4 !important;
-          margin: 0 0 8px 0 !important;
+          line-height: 1.3 !important;
+          margin: 0 0 4px 0 !important;
           color: var(--naay-black) !important;
           display: -webkit-box !important;
           -webkit-line-clamp: 2 !important;
@@ -1168,10 +1173,10 @@
         }
 
         .naay-product-card__description {
-          font-size: 13px !important;
-          line-height: 1.5 !important;
+          font-size: 12px !important;
+          line-height: 1.4 !important;
           color: var(--naay-perfect) !important;
-          margin: 0 0 16px 0 !important;
+          margin: 0 0 8px 0 !important;
           opacity: 0.8 !important;
           display: -webkit-box !important;
           -webkit-line-clamp: 2 !important;
@@ -1225,7 +1230,8 @@
 
         .naay-product-card__actions {
           display: flex !important;
-          gap: 8px !important;
+          gap: 6px !important;
+          margin-top: 8px !important;
         }
 
         .naay-product-card__add-btn {
@@ -1233,9 +1239,9 @@
           background: linear-gradient(135deg, var(--naay-perfect) 0%, var(--naay-rich) 100%) !important;
           color: var(--naay-white) !important;
           border: none !important;
-          border-radius: 10px !important;
-          padding: 12px 16px !important;
-          font-size: 14px !important;
+          border-radius: 6px !important;
+          padding: 8px 12px !important;
+          font-size: 12px !important;
           font-weight: var(--naay-font-weight-semibold) !important;
           cursor: pointer !important;
           transition: all 0.3s var(--naay-transition) !important;
@@ -1263,8 +1269,8 @@
         }
 
         .naay-product-card__add-btn svg {
-          width: 16px !important;
-          height: 16px !important;
+          width: 12px !important;
+          height: 12px !important;
         }
 
         .naay-spinner {
@@ -1280,17 +1286,17 @@
           background: rgba(168, 130, 107, 0.1) !important;
           color: var(--naay-perfect) !important;
           border: 1px solid rgba(168, 130, 107, 0.3) !important;
-          border-radius: 10px !important;
-          padding: 12px 16px !important;
-          font-size: 14px !important;
+          border-radius: 6px !important;
+          padding: 8px 12px !important;
+          font-size: 12px !important;
           font-weight: var(--naay-font-weight-medium) !important;
           cursor: pointer !important;
           transition: all 0.2s var(--naay-transition) !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
-          gap: 6px !important;
-          min-width: 80px !important;
+          gap: 4px !important;
+          min-width: 60px !important;
         }
 
         .naay-product-card__details-btn:hover {
@@ -1299,8 +1305,8 @@
         }
 
         .naay-product-card__details-btn svg {
-          width: 14px !important;
-          height: 14px !important;
+          width: 12px !important;
+          height: 12px !important;
         }
 
         /* ======= PRODUCT MODAL STYLES ======= */
@@ -2097,28 +2103,28 @@
           transition: all 0.2s var(--naay-transition) !important;
         }
 
-        /* Cart Panel - Slides from right to left, aligned with chat */
+        /* Cart Panel - Positioned to the left of the chat widget */
         .naay-cart-panel {
           position: absolute !important;
           bottom: 88px !important;
           right: 420px !important; /* Position to left of chat with 20px gap */
-          width: 400px !important;
-          height: 620px !important;
-          background: rgba(248, 249, 248, 0.95) !important;
+          width: 380px !important;
+          height: 580px !important;
+          background: rgba(248, 249, 248, 0.98) !important;
           backdrop-filter: blur(20px) !important;
           -webkit-backdrop-filter: blur(20px) !important;
-          border-radius: 12px !important;
-          border: 1px solid rgba(212, 196, 184, 0.2) !important;
-          box-shadow: var(--naay-shadow-strong) !important;
+          border-radius: 16px !important;
+          border: 1px solid rgba(212, 196, 184, 0.3) !important;
+          box-shadow: 0 8px 32px rgba(139, 93, 75, 0.15) !important;
           display: flex !important;
           flex-direction: column !important;
           overflow: hidden !important;
           opacity: 0 !important;
           visibility: hidden !important;
-          transition: all 0.4s var(--naay-transition) !important;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
           pointer-events: none !important;
           z-index: 999997 !important;
-          transform: translateX(32px) scale(0.95) !important;
+          transform: translateX(20px) scale(0.95) !important;
         }
 
         .naay-cart-panel--open {
@@ -2132,7 +2138,7 @@
         .naay-widget--bottom-left .naay-cart-panel {
           right: auto !important;
           left: 420px !important; /* Position to right of chat for left-positioned widget */
-          transform: translateX(-32px) scale(0.95) !important;
+          transform: translateX(-20px) scale(0.95) !important;
         }
 
         .naay-widget--bottom-left .naay-cart-panel--open {
@@ -2496,6 +2502,15 @@
           margin-left: 0 !important;
         }
 
+        /* Responsive Design for larger tablets */
+        @media (max-width: 1024px) {
+          .naay-cart-panel {
+            right: 380px !important; /* Closer to chat on smaller screens */
+            width: 350px !important;
+            height: 520px !important;
+          }
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
           .naay-widget {
@@ -2504,10 +2519,13 @@
           }
           
           .naay-cart-panel {
-            width: 90vw !important;
-            max-width: 350px !important;
-            left: -350px !important;
-            height: 400px !important;
+            width: calc(100vw - 40px) !important;
+            max-width: 360px !important;
+            right: auto !important;
+            left: 20px !important;
+            bottom: 80px !important;
+            height: 450px !important;
+            transform: translateY(20px) scale(0.95) !important;
           }
           
           .naay-cart-toggle {
@@ -2520,7 +2538,7 @@
           }
           
           .naay-cart-panel--open {
-            left: -450px !important;
+            transform: translateY(0) scale(1) !important;
           }
           
           .naay-widget--open .naay-cart-toggle {
@@ -2852,6 +2870,33 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       }.bind(this);
       
       console.log('🧪 Test function available: window.testMixedResponse()');
+      
+      // Test function for real cart functionality
+      window.testRealCartAdd = function() {
+        console.log('🧪 Testing real cart functionality...');
+        
+        // Sample product with real variant ID format
+        const testProduct = {
+          id: 14890558325102,
+          title: "Test Product for Cart",
+          price: 25.99,
+          quantity: 1,
+          image: '',
+          variantId: 53019925709166,  // Real variant ID format from n8n
+          handle: 'test-product-cart'
+        };
+        
+        console.log('🛒 Test product details:', testProduct);
+        widget.handleAddToCartFromRecommendation(testProduct, { 
+          innerHTML: 'Test Button',
+          disabled: false,
+          classList: { add: function() {}, remove: function() {} }
+        });
+        
+        return 'Real cart test initiated! Check console for details.';
+      }.bind(this);
+      
+      console.log('🧪 Test function available: window.testRealCartAdd()');
       
       // Mark event listeners as added to prevent duplicates
       this.eventListenersAdded = true;
@@ -3410,6 +3455,13 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
     handleAddToCartFromRecommendation(product, buttonElement) {
       console.log('🛒 Adding product to cart from recommendation:', product.title);
+      console.log('🔍 Product details for cart:', {
+        id: product.id,
+        title: product.title,
+        variantId: product.variantId,
+        price: product.price,
+        handle: product.handle
+      });
       
       // Update button state to loading
       const originalHTML = buttonElement.innerHTML;
@@ -3429,7 +3481,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         price: product.price,
         quantity: 1,
         image: product.image,
-        variantId: product.variants && product.variants[0] ? product.variants[0].id : product.id,
+        variantId: product.variantId || product.id,
         handle: product.handle
       });
 
@@ -3704,9 +3756,14 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       
       // First try to add to Shopify native cart if we're on a Shopify store
       let addedToShopify = false;
-      if (window.location.hostname.includes('myshopify.com') || 
-          window.location.hostname.includes('shopify.com')) {
+      const isShopifyStore = window.location.hostname.includes('myshopify.com') || 
+                            window.location.hostname.includes('shopify.com');
+      console.log('🏪 Is Shopify store?', isShopifyStore, 'Hostname:', window.location.hostname);
+      
+      if (isShopifyStore) {
         addedToShopify = await this.addToShopifyNativeCart(product.variantId, product.quantity || 1);
+      } else {
+        console.log('⚠️  Not on Shopify domain, skipping native cart addition');
       }
       
       // Also add via our API for consistency
@@ -4294,6 +4351,8 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     
     async addToShopifyNativeCart(variantId, quantity = 1) {
       console.log('🛒 Adding to Shopify native cart:', { variantId, quantity });
+      console.log('🌐 Current hostname:', window.location.hostname);
+      console.log('🔗 Cart API endpoint: /cart/add.js');
       
       try {
         // Use Shopify's cart API
