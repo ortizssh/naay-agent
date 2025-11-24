@@ -2877,6 +2877,9 @@
           
           if (typeof data === 'string' && data.trim()) {
             assistantMessage = data;
+          } else if (data && data.output) {
+            // n8n format: {"output": "response text"}
+            assistantMessage = data.output;
           } else if (data && data.response) {
             assistantMessage = data.response;
           } else if (data && data.message && data.message !== "Error in workflow") {
