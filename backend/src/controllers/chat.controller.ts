@@ -467,6 +467,20 @@ async function getSessionInfo(sessionId: string): Promise<any> {
 }
 
 // Simple widget endpoint (for easy integration)
+// Simple proxy route for n8n integration (DEPRECATED - widget goes directly to n8n)
+router.post('/legacy', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    logger.info('Legacy chat endpoint called - should use n8n directly', req.body);
+    res.status(410).json({
+      success: false,
+      message: 'This endpoint is deprecated. Widget should connect directly to n8n.',
+      data: null
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     // Validate request body
@@ -477,65 +491,25 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
     const { message, shop, conversationId, context } = value;
 
-    logger.info(`Widget chat message received`, {
+    logger.info(`Widget chat message received - redirecting to n8n`, {
       shop,
       conversationId,
       messageLength: message.length,
       hasContext: !!context,
     });
 
-    // Verify the shop exists
-    const store = await supabaseService.getStore(shop);
-    if (!store) {
-      throw new AppError('Store not found', 404);
-    }
-
-    // Generate or use existing conversation ID
-    const sessionId =
-      conversationId ||
-      `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    // Process message with AI agent
-    const agentResponse = await aiAgentService.processMessage(
-      message,
-      sessionId,
-      shop,
-      context?.cartId || '',
-      context
-    );
-
-    // Log analytics event
-    await logChatEvent(shop, sessionId, 'widget_message', {
-      messageLength: message.length,
-      hasContext: !!context,
-      responseLength: agentResponse.messages.join(' ').length,
-    });
-
-    // Return simplified response for widget
-    const response =
-      agentResponse.messages.length > 0
-        ? agentResponse.messages[0]
-        : '¡Hola! Soy tu asistente de Naay. ¿En qué puedo ayudarte?';
-
+    // For now, return a message indicating this should go to n8n
+    // Widget is already configured to go directly to n8n
     res.json({
-      success: true,
+      success: false,
+      message: 'Chat functionality moved to n8n. Please update widget configuration.',
       data: {
-        response: response,
-        conversationId: sessionId,
-        actions: agentResponse.actions,
-      },
+        response: 'Lo siento, hay un problema de configuración. Por favor contacta soporte.',
+        conversationId: conversationId || `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      }
     });
   } catch (error) {
-    logger.error('Widget chat error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Error interno del servidor',
-      data: {
-        response:
-          'Lo siento, hubo un error al procesar tu mensaje. Por favor intenta de nuevo.',
-        conversationId: null,
-      },
-    });
+    next(error);
   }
 });
 

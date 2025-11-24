@@ -2833,7 +2833,8 @@
         const payload = {
           message: text,
           shop: this.config.shopDomain,
-          conversationId: this.conversationId
+          conversationId: this.conversationId || null,
+          context: this.config.context || {}
         };
 
         console.log('🌿 Naay Chat: Sending message to n8n webhook', {
@@ -2857,24 +2858,46 @@
         console.log('🌿 Naay Chat: API Response status:', response.status, response.statusText);
 
         const data = await response.json();
-        console.log('🌿 Naay Chat: API Response data:', data);
+        console.log('🌿 Naay Chat: n8n Response data:', data);
         
         // Remove typing indicator
         this.removeTypingIndicator(typingIndicator);
         
-        if (data.success && data.data) {
-          this.addMessage(data.data.response || 'Lo siento, no pude procesar tu mensaje.', 'assistant');
-          this.conversationId = data.data.conversationId;
-          this.storeConversationId(this.conversationId);
-          
-          // Process cart actions if present
-          if (data.data.actions && Array.isArray(data.data.actions)) {
-            this.processCartActions(data.data.actions);
+        // n8n response handling - expect direct response format
+        if (response.ok) {
+          // Check for n8n workflow errors
+          if (data && data.message === "Error in workflow") {
+            console.error('❌ Naay Chat: n8n workflow error', data);
+            this.addMessage('El asistente está temporalmente no disponible. Por favor intenta más tarde.', 'assistant');
+            return;
           }
           
-          console.log('✅ Naay Chat: Message processed successfully', data.data.conversationId);
+          // Handle different n8n response formats
+          let assistantMessage = 'Lo siento, no pude procesar tu mensaje.';
+          
+          if (typeof data === 'string') {
+            assistantMessage = data;
+          } else if (data.response) {
+            assistantMessage = data.response;
+          } else if (data.message && data.message !== "Error in workflow") {
+            assistantMessage = data.message;
+          } else if (data.text) {
+            assistantMessage = data.text;
+          } else if (data.choices && data.choices[0] && data.choices[0].message) {
+            assistantMessage = data.choices[0].message.content;
+          }
+          
+          this.addMessage(assistantMessage, 'assistant');
+          
+          // Update conversation ID if provided by n8n
+          if (data.conversationId) {
+            this.conversationId = data.conversationId;
+            this.storeConversationId(this.conversationId);
+          }
+          
+          console.log('✅ Naay Chat: Message processed successfully via n8n');
         } else {
-          console.error('❌ Naay Chat: API returned error', data);
+          console.error('❌ Naay Chat: n8n API returned error', data);
           this.addMessage('Lo siento, hubo un error. Por favor intenta de nuevo.', 'assistant');
         }
       } catch (error) {
@@ -3850,51 +3873,12 @@
       }
     }
 
-    // Process cart actions and product recommendations from AI response
+    // Process cart actions - Simplified for n8n integration
+    // n8n will handle all cart actions directly, so this is now a no-op
     processCartActions(actions) {
-      if (!actions || !Array.isArray(actions)) return;
-      
-      actions.forEach(action => {
-        console.log('🛒 Processing action:', action);
-        
-        switch (action.type) {
-          case 'cart.add':
-            if (action.product) {
-              this.addToCart(action.product);
-            }
-            break;
-          case 'cart.show':
-            this.showCart();
-            break;
-          case 'cart.hide':
-            this.hideCart();
-            break;
-          case 'cart.remove':
-            if (action.productId) {
-              this.removeFromCart(action.productId);
-            }
-            break;
-          case 'cart.update':
-            if (action.productId && action.quantity !== undefined) {
-              this.updateQuantity(action.productId, action.quantity);
-            }
-            break;
-          case 'product.recommend':
-            if (action.product) {
-              this.addProductRecommendation(action.product);
-            }
-            break;
-          case 'product.show':
-            if (action.products && Array.isArray(action.products)) {
-              action.products.forEach(product => {
-                this.addProductRecommendation(product);
-              });
-            }
-            break;
-          default:
-            console.warn('Unknown action type:', action.type);
-        }
-      });
+      console.log('🌿 Naay Chat: Cart actions are now handled by n8n workflow', actions);
+      // All cart functionality is delegated to n8n
+      return;
     }
 
     // ======= SHOPIFY CART SYNCHRONIZATION =======
