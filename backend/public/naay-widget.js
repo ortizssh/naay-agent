@@ -2760,50 +2760,43 @@
       window.testProductRecommendations = function() {
         console.log('🧪 Testing product recommendations from n8n format...');
         
-        const mockN8nResponse = [
-          {
-            "response": [
-              {
+        // Latest n8n format: {output: [{product: {...}}, {product: {...}}]}
+        const mockN8nResponse = {
+          "output": [
+            {
+              "product": {
                 "id": 14890558325102,
                 "title": "Loving Touch | Aceite de Masaje | My Little One",
-                "body_html": "<p>**Cuidado que une + protección que perdura.**<br><br>**Loving Touch** es un aceite corporal formulado para cuidar la piel delicada de bebés y niños, fortaleciendo su barrera natural y manteniéndola suave, hidratada y protegida. Su mezcla de **aceite de sésamo, caléndula, rosa mosqueta y manzanilla** nutre, calma e hidrata profundamente.</p>",
-                "vendor": "Naay",
+                "image": {
+                  "src": "https://cdn.shopify.com/s/files/1/example/loving-touch.jpg"
+                },
+                "price": 25.00,
                 "handle": "loving-touch-aceite-de-masaje-my-little-one",
-                "variants": [
-                  {
-                    "id": 53019925709166,
-                    "title": "Default Title",
-                    "price": "25.00",
-                    "inventory_quantity": 10
-                  }
-                ],
-                "images": [],
-                "image": null
-              },
-              {
+                "variant_id": 53019925709166
+              }
+            },
+            {
+              "product": {
                 "id": 14890558390638,
                 "title": "Super Hero | Bálsamo Multiusos | Árnica",
-                "body_html": "<p>**Repara + protege donde lo necesites.**<br><br>El **Bálsamo Multiusos Super Hero** es el aliado ideal para acompañarte en el día a día o en tus aventuras al aire libre. Formulado con **árnica, hipérico, caléndula y propóleo**, calma, hidrata y acelera la recuperación de la piel.</p>",
-                "vendor": "Naay",
+                "image": {
+                  "src": "https://cdn.shopify.com/s/files/1/example/super-hero.jpg"
+                },
+                "price": 18.50,
                 "handle": "super-hero-balsamo-multiusos-arnica",
-                "variants": [
-                  {
-                    "id": 53019925938542,
-                    "title": "Default Title",
-                    "price": "18.50",
-                    "inventory_quantity": 5
-                  }
-                ],
-                "images": [],
-                "image": null
+                "variant_id": 53019925938542
               }
-            ]
-          }
-        ];
+            }
+          ]
+        };
         
-        // Test the detection and rendering logic
+        // Test the detection and rendering logic - simulate the full response processing
         widget.addMessage('🌿 Te recomiendo estos productos perfectos para ti:', 'assistant');
-        widget.addProductRecommendations(mockN8nResponse[0].response);
+        
+        // Extract products using the same logic as the main code
+        const outputItems = mockN8nResponse.output.filter(item => item.product);
+        const products = outputItems.map(item => item.product);
+        widget.addProductRecommendations(products);
         
         return 'Product recommendations test completed! Check the chat.';
       };
@@ -2932,15 +2925,35 @@
           let hasProducts = false;
           let products = [];
           
-          // Check if response contains products
-          if (Array.isArray(data) && data.length > 0 && data[0].response && Array.isArray(data[0].response)) {
-            // Product recommendations format: [{response: [product1, product2, ...]}]
+          // Check if response contains products - Latest n8n format: {output: [{product: {...}}]}
+          if (data && data.output && Array.isArray(data.output) && data.output.length > 0) {
+            // Check for new simplified product format
+            const outputItems = data.output.filter(item => item.product);
+            if (outputItems.length > 0) {
+              // Latest n8n format: {"output": [{"product": {...}}, {"product": {...}}]}
+              hasProducts = true;
+              products = outputItems.map(item => item.product);
+              assistantMessage = '🌿 Te recomiendo estos productos perfectos para ti:';
+            } else {
+              const outputItem = data.output[0];
+              if (outputItem.response && Array.isArray(outputItem.response)) {
+                // Previous n8n format: {"output": [{"response": [product1, product2, ...]}]}
+                hasProducts = true;
+                products = outputItem.response;
+                assistantMessage = '🌿 Te recomiendo estos productos perfectos para ti:';
+              } else {
+                // Regular text in output format
+                assistantMessage = data.output;
+              }
+            }
+          } else if (Array.isArray(data) && data.length > 0 && data[0].response && Array.isArray(data[0].response)) {
+            // Old format: [{response: [product1, product2, ...]}]
             hasProducts = true;
             products = data[0].response;
             assistantMessage = '🌿 Te recomiendo estos productos perfectos para ti:';
           } else if (typeof data === 'string' && data.trim()) {
             assistantMessage = data;
-          } else if (data && data.output) {
+          } else if (data && data.output && typeof data.output === 'string') {
             // n8n format: {"output": "response text"}
             assistantMessage = data.output;
           } else if (data && data.response) {
@@ -3071,20 +3084,44 @@
     
     // Transform Shopify product format to widget format
     transformShopifyProduct(shopifyProduct) {
-      const variant = shopifyProduct.variants && shopifyProduct.variants[0];
-      const image = shopifyProduct.image || (shopifyProduct.images && shopifyProduct.images[0]);
+      // Handle simplified n8n format vs full Shopify format
+      const isSimplified = shopifyProduct.variant_id && !shopifyProduct.variants;
+      
+      let price = '0.00';
+      let variantId = null;
+      let available = true;
+      
+      if (isSimplified) {
+        // New simplified format from n8n
+        price = shopifyProduct.price ? parseFloat(shopifyProduct.price).toFixed(2) : '0.00';
+        variantId = shopifyProduct.variant_id || null;
+      } else {
+        // Full Shopify format
+        const variant = shopifyProduct.variants && shopifyProduct.variants[0];
+        price = variant ? parseFloat(variant.price).toFixed(2) : '0.00';
+        variantId = variant ? variant.id : null;
+        available = variant ? variant.inventory_quantity > 0 : true;
+      }
+      
+      // Handle image format
+      let imageUrl = '';
+      if (shopifyProduct.images && Array.isArray(shopifyProduct.images) && shopifyProduct.images.length > 0) {
+        imageUrl = shopifyProduct.images[0].src || '';
+      } else if (shopifyProduct.image) {
+        imageUrl = shopifyProduct.image.src || shopifyProduct.image || '';
+      }
       
       return {
         id: shopifyProduct.id || '',
         title: shopifyProduct.title || 'Producto sin nombre',
         description: this.stripHTML(shopifyProduct.body_html || ''),
-        price: variant ? parseFloat(variant.price).toFixed(2) : '0.00',
-        comparePrice: variant && variant.compare_at_price ? parseFloat(variant.compare_at_price).toFixed(2) : null,
-        image: image ? image.src || image : '',
+        price: price,
+        comparePrice: null, // Not provided in simplified format
+        image: imageUrl,
         vendor: shopifyProduct.vendor || 'Naay',
         handle: shopifyProduct.handle || '',
-        variantId: variant ? variant.id : null,
-        available: variant ? variant.inventory_quantity > 0 : false
+        variantId: variantId,
+        available: available
       };
     }
     
