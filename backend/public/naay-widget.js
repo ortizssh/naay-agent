@@ -2829,7 +2829,7 @@
       }
 
       try {
-        const apiUrl = 'https://n8n.dustkey.com/webhook/f9c8bcb3-2729-4fe4-8c1a-68474ee4eced/chat';
+        const apiUrl = 'https://n8n.dustkey.com/webhook/chat-naay';
         const payload = {
           message: text,
           shop: this.config.shopDomain,
@@ -2868,23 +2868,25 @@
           // Check for n8n workflow errors
           if (data && data.message === "Error in workflow") {
             console.error('❌ Naay Chat: n8n workflow error', data);
-            this.addMessage('El asistente está temporalmente no disponible. Por favor intenta más tarde.', 'assistant');
+            this.addMessage('🔧 El asistente de IA está siendo actualizado. Por favor intenta en unos minutos. ¡Gracias por tu paciencia!', 'assistant');
             return;
           }
           
           // Handle different n8n response formats
-          let assistantMessage = 'Lo siento, no pude procesar tu mensaje.';
+          let assistantMessage = '🔧 El asistente recibió tu mensaje pero está configurando la respuesta. Por favor intenta de nuevo en un momento.';
           
-          if (typeof data === 'string') {
+          if (typeof data === 'string' && data.trim()) {
             assistantMessage = data;
-          } else if (data.response) {
+          } else if (data && data.response) {
             assistantMessage = data.response;
-          } else if (data.message && data.message !== "Error in workflow") {
+          } else if (data && data.message && data.message !== "Error in workflow") {
             assistantMessage = data.message;
-          } else if (data.text) {
+          } else if (data && data.text) {
             assistantMessage = data.text;
-          } else if (data.choices && data.choices[0] && data.choices[0].message) {
+          } else if (data && data.choices && data.choices[0] && data.choices[0].message) {
             assistantMessage = data.choices[0].message.content;
+          } else if (!data || Object.keys(data).length === 0) {
+            assistantMessage = '🔧 El asistente está procesando tu mensaje. El flujo de n8n necesita configurar una respuesta.';
           }
           
           this.addMessage(assistantMessage, 'assistant');
@@ -2897,8 +2899,12 @@
           
           console.log('✅ Naay Chat: Message processed successfully via n8n');
         } else {
-          console.error('❌ Naay Chat: n8n API returned error', data);
-          this.addMessage('Lo siento, hubo un error. Por favor intenta de nuevo.', 'assistant');
+          console.error('❌ Naay Chat: n8n API returned error', response.status, data);
+          if (response.status === 500) {
+            this.addMessage('🔧 El asistente de IA está siendo actualizado. Por favor intenta en unos minutos. ¡Gracias por tu paciencia!', 'assistant');
+          } else {
+            this.addMessage('Lo siento, hubo un error. Por favor intenta de nuevo.', 'assistant');
+          }
         }
       } catch (error) {
         console.error('❌ Naay Chat: Network error sending message:', error);
