@@ -87,6 +87,9 @@
         total: 0,
         itemCount: 0
       };
+      
+      // Product tracking to prevent duplicates
+      this.addedProducts = new Set();
 
       this.init();
     }
@@ -1029,12 +1032,12 @@
           box-shadow: 0 2px 8px rgba(168, 130, 107, 0.08) !important;
           transition: all 0.3s var(--naay-transition) !important;
           margin: 8px 0 !important;
-          max-width: 320px !important;
           width: 100% !important;
+          max-width: 100% !important;
           position: relative !important;
           display: flex !important;
           flex-direction: row !important;
-          min-height: 120px !important;
+          min-height: 90px !important;
         }
 
         .naay-product-card:hover {
@@ -1073,14 +1076,15 @@
 
         .naay-product-card__media {
           position: relative !important;
-          width: 120px !important;
-          height: 120px !important;
+          width: 80px !important;
+          height: 80px !important;
           flex-shrink: 0 !important;
           overflow: hidden !important;
           background: var(--naay-sage) !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
+          border-radius: 10px !important;
         }
 
         .naay-product-card__image {
@@ -1088,6 +1092,7 @@
           height: 100% !important;
           object-fit: cover !important;
           transition: transform 0.3s var(--naay-transition) !important;
+          border-radius: 10px !important;
         }
 
         .naay-product-card:hover .naay-product-card__image {
@@ -1239,9 +1244,9 @@
           background: linear-gradient(135deg, var(--naay-perfect) 0%, var(--naay-rich) 100%) !important;
           color: var(--naay-white) !important;
           border: none !important;
-          border-radius: 6px !important;
-          padding: 8px 12px !important;
-          font-size: 12px !important;
+          border-radius: 4px !important;
+          padding: 6px 10px !important;
+          font-size: 11px !important;
           font-weight: var(--naay-font-weight-semibold) !important;
           cursor: pointer !important;
           transition: all 0.3s var(--naay-transition) !important;
@@ -1269,8 +1274,8 @@
         }
 
         .naay-product-card__add-btn svg {
-          width: 12px !important;
-          height: 12px !important;
+          width: 10px !important;
+          height: 10px !important;
         }
 
         .naay-spinner {
@@ -1286,9 +1291,9 @@
           background: rgba(168, 130, 107, 0.1) !important;
           color: var(--naay-perfect) !important;
           border: 1px solid rgba(168, 130, 107, 0.3) !important;
-          border-radius: 6px !important;
-          padding: 8px 12px !important;
-          font-size: 12px !important;
+          border-radius: 4px !important;
+          padding: 6px 10px !important;
+          font-size: 11px !important;
           font-weight: var(--naay-font-weight-medium) !important;
           cursor: pointer !important;
           transition: all 0.2s var(--naay-transition) !important;
@@ -1305,8 +1310,8 @@
         }
 
         .naay-product-card__details-btn svg {
-          width: 12px !important;
-          height: 12px !important;
+          width: 10px !important;
+          height: 10px !important;
         }
 
         /* ======= PRODUCT MODAL STYLES ======= */
@@ -2103,19 +2108,20 @@
           transition: all 0.2s var(--naay-transition) !important;
         }
 
-        /* Cart Panel - Positioned to the left of the chat widget */
+        /* Cart Panel - Left extension of the chat widget */
         .naay-cart-panel {
           position: absolute !important;
-          bottom: 88px !important;
-          right: 420px !important; /* Position to left of chat with 20px gap */
-          width: 380px !important;
-          height: 580px !important;
+          bottom: 0px !important;
+          right: 400px !important; /* Align with chat widget edge */
+          width: 360px !important;
+          height: 100% !important; /* Same height as chat */
           background: rgba(248, 249, 248, 0.98) !important;
           backdrop-filter: blur(20px) !important;
           -webkit-backdrop-filter: blur(20px) !important;
-          border-radius: 16px !important;
+          border-radius: 16px 0 0 16px !important; /* Rounded only on left side */
           border: 1px solid rgba(212, 196, 184, 0.3) !important;
-          box-shadow: 0 8px 32px rgba(139, 93, 75, 0.15) !important;
+          border-right: none !important; /* No right border to connect with chat */
+          box-shadow: -4px 0 16px rgba(139, 93, 75, 0.1) !important; /* Shadow only on left */
           display: flex !important;
           flex-direction: column !important;
           overflow: hidden !important;
@@ -2124,7 +2130,7 @@
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
           pointer-events: none !important;
           z-index: 999997 !important;
-          transform: translateX(20px) scale(0.95) !important;
+          transform: translateX(-20px) scale(0.98) !important;
         }
 
         .naay-cart-panel--open {
@@ -2137,37 +2143,52 @@
         /* Cart panel positioning for bottom-left widget */
         .naay-widget--bottom-left .naay-cart-panel {
           right: auto !important;
-          left: 420px !important; /* Position to right of chat for left-positioned widget */
-          transform: translateX(-20px) scale(0.95) !important;
+          left: 400px !important; /* Position to right of chat for left-positioned widget */
+          border-radius: 0 16px 16px 0 !important; /* Rounded only on right side */
+          border-right: 1px solid rgba(212, 196, 184, 0.3) !important;
+          border-left: none !important; /* No left border to connect with chat */
+          box-shadow: 4px 0 16px rgba(139, 93, 75, 0.1) !important; /* Shadow only on right */
+          transform: translateX(20px) scale(0.98) !important;
         }
 
         .naay-widget--bottom-left .naay-cart-panel--open {
           transform: translateX(0) scale(1) !important;
         }
 
+        /* Connect chat widget with cart when cart is open */
+        .naay-cart-panel--open + .naay-widget__chat {
+          border-radius: 16px 0 0 16px !important; /* Remove right border radius */
+        }
+        
+        .naay-widget--bottom-left .naay-cart-panel--open + .naay-widget__chat {
+          border-radius: 0 16px 16px 0 !important; /* Remove left border radius */
+        }
+
         /* Cart Panel Header */
         .naay-cart-panel__header {
-          padding: 20px 24px !important;
+          padding: 16px 20px !important;
           background: transparent !important;
           color: var(--naay-black) !important;
           display: flex !important;
           align-items: center !important;
           justify-content: space-between !important;
           border: none !important;
+          border-bottom: 1px solid rgba(212, 196, 184, 0.2) !important;
+          flex-shrink: 0 !important;
         }
 
         .naay-cart-panel__title {
-          font-size: 18px !important;
+          font-size: 14px !important;
           font-weight: var(--naay-font-weight-semibold) !important;
           margin: 0 !important;
           display: flex !important;
           align-items: center !important;
-          gap: 12px !important;
+          gap: 8px !important;
         }
 
         .naay-cart-panel__icon {
-          width: 20px !important;
-          height: 20px !important;
+          width: 16px !important;
+          height: 16px !important;
           color: var(--naay-perfect) !important;
         }
 
@@ -2200,6 +2221,13 @@
           flex-direction: column !important;
           align-items: stretch !important;
           justify-content: flex-start !important;
+          min-height: 0 !important; /* Important for proper flex behavior with sticky footer */
+          scrollbar-width: none !important;
+          -ms-overflow-style: none !important;
+        }
+        
+        .naay-cart-panel__content::-webkit-scrollbar {
+          display: none !important;
         }
 
         /* Empty State */
@@ -2436,11 +2464,15 @@
 
         /* Cart Panel Footer */
         .naay-cart-panel__footer {
-          padding: 20px 24px !important;
-          background: rgba(248, 249, 248, 0.95) !important;
+          padding: 16px 20px !important;
+          background: rgba(248, 249, 248, 0.98) !important;
           border-top: 1px solid rgba(212, 196, 184, 0.2) !important;
           backdrop-filter: blur(10px) !important;
           -webkit-backdrop-filter: blur(10px) !important;
+          position: sticky !important;
+          bottom: 0 !important;
+          z-index: 10 !important;
+          flex-shrink: 0 !important;
         }
 
         .naay-cart-panel__total {
@@ -2898,6 +2930,109 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       
       console.log('🧪 Test function available: window.testRealCartAdd()');
       
+      // Test function for duplicate prevention
+      window.testDuplicatePrevention = function() {
+        console.log('🧪 Testing duplicate product prevention...');
+        
+        // Sample products - same product repeated 3 times with slight variations
+        const duplicateProducts = [
+          {
+            id: 14890558325102,
+            title: "Super Hero | Bálsam Multiusos | Árnica",
+            price: 23.33,
+            image: { src: "https://example.com/image1.jpg" },
+            variant_id: 53019925709166,
+            handle: "super-hero-balsam-multiusos-arnica",
+            vendor: "Naay"
+          },
+          {
+            id: 14890558325102,
+            title: "Super Hero | Bálsam Multiusos | Árnica",
+            price: 23.33,
+            image: { src: "https://example.com/image1.jpg" },
+            variant_id: 53019925709166,
+            handle: "super-hero-balsam-multiusos-arnica",
+            vendor: "Naay"
+          },
+          {
+            id: 99999999999999,
+            title: "Loving Touch | Aceite de Masaje | My Little One",
+            price: 4.44,
+            image: { src: "https://example.com/image2.jpg" },
+            variant_id: 88888888888888,
+            handle: "loving-touch-aceite-masaje",
+            vendor: "Naay"
+          }
+        ];
+        
+        console.log('🔍 Adding products with duplicates:', duplicateProducts);
+        widget.addProductRecommendations(duplicateProducts);
+        
+        return 'Duplicate prevention test completed! Check console for details.';
+      }.bind(this);
+      
+      console.log('🧪 Test function available: window.testDuplicatePrevention()');
+      
+      // Test function for cart functionality
+      window.testCartFunctionality = function() {
+        console.log('🧪 Testing cart functionality...');
+        
+        // Add a test product to cart
+        const testProduct = {
+          id: 'test-123',
+          title: 'Test Product for Cart',
+          price: 25.99,
+          quantity: 2,
+          image: 'https://via.placeholder.com/100x100',
+          variantId: 'test-variant-123',
+          handle: 'test-product',
+          line_index: 1
+        };
+        
+        // Add to local cart
+        widget.cartData.items.push(testProduct);
+        widget.updateCartDisplay();
+        
+        console.log('✅ Test product added to cart');
+        console.log('🧪 Current cart items:', widget.cartData.items);
+        console.log('🧪 Cart panel visible:', widget.cartVisible);
+        
+        // Show cart panel if not visible
+        if (!widget.cartVisible) {
+          widget.showCart();
+        }
+        
+        return 'Cart test completed! Check the cart panel for the test product.';
+      }.bind(this);
+      
+      // Test function for cart button interactions
+      window.testCartButtons = function() {
+        console.log('🧪 Testing cart button functionality...');
+        
+        if (widget.cartData.items.length === 0) {
+          console.log('⚠️  No items in cart. Add a test product first.');
+          return 'Please add a product to test button functionality.';
+        }
+        
+        const firstItem = widget.cartData.items[0];
+        console.log('🧪 Testing with item:', firstItem);
+        
+        // Test quantity increase
+        const originalQuantity = firstItem.quantity;
+        widget.updateQuantity(firstItem.id, originalQuantity + 1);
+        
+        console.log('✅ Quantity increased from', originalQuantity, 'to', firstItem.quantity);
+        
+        // Show debug info
+        console.log('🧪 Cart buttons should now be functional in the cart panel');
+        
+        return 'Button test completed! Try clicking the +/- buttons in the cart.';
+      }.bind(this);
+      
+      console.log('🧪 Test functions available:');
+      console.log('  - window.testCartFunctionality() - Add test product to cart');
+      console.log('  - window.testCartButtons() - Test quantity and remove buttons');
+      
       // Mark event listeners as added to prevent duplicates
       this.eventListenersAdded = true;
       console.log('✅ Event listeners successfully added and flagged');
@@ -3261,12 +3396,33 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     // Handle multiple product recommendations from n8n
     addProductRecommendations(products) {
       console.log('🛍️ Adding multiple product recommendations:', products);
+      console.log('🔍 Currently added products:', Array.from(this.addedProducts));
       
       products.forEach(shopifyProduct => {
         // Transform Shopify product format to widget format
         const product = this.transformShopifyProduct(shopifyProduct);
-        this.addProductRecommendation(product);
+        
+        // Create unique identifier for the product
+        const productKey = `${product.id}-${product.variantId}-${product.title}`.replace(/\s+/g, '_');
+        
+        // Only add if not already added in this session
+        if (!this.addedProducts.has(productKey)) {
+          this.addedProducts.add(productKey);
+          this.addProductRecommendation(product);
+          console.log(`✅ Added unique product: ${product.title} (${productKey})`);
+        } else {
+          console.log(`⚠️  Skipping duplicate product: ${product.title} (${productKey})`);
+        }
       });
+      
+      console.log('🔍 Total unique products added so far:', this.addedProducts.size);
+    }
+    
+    // Method to clear product history (useful for new conversations)
+    clearProductHistory() {
+      console.log('🗑️  Clearing product history...');
+      this.addedProducts.clear();
+      console.log('✅ Product history cleared');
     }
     
     // Transform Shopify product format to widget format
@@ -3347,7 +3503,6 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         price = '0.00',
         comparePrice = null,
         image = '',
-        vendor = 'Naay',
         tags = [],
         available = true
       } = product;
@@ -3357,10 +3512,9 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       
       return `
         <div class="naay-product-card" data-product-id="${id}">
-          <div class="naay-product-card__header">
-            <div class="naay-product-card__vendor">${vendor}</div>
-            ${hasDiscount ? `<div class="naay-product-card__discount">-${discountPercent}%</div>` : ''}
-          </div>
+          ${hasDiscount ? `<div class="naay-product-card__header">
+            <div class="naay-product-card__discount">-${discountPercent}%</div>
+          </div>` : ''}
           
           <div class="naay-product-card__media">
             ${image ? 
@@ -3927,27 +4081,69 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       }
     }
 
-    removeFromCart(productId) {
+    async removeFromCart(productId) {
       console.log('🛒 Removing product from cart:', productId);
-      this.cartData.items = this.cartData.items.filter(item => item.id !== productId);
-      this.updateCartDisplay();
-      console.log('✅ Product removed from cart');
-    }
-
-    updateQuantity(productId, newQuantity) {
-      console.log('🛒 Updating quantity for product:', productId, 'to:', newQuantity);
       
+      // Find the item to get its line index for Shopify
       const item = this.cartData.items.find(item => item.id === productId);
-      if (item) {
-        if (newQuantity <= 0) {
-          this.removeFromCart(productId);
-        } else {
-          item.quantity = newQuantity;
-          this.updateCartDisplay();
+      if (!item) {
+        console.warn('⚠️ Item not found in cart:', productId);
+        return;
+      }
+      
+      // Try to remove from Shopify native cart first
+      let removedFromShopify = false;
+      const isShopifyStore = window.location.hostname.includes('myshopify.com') || 
+                            window.location.hostname.includes('shopify.com');
+      
+      if (isShopifyStore && item.line_index) {
+        try {
+          removedFromShopify = await this.removeFromShopifyNativeCart(item.line_index);
+        } catch (error) {
+          console.error('❌ Failed to remove from Shopify cart:', error);
         }
       }
       
-      console.log('✅ Quantity updated');
+      // Remove from local cart data
+      this.cartData.items = this.cartData.items.filter(item => item.id !== productId);
+      
+      // Update display
+      this.updateCartDisplay();
+      console.log('✅ Product removed from cart. Shopify sync:', removedFromShopify);
+    }
+
+    async updateQuantity(productId, newQuantity) {
+      console.log('🛒 Updating quantity for product:', productId, 'to:', newQuantity);
+      
+      const item = this.cartData.items.find(item => item.id === productId);
+      if (!item) {
+        console.warn('⚠️ Item not found in cart:', productId);
+        return;
+      }
+      
+      if (newQuantity <= 0) {
+        await this.removeFromCart(productId);
+        return;
+      }
+      
+      // Try to update quantity in Shopify native cart first
+      let updatedInShopify = false;
+      const isShopifyStore = window.location.hostname.includes('myshopify.com') || 
+                            window.location.hostname.includes('shopify.com');
+      
+      if (isShopifyStore && item.line_index) {
+        try {
+          updatedInShopify = await this.updateShopifyCartQuantity(item.line_index, newQuantity);
+        } catch (error) {
+          console.error('❌ Failed to update Shopify cart quantity:', error);
+        }
+      }
+      
+      // Update local cart data
+      item.quantity = newQuantity;
+      this.updateCartDisplay();
+      
+      console.log('✅ Quantity updated. Shopify sync:', updatedInShopify);
     }
 
     updateCartDisplay() {
@@ -4289,7 +4485,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       console.log('🔄 Syncing from Shopify native cart:', shopifyCart);
       
       // Transform Shopify native cart to our format
-      this.cartData.items = shopifyCart.items?.map(item => ({
+      this.cartData.items = shopifyCart.items?.map((item, index) => ({
         id: item.variant_id.toString(),
         title: item.product_title,
         variantTitle: item.variant_title,
@@ -4298,7 +4494,8 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         image: item.image,
         variantId: item.variant_id.toString(),
         handle: item.handle,
-        url: item.url
+        url: item.url,
+        line_index: index + 1 // Shopify line indices are 1-based
       })) || [];
       
       // Update totals
@@ -4418,6 +4615,41 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         }
       } catch (error) {
         console.error('❌ Error removing from Shopify native cart:', error);
+        return false;
+      }
+    }
+    
+    async updateShopifyCartQuantity(lineIndex, newQuantity) {
+      console.log('🛒 Updating Shopify cart quantity. Line:', lineIndex, 'Quantity:', newQuantity);
+      
+      try {
+        const response = await fetch('/cart/change.js', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            line: lineIndex,
+            quantity: newQuantity
+          }),
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log('✅ Updated Shopify cart quantity:', result);
+          
+          // Trigger custom event
+          document.dispatchEvent(new CustomEvent('cart:updated'));
+          
+          // Reload cart data
+          await this.loadShopifyCart();
+          
+          return true;
+        } else {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+      } catch (error) {
+        console.error('❌ Error updating Shopify cart quantity:', error);
         return false;
       }
     }
