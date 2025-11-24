@@ -60,8 +60,8 @@
         radiant: '#A68A3C',     // Olive gold
         perfect: '#A8826B',     // Warm brown
         sage: '#F8F9F8',        // Ultra-light sage
-        greeting: '¿En qué podemos ayudarte hoy?',
-        placeholder: 'Escribe tu mensaje...',
+        greeting: '',
+        placeholder: 'Pregúntanos lo que quieras...',
         avatar: '🌿',
         brandName: 'Naay',
         language: 'es',
@@ -274,7 +274,7 @@
                     type="text" 
                     class="naay-widget__input" 
                     id="naay-widget-input" 
-                    placeholder="Escribe tu mensaje..."
+                    placeholder="Pregúntanos lo que quieras..."
                     aria-label="Campo de mensaje"
                   />
                   <button 
@@ -1671,32 +1671,31 @@
         .naay-widget__feature {
           display: flex !important;
           align-items: center !important;
-          gap: 16px !important;
-          padding: 20px !important;
-          background: rgba(255, 255, 255, 0.7) !important;
-          border-radius: 8px !important;
-          border: 1px solid rgba(212, 196, 184, 0.2) !important;
+          gap: 12px !important;
+          padding: 16px !important;
+          background: #ffffff !important;
+          border-radius: 6px !important;
+          border: 1px solid #e5e5e5 !important;
           transition: none !important;
           cursor: pointer !important;
         }
 
         .naay-widget__feature:hover {
-          background: rgba(255, 255, 255, 0.9) !important;
-          transform: translateY(-2px) !important;
-          box-shadow: var(--naay-shadow-soft) !important;
+          background: #f9f9f9 !important;
+          border-color: #d0d0d0 !important;
         }
 
         .naay-feature-icon {
-          width: 24px !important;
-          height: 24px !important;
-          color: var(--naay-fresh) !important;
+          width: 20px !important;
+          height: 20px !important;
+          color: #8B5A3C !important;
           flex-shrink: 0 !important;
         }
 
         .naay-widget__feature span {
-          color: var(--naay-perfect) !important;
-          font-size: 12px !important;
-          font-weight: var(--naay-font-weight-medium) !important;
+          color: #333333 !important;
+          font-size: 13px !important;
+          font-weight: 400 !important;
           line-height: 1.3 !important;
         }
 
