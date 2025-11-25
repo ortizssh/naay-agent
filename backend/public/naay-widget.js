@@ -2324,7 +2324,7 @@
         .naay-cart-panel {
           position: absolute !important;
           bottom: 88px !important; /* Same as chat widget */
-          right: calc(50vw + 20px) !important; /* Initially hidden to the right of chat widget (50vw + container margin) */
+          right: -380px !important; /* Initially hidden to the right (offscreen) */
           width: 360px !important;
           height: 620px !important; /* Same height as chat widget */
           background: rgba(248, 249, 248, 0.98) !important;
@@ -2345,7 +2345,7 @@
         }
 
         .naay-cart-panel--open {
-          right: 50vw !important; /* Position to the left of chat widget, borders touch */
+          right: 50vw !important; /* Slide from right to left, touching chat left edge */
           opacity: 1 !important;
           visibility: visible !important;
           pointer-events: auto !important;
@@ -2353,11 +2353,11 @@
 
         /* Cart panel positioning for bottom-right widget (default) */
         .naay-widget--bottom-right .naay-cart-panel {
-          right: calc(50vw + 20px) !important; /* Hidden to right of chat widget */
+          right: -380px !important; /* Hidden to right (offscreen) */
         }
 
         .naay-widget--bottom-right .naay-cart-panel--open {
-          right: 50vw !important; /* Position to left of chat widget */
+          right: 50vw !important; /* Slide from right to left */
         }
 
         /* Cart panel positioning for bottom-left widget */
@@ -2774,7 +2774,7 @@
           
           .naay-cart-panel {
             position: absolute !important;
-            right: calc(60vw + 24px) !important; /* Hide to right of chat widget */
+            right: -320px !important; /* Hidden to right (offscreen) */
             bottom: 0px !important;
             width: 300px !important;
             height: calc(100vh - 120px) !important;
