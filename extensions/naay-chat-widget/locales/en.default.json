@@ -1,59 +1,12 @@
 {
-  "name": "Naay AI Chat",
-  "settings": {
-    "api_configuration": "API Configuration",
-    "api_endpoint": {
-      "label": "API Endpoint",
-      "info": "URL of your Naay backend server"
-    },
-    "widget_url": {
-      "label": "Widget Script URL",
-      "info": "URL of the widget JavaScript file"
-    },
-    "appearance": "Appearance",
-    "position": {
-      "label": "Position",
-      "options": {
-        "bottom-right": "Bottom Right",
-        "bottom-left": "Bottom Left", 
-        "top-right": "Top Right",
-        "top-left": "Top Left"
+  "blocks": {
+    "naay-chat": {
+      "name": "Naay AI Chat Widget",
+      "settings": {
+        "header": "Naay AI Chat Widget",
+        "description": "El asistente de IA para tu tienda Shopify. Ayuda a tus clientes a encontrar productos y responde sus preguntas automáticamente.",
+        "status": "✅ Widget configurado y activo"
       }
-    },
-    "primary_color": {
-      "label": "Primary Color"
-    },
-    "theme": {
-      "label": "Theme",
-      "options": {
-        "auto": "Auto (follows system)",
-        "light": "Light",
-        "dark": "Dark"
-      }
-    },
-    "avatar": {
-      "label": "Avatar",
-      "info": "Emoji or character to show as avatar"
-    },
-    "messages": "Messages",
-    "greeting": {
-      "label": "Greeting Message",
-      "info": "First message customers see when opening chat"
-    },
-    "placeholder": {
-      "label": "Input Placeholder", 
-      "info": "Placeholder text in the message input"
-    },
-    "advanced": "Advanced",
-    "enabled": {
-      "label": "Enable Chat Widget"
-    },
-    "hide_on_mobile": {
-      "label": "Hide on Mobile"
-    },
-    "custom_css": {
-      "label": "Custom CSS",
-      "info": "Additional CSS for widget customization"
     }
   }
 }

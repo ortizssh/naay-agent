@@ -1,28 +1,35 @@
 {% comment %}
-  Naay AI Chat Widget Block
-  This block embeds the Naay AI chat widget into any Shopify theme
+  Naay AI Chat Widget - App Block
+  This is the official Naay AI chat widget for Shopify stores
 {% endcomment %}
 
-<!-- Naay Chat Widget Container -->
-<div id="naay-chat-container" data-shop="{{ shop.permanent_domain }}">
-  <!-- Chat widget will be created here by the JavaScript -->
+<div 
+  id="naay-chat-widget-{{ block.id }}" 
+  class="naay-chat-widget-container"
+  data-shop="{{ shop.permanent_domain }}"
+  data-block-id="{{ block.id }}"
+  {{ block.shopify_attributes }}
+>
+  <!-- Widget will be rendered here -->
 </div>
 
 <script>
-  // HARDCODED Naay Widget Configuration - No customization allowed
+  // Naay Widget Configuration
+  window.NaayConfig = window.NaayConfig || {};
   window.NaayConfig = {
     shopDomain: '{{ shop.permanent_domain }}',
     apiEndpoint: 'https://naay-agent-app1763504937.azurewebsites.net',
     position: 'bottom-right',
-    primaryColor: '#8B5A3C',
-    greeting: '',
+    primaryColor: '#ca957e',
+    greeting: '¿Necesitas ayuda para tu compra? ¡Habla aquí!',
     placeholder: 'Escribe tu mensaje...',
     theme: 'light',
     avatar: '🌿',
     language: '{{ request.locale.iso_code | default: "es" }}',
     enabled: true,
+    blockId: '{{ block.id }}',
     
-    // Shopify-specific context
+    // Shopify context
     context: {
       customerLoggedIn: {% if customer %}true{% else %}false{% endif %},
       customerId: {% if customer %}'{{ customer.id }}'{% else %}null{% endif %},
@@ -36,57 +43,37 @@
       collectionId: {% if collection %}'gid://shopify/Collection/{{ collection.id }}'{% else %}null{% endif %}
     }
   };
-</script>
 
-<!-- Load the Naay Widget -->
-<script>
-  (function() {
-    console.log('🌿 Naay Chat: Initializing widget v3.0-LUXURY...');
+  // Load widget script only once
+  if (!window.naayWidgetLoaded) {
+    window.naayWidgetLoaded = true;
     
-    // Don't load in admin preview or checkout
-    if (window.location.hostname.includes('admin') || window.location.pathname.includes('checkout')) {
-      console.log('Naay Chat: Skipping load in admin/checkout');
-      return;
-    }
+    console.log('🌿 Naay Chat: Loading widget for block {{ block.id }}');
     
-    // Load the official Naay widget script
     var script = document.createElement('script');
-    script.src = 'https://naay-agent-app1763504937.azurewebsites.net/static/naay-widget.js?v=FIX_DUPLICATE_CARDS&id=' + (Math.random().toString(36) + Math.random().toString(36)).substr(2, 20) + '&t=' + Date.now() + '&force=true';
+    script.src = 'https://naay-agent-app1763504937.azurewebsites.net/static/naay-widget.js?v=' + Date.now();
     script.async = true;
-    
     script.onload = function() {
-      console.log('✅ Naay Chat: Widget script loaded successfully');
+      console.log('✅ Naay Chat: Widget loaded successfully');
       if (window.NaayWidget && window.NaayConfig) {
-        try {
-          // Initialize the official Naay widget
-          new window.NaayWidget(window.NaayConfig);
-          console.log('🎉 Naay Chat: Widget initialized successfully with promotional message');
-        } catch (error) {
-          console.error('❌ Failed to initialize Naay Widget:', error);
-        }
-      } else {
-        console.error('❌ NaayWidget or NaayConfig not available');
+        new window.NaayWidget(window.NaayConfig);
       }
     };
-    
     script.onerror = function() {
-      console.error('❌ Failed to load Naay Widget script from Azure server');
+      console.error('❌ Failed to load Naay Widget');
     };
-    
     document.head.appendChild(script);
-  })();
+  }
 </script>
 
 <style>
-  /* Ensure Naay widget doesn't interfere with theme */
-  #naay-chat-container {
+  .naay-chat-widget-container {
     position: relative;
     z-index: 9999;
   }
   
-  /* Hide widget in admin areas */
-  .shopify-section-header #naay-chat-container,
-  .admin #naay-chat-container {
+  /* Hide in admin preview */
+  .shopify-section-header .naay-chat-widget-container {
     display: none !important;
   }
 </style>
@@ -95,19 +82,19 @@
 {
   "name": "Naay AI Chat Widget",
   "target": "section",
-  "class": "naay-chat-block",
+  "class": "naay-chat-widget",
   "settings": [
     {
-      "type": "paragraph",
-      "content": "This widget uses a locked Naay brand configuration. No customization options are available to ensure brand consistency."
-    },
-    {
       "type": "header",
-      "content": "Widget Status"
+      "content": "Naay AI Chat Widget"
     },
     {
       "type": "paragraph",
-      "content": "✅ Widget is always enabled with Naay's official design and promotional message: '¿Necesitas ayuda para tu compra? ¡Habla aquí!'"
+      "content": "El asistente de IA para tu tienda Shopify. Ayuda a tus clientes a encontrar productos y responde sus preguntas automáticamente."
+    },
+    {
+      "type": "paragraph",
+      "content": "✅ Widget configurado y activo"
     }
   ]
 }

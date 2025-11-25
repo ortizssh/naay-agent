@@ -1,6 +1,11 @@
 name = "naay-chat-widget-v22"
 type = "theme_app_extension"
+api_version = "2025-10"
+
+[application]
+embedded = true
 
 [[app_blocks]]
 type = "naay-chat"
 name = "Naay AI Chat Widget"
+files = ["blocks/naay-chat.liquid"]
