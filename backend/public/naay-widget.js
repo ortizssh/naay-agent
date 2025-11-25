@@ -78,6 +78,7 @@
       this.messages = [];
       this.conversationId = this.getStoredConversationId();
       this.eventListenersAdded = false; // Prevent duplicate event listeners
+      this.isSending = false; // Prevent duplicate message sending
       
       // Cart state - visible only when chat is open
       this.cartVisible = false;
@@ -2773,7 +2774,7 @@
       // Send message on Enter key
       if (this.input) {
         this.input.addEventListener('keypress', (e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
+          if (e.key === 'Enter' && !e.shiftKey && !this.isSending) {
             e.preventDefault();
             this.sendMessage();
           }
@@ -2784,7 +2785,9 @@
       if (this.sendButton) {
         this.sendButton.addEventListener('click', (e) => {
           e.preventDefault();
-          this.sendMessage();
+          if (!this.isSending) {
+            this.sendMessage();
+          }
         });
       }
 
@@ -2804,8 +2807,17 @@
       featureCards.forEach(card => {
         card.addEventListener('click', (e) => {
           e.preventDefault();
+          e.stopPropagation();
+          
+          // Prevent rapid double clicks
+          if (card.dataset.clicked === 'true') return;
+          card.dataset.clicked = 'true';
+          setTimeout(() => {
+            card.dataset.clicked = 'false';
+          }, 1000);
+          
           const message = card.getAttribute('data-message');
-          if (message && this.input) {
+          if (message && this.input && !this.isSending) {
             this.input.value = message;
             this.sendMessage();
           }
@@ -3210,7 +3222,10 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
     async sendMessage() {
       const text = this.input.value.trim();
-      if (!text) return;
+      if (!text || this.isSending) return;
+
+      // Set sending flag to prevent duplicates
+      this.isSending = true;
 
       // Clear input
       this.input.value = '';
@@ -3382,10 +3397,11 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           this.addMessage('Lo siento, hubo un error de conexión. Por favor intenta de nuevo.', 'assistant');
         }
       } finally {
-        // Re-enable send button
+        // Re-enable send button and reset sending flag
         if (this.sendButton) {
           this.sendButton.disabled = false;
         }
+        this.isSending = false;
       }
     }
 
