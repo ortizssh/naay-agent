@@ -266,8 +266,11 @@ async function startServer() {
 
     // Rate limiting (exclude widget routes from rate limiting)
     app.use((req, res, next) => {
-      // Skip rate limiting for widget script and static files
-      if (req.path.startsWith('/widget/') || req.path.startsWith('/static/naay-widget')) {
+      // Skip rate limiting for all widget-related routes
+      if (req.path.startsWith('/widget/') || 
+          req.path.startsWith('/static/naay-widget') || 
+          req.path.startsWith('/api/widget/') || 
+          req.path.startsWith('/api/public/')) {
         return next();
       }
       // Apply rate limiting to all other routes

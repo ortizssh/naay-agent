@@ -98,8 +98,6 @@
     init() {
       console.log('✨ Initializing Naay Luxury Widget v2.1 with Cart Sidebar:', new Date().toISOString());
       console.log('🏪 Shop Domain:', this.config.shopDomain);
-      console.log('🔧 Full Config Debug:', JSON.stringify(this.config, null, 2));
-      console.log('🌐 Window NaayConfig Debug:', window.NaayConfig);
       
       // Load settings from server
       this.loadSettings().then(() => {
@@ -4280,14 +4278,18 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       
       // First try to add to Shopify native cart if we're on a Shopify store
       let addedToShopify = false;
-      const isShopifyStore = window.location.hostname.includes('myshopify.com') || 
-                            window.location.hostname.includes('shopify.com');
-      console.log('🏪 Is Shopify store?', isShopifyStore, 'Hostname:', window.location.hostname);
+      // Check if we're on a Shopify store (either .myshopify.com or a custom domain with a configured shop)
+      const isShopifyDomain = window.location.hostname.includes('myshopify.com') || 
+                              window.location.hostname.includes('shopify.com');
+      const hasShopConfig = this.config.shopDomain && this.config.shopDomain.trim() !== '';
+      const isShopifyStore = isShopifyDomain || hasShopConfig;
       
-      if (isShopifyStore) {
+      console.log('🏪 Is Shopify store?', isShopifyStore, 'Hostname:', window.location.hostname, 'Shop config:', this.config.shopDomain);
+      
+      if (isShopifyStore && hasShopConfig) {
         addedToShopify = await this.addToShopifyNativeCart(product.variantId, product.quantity || 1);
       } else {
-        console.log('⚠️  Not on Shopify domain, skipping native cart addition');
+        console.log('⚠️  No Shopify configuration or domain, skipping native cart addition');
       }
       
       // Also add via our API for consistency
@@ -4812,9 +4814,11 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       
       try {
         // Try to get cart from Shopify's native cart.js if available
-        if (window.fetch && window.location.hostname.includes('myshopify.com') || 
-            window.location.hostname.includes('shopify.com')) {
-          
+        const isShopifyDomain = window.location.hostname.includes('myshopify.com') || 
+                                window.location.hostname.includes('shopify.com');
+        const hasShopConfig = this.config.shopDomain && this.config.shopDomain.trim() !== '';
+        
+        if (window.fetch && (isShopifyDomain || hasShopConfig)) {
           // Use Shopify's cart.js API
           const response = await fetch('/cart.js');
           const cartData = await response.json();
