@@ -174,11 +174,13 @@ async function startServer() {
     app.use('/api/public', (req, res, next) => {
       const origin = req.get('Origin');
 
-      // Allow requests from Shopify domains only
+      // Allow requests from Shopify domains and custom store domains
       const allowedOrigins = [
         /^https:\/\/[a-zA-Z0-9-]+\.myshopify\.com$/,
         /^https:\/\/[a-zA-Z0-9-]+\.shopify\.com$/,
         /^https:\/\/admin\.shopify\.com$/,
+        // Allow custom store domains (most common patterns)
+        /^https:\/\/[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/,
       ];
 
       let allowOrigin = false;
@@ -186,12 +188,12 @@ async function startServer() {
         allowOrigin = allowedOrigins.some(pattern => pattern.test(origin));
       }
 
-      if (allowOrigin) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-        res.setHeader('Vary', 'Origin'); // Important for caching
-      } else if (!origin) {
-        // Allow requests without origin (e.g., from Shopify admin)
-        res.setHeader('Access-Control-Allow-Origin', '*');
+      if (allowOrigin || !origin) {
+        // Allow the origin or if no origin is present
+        res.setHeader('Access-Control-Allow-Origin', origin || '*');
+        if (origin) {
+          res.setHeader('Vary', 'Origin'); // Important for caching
+        }
       }
 
       res.setHeader(

@@ -100,10 +100,15 @@ router.post('/add', async (req: Request, res: Response, next: NextFunction) => {
       currentCartId = newCart.id;
     }
 
+    // Convert variantId to GID format if it's just a number
+    const formattedVariantId = variantId.startsWith('gid://') 
+      ? variantId 
+      : `gid://shopify/ProductVariant/${variantId}`;
+
     // Add item to cart
     const updatedCart = await cartService.addToCart(shop, currentCartId, [
       {
-        merchandiseId: variantId,
+        merchandiseId: formattedVariantId,
         quantity,
       },
     ]);
