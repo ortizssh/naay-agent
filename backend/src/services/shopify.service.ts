@@ -2,9 +2,14 @@ import { adminApiClient, storefrontApiClient } from '@shopify/admin-api-client';
 import { createStorefrontApiClient } from '@shopify/storefront-api-client';
 import { config } from '@/utils/config';
 import { logger } from '@/utils/logger';
-import { ShopifyProduct, ShopifyCart, ShopifyVariant, AppError, ProductSearchFilters } from '@/types';
+import {
+  ShopifyProduct,
+  ShopifyCart,
+  ShopifyVariant,
+  AppError,
+  ProductSearchFilters,
+} from '@/types';
 import crypto from 'crypto';
-
 
 // Storefront API search interface
 interface StorefrontSearchFilters {
@@ -980,7 +985,9 @@ export class ShopifyService {
   verifyWebhook(data: string, hmacHeader: string): boolean {
     // If no webhook secret is configured, log warning and skip validation
     if (!config.shopify.webhookSecret) {
-      console.warn('⚠️ SHOPIFY_WEBHOOK_SECRET not configured - webhook validation skipped (INSECURE)');
+      console.warn(
+        '⚠️ SHOPIFY_WEBHOOK_SECRET not configured - webhook validation skipped (INSECURE)'
+      );
       return true; // Allow webhook through but log the security warning
     }
 

@@ -23,13 +23,26 @@ const supabaseService = new SupabaseService();
 
 // In-memory conversation store (for simple implementation)
 // In production, this should use a proper database or cache
-const conversationStore: Record<string, Array<{ role: string; content: string }>> = {};
+const conversationStore: Record<
+  string,
+  Array<{ role: string; content: string }>
+> = {};
 
 // Function to search for products
-async function searchProducts(shop: string, query: string, limit: number = 5, skinType?: string) {
+async function searchProducts(
+  shop: string,
+  query: string,
+  limit: number = 5,
+  skinType?: string
+) {
   try {
-    logger.info('Function searchProducts called', { shop, query, limit, skinType });
-    
+    logger.info('Function searchProducts called', {
+      shop,
+      query,
+      limit,
+      skinType,
+    });
+
     const products = await supabaseService.searchProductsSemantic(
       shop,
       query,
@@ -56,10 +69,20 @@ async function searchProducts(shop: string, query: string, limit: number = 5, sk
 }
 
 // Function to get product recommendations
-async function getProductRecommendations(shop: string, skinType?: string, concerns?: string[], limit: number = 5) {
+async function getProductRecommendations(
+  shop: string,
+  skinType?: string,
+  concerns?: string[],
+  limit: number = 5
+) {
   try {
-    logger.info('Function getProductRecommendations called', { shop, skinType, concerns, limit });
-    
+    logger.info('Function getProductRecommendations called', {
+      shop,
+      skinType,
+      concerns,
+      limit,
+    });
+
     let query = '';
     if (skinType) query += `productos para piel ${skinType} `;
     if (concerns && concerns.length > 0) query += concerns.join(' ') + ' ';
@@ -103,7 +126,9 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     // Generate conversation ID if not provided
-    const currentConversationId = conversationId || `simple_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const currentConversationId =
+      conversationId ||
+      `simple_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     logger.info('Simple chat message received', {
       shop: shop || 'unknown',
@@ -130,7 +155,8 @@ router.post('/', async (req: Request, res: Response) => {
 
     // Keep conversation history manageable (last 20 messages)
     if (conversationStore[currentConversationId].length > 20) {
-      conversationStore[currentConversationId] = conversationStore[currentConversationId].slice(-20);
+      conversationStore[currentConversationId] =
+        conversationStore[currentConversationId].slice(-20);
     }
 
     // Prepare messages for OpenAI (system prompt + conversation history)
@@ -227,68 +253,73 @@ Cuando un usuario interactúe:
 - SIEMPRE usar las herramientas antes de responder sobre productos específicos
 
 **Si no encuentras productos reales que coincidan con la consulta, explica que no tienes productos específicos disponibles actualmente y ofrece consejos generales de cuidado de la piel.**`,
-        },
-        ...conversationStore[currentConversationId], // Include conversation history
+      },
+      ...conversationStore[currentConversationId], // Include conversation history
     ];
 
     // Define tools for product search
     const tools = [
       {
-        type: "function" as const,
+        type: 'function' as const,
         function: {
-          name: "search_products",
-          description: "Busca productos específicos en el catálogo de Shopify basado en una consulta de texto",
+          name: 'search_products',
+          description:
+            'Busca productos específicos en el catálogo de Shopify basado en una consulta de texto',
           parameters: {
-            type: "object",
+            type: 'object',
             properties: {
               query: {
-                type: "string",
-                description: "Término de búsqueda para encontrar productos (ej: 'crema facial', 'limpiador', 'anti-edad')"
+                type: 'string',
+                description:
+                  "Término de búsqueda para encontrar productos (ej: 'crema facial', 'limpiador', 'anti-edad')",
               },
               skin_type: {
-                type: "string",
-                description: "Tipo de piel del usuario (ej: 'seca', 'grasa', 'mixta', 'sensible')",
-                enum: ["seca", "grasa", "mixta", "sensible", "normal"]
+                type: 'string',
+                description:
+                  "Tipo de piel del usuario (ej: 'seca', 'grasa', 'mixta', 'sensible')",
+                enum: ['seca', 'grasa', 'mixta', 'sensible', 'normal'],
               },
               limit: {
-                type: "number",
-                description: "Número máximo de productos a devolver",
-                default: 5
-              }
+                type: 'number',
+                description: 'Número máximo de productos a devolver',
+                default: 5,
+              },
             },
-            required: ["query"]
-          }
-        }
+            required: ['query'],
+          },
+        },
       },
       {
-        type: "function" as const,
+        type: 'function' as const,
         function: {
-          name: "get_product_recommendations",
-          description: "Obtiene recomendaciones de productos basadas en el tipo de piel y preocupaciones específicas",
+          name: 'get_product_recommendations',
+          description:
+            'Obtiene recomendaciones de productos basadas en el tipo de piel y preocupaciones específicas',
           parameters: {
-            type: "object",
+            type: 'object',
             properties: {
               skin_type: {
-                type: "string",
-                description: "Tipo de piel del usuario",
-                enum: ["seca", "grasa", "mixta", "sensible", "normal"]
+                type: 'string',
+                description: 'Tipo de piel del usuario',
+                enum: ['seca', 'grasa', 'mixta', 'sensible', 'normal'],
               },
               concerns: {
-                type: "array",
+                type: 'array',
                 items: {
-                  type: "string"
+                  type: 'string',
                 },
-                description: "Lista de preocupaciones de la piel (ej: ['anti-edad', 'acné', 'manchas'])"
+                description:
+                  "Lista de preocupaciones de la piel (ej: ['anti-edad', 'acné', 'manchas'])",
               },
               limit: {
-                type: "number",
-                description: "Número máximo de productos a recomendar",
-                default: 3
-              }
-            }
-          }
-        }
-      }
+                type: 'number',
+                description: 'Número máximo de productos a recomendar',
+                default: 3,
+              },
+            },
+          },
+        },
+      },
     ];
 
     // Call OpenAI with tools
@@ -296,12 +327,14 @@ Cuando un usuario interactúe:
       model: 'gpt-3.5-turbo',
       messages: messages,
       tools: tools,
-      tool_choice: "auto",
+      tool_choice: 'auto',
       max_tokens: 500,
       temperature: 0.7,
     });
 
-    let response = completion.choices[0]?.message?.content || '¡Hola! Soy tu asistente de Naay. ¿En qué puedo ayudarte con tu cuidado de la piel?';
+    let response =
+      completion.choices[0]?.message?.content ||
+      '¡Hola! Soy tu asistente de Naay. ¿En qué puedo ayudarte con tu cuidado de la piel?';
 
     // Handle function calls
     if (completion.choices[0]?.message?.tool_calls) {
@@ -311,19 +344,29 @@ Cuando un usuario interactúe:
       for (const toolCall of toolCalls) {
         if (toolCall.function.name === 'search_products') {
           const args = JSON.parse(toolCall.function.arguments);
-          const products = await searchProducts(shop, args.query, args.limit, args.skin_type);
+          const products = await searchProducts(
+            shop,
+            args.query,
+            args.limit,
+            args.skin_type
+          );
           toolResults.push({
             tool_call_id: toolCall.id,
             role: 'tool' as const,
-            content: JSON.stringify(products)
+            content: JSON.stringify(products),
           });
         } else if (toolCall.function.name === 'get_product_recommendations') {
           const args = JSON.parse(toolCall.function.arguments);
-          const products = await getProductRecommendations(shop, args.skin_type, args.concerns, args.limit);
+          const products = await getProductRecommendations(
+            shop,
+            args.skin_type,
+            args.concerns,
+            args.limit
+          );
           toolResults.push({
             tool_call_id: toolCall.id,
             role: 'tool' as const,
-            content: JSON.stringify(products)
+            content: JSON.stringify(products),
           });
         }
       }
@@ -333,7 +376,7 @@ Cuando un usuario interactúe:
         const messagesWithTools = [
           ...messages,
           completion.choices[0].message,
-          ...toolResults
+          ...toolResults,
         ];
 
         const finalCompletion = await openai.chat.completions.create({

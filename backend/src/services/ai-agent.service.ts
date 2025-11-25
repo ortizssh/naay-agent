@@ -4,7 +4,13 @@ import { logger } from '@/utils/logger';
 import { SupabaseService } from './supabase.service';
 import { ShopifyService } from './shopify.service';
 import { EmbeddingService } from './embedding.service';
-import { AgentAction, AgentResponse, ChatMessage, AppError, ProductSearchFilters } from '@/types';
+import {
+  AgentAction,
+  AgentResponse,
+  ChatMessage,
+  AppError,
+  ProductSearchFilters,
+} from '@/types';
 
 interface IntentAnalysis {
   intent: string;
@@ -579,9 +585,11 @@ ${availability} | Product ID: ${product.id}`;
 
       const totalAmount = cart.cost?.totalAmount?.amount || '0';
       const subtotalAmount = cart.cost?.subtotalAmount?.amount || '0';
-      
+
       // Calculate tax amount if total > subtotal
-      const taxAmount = (parseFloat(totalAmount) - parseFloat(subtotalAmount)).toFixed(2);
+      const taxAmount = (
+        parseFloat(totalAmount) - parseFloat(subtotalAmount)
+      ).toFixed(2);
 
       const cartSummary =
         `🛒 **Your Cart** (${cart.totalQuantity} items)\n\n${cartItems}\n\n` +
@@ -847,7 +855,7 @@ ${product.vendor ? `*By ${product.vendor}*\n` : ''}${product.description ? produ
 
       const aiResponse =
         response.choices[0]?.message?.content ||
-        "¡Estoy aquí para ayudarte! ✨ ¿Podrías preguntarme de otra forma?";
+        '¡Estoy aquí para ayudarte! ✨ ¿Podrías preguntarme de otra forma?';
 
       return {
         messages: [aiResponse],
@@ -861,7 +869,7 @@ ${product.vendor ? `*By ${product.vendor}*\n` : ''}${product.description ? produ
       logger.error('Error handling general inquiry:', error);
       return {
         messages: [
-          "¡Hola! ✨ Estoy aquí para ayudarte con nuestros productos y políticas. ¿Qué te gustaría saber?",
+          '¡Hola! ✨ Estoy aquí para ayudarte con nuestros productos y políticas. ¿Qué te gustaría saber?',
         ],
         actions: [],
         metadata: { error: error.message },
@@ -876,7 +884,7 @@ ${product.vendor ? `*By ${product.vendor}*\n` : ''}${product.description ? produ
   ): Promise<AgentResponse> {
     return {
       messages: [
-        "¡No estoy segura de lo que buscas, pero estoy aquí para ayudarte! ✨ " +
+        '¡No estoy segura de lo que buscas, pero estoy aquí para ayudarte! ✨ ' +
           'Puedo ayudarte a encontrar productos, agregar a tu carrito o responder sobre la tienda. ' +
           '¿Qué te gustaría hacer? 🌿',
       ],

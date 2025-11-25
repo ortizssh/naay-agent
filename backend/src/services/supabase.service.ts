@@ -222,7 +222,7 @@ export class SupabaseService {
     try {
       // Generate embedding for the query
       const embedding = await this.embeddingService.generateEmbedding(query);
-      
+
       // Search with the embedding
       return await this.searchProducts(shopDomain, query, embedding, limit);
     } catch (error) {
@@ -235,10 +235,12 @@ export class SupabaseService {
     try {
       const { data, error } = await this.serviceClient
         .from('products')
-        .select(`
+        .select(
+          `
           *,
           variants (*)
-        `)
+        `
+        )
         .eq('shop_domain', shopDomain)
         .eq('id', productId)
         .single();
@@ -259,14 +261,19 @@ export class SupabaseService {
     }
   }
 
-  async getProductByHandle(shopDomain: string, handle: string): Promise<any | null> {
+  async getProductByHandle(
+    shopDomain: string,
+    handle: string
+  ): Promise<any | null> {
     try {
       const { data, error } = await this.serviceClient
         .from('products')
-        .select(`
+        .select(
+          `
           *,
           variants (*)
-        `)
+        `
+        )
         .eq('shop_domain', shopDomain)
         .eq('handle', handle)
         .single();

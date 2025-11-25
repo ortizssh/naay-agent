@@ -18,7 +18,7 @@ export class CacheService {
       try {
         this.redis = new Redis(config.redis.url);
         this.useRedis = true;
-        
+
         this.redis.on('error', (err: any) => {
           logger.error('Redis connection error:', err);
           this.useRedis = false;
@@ -52,13 +52,13 @@ export class CacheService {
           this.misses++;
           return null;
         }
-        
+
         if (item.expires < Date.now()) {
           this.memoryCache.delete(key);
           this.misses++;
           return null;
         }
-        
+
         this.hits++;
         return item.value;
       }
@@ -69,7 +69,11 @@ export class CacheService {
     }
   }
 
-  async set(key: string, value: any, options: CacheOptions = {}): Promise<void> {
+  async set(
+    key: string,
+    value: any,
+    options: CacheOptions = {}
+  ): Promise<void> {
     try {
       const ttl = options.ttl || 3600; // Default 1 hour
 
@@ -78,9 +82,9 @@ export class CacheService {
       } else {
         this.memoryCache.set(key, {
           value,
-          expires: Date.now() + ttl * 1000
+          expires: Date.now() + ttl * 1000,
         });
-        
+
         // Cleanup memory cache if it gets too big
         if (this.memoryCache.size > 1000) {
           this.cleanupMemoryCache();
@@ -135,7 +139,7 @@ export class CacheService {
   getMetrics() {
     const totalRequests = this.hits + this.misses;
     const hitRatio = totalRequests > 0 ? this.hits / totalRequests : 0;
-    
+
     return {
       redisConnected: this.useRedis && this.redis !== null,
       memoryCacheSize: this.memoryCache.size,
@@ -143,7 +147,7 @@ export class CacheService {
       hitRatio,
       hits: this.hits,
       misses: this.misses,
-      totalRequests
+      totalRequests,
     };
   }
 
@@ -153,7 +157,11 @@ export class CacheService {
   }
 
   // Cache Shopify session
-  async cacheShopifySession(shop: string, sessionData: any, ttl: number = 3600): Promise<void> {
+  async cacheShopifySession(
+    shop: string,
+    sessionData: any,
+    ttl: number = 3600
+  ): Promise<void> {
     await this.set(`shopify_session:${shop}`, sessionData, { ttl });
   }
 
@@ -162,9 +170,9 @@ export class CacheService {
     const keysToDelete = [
       `shopify_session:${shop}`,
       `shop_data:${shop}`,
-      `shop_config:${shop}`
+      `shop_config:${shop}`,
     ];
-    
+
     for (const key of keysToDelete) {
       await this.del(key);
     }
@@ -182,7 +190,9 @@ export class CacheService {
       } else {
         // For memory cache, filter by pattern
         const regex = new RegExp(pattern.replace(/\*/g, '.*'));
-        const keysToDelete = Array.from(this.memoryCache.keys()).filter(key => regex.test(key));
+        const keysToDelete = Array.from(this.memoryCache.keys()).filter(key =>
+          regex.test(key)
+        );
         for (const key of keysToDelete) {
           this.memoryCache.delete(key);
         }

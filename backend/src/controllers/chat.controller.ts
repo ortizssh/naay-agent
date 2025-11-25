@@ -468,18 +468,25 @@ async function getSessionInfo(sessionId: string): Promise<any> {
 
 // Simple widget endpoint (for easy integration)
 // Simple proxy route for n8n integration (DEPRECATED - widget goes directly to n8n)
-router.post('/legacy', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    logger.info('Legacy chat endpoint called - should use n8n directly', req.body);
-    res.status(410).json({
-      success: false,
-      message: 'This endpoint is deprecated. Widget should connect directly to n8n.',
-      data: null
-    });
-  } catch (error) {
-    next(error);
+router.post(
+  '/legacy',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      logger.info(
+        'Legacy chat endpoint called - should use n8n directly',
+        req.body
+      );
+      res.status(410).json({
+        success: false,
+        message:
+          'This endpoint is deprecated. Widget should connect directly to n8n.',
+        data: null,
+      });
+    } catch (error) {
+      next(error);
+    }
   }
-});
+);
 
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -502,11 +509,15 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     // Widget is already configured to go directly to n8n
     res.json({
       success: false,
-      message: 'Chat functionality moved to n8n. Please update widget configuration.',
+      message:
+        'Chat functionality moved to n8n. Please update widget configuration.',
       data: {
-        response: 'Lo siento, hay un problema de configuración. Por favor contacta soporte.',
-        conversationId: conversationId || `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      }
+        response:
+          'Lo siento, hay un problema de configuración. Por favor contacta soporte.',
+        conversationId:
+          conversationId ||
+          `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      },
     });
   } catch (error) {
     next(error);

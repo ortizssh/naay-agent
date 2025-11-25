@@ -22,7 +22,7 @@ npm run dev
 # Start individual services
 npm run dev:backend          # Backend API server
 npm run dev:admin           # Admin frontend panel  
-npm run dev:shopify         # Shopify app development
+npm run dev:shopify         # Shopify CLI development (requires Shopify CLI)
 
 # Build commands
 npm run build               # Build all components
@@ -50,7 +50,11 @@ cd backend
 
 # Development
 npm run dev                 # Start with tsx watch mode
-npm run build               # Build TypeScript to dist/
+npm run build               # Safe build with tsc + alias + assets
+npm run build:safe          # Same as build (primary build command)
+npm run build:compile       # TypeScript compilation only
+npm run build:alias         # Path alias resolution
+npm run build:assets        # Copy public directory to dist
 npm run start               # Start production server
 
 # Testing  
@@ -61,12 +65,18 @@ npm run test:coverage       # Generate coverage report
 # Single test commands
 npm test -- --testNamePattern="specific test name"
 npx jest path/to/test.js    # Run single test file
+
+# Linting
+npm run lint                # ESLint on TypeScript files
+npm run lint:fix            # Auto-fix linting issues
 ```
 
 ### Critical Configuration Notes
 - TypeScript strict mode is **disabled** (`strict: false`) - be aware when making type changes
 - Path aliases use `@/` prefix (e.g., `@/services/`, `@/types/`)
 - Environment config validation in `backend/src/utils/config.ts` with detailed error logging
+- Environment files located in `config/.env` (not backend/.env)
+- Build process includes type compilation, alias resolution, and asset copying
 
 ## Architecture Overview
 
@@ -174,8 +184,8 @@ npx jest path/to/test.js    # Run single test file
 ### Code Quality
 - ESLint configuration for TypeScript
 - Prettier for consistent formatting
-- Husky pre-commit hooks
-- TypeScript strict mode enabled
+- TypeScript strict mode **disabled** (requires careful type handling)
+- No pre-commit hooks currently configured
 
 ## Important Configuration Files
 
@@ -274,10 +284,12 @@ extensions/naay-chat-widget/
 - `GET /health/detailed` - Comprehensive health check
 
 ### Widget Testing
-- Test in Shopify theme preview
+- Test in Shopify theme preview mode
+- Use `backend/test-cart.html` for local widget testing
 - Verify CORS configuration for cross-domain loading
 - Check responsive behavior across devices
 - Validate chat functionality and cart operations
+- Widget file served from `backend/public/naay-widget.js`
 
 ### Common Issues to Check
 - CORS headers for widget script loading

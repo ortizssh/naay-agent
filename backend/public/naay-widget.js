@@ -50,16 +50,16 @@
         apiEndpoint: 'https://naay-agent-app1763504937.azurewebsites.net',
         position: 'bottom-right',
         // Naay Brand Colors from Design Guidelines
-        everyday: '#E8B5A1',    // Soft coral
-        fresh: '#8FA68E',       // Sage green  
-        delicate: '#D4C4B8',    // Soft taupe
-        forever: '#B8A882',     // Olive beige
-        hydra: '#A8C4C4',       // Soft blue-gray
-        deep: '#D4B82C',        // Mustard yellow
-        rich: '#B8943C',        // Golden brown
-        radiant: '#A68A3C',     // Olive gold
-        perfect: '#A8826B',     // Warm brown
-        sage: '#F8F9F8',        // Ultra-light sage
+        everyday: '#cec8ae',    // Primary - Warm cream
+        fresh: '#90a284',       // Secondary - Sage green  
+        delicate: '#c3ab79',    // Tertiary - Soft gold
+        forever: '#ca957e',     // Accent - Warm terracotta
+        hydra: '#A8C4C4',       // Soft blue-gray (preserved)
+        deep: '#D4B82C',        // Mustard yellow (preserved)
+        rich: '#B8943C',        // Golden brown (preserved)
+        radiant: '#A68A3C',     // Olive gold (preserved)
+        perfect: '#ca957e',     // Accent - Warm terracotta
+        sage: '#F8F9F8',        // Ultra-light sage (preserved)
         greeting: '',
         placeholder: 'Pregúntanos lo que quieras...',
         avatar: '🌿',
@@ -352,18 +352,27 @@
         
         :root {
           /* Naay Brand Color Palette */
-          --naay-everyday: #E8B5A1;
-          --naay-fresh: #8FA68E;
-          --naay-delicate: #D4C4B8;
-          --naay-forever: #B8A882;
+          --naay-everyday: #cec8ae;
+          --naay-fresh: #90a284;
+          --naay-delicate: #c3ab79;
+          --naay-forever: #ca957e;
           --naay-hydra: #A8C4C4;
           --naay-deep: #D4B82C;
           --naay-rich: #B8943C;
           --naay-radiant: #A68A3C;
-          --naay-perfect: #A8826B;
+          --naay-perfect: #ca957e;
           --naay-sage: #F8F9F8;
           --naay-white: #FFFFFF;
           --naay-black: #1A1A1A;
+          
+          /* Semantic Color Aliases */
+          --naay-primary: var(--naay-everyday);    /* #cec8ae - Primary actions */
+          --naay-secondary: var(--naay-fresh);     /* #90a284 - Secondary elements */
+          --naay-tertiary: var(--naay-delicate);   /* #c3ab79 - Tertiary elements */
+          --naay-accent: var(--naay-perfect);      /* #ca957e - Accent/highlights */
+          --naay-surface: var(--naay-sage);        /* #F8F9F8 - Background surfaces */
+          --naay-text-primary: var(--naay-black);  /* #1A1A1A - Primary text */
+          --naay-text-secondary: var(--naay-perfect); /* #ca957e - Secondary text */
           
           /* Typography */
           --naay-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
@@ -372,9 +381,9 @@
           --naay-font-weight-semibold: 600;
           
           /* Shadows & Effects */
-          --naay-shadow-soft: 0 4px 24px rgba(168, 130, 107, 0.08);
-          --naay-shadow-medium: 0 8px 32px rgba(168, 130, 107, 0.12);
-          --naay-shadow-strong: 0 16px 48px rgba(168, 130, 107, 0.16);
+          --naay-shadow-soft: 0 4px 24px rgba(202, 149, 126, 0.08);
+          --naay-shadow-medium: 0 8px 32px rgba(202, 149, 126, 0.12);
+          --naay-shadow-strong: 0 16px 48px rgba(202, 149, 126, 0.16);
           --naay-blur: backdrop-filter: blur(16px);
           
           /* Transitions */
@@ -485,7 +494,7 @@
           border-right: 8px solid var(--naay-white) !important;
           border-top: 8px solid transparent !important;
           border-bottom: 8px solid transparent !important;
-          filter: drop-shadow(-2px 0 4px rgba(168, 130, 107, 0.1)) !important;
+          filter: drop-shadow(-2px 0 4px rgba(202, 149, 126, 0.1)) !important;
         }
         
         .naay-widget--bottom-left .naay-widget__promotional-arrow {
@@ -672,11 +681,11 @@
           backdrop-filter: blur(20px) !important;
           -webkit-backdrop-filter: blur(20px) !important;
           border-radius: 0 16px 16px 0 !important;
-          border: 1px solid rgba(168, 130, 107, 0.15) !important;
+          border: 1px solid rgba(202, 149, 126, 0.15) !important;
           border-left: none !important;
           box-shadow: 
-            4px 0 32px rgba(168, 130, 107, 0.12),
-            2px 0 16px rgba(168, 130, 107, 0.08) !important;
+            4px 0 32px rgba(202, 149, 126, 0.12),
+            2px 0 16px rgba(202, 149, 126, 0.08) !important;
           display: flex !important;
           flex-direction: column !important;
           overflow: hidden !important;
@@ -716,11 +725,11 @@
           backdrop-filter: blur(24px) !important;
           -webkit-backdrop-filter: blur(24px) !important;
           border-radius: 20px !important;
-          border: 1px solid rgba(168, 130, 107, 0.15) !important;
+          border: 1px solid rgba(202, 149, 126, 0.15) !important;
           box-shadow: 
-            0 32px 64px rgba(168, 130, 107, 0.12),
-            0 16px 32px rgba(168, 130, 107, 0.08),
-            0 8px 16px rgba(168, 130, 107, 0.05),
+            0 32px 64px rgba(202, 149, 126, 0.12),
+            0 16px 32px rgba(202, 149, 126, 0.08),
+            0 8px 16px rgba(202, 149, 126, 0.05),
             inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
           display: none !important;
           flex-direction: column !important;
@@ -881,12 +890,12 @@
           border-radius: 12px !important;
           padding: 16px !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
-          box-shadow: 0 2px 8px rgba(168, 130, 107, 0.05) !important;
+          box-shadow: 0 2px 8px rgba(202, 149, 126, 0.05) !important;
           transition: all 0.2s var(--naay-transition) !important;
         }
 
         .naay-cart__item:hover {
-          box-shadow: 0 4px 12px rgba(168, 130, 107, 0.1) !important;
+          box-shadow: 0 4px 12px rgba(202, 149, 126, 0.1) !important;
           transform: translateY(-1px) !important;
         }
 
@@ -1016,12 +1025,12 @@
           align-items: center !important;
           justify-content: center !important;
           gap: 8px !important;
-          box-shadow: 0 4px 16px rgba(168, 130, 107, 0.3) !important;
+          box-shadow: 0 4px 16px rgba(202, 149, 126, 0.3) !important;
         }
 
         .naay-cart__checkout:hover {
           transform: translateY(-2px) !important;
-          box-shadow: 0 6px 20px rgba(168, 130, 107, 0.4) !important;
+          box-shadow: 0 6px 20px rgba(202, 149, 126, 0.4) !important;
         }
 
         .naay-cart__checkout svg {
@@ -1031,20 +1040,49 @@
 
         /* ======= PRODUCT RECOMMENDATION WIDGET STYLES ======= */
 
+        .naay-recommendations-container {
+          width: 100% !important;
+          margin: 8px 0 !important;
+        }
+
+        .naay-recommendations-grid {
+          display: flex !important;
+          flex-direction: row !important;
+          gap: 12px !important;
+          overflow-x: auto !important;
+          padding: 4px !important;
+          scrollbar-width: thin !important;
+          scrollbar-color: rgba(139, 90, 60, 0.3) transparent !important;
+        }
+
+        .naay-recommendations-grid::-webkit-scrollbar {
+          height: 4px !important;
+        }
+
+        .naay-recommendations-grid::-webkit-scrollbar-track {
+          background: transparent !important;
+        }
+
+        .naay-recommendations-grid::-webkit-scrollbar-thumb {
+          background: rgba(139, 90, 60, 0.3) !important;
+          border-radius: 2px !important;
+        }
+
         .naay-product-card {
           background: var(--naay-white) !important;
           border-radius: 12px !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
           overflow: hidden !important;
-          box-shadow: 0 2px 8px rgba(168, 130, 107, 0.08) !important;
+          box-shadow: 0 2px 8px rgba(202, 149, 126, 0.08) !important;
           transition: none !important;
-          margin: 8px 0 !important;
-          width: 100% !important;
-          max-width: 100% !important;
+          margin: 0 !important;
+          width: 180px !important;
+          min-width: 180px !important;
+          flex-shrink: 0 !important;
           position: relative !important;
           display: flex !important;
-          flex-direction: row !important;
-          min-height: 90px !important;
+          flex-direction: column !important;
+          height: auto !important;
         }
 
         /* Hover effects removed */
@@ -1080,16 +1118,16 @@
 
         .naay-product-card__media {
           position: relative !important;
-          width: 80px !important;
-          height: 80px !important;
+          width: 100% !important;
+          height: 140px !important;
           flex-shrink: 0 !important;
           overflow: hidden !important;
           background: var(--naay-sage) !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
-          border-radius: 10px !important;
-          align-self: center !important;
+          border-radius: 0 !important;
+          margin: 0 !important;
         }
 
         .naay-product-card__image {
@@ -1097,7 +1135,7 @@
           height: 100% !important;
           object-fit: cover !important;
           transition: none !important;
-          border-radius: 10px !important;
+          border-radius: 0 !important;
         }
 
         /* Image hover effect removed */
@@ -1239,33 +1277,33 @@
 
         .naay-product-card__add-btn {
           flex: 1 !important;
-          background: linear-gradient(135deg, var(--naay-perfect) 0%, var(--naay-rich) 100%) !important;
-          color: var(--naay-white) !important;
+          background: #8B5A3C !important;
+          color: #ffffff !important;
           border: none !important;
           border-radius: 4px !important;
           padding: 6px 10px !important;
           font-size: 11px !important;
-          font-weight: var(--naay-font-weight-semibold) !important;
+          font-weight: 500 !important;
           cursor: pointer !important;
           transition: none !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
           gap: 8px !important;
-          box-shadow: 0 2px 8px rgba(168, 130, 107, 0.3) !important;
+          box-shadow: none !important;
         }
 
         /* Add button hover effect removed */
 
         .naay-product-card__add-btn--disabled {
-          background: rgba(168, 130, 107, 0.3) !important;
+          background: rgba(202, 149, 126, 0.3) !important;
           cursor: not-allowed !important;
           transform: none !important;
           box-shadow: none !important;
         }
 
         .naay-product-card__add-btn--success {
-          background: linear-gradient(135deg, #10b981, #059669) !important;
+          background: #10b981 !important;
         }
 
         .naay-product-card__add-btn svg {
@@ -1283,9 +1321,9 @@
         }
 
         .naay-product-card__details-btn {
-          background: rgba(168, 130, 107, 0.1) !important;
+          background: rgba(202, 149, 126, 0.1) !important;
           color: var(--naay-perfect) !important;
-          border: 1px solid rgba(168, 130, 107, 0.3) !important;
+          border: 1px solid rgba(202, 149, 126, 0.3) !important;
           border-radius: 4px !important;
           padding: 6px 10px !important;
           font-size: 11px !important;
@@ -1346,7 +1384,7 @@
           width: 90vw !important;
           max-height: 80vh !important;
           overflow: hidden !important;
-          box-shadow: 0 20px 40px rgba(168, 130, 107, 0.2) !important;
+          box-shadow: 0 20px 40px rgba(202, 149, 126, 0.2) !important;
         }
 
         .naay-product-modal__header {
@@ -1376,7 +1414,7 @@
         }
 
         .naay-product-modal__close:hover {
-          background: rgba(168, 130, 107, 0.1) !important;
+          background: rgba(202, 149, 126, 0.1) !important;
         }
 
         .naay-product-modal__close svg {
@@ -1427,12 +1465,12 @@
           font-weight: var(--naay-font-weight-semibold) !important;
           cursor: pointer !important;
           transition: none !important;
-          box-shadow: 0 4px 16px rgba(168, 130, 107, 0.3) !important;
+          box-shadow: 0 4px 16px rgba(202, 149, 126, 0.3) !important;
         }
 
         .naay-product-modal__add-btn:hover {
           transform: translateY(-2px) !important;
-          box-shadow: 0 6px 20px rgba(168, 130, 107, 0.4) !important;
+          box-shadow: 0 6px 20px rgba(202, 149, 126, 0.4) !important;
         }
 
         /* Simple Header */
@@ -1531,7 +1569,7 @@
           padding: 6px !important;
           cursor: pointer !important;
           transition: none !important;
-          box-shadow: 0 2px 8px rgba(168, 130, 107, 0.1) !important;
+          box-shadow: 0 2px 8px rgba(202, 149, 126, 0.1) !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
@@ -1543,7 +1581,7 @@
           background: var(--naay-white) !important;
           border-color: var(--naay-perfect) !important;
           transform: translateY(-2px) !important;
-          box-shadow: 0 4px 16px rgba(168, 130, 107, 0.2) !important;
+          box-shadow: 0 4px 16px rgba(202, 149, 126, 0.2) !important;
         }
 
         /* Back Button in Conversation */
@@ -1555,7 +1593,7 @@
           padding: 6px !important;
           cursor: pointer !important;
           transition: none !important;
-          box-shadow: 0 2px 8px rgba(168, 130, 107, 0.1) !important;
+          box-shadow: 0 2px 8px rgba(202, 149, 126, 0.1) !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
@@ -1567,7 +1605,7 @@
           background: var(--naay-white) !important;
           border-color: var(--naay-perfect) !important;
           transform: translateY(-2px) !important;
-          box-shadow: 0 4px 16px rgba(168, 130, 107, 0.2) !important;
+          box-shadow: 0 4px 16px rgba(202, 149, 126, 0.2) !important;
         }
 
         .naay-widget__back-btn svg {
@@ -1740,7 +1778,7 @@
 
         .naay-widget__input:focus {
           border-color: var(--naay-perfect) !important;
-          box-shadow: 0 0 0 3px rgba(168, 130, 107, 0.1) !important;
+          box-shadow: 0 0 0 3px rgba(202, 149, 126, 0.1) !important;
           transform: translateY(-1px) !important;
         }
 
@@ -2326,12 +2364,12 @@
           background: var(--naay-white) !important;
           border-radius: 12px !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
-          box-shadow: 0 2px 8px rgba(168, 130, 107, 0.08) !important;
+          box-shadow: 0 2px 8px rgba(202, 149, 126, 0.08) !important;
           transition: all 0.2s var(--naay-transition) !important;
         }
 
         .naay-cart-panel__item:hover {
-          box-shadow: 0 4px 12px rgba(168, 130, 107, 0.12) !important;
+          box-shadow: 0 4px 12px rgba(202, 149, 126, 0.12) !important;
           transform: translateY(-1px) !important;
         }
 
@@ -2355,7 +2393,7 @@
           align-items: center !important;
           justify-content: center !important;
           background: rgba(212, 196, 184, 0.1) !important;
-          color: rgba(168, 130, 107, 0.5) !important;
+          color: rgba(202, 149, 126, 0.5) !important;
         }
 
         .naay-cart-panel__item-image--placeholder svg {
@@ -2572,13 +2610,12 @@
           }
           
           .naay-cart-panel {
-            width: calc(100vw - 40px) !important;
-            max-width: 360px !important;
-            right: auto !important;
-            left: 20px !important;
-            bottom: 80px !important;
-            height: 450px !important;
-            transform: translateY(20px) scale(0.95) !important;
+            position: absolute !important;
+            right: 380px !important;
+            bottom: 0px !important;
+            width: 350px !important;
+            height: 100% !important;
+            transform: translateX(-20px) scale(0.98) !important;
           }
           
           .naay-cart-toggle {
@@ -2608,10 +2645,12 @@
           }
           
           .naay-cart-panel {
-            width: 95vw !important;
-            max-width: none !important;
-            height: 350px !important;
-            left: -95vw !important;
+            position: absolute !important;
+            right: 320px !important;
+            bottom: 0px !important;
+            width: 300px !important;
+            height: 100% !important;
+            transform: translateX(-20px) scale(0.95) !important;
           }
           
           .naay-cart-toggle {
@@ -3478,23 +3517,53 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     addProductRecommendations(products) {
       console.log('🛍️ Adding multiple product recommendations:', products);
       console.log('🔍 Currently added products:', Array.from(this.addedProducts));
+      console.trace('📍 addProductRecommendations called from:');
       
-      products.forEach(shopifyProduct => {
-        // Transform Shopify product format to widget format
+      // Create horizontal container for recommendations
+      const recommendationsContainer = document.createElement('div');
+      recommendationsContainer.className = 'naay-widget__message naay-widget__message--assistant';
+      
+      // Process products and store valid ones
+      const validProducts = [];
+      const productsHTML = products.map(shopifyProduct => {
         const product = this.transformShopifyProduct(shopifyProduct);
-        
-        // Create unique identifier for the product
         const productKey = `${product.id}-${product.variantId}-${product.title}`.replace(/\s+/g, '_');
         
         // Only add if not already added in this session
         if (!this.addedProducts.has(productKey)) {
           this.addedProducts.add(productKey);
-          this.addProductRecommendation(product);
+          validProducts.push(product);
           console.log(`✅ Added unique product: ${product.title} (${productKey})`);
+          return this.createProductCardHTML(product);
         } else {
           console.log(`⚠️  Skipping duplicate product: ${product.title} (${productKey})`);
+          return '';
+        }
+      }).filter(html => html);
+
+      const recommendationsHTML = `
+        <div class="naay-recommendations-container">
+          <div class="naay-recommendations-grid">
+            ${productsHTML.join('')}
+          </div>
+        </div>
+      `;
+      
+      recommendationsContainer.innerHTML = recommendationsHTML;
+      
+      // Add event listeners for all product cards using valid products array
+      const productCards = recommendationsContainer.querySelectorAll('.naay-product-card');
+      productCards.forEach((card, index) => {
+        const product = validProducts[index];
+        if (product) {
+          this.setupProductCardListeners(card, product);
         }
       });
+      
+      if (this.messagesContainer) {
+        this.messagesContainer.appendChild(recommendationsContainer);
+        this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+      }
       
       console.log('🔍 Total unique products added so far:', this.addedProducts.size);
     }
