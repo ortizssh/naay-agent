@@ -1047,42 +1047,26 @@
 
         .naay-recommendations-grid {
           display: flex !important;
-          flex-direction: row !important;
+          flex-direction: column !important;
           gap: 12px !important;
-          overflow-x: auto !important;
           padding: 4px !important;
-          scrollbar-width: thin !important;
-          scrollbar-color: rgba(139, 90, 60, 0.3) transparent !important;
         }
 
-        .naay-recommendations-grid::-webkit-scrollbar {
-          height: 4px !important;
-        }
-
-        .naay-recommendations-grid::-webkit-scrollbar-track {
-          background: transparent !important;
-        }
-
-        .naay-recommendations-grid::-webkit-scrollbar-thumb {
-          background: rgba(139, 90, 60, 0.3) !important;
-          border-radius: 2px !important;
-        }
 
         .naay-product-card {
           background: var(--naay-white) !important;
-          border-radius: 12px !important;
+          border-radius: 16px !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
           overflow: hidden !important;
           box-shadow: 0 2px 8px rgba(202, 149, 126, 0.08) !important;
           transition: none !important;
           margin: 0 !important;
-          width: 180px !important;
-          min-width: 180px !important;
-          flex-shrink: 0 !important;
+          width: 100% !important;
           position: relative !important;
           display: flex !important;
-          flex-direction: column !important;
+          flex-direction: row !important;
           height: auto !important;
+          min-height: 100px !important;
         }
 
         /* Hover effects removed */
@@ -1118,15 +1102,15 @@
 
         .naay-product-card__media {
           position: relative !important;
-          width: 100% !important;
-          height: 140px !important;
+          width: 100px !important;
+          height: 100px !important;
           flex-shrink: 0 !important;
           overflow: hidden !important;
           background: var(--naay-sage) !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
-          border-radius: 0 !important;
+          border-radius: 8px !important;
           margin: 0 !important;
         }
 
@@ -1195,6 +1179,7 @@
 
         .naay-product-card__content {
           padding: 12px !important;
+          margin-left: 12px !important;
           flex: 1 !important;
           display: flex !important;
           flex-direction: column !important;
@@ -1277,12 +1262,12 @@
 
         .naay-product-card__add-btn {
           flex: 1 !important;
-          background: #8B5A3C !important;
-          color: #ffffff !important;
+          background: var(--naay-perfect) !important;
+          color: var(--naay-white) !important;
           border: none !important;
-          border-radius: 4px !important;
-          padding: 6px 10px !important;
-          font-size: 11px !important;
+          border-radius: 6px !important;
+          padding: 8px 12px !important;
+          font-size: 12px !important;
           font-weight: 500 !important;
           cursor: pointer !important;
           transition: none !important;
@@ -1948,6 +1933,15 @@
             bottom: 100px !important;
           }
           
+          .naay-cart-panel {
+            height: calc(100vh - 120px) !important;
+            left: calc(-100vw + 24px) !important; /* Hide completely offscreen on mobile */
+          }
+          
+          .naay-cart-panel--open {
+            left: calc(-100vw + 36px) !important; /* Still hidden on mobile since no space */
+          }
+          
           .naay-widget__promotional-message {
             right: 12px !important;
             bottom: 100px !important;
@@ -1963,6 +1957,15 @@
             left: 8px !important;
             bottom: 88px !important;
             border-radius: 8px !important;
+          }
+          
+          .naay-cart-panel {
+            height: calc(100vh - 100px) !important;
+            left: calc(-100vw + 16px) !important; /* Hide completely offscreen on mobile */
+          }
+          
+          .naay-cart-panel--open {
+            left: calc(-100vw + 24px) !important; /* Still hidden on mobile since no space */
           }
           
           .naay-widget__promotional-message {
@@ -2171,13 +2174,13 @@
         .naay-cart-panel {
           position: absolute !important;
           bottom: 0px !important;
-          right: 400px !important; /* Align with chat widget edge */
+          left: -360px !important; /* Initially hidden to the left */
           width: 360px !important;
-          height: 100% !important; /* Same height as chat */
+          height: 620px !important; /* Same height as chat widget */
           background: rgba(248, 249, 248, 0.98) !important;
           backdrop-filter: blur(20px) !important;
           -webkit-backdrop-filter: blur(20px) !important;
-          border-radius: 16px 0 0 16px !important; /* Rounded only on left side */
+          border-radius: 0 16px 16px 0 !important; /* Rounded only on right side */
           border: 1px solid rgba(212, 196, 184, 0.3) !important;
           border-right: none !important; /* No right border to connect with chat */
           box-shadow: -4px 0 16px rgba(139, 93, 75, 0.1) !important; /* Shadow only on left */
@@ -2186,37 +2189,34 @@
           overflow: hidden !important;
           opacity: 0 !important;
           visibility: hidden !important;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
           pointer-events: none !important;
           z-index: 999997 !important;
-          transform: translateX(-20px) scale(0.98) !important;
+          transition: all 0.4s var(--naay-transition) !important;
         }
 
         .naay-cart-panel--open {
+          left: -20px !important; /* Slide in from left, overlap slightly with chat */
           opacity: 1 !important;
           visibility: visible !important;
           pointer-events: auto !important;
-          transform: translateX(0) scale(1) !important;
         }
 
-        /* Cart panel positioning for bottom-left widget */
+        /* Cart panel positioning for bottom-left widget - now same as default since cart is always on left */
         .naay-widget--bottom-left .naay-cart-panel {
-          right: auto !important;
-          left: 400px !important; /* Position to right of chat for left-positioned widget */
+          left: -360px !important; /* Same positioning as default */
           border-radius: 0 16px 16px 0 !important; /* Rounded only on right side */
-          border-right: 1px solid rgba(212, 196, 184, 0.3) !important;
-          border-left: none !important; /* No left border to connect with chat */
-          box-shadow: 4px 0 16px rgba(139, 93, 75, 0.1) !important; /* Shadow only on right */
-          transform: translateX(20px) scale(0.98) !important;
+          border-right: none !important; /* No right border to connect with chat */
+          border-left: 1px solid rgba(212, 196, 184, 0.3) !important;
+          box-shadow: -4px 0 16px rgba(139, 93, 75, 0.1) !important; /* Shadow only on left */
         }
 
         .naay-widget--bottom-left .naay-cart-panel--open {
-          transform: translateX(0) scale(1) !important;
+          left: -20px !important; /* Same as default since cart is always on left */
         }
 
         /* Connect chat widget with cart when cart is open */
-        .naay-cart-panel--open + .naay-widget__chat {
-          border-radius: 16px 0 0 16px !important; /* Remove right border radius */
+        .naay-cart-panel--open + .naay-chat-container .naay-widget__chat {
+          border-radius: 0 16px 16px 0 !important; /* Remove left border radius */
         }
         
         .naay-widget--bottom-left .naay-cart-panel--open + .naay-widget__chat {
@@ -3950,7 +3950,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         // Add welcome message only if no conversation ID exists
       } else {
         console.log('🆕 Starting new conversation');
-        this.addMessage(this.config.greeting, 'assistant');
+        // Default message removed - widget starts clean
       }
     }
 
