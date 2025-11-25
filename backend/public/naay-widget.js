@@ -4477,8 +4477,16 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       
       // Try to remove from Shopify native cart first
       let removedFromShopify = false;
-      const isShopifyStore = window.location.hostname.includes('myshopify.com') || 
-                            window.location.hostname.includes('shopify.com');
+      const isShopifyDomain = window.location.hostname.includes('myshopify.com') || 
+                              window.location.hostname.includes('shopify.com');
+      
+      // Always check window.NaayConfig for the most up-to-date configuration
+      const currentShopDomain = (window.NaayConfig && window.NaayConfig.shopDomain) || this.config.shopDomain;
+      const hasShopConfig = currentShopDomain && currentShopDomain.trim() !== '';
+      const isShopifyStore = isShopifyDomain || hasShopConfig;
+      
+      console.log('🗑️ Remove from Shopify?', isShopifyStore, 'Has line_index:', !!item.line_index, 'Shop config:', currentShopDomain);
+      console.log('🔍 Item details:', { id: item.id, title: item.title, line_index: item.line_index, variantId: item.variantId });
       
       if (isShopifyStore && item.line_index) {
         try {
@@ -4512,8 +4520,16 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       
       // Try to update quantity in Shopify native cart first
       let updatedInShopify = false;
-      const isShopifyStore = window.location.hostname.includes('myshopify.com') || 
-                            window.location.hostname.includes('shopify.com');
+      const isShopifyDomain = window.location.hostname.includes('myshopify.com') || 
+                              window.location.hostname.includes('shopify.com');
+      
+      // Always check window.NaayConfig for the most up-to-date configuration
+      const currentShopDomain = (window.NaayConfig && window.NaayConfig.shopDomain) || this.config.shopDomain;
+      const hasShopConfig = currentShopDomain && currentShopDomain.trim() !== '';
+      const isShopifyStore = isShopifyDomain || hasShopConfig;
+      
+      console.log('🔄 Update in Shopify?', isShopifyStore, 'Has line_index:', !!item.line_index, 'New quantity:', newQuantity);
+      console.log('🔍 Item details:', { id: item.id, title: item.title, line_index: item.line_index, variantId: item.variantId });
       
       if (isShopifyStore && item.line_index) {
         try {
@@ -4991,16 +5007,23 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       console.log('🛒 Removing from Shopify native cart line:', lineIndex);
       
       try {
+        const payload = {
+          line: lineIndex,
+          quantity: 0
+        };
+        console.log('📤 Sending to /cart/change.js:', payload);
+        
         const response = await fetch('/cart/change.js', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
           },
-          body: JSON.stringify({
-            line: lineIndex,
-            quantity: 0
-          }),
+          body: JSON.stringify(payload),
         });
+        
+        console.log('📥 Response status:', response.status, response.statusText);
         
         if (response.ok) {
           const result = await response.json();
@@ -5026,16 +5049,23 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       console.log('🛒 Updating Shopify cart quantity. Line:', lineIndex, 'Quantity:', newQuantity);
       
       try {
+        const payload = {
+          line: lineIndex,
+          quantity: newQuantity
+        };
+        console.log('📤 Sending to /cart/change.js:', payload);
+        
         const response = await fetch('/cart/change.js', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
           },
-          body: JSON.stringify({
-            line: lineIndex,
-            quantity: newQuantity
-          }),
+          body: JSON.stringify(payload),
         });
+        
+        console.log('📥 Response status:', response.status, response.statusText);
         
         if (response.ok) {
           const result = await response.json();
