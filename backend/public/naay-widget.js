@@ -98,6 +98,8 @@
     init() {
       console.log('✨ Initializing Naay Luxury Widget v2.1 with Cart Sidebar:', new Date().toISOString());
       console.log('🏪 Shop Domain:', this.config.shopDomain);
+      console.log('🔧 Full Config Debug:', JSON.stringify(this.config, null, 2));
+      console.log('🌐 Window NaayConfig Debug:', window.NaayConfig);
       
       // Load settings from server
       this.loadSettings().then(() => {

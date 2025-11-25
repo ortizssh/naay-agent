@@ -170,7 +170,29 @@ async function startServer() {
       next();
     });
 
-    // Public APIs CORS middleware - for cart and products endpoints
+
+    // Security middleware - allow iframe embedding for Shopify (but not for widget files)
+    app.use((req, res, next) => {
+      if (!req.path.includes('naay-widget.js')) {
+        helmet({
+          contentSecurityPolicy: {
+            directives: {
+              frameAncestors: [
+                "'self'",
+                'https://*.shopify.com',
+                'https://*.shop.app',
+                'https://admin.shopify.com',
+                'https://*.myshopify.com',
+              ],
+            },
+          },
+          frameguard: false, // Disable frameguard to allow iframe
+        })(req, res, next);
+      } else {
+        next();
+      }
+    });
+    // Public APIs CORS middleware - MOVED BEFORE GENERAL CORS
     app.use('/api/public', (req, res, next) => {
       const origin = req.get('Origin');
 
@@ -222,27 +244,6 @@ async function startServer() {
       next();
     });
 
-    // Security middleware - allow iframe embedding for Shopify (but not for widget files)
-    app.use((req, res, next) => {
-      if (!req.path.includes('naay-widget.js')) {
-        helmet({
-          contentSecurityPolicy: {
-            directives: {
-              frameAncestors: [
-                "'self'",
-                'https://*.shopify.com',
-                'https://*.shop.app',
-                'https://admin.shopify.com',
-                'https://*.myshopify.com',
-              ],
-            },
-          },
-          frameguard: false, // Disable frameguard to allow iframe
-        })(req, res, next);
-      } else {
-        next();
-      }
-    });
     app.use(
       cors({
         origin:
