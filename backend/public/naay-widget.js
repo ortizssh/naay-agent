@@ -1971,33 +1971,41 @@
             border-radius: 16px !important;
           }
           
-          /* Cart panel as full screen overlay on mobile */
+          /* Cart panel centered on mobile */
           .naay-cart-panel {
-            bottom: -100vh !important; /* Hidden below screen */
-            left: 0 !important;
-            right: 0 !important;
-            width: 100vw !important;
-            height: calc(100vh - 60px) !important;
-            border-radius: 20px 20px 0 0 !important;
-            border: none !important;
-            box-shadow: 0 -12px 40px rgba(139, 93, 75, 0.2) !important;
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            right: auto !important;
+            bottom: auto !important;
+            width: calc(100vw - 32px) !important;
+            max-width: 400px !important;
+            height: 80vh !important;
+            max-height: 600px !important;
+            transform: translate(-50%, -50%) scale(0.8) !important;
+            border-radius: 20px !important;
+            border: 1px solid rgba(212, 196, 184, 0.3) !important;
+            box-shadow: 0 20px 60px rgba(139, 93, 75, 0.3) !important;
+            opacity: 0 !important;
           }
           
           .naay-cart-panel--open {
-            bottom: 0 !important; /* Slide up to cover most of screen */
-            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important; /* Smooth slide up */
+            transform: translate(-50%, -50%) scale(1) !important;
+            opacity: 1 !important;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
           }
           
-          /* Add backdrop blur when cart is open on mobile */
-          .naay-cart-panel--open::after {
+          /* Add backdrop when cart is open on mobile */
+          .naay-cart-panel--open::before {
             content: '' !important;
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
             right: 0 !important;
             bottom: 0 !important;
-            background: rgba(0, 0, 0, 0.3) !important;
-            backdrop-filter: blur(8px) !important;
+            background: rgba(0, 0, 0, 0.4) !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
             z-index: -1 !important;
           }
           
@@ -2324,7 +2332,7 @@
         .naay-cart-panel {
           position: absolute !important;
           bottom: 88px !important; /* Same as chat widget */
-          right: -380px !important; /* Initially hidden to the right (offscreen) */
+          right: calc(50vw - 100px) !important; /* Start closer, only 100px slide distance */
           width: 360px !important;
           height: 620px !important; /* Same height as chat widget */
           background: rgba(248, 249, 248, 0.98) !important;
@@ -2353,11 +2361,11 @@
 
         /* Cart panel positioning for bottom-right widget (default) */
         .naay-widget--bottom-right .naay-cart-panel {
-          right: -380px !important; /* Hidden to right (offscreen) */
+          right: calc(50vw - 100px) !important; /* Start closer for shorter slide */
         }
 
         .naay-widget--bottom-right .naay-cart-panel--open {
-          right: 50vw !important; /* Slide from right to left */
+          right: 50vw !important; /* Short 100px slide from right to left */
         }
 
         /* Cart panel positioning for bottom-left widget */
