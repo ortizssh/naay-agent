@@ -261,8 +261,15 @@ async function startServer() {
       next();
     });
 
-    // Rate limiting
-    app.use(rateLimiter);
+    // Rate limiting (exclude widget routes from rate limiting)
+    app.use((req, res, next) => {
+      // Skip rate limiting for widget script and static files
+      if (req.path.startsWith('/widget/') || req.path.startsWith('/static/naay-widget')) {
+        return next();
+      }
+      // Apply rate limiting to all other routes
+      rateLimiter(req, res, next);
+    });
 
     // Request logging
     app.use(requestLogger);

@@ -51,18 +51,46 @@
     console.log('🌿 Naay Chat: Loading widget for block {{ block.id }}');
     
     var script = document.createElement('script');
-    script.src = 'https://naay-agent-app1763504937.azurewebsites.net/static/naay-widget.js?v=' + Date.now();
+    script.src = 'https://naay-agent-app1763504937.azurewebsites.net/widget/naay-widget.js?v=' + Date.now();
     script.async = true;
+    script.crossOrigin = 'anonymous';
     script.onload = function() {
       console.log('✅ Naay Chat: Widget loaded successfully');
-      if (window.NaayWidget && window.NaayConfig) {
-        new window.NaayWidget(window.NaayConfig);
+      try {
+        if (window.NaayWidget && window.NaayConfig) {
+          new window.NaayWidget(window.NaayConfig);
+        } else {
+          console.warn('⚠️ NaayWidget or NaayConfig not available after script load');
+        }
+      } catch (error) {
+        console.error('❌ Error initializing Naay Widget:', error);
       }
     };
-    script.onerror = function() {
-      console.error('❌ Failed to load Naay Widget');
+    script.onerror = function(error) {
+      console.error('❌ Failed to load Naay Widget script:', error);
+      console.log('🔄 Attempting fallback initialization...');
+      
+      // Fallback: try to initialize if widget was already loaded from cache
+      setTimeout(function() {
+        if (window.NaayWidget && window.NaayConfig) {
+          try {
+            new window.NaayWidget(window.NaayConfig);
+            console.log('✅ Fallback initialization successful');
+          } catch (fallbackError) {
+            console.error('❌ Fallback initialization failed:', fallbackError);
+          }
+        }
+      }, 1000);
     };
     document.head.appendChild(script);
+  } else if (window.NaayWidget && window.NaayConfig) {
+    // Script already loaded, just initialize
+    console.log('🔄 Naay Chat: Script already loaded, initializing widget');
+    try {
+      new window.NaayWidget(window.NaayConfig);
+    } catch (error) {
+      console.error('❌ Error initializing existing Naay Widget:', error);
+    }
   }
 </script>
 
