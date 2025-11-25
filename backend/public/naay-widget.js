@@ -98,8 +98,6 @@
     init() {
       console.log('✨ Initializing Naay Luxury Widget v2.1 with Cart Sidebar:', new Date().toISOString());
       console.log('🏪 Shop Domain:', this.config.shopDomain);
-      console.log('🔧 Full Config:', this.config);
-      console.log('🌐 Window NaayConfig:', window.NaayConfig);
       
       // Load settings from server
       this.loadSettings().then(() => {
@@ -4766,9 +4764,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         
         // Fallback: construct checkout URL based on shop domain
         const shopDomain = this.config.shopDomain;
-        console.log('🔍 Checkout Debug - shopDomain:', shopDomain);
-        console.log('🔍 Checkout Debug - config:', this.config);
-        console.log('🔍 Checkout Debug - window.NaayConfig:', window.NaayConfig);
+        console.log('🔍 Using shop domain for checkout:', shopDomain);
         if (!shopDomain) {
           console.error('❌ No shop domain configured');
           this.addMessage('Error: No se pudo obtener la información de la tienda.', 'assistant');
