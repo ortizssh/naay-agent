@@ -44,7 +44,7 @@
     }
   };
 
-  // Load widget script only once
+  // Load widget script only once per page
   if (!window.naayWidgetLoaded) {
     window.naayWidgetLoaded = true;
     
@@ -57,8 +57,12 @@
     script.onload = function() {
       console.log('✅ Naay Chat: Widget loaded successfully');
       try {
-        if (window.NaayWidget && window.NaayConfig) {
-          new window.NaayWidget(window.NaayConfig);
+        // Only initialize if no widget instance exists
+        if (window.NaayWidget && window.NaayConfig && !window.naayWidgetInstance) {
+          window.naayWidgetInstance = new window.NaayWidget(window.NaayConfig);
+          console.log('✅ Naay Widget instance created');
+        } else if (window.naayWidgetInstance) {
+          console.log('⚠️ Naay Widget instance already exists, skipping creation');
         } else {
           console.warn('⚠️ NaayWidget or NaayConfig not available after script load');
         }
@@ -68,29 +72,19 @@
     };
     script.onerror = function(error) {
       console.error('❌ Failed to load Naay Widget script:', error);
-      console.log('🔄 Attempting fallback initialization...');
-      
-      // Fallback: try to initialize if widget was already loaded from cache
-      setTimeout(function() {
-        if (window.NaayWidget && window.NaayConfig) {
-          try {
-            new window.NaayWidget(window.NaayConfig);
-            console.log('✅ Fallback initialization successful');
-          } catch (fallbackError) {
-            console.error('❌ Fallback initialization failed:', fallbackError);
-          }
-        }
-      }, 1000);
     };
     document.head.appendChild(script);
-  } else if (window.NaayWidget && window.NaayConfig) {
-    // Script already loaded, just initialize
-    console.log('🔄 Naay Chat: Script already loaded, initializing widget');
+  } else if (window.NaayWidget && window.NaayConfig && !window.naayWidgetInstance) {
+    // Script already loaded, but no instance created yet
+    console.log('🔄 Naay Chat: Script already loaded, creating widget instance');
     try {
-      new window.NaayWidget(window.NaayConfig);
+      window.naayWidgetInstance = new window.NaayWidget(window.NaayConfig);
+      console.log('✅ Naay Widget instance created');
     } catch (error) {
-      console.error('❌ Error initializing existing Naay Widget:', error);
+      console.error('❌ Error creating Naay Widget instance:', error);
     }
+  } else if (window.naayWidgetInstance) {
+    console.log('✅ Naay Widget already running, no action needed');
   }
 </script>
 

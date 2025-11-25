@@ -4292,20 +4292,21 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         console.log('⚠️  No Shopify configuration or domain, skipping native cart addition');
       }
       
-      // Also add via our API for consistency
-      try {
-        const response = await fetch(`${this.config.apiEndpoint}/api/public/cart/add`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            shop: this.config.shopDomain,
-            cartId: this.cartId,
-            variantId: product.variantId,
-            quantity: product.quantity || 1,
-          }),
-        });
+      // Also add via our API for consistency (only if we have shop config)
+      if (hasShopConfig) {
+        try {
+          const response = await fetch(`${this.config.apiEndpoint}/api/public/cart/add`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              shop: this.config.shopDomain,
+              cartId: this.cartId,
+              variantId: product.variantId,
+              quantity: product.quantity || 1,
+            }),
+          });
 
         const data = await response.json();
         
@@ -4320,10 +4321,17 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           // Fallback to local cart only if Shopify native also failed
           this.addToCartLocal(product);
         }
-      } catch (error) {
-        console.error('❌ Error adding to cart via API:', error);
+        } catch (error) {
+          console.error('❌ Error adding to cart via API:', error);
+          if (!addedToShopify) {
+            // Fallback to local cart only if Shopify native also failed
+            this.addToCartLocal(product);
+          }
+        }
+      } else {
+        console.log('⚠️ No shop configuration, adding to local cart only');
+        // Add to local cart if we don't have shop config
         if (!addedToShopify) {
-          // Fallback to local cart only if Shopify native also failed
           this.addToCartLocal(product);
         }
       }
