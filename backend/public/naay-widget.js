@@ -404,6 +404,7 @@
           opacity: 0 !important;
           transform: translateY(20px) !important;
           transition: all 600ms var(--naay-transition) !important;
+          overflow: visible !important;
         }
 
         .naay-widget--loaded {
@@ -1697,29 +1698,31 @@
           align-items: center !important;
           gap: 12px !important;
           padding: 16px !important;
-          background: #ffffff !important;
-          border-radius: 6px !important;
-          border: 1px solid #e5e5e5 !important;
-          transition: none !important;
+          background: var(--naay-white) !important;
+          border-radius: 12px !important;
+          border: 1px solid rgba(202, 149, 126, 0.15) !important;
+          transition: all 0.2s var(--naay-transition) !important;
           cursor: pointer !important;
         }
 
         .naay-widget__feature:hover {
-          background: #f9f9f9 !important;
-          border-color: #d0d0d0 !important;
+          background: var(--naay-sage) !important;
+          border-color: var(--naay-perfect) !important;
+          transform: translateY(-2px) !important;
+          box-shadow: 0 4px 12px rgba(202, 149, 126, 0.12) !important;
         }
 
         .naay-feature-icon {
           width: 20px !important;
           height: 20px !important;
-          color: #8B5A3C !important;
+          color: var(--naay-perfect) !important;
           flex-shrink: 0 !important;
         }
 
         .naay-widget__feature span {
-          color: #333333 !important;
+          color: var(--naay-text-primary) !important;
           font-size: 13px !important;
-          font-weight: 400 !important;
+          font-weight: 500 !important;
           line-height: 1.3 !important;
         }
 
@@ -1936,11 +1939,11 @@
           
           .naay-cart-panel {
             height: calc(100vh - 120px) !important;
-            left: calc(-100vw + 24px) !important; /* Hide completely offscreen on mobile */
+            right: 100vw !important; /* Hide completely offscreen on mobile */
           }
           
           .naay-cart-panel--open {
-            left: calc(-100vw + 36px) !important; /* Still hidden on mobile since no space */
+            right: calc(100% - 1px) !important; /* Slide to touch chat left edge */
           }
           
           .naay-widget__promotional-message {
@@ -1962,11 +1965,11 @@
           
           .naay-cart-panel {
             height: calc(100vh - 100px) !important;
-            left: calc(-100vw + 16px) !important; /* Hide completely offscreen on mobile */
+            right: 100vw !important; /* Hide completely offscreen on mobile */
           }
           
           .naay-cart-panel--open {
-            left: calc(-100vw + 24px) !important; /* Still hidden on mobile since no space */
+            right: calc(100% - 1px) !important; /* Slide to touch chat left edge */
           }
           
           .naay-widget__promotional-message {
@@ -2175,16 +2178,16 @@
         .naay-cart-panel {
           position: absolute !important;
           bottom: 0px !important;
-          left: -360px !important; /* Initially hidden to the left */
+          right: 100% !important; /* Initially hidden to the right of the widget */
           width: 360px !important;
           height: 620px !important; /* Same height as chat widget */
           background: rgba(248, 249, 248, 0.98) !important;
           backdrop-filter: blur(20px) !important;
           -webkit-backdrop-filter: blur(20px) !important;
-          border-radius: 0 16px 16px 0 !important; /* Rounded only on right side */
+          border-radius: 16px 0 0 16px !important; /* Rounded only on left side */
           border: 1px solid rgba(212, 196, 184, 0.3) !important;
-          border-right: none !important; /* No right border to connect with chat */
-          box-shadow: -4px 0 16px rgba(139, 93, 75, 0.1) !important; /* Shadow only on left */
+          border-left: none !important; /* No left border to connect with chat */
+          box-shadow: 4px 0 16px rgba(139, 93, 75, 0.1) !important; /* Shadow only on right */
           display: flex !important;
           flex-direction: column !important;
           overflow: hidden !important;
@@ -2196,32 +2199,34 @@
         }
 
         .naay-cart-panel--open {
-          left: -20px !important; /* Slide in from left, overlap slightly with chat */
+          right: calc(100% - 1px) !important; /* Slide to the left, border touches chat left edge */
           opacity: 1 !important;
           visibility: visible !important;
           pointer-events: auto !important;
         }
 
-        /* Cart panel positioning for bottom-left widget - now same as default since cart is always on left */
+        /* Cart panel positioning for bottom-left widget - mirrors default positioning */
         .naay-widget--bottom-left .naay-cart-panel {
-          left: -360px !important; /* Same positioning as default */
-          border-radius: 0 16px 16px 0 !important; /* Rounded only on right side */
-          border-right: none !important; /* No right border to connect with chat */
-          border-left: 1px solid rgba(212, 196, 184, 0.3) !important;
-          box-shadow: -4px 0 16px rgba(139, 93, 75, 0.1) !important; /* Shadow only on left */
+          right: 100% !important; /* Same positioning as default */
+          border-radius: 16px 0 0 16px !important; /* Rounded only on left side */
+          border-left: none !important; /* No left border to connect with chat */
+          border-right: 1px solid rgba(212, 196, 184, 0.3) !important;
+          box-shadow: 4px 0 16px rgba(139, 93, 75, 0.1) !important; /* Shadow only on right */
         }
 
         .naay-widget--bottom-left .naay-cart-panel--open {
-          left: -20px !important; /* Same as default since cart is always on left */
+          right: calc(100% - 1px) !important; /* Same as default positioning */
         }
 
         /* Connect chat widget with cart when cart is open */
         .naay-cart-panel--open + .naay-chat-container .naay-widget__chat {
           border-radius: 0 16px 16px 0 !important; /* Remove left border radius */
+          border-left: none !important; /* Remove left border to connect with cart */
         }
         
-        .naay-widget--bottom-left .naay-cart-panel--open + .naay-widget__chat {
+        .naay-widget--bottom-left .naay-cart-panel--open + .naay-chat-container .naay-widget__chat {
           border-radius: 0 16px 16px 0 !important; /* Remove left border radius */
+          border-left: none !important; /* Remove left border to connect with cart */
         }
 
         /* Cart Panel Header */
@@ -2612,11 +2617,10 @@
           
           .naay-cart-panel {
             position: absolute !important;
-            right: 380px !important;
+            right: 100% !important;
             bottom: 0px !important;
             width: 350px !important;
-            height: 100% !important;
-            transform: translateX(-20px) scale(0.98) !important;
+            height: calc(100vh - 120px) !important;
           }
           
           .naay-cart-toggle {
@@ -2629,7 +2633,7 @@
           }
           
           .naay-cart-panel--open {
-            transform: translateY(0) scale(1) !important;
+            right: calc(100% - 1px) !important;
           }
           
           .naay-widget--open .naay-cart-toggle {
@@ -2647,11 +2651,10 @@
           
           .naay-cart-panel {
             position: absolute !important;
-            right: 320px !important;
+            right: 100% !important;
             bottom: 0px !important;
             width: 300px !important;
-            height: 100% !important;
-            transform: translateX(-20px) scale(0.95) !important;
+            height: calc(100vh - 100px) !important;
           }
           
           .naay-cart-toggle {
@@ -2664,7 +2667,7 @@
           }
           
           .naay-cart-panel--open {
-            left: -440px !important;
+            right: calc(100% - 1px) !important;
           }
           
           .naay-widget--open .naay-cart-toggle {
