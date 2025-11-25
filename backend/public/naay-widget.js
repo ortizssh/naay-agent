@@ -4281,10 +4281,14 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       // Check if we're on a Shopify store (either .myshopify.com or a custom domain with a configured shop)
       const isShopifyDomain = window.location.hostname.includes('myshopify.com') || 
                               window.location.hostname.includes('shopify.com');
-      const hasShopConfig = this.config.shopDomain && this.config.shopDomain.trim() !== '';
+      
+      // Always check window.NaayConfig for the most up-to-date configuration
+      const currentShopDomain = (window.NaayConfig && window.NaayConfig.shopDomain) || this.config.shopDomain;
+      const hasShopConfig = currentShopDomain && currentShopDomain.trim() !== '';
       const isShopifyStore = isShopifyDomain || hasShopConfig;
       
-      console.log('🏪 Is Shopify store?', isShopifyStore, 'Hostname:', window.location.hostname, 'Shop config:', this.config.shopDomain);
+      console.log('🏪 Is Shopify store?', isShopifyStore, 'Hostname:', window.location.hostname, 'Shop config:', currentShopDomain);
+      console.log('🔧 Config sources - this.config.shopDomain:', this.config.shopDomain, 'window.NaayConfig.shopDomain:', window.NaayConfig?.shopDomain);
       
       if (isShopifyStore && hasShopConfig) {
         addedToShopify = await this.addToShopifyNativeCart(product.variantId, product.quantity || 1);
@@ -4301,7 +4305,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              shop: this.config.shopDomain,
+              shop: currentShopDomain,
               cartId: this.cartId,
               variantId: product.variantId,
               quantity: product.quantity || 1,
@@ -4775,7 +4779,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         }
         
         // Fallback: construct checkout URL based on shop domain
-        const shopDomain = this.config.shopDomain;
+        const shopDomain = (window.NaayConfig && window.NaayConfig.shopDomain) || this.config.shopDomain;
         console.log('🔍 Using shop domain for checkout:', shopDomain);
         if (!shopDomain) {
           console.error('❌ No shop domain configured');
@@ -4936,16 +4940,23 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       
       try {
         // Use Shopify's cart API
+        const payload = {
+          id: String(variantId), // Ensure variant ID is string
+          quantity: parseInt(quantity)
+        };
+        console.log('📤 Sending to /cart/add.js:', payload);
+        
         const response = await fetch('/cart/add.js', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
           },
-          body: JSON.stringify({
-            id: variantId,
-            quantity: quantity
-          }),
+          body: JSON.stringify(payload),
         });
+        
+        console.log('📥 Response status:', response.status, response.statusText);
         
         if (response.ok) {
           const result = await response.json();
@@ -4959,7 +4970,16 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           
           return true;
         } else {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          // Try to get error details from response body
+          let errorText = '';
+          try {
+            const errorData = await response.text();
+            errorText = errorData;
+            console.error('❌ Shopify cart API error response:', errorData);
+          } catch (e) {
+            console.error('❌ Could not read error response body');
+          }
+          throw new Error(`HTTP ${response.status}: ${response.statusText}. Response: ${errorText}`);
         }
       } catch (error) {
         console.error('❌ Error adding to Shopify native cart:', error);
