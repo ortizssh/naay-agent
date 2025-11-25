@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 name = "naay-agent"
-client_id = "320f3d53829d6a7abf34580ecae44f3e"
+client_id = "03ba95304b12487321d6d7feaca999a3"
 application_url = "https://naay-agent-app1763504937.azurewebsites.net"
 embedded = true
 
