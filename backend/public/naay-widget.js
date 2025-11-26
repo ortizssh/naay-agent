@@ -1941,11 +1941,84 @@
         }
 
         @media (max-width: 768px) {
+          /* Tablet responsive enhancements */
           .naay-widget__chat {
             width: calc(100vw - 24px) !important;
             height: calc(100vh - 120px) !important;
             left: 12px !important;
             bottom: 100px !important;
+            border-radius: 20px !important;
+            box-shadow: 0 10px 35px rgba(139, 93, 75, 0.2) !important;
+          }
+          
+          /* Widget button tablet optimization */
+          .naay-widget__button {
+            width: 64px !important;
+            height: 64px !important;
+          }
+          
+          .naay-widget__button-content {
+            width: 22px !important;
+            height: 22px !important;
+          }
+          
+          .naay-widget__chat-icon,
+          .naay-widget__close-icon {
+            width: 22px !important;
+            height: 22px !important;
+          }
+          
+          /* Chat interface tablet */
+          .naay-widget__header {
+            padding: 24px 28px !important;
+          }
+          
+          .naay-widget__title {
+            font-size: 19px !important;
+          }
+          
+          .naay-widget__messages {
+            padding: 20px 24px !important;
+            gap: 18px !important;
+          }
+          
+          .naay-widget__message {
+            max-width: 85% !important;
+            padding: 14px 18px !important;
+            font-size: 15px !important;
+          }
+          
+          /* Welcome screen tablet */
+          .naay-widget__welcome {
+            padding: 24px 28px !important;
+          }
+          
+          .naay-widget__welcome-title {
+            font-size: 22px !important;
+          }
+          
+          .naay-widget__welcome-subtitle {
+            font-size: 15px !important;
+          }
+          
+          .naay-widget__feature {
+            padding: 16px 18px !important;
+            border-radius: 16px !important;
+          }
+          
+          /* Input area tablet */
+          .naay-widget__input-area {
+            padding: 24px 28px !important;
+          }
+          
+          .naay-widget__input {
+            padding: 14px 18px !important;
+            font-size: 15px !important;
+          }
+          
+          .naay-widget__send {
+            width: 48px !important;
+            height: 48px !important;
           }
           
           /* Cart panel as bottom drawer on tablet */
@@ -1954,15 +2027,49 @@
             left: 12px !important;
             right: auto !important;
             width: calc(100vw - 24px) !important;
-            height: 60vh !important;
+            height: 65vh !important;
+            max-height: 500px !important;
             border-radius: 24px 24px 0 0 !important;
             border: 1px solid rgba(212, 196, 184, 0.3) !important;
             border-bottom: none !important;
-            box-shadow: 0 -8px 32px rgba(139, 93, 75, 0.15) !important;
+            box-shadow: 0 -10px 40px rgba(139, 93, 75, 0.18) !important;
+            transition: bottom 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
           }
           
           .naay-cart-panel--open {
             bottom: 0 !important; /* Slide up from bottom */
+          }
+          
+          /* Product cards tablet */
+          .naay-product-card {
+            min-height: 130px !important;
+            padding: 18px !important;
+            border-radius: 18px !important;
+          }
+          
+          .naay-product-card__media {
+            width: 85px !important;
+            height: 85px !important;
+            border-radius: 14px !important;
+          }
+          
+          .naay-product-card__content {
+            margin-left: 16px !important;
+          }
+          
+          .naay-product-card__title {
+            font-size: 16px !important;
+          }
+          
+          .naay-product-card__description {
+            font-size: 13px !important;
+          }
+          
+          .naay-product-card__add-btn {
+            padding: 12px 16px !important;
+            font-size: 13px !important;
+            min-height: 44px !important;
+            border-radius: 14px !important;
           }
           
           .naay-widget__promotional-message {
@@ -1970,16 +2077,120 @@
             bottom: 100px !important;
             max-width: calc(100vw - 100px) !important;
             width: calc(100vw - 100px) !important;
+            padding: 16px 20px !important;
+            border-radius: 18px !important;
           }
         }
 
         @media (max-width: 480px) {
+          /* Enhanced mobile widget responsiveness */
           .naay-widget__chat {
             width: calc(100vw - 16px) !important;
             height: calc(100vh - 100px) !important;
             left: 8px !important;
             bottom: 88px !important;
             border-radius: 16px !important;
+            box-shadow: 0 12px 40px rgba(139, 93, 75, 0.25) !important;
+          }
+          
+          /* Widget button mobile optimization */
+          .naay-widget__button {
+            width: 56px !important;
+            height: 56px !important;
+            box-shadow: 0 6px 20px rgba(202, 149, 126, 0.3) !important;
+          }
+          
+          .naay-widget__button-content {
+            width: 20px !important;
+            height: 20px !important;
+          }
+          
+          .naay-widget__chat-icon,
+          .naay-widget__close-icon {
+            width: 20px !important;
+            height: 20px !important;
+          }
+          
+          /* Chat header mobile */
+          .naay-widget__header {
+            padding: 20px 24px !important;
+            border-bottom: 2px solid rgba(212, 196, 184, 0.15) !important;
+          }
+          
+          .naay-widget__title {
+            font-size: 18px !important;
+            line-height: 1.3 !important;
+          }
+          
+          .naay-widget__subtitle {
+            font-size: 13px !important;
+            margin-top: 2px !important;
+          }
+          
+          /* Chat messages mobile */
+          .naay-widget__messages {
+            padding: 16px 20px !important;
+            gap: 20px !important;
+          }
+          
+          .naay-widget__message {
+            max-width: 90% !important;
+            padding: 12px 16px !important;
+            font-size: 14px !important;
+            line-height: 1.5 !important;
+          }
+          
+          /* Welcome screen mobile */
+          .naay-widget__welcome {
+            padding: 20px 24px !important;
+          }
+          
+          .naay-widget__welcome-title {
+            font-size: 20px !important;
+            margin-bottom: 8px !important;
+          }
+          
+          .naay-widget__welcome-subtitle {
+            font-size: 14px !important;
+            margin-bottom: 24px !important;
+          }
+          
+          .naay-widget__welcome-features {
+            gap: 16px !important;
+          }
+          
+          .naay-widget__feature {
+            padding: 14px 16px !important;
+            border-radius: 14px !important;
+          }
+          
+          .naay-widget__feature span {
+            font-size: 14px !important;
+            line-height: 1.4 !important;
+          }
+          
+          /* Input area mobile */
+          .naay-widget__input-area {
+            padding: 20px 24px !important;
+          }
+          
+          .naay-widget__input-container {
+            gap: 10px !important;
+            margin-bottom: 8px !important;
+            padding: 0 !important;
+          }
+          
+          .naay-widget__input {
+            padding: 12px 16px !important;
+            font-size: 14px !important;
+            border-radius: 20px !important;
+          }
+          
+          .naay-widget__send {
+            width: 40px !important;
+            height: 40px !important;
+            border-radius: 20px !important;
+            flex-shrink: 0 !important;
           }
           
           /* Cart panel centered on mobile */
@@ -2030,7 +2241,48 @@
             bottom: 88px !important;
             max-width: calc(100vw - 88px) !important;
             width: calc(100vw - 88px) !important;
-            padding: 16px 20px !important;
+            padding: 14px 18px !important;
+            border-radius: 16px !important;
+            box-shadow: 0 8px 24px rgba(202, 149, 126, 0.2) !important;
+          }
+          
+          .naay-widget__promotional-text {
+            font-size: 13px !important;
+            line-height: 1.4 !important;
+          }
+          
+          .naay-widget__promotional-subtitle {
+            font-size: 11px !important;
+          }
+          
+          /* Enhanced scrolling for mobile */
+          .naay-widget__messages {
+            -webkit-overflow-scrolling: touch !important;
+            scroll-behavior: smooth !important;
+          }
+          
+          /* Better touch targets for mobile */
+          .naay-widget__feature {
+            min-height: 48px !important;
+            touch-action: manipulation !important;
+          }
+          
+          .naay-widget__send {
+            touch-action: manipulation !important;
+          }
+          
+          /* Loading states mobile */
+          .naay-widget__typing {
+            padding: 8px 16px !important;
+            margin: 8px 0 !important;
+          }
+          
+          /* Error states mobile */
+          .naay-widget__error {
+            padding: 12px 16px !important;
+            margin: 8px 0 !important;
+            font-size: 13px !important;
+            border-radius: 12px !important;
           }
 
           .naay-widget__button {
@@ -2853,37 +3105,188 @@
           }
 
           /* Mobile Product Recommendations */
+          /* Enhanced mobile product cards */
           .naay-product-card {
-            min-height: 120px !important;
+            min-height: 140px !important;
             padding: 16px !important;
+            margin-bottom: 12px !important;
+            border-radius: 16px !important;
+            box-shadow: 0 4px 16px rgba(202, 149, 126, 0.12) !important;
+            background: var(--naay-white) !important;
+            border: 1px solid rgba(212, 196, 184, 0.25) !important;
+            transition: all 0.3s ease !important;
+          }
+          
+          .naay-product-card:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 8px 24px rgba(202, 149, 126, 0.18) !important;
+            border-color: rgba(202, 149, 126, 0.4) !important;
           }
           
           .naay-product-card__media {
-            width: 80px !important;
-            height: 80px !important;
-            border-radius: 10px !important;
+            width: 90px !important;
+            height: 90px !important;
+            border-radius: 12px !important;
+            overflow: hidden !important;
+            flex-shrink: 0 !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+          }
+          
+          .naay-product-card__image {
+            transition: transform 0.3s ease !important;
+          }
+          
+          .naay-product-card__image:hover {
+            transform: scale(1.05) !important;
           }
           
           .naay-product-card__content {
             padding: 0 !important;
-            margin-left: 16px !important;
+            margin-left: 14px !important;
+            flex: 1 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            min-height: 90px !important;
           }
           
           .naay-product-card__title {
             font-size: 15px !important;
             font-weight: 600 !important;
-            line-height: 1.4 !important;
+            line-height: 1.3 !important;
+            margin-bottom: 4px !important;
+            color: var(--naay-black) !important;
+            display: -webkit-box !important;
+            -webkit-line-clamp: 2 !important;
+            -webkit-box-orient: vertical !important;
+            overflow: hidden !important;
           }
           
           .naay-product-card__description {
+            font-size: 12px !important;
+            line-height: 1.4 !important;
+            color: var(--naay-perfect) !important;
+            opacity: 0.8 !important;
+            margin-bottom: 8px !important;
+            display: -webkit-box !important;
+            -webkit-line-clamp: 2 !important;
+            -webkit-box-orient: vertical !important;
+            overflow: hidden !important;
+          }
+          
+          .naay-product-card__price-section {
+            margin-bottom: 12px !important;
+          }
+          
+          .naay-product-card__pricing {
+            gap: 6px !important;
+            align-items: baseline !important;
+          }
+          
+          .naay-product-card__price {
+            font-size: 16px !important;
+            font-weight: 700 !important;
+            color: var(--naay-perfect) !important;
+          }
+          
+          .naay-product-card__compare-price {
             font-size: 13px !important;
+            color: rgba(202, 149, 126, 0.6) !important;
+          }
+          
+          .naay-product-card__tags {
+            gap: 4px !important;
+            margin-bottom: 8px !important;
+          }
+          
+          .naay-product-card__tag {
+            font-size: 10px !important;
+            padding: 2px 6px !important;
+            border-radius: 8px !important;
+            background: rgba(202, 149, 126, 0.1) !important;
+            color: var(--naay-perfect) !important;
+          }
+          
+          .naay-product-card__actions {
+            gap: 8px !important;
+            margin-top: auto !important;
           }
           
           .naay-product-card__add-btn {
-            padding: 12px 16px !important;
-            font-size: 13px !important;
-            border-radius: 10px !important;
-            min-height: 44px !important;
+            padding: 10px 14px !important;
+            font-size: 12px !important;
+            font-weight: 600 !important;
+            border-radius: 12px !important;
+            min-height: 40px !important;
+            flex: 1 !important;
+            background: var(--naay-perfect) !important;
+            color: var(--naay-white) !important;
+            border: none !important;
+            transition: all 0.2s ease !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 6px !important;
+          }
+          
+          .naay-product-card__add-btn:hover {
+            background: var(--naay-rich) !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 12px rgba(202, 149, 126, 0.3) !important;
+          }
+          
+          .naay-product-card__add-btn--disabled {
+            background: rgba(202, 149, 126, 0.3) !important;
+            cursor: not-allowed !important;
+            transform: none !important;
+            box-shadow: none !important;
+          }
+          
+          .naay-product-card__add-btn--success {
+            background: #10b981 !important;
+          }
+          
+          .naay-product-card__details-btn {
+            padding: 8px !important;
+            min-width: 40px !important;
+            height: 40px !important;
+            border-radius: 12px !important;
+            background: rgba(202, 149, 126, 0.1) !important;
+            border: 1px solid rgba(202, 149, 126, 0.3) !important;
+            color: var(--naay-perfect) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            flex-shrink: 0 !important;
+          }
+          
+          .naay-product-card__details-btn:hover {
+            background: rgba(202, 149, 126, 0.15) !important;
+            border-color: var(--naay-perfect) !important;
+            transform: translateY(-1px) !important;
+          }
+          
+          .naay-product-card__header {
+            margin-bottom: 6px !important;
+          }
+          
+          .naay-product-card__discount {
+            font-size: 11px !important;
+            padding: 3px 6px !important;
+            border-radius: 6px !important;
+          }
+          
+          .naay-product-card__quick-view {
+            width: 40px !important;
+            height: 40px !important;
+            border-radius: 8px !important;
+          }
+          
+          .naay-product-card__quick-view svg,
+          .naay-product-card__details-btn svg,
+          .naay-product-card__add-btn svg {
+            width: 14px !important;
+            height: 14px !important;
           }
           
           /* Mobile Cart Items */
