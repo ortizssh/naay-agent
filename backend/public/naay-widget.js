@@ -4675,10 +4675,80 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     showCart() {
       console.log('🛒 Showing cart panel...');
       
-      // Force mobile styles if needed
-      if (window.innerWidth <= 480 && typeof applyMobileCartStyles === 'function') {
-        applyMobileCartStyles();
-        console.log('📱 Applied mobile cart styles before showing cart');
+      // AGGRESSIVE MOBILE POSITIONING ENFORCEMENT
+      if (window.innerWidth <= 480) {
+        console.log('📱 MOBILE DETECTED: Applying emergency cart positioning');
+        
+        // Method 1: Apply mobile styles
+        if (typeof applyMobileCartStyles === 'function') {
+          applyMobileCartStyles();
+          console.log('✅ Applied mobile cart styles before showing cart');
+        }
+        
+        // Method 2: Direct cart panel styling if it exists
+        if (this.cartPanel) {
+          console.log('🎯 DIRECT STYLING: Forcing cart panel position');
+          this.cartPanel.style.setProperty('position', 'fixed', 'important');
+          this.cartPanel.style.setProperty('top', '50%', 'important');
+          this.cartPanel.style.setProperty('left', '50%', 'important');
+          this.cartPanel.style.setProperty('transform', 'translate(-50%, -50%)', 'important');
+          this.cartPanel.style.setProperty('right', 'unset', 'important');
+          this.cartPanel.style.setProperty('bottom', 'unset', 'important');
+          this.cartPanel.style.setProperty('margin', '0', 'important');
+          this.cartPanel.style.setProperty('width', 'calc(100vw - 40px)', 'important');
+          this.cartPanel.style.setProperty('max-width', '380px', 'important');
+          this.cartPanel.style.setProperty('height', '80vh', 'important');
+          this.cartPanel.style.setProperty('z-index', '10002', 'important');
+          console.log('✅ Direct cart panel styling applied');
+        }
+        
+        // Method 3: Delayed verification and re-application
+        setTimeout(() => {
+          const panel = this.cartPanel || document.querySelector('.naay-cart-panel');
+          if (panel && window.innerWidth <= 480) {
+            const rect = panel.getBoundingClientRect();
+            console.log('🔍 DELAYED CHECK: Cart position verification');
+            console.log('Cart position:', {
+              left: rect.left,
+              top: rect.top,
+              right: rect.right,
+              bottom: rect.bottom,
+              width: rect.width,
+              height: rect.height
+            });
+            
+            // If cart is off-screen, force it back
+            if (rect.left > window.innerWidth - 50 || rect.right < 50 || 
+                rect.top > window.innerHeight - 50 || rect.bottom < 50) {
+              console.log('🚨 DELAYED CHECK: Cart is off-screen, forcing re-center');
+              
+              // Nuclear option - completely override with inline styles
+              panel.style.cssText = `
+                position: fixed !important;
+                top: 50% !important;
+                left: 50% !important;
+                transform: translate(-50%, -50%) !important;
+                width: calc(100vw - 40px) !important;
+                max-width: 380px !important;
+                height: 80vh !important;
+                margin: 0 !important;
+                padding: 20px !important;
+                background: rgba(248, 249, 248, 0.98) !important;
+                border-radius: 20px !important;
+                border: 1px solid rgba(212, 196, 184, 0.3) !important;
+                box-shadow: 0 20px 60px rgba(139, 93, 75, 0.25) !important;
+                z-index: 10002 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+              `;
+              console.log('✅ NUCLEAR OPTION: Complete cart style override applied');
+            } else {
+              console.log('✅ DELAYED CHECK: Cart position is acceptable');
+            }
+          }
+        }, 500);
       }
       
       this.cartVisible = true;
@@ -5582,48 +5652,125 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
   // Expose class for constructor access
   window.NaayWidget = NaayWidget;
 
-  // COMPLETE MOBILE CART OVERRIDE - Remove all negative margins and off-screen positioning
-  function applyMobileCartStyles() {
-    // Remove existing mobile styles if they exist
-    const existingStyle = document.getElementById('naay-mobile-cart-override');
-    if (existingStyle) {
-      existingStyle.remove();
+  // EMERGENCY DEBUGGING AND CART POSITIONING SYSTEM
+  function emergencyDebugCartPosition() {
+    const timestamp = new Date().toISOString();
+    const debugInfo = {
+      timestamp,
+      url: window.location.href,
+      userAgent: navigator.userAgent,
+      viewport: {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        isMobile: window.innerWidth <= 480
+      },
+      script: {
+        src: document.querySelector('script[src*="naay-widget.js"]')?.src || 'NOT_FOUND',
+        size: document.querySelector('script[src*="naay-widget.js"]')?.getAttribute('data-size') || 'UNKNOWN'
+      }
+    };
+    
+    console.log('🚨 EMERGENCY CART DEBUG START', debugInfo);
+    
+    // Check if our function is accessible
+    console.log('📊 Function Check:', {
+      applyMobileCartStyles: typeof applyMobileCartStyles,
+      emergencyDebugCartPosition: typeof emergencyDebugCartPosition,
+      window_applyMobileCartStyles: typeof window.applyMobileCartStyles
+    });
+    
+    // Check for existing style elements
+    const existingStyles = document.querySelectorAll('#naay-mobile-cart-override, style[data-naay-mobile]');
+    console.log('📄 Existing style elements:', existingStyles.length, Array.from(existingStyles));
+    
+    // Check for cart panel element
+    const cartPanel = document.querySelector('.naay-cart-panel');
+    if (cartPanel) {
+      const computedStyles = window.getComputedStyle(cartPanel);
+      const rect = cartPanel.getBoundingClientRect();
+      console.log('🛒 Cart panel element FOUND:', {
+        classList: Array.from(cartPanel.classList),
+        position: computedStyles.position,
+        top: computedStyles.top,
+        left: computedStyles.left,
+        right: computedStyles.right,
+        bottom: computedStyles.bottom,
+        transform: computedStyles.transform,
+        width: computedStyles.width,
+        height: computedStyles.height,
+        zIndex: computedStyles.zIndex,
+        display: computedStyles.display,
+        visibility: computedStyles.visibility,
+        opacity: computedStyles.opacity,
+        boundingRect: {
+          top: rect.top,
+          left: rect.left,
+          right: rect.right,
+          bottom: rect.bottom,
+          width: rect.width,
+          height: rect.height
+        }
+      });
+    } else {
+      console.log('🛒 Cart panel element NOT FOUND');
     }
     
+    return debugInfo;
+  }
+
+  // AGGRESSIVE MOBILE CART OVERRIDE WITH MULTIPLE FALLBACK METHODS
+  function applyMobileCartStyles() {
+    console.log('📱 STARTING MOBILE CART STYLES APPLICATION...');
+    
+    const debugInfo = emergencyDebugCartPosition();
+    
+    // Remove existing mobile styles if they exist
+    const existingStyles = document.querySelectorAll('#naay-mobile-cart-override, style[data-naay-mobile]');
+    existingStyles.forEach(style => {
+      console.log('🗑️ Removing existing style:', style.id || style.getAttribute('data-naay-mobile'));
+      style.remove();
+    });
+    
+    // METHOD 1: CSS INJECTION WITH ULTRA-HIGH SPECIFICITY
     const mobileCartStyles = `
-      /* MOBILE CART PANEL - Complete Reset and Center */
+      /* EMERGENCY MOBILE CART PANEL - MAXIMUM OVERRIDE PRIORITY */
       @media (max-width: 480px) {
-        /* Reset all cart panel positioning completely */
-        .naay-cart-panel,
-        .naay-widget .naay-cart-panel,
+        /* Ultra high specificity selectors */
+        html body div.naay-widget div.naay-cart-panel,
         html body .naay-widget .naay-cart-panel,
-        html body .naay-cart-panel {
-          /* Reset positioning */
+        html body .naay-cart-panel,
+        .naay-cart-panel,
+        *[class*="naay-cart-panel"] {
+          /* FORCED POSITIONING - ABSOLUTE OVERRIDE */
           position: fixed !important;
           top: 50% !important;
           left: 50% !important;
           right: unset !important;
           bottom: unset !important;
           
-          /* Reset all margins and padding */
+          /* ZERO OUT ALL MARGINS/PADDING */
           margin: 0 !important;
           margin-top: 0 !important;
           margin-left: 0 !important;
           margin-right: 0 !important;
           margin-bottom: 0 !important;
-          padding: 0 !important;
+          padding: 20px !important;
           
-          /* Responsive size */
-          width: calc(100vw - 20px) !important;
-          max-width: 400px !important;
-          height: 85vh !important;
-          max-height: 600px !important;
+          /* RESPONSIVE DIMENSIONS */
+          width: calc(100vw - 40px) !important;
+          max-width: 380px !important;
+          height: 80vh !important;
+          max-height: 550px !important;
           min-height: 300px !important;
+          min-width: 280px !important;
           
-          /* Center transform */
+          /* CENTERING TRANSFORM */
           transform: translate(-50%, -50%) !important;
+          -webkit-transform: translate(-50%, -50%) !important;
+          -moz-transform: translate(-50%, -50%) !important;
+          -ms-transform: translate(-50%, -50%) !important;
           
-          /* Visual design - keep original */
+          /* VISUAL STYLING */
           background: rgba(248, 249, 248, 0.98) !important;
           backdrop-filter: blur(20px) !important;
           -webkit-backdrop-filter: blur(20px) !important;
@@ -5631,28 +5778,27 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           border: 1px solid rgba(212, 196, 184, 0.3) !important;
           box-shadow: 0 20px 60px rgba(139, 93, 75, 0.25) !important;
           
-          /* State */
-          opacity: 0 !important;
-          visibility: hidden !important;
-          z-index: 10002 !important;
-          transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
-          
-          /* Override any flexbox or grid */
+          /* DISPLAY AND LAYERING */
           display: flex !important;
           flex-direction: column !important;
+          z-index: 10002 !important;
+          
+          /* INITIAL STATE - HIDDEN */
+          opacity: 0 !important;
+          visibility: hidden !important;
+          transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
         }
         
-        /* Open state */
-        .naay-cart-panel--open,
-        .naay-widget .naay-cart-panel--open,
-        html body .naay-widget .naay-cart-panel--open,
-        html body .naay-cart-panel--open {
+        /* OPEN STATE */
+        .naay-cart-panel.naay-cart-panel--open,
+        html body .naay-cart-panel.naay-cart-panel--open {
           opacity: 1 !important;
           visibility: visible !important;
           transform: translate(-50%, -50%) !important;
+          -webkit-transform: translate(-50%, -50%) !important;
         }
         
-        /* Backdrop for mobile modal */
+        /* BACKDROP */
         .naay-cart-panel--open::before {
           content: '' !important;
           position: fixed !important;
@@ -5661,7 +5807,6 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           right: 0 !important;
           bottom: 0 !important;
           background: rgba(0, 0, 0, 0.5) !important;
-          backdrop-filter: blur(5px) !important;
           z-index: -1 !important;
         }
       }
@@ -5669,9 +5814,129 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     
     const styleSheet = document.createElement('style');
     styleSheet.id = 'naay-mobile-cart-override';
+    styleSheet.setAttribute('data-naay-mobile', 'emergency-override');
     styleSheet.textContent = mobileCartStyles;
     document.head.appendChild(styleSheet);
-    console.log('📱 Mobile cart panel COMPLETELY RESET and centered - all margins removed');
+    console.log('✅ CSS INJECTION: Mobile cart styles injected');
+    
+    // METHOD 2: DIRECT DOM MANIPULATION FALLBACK
+    function applyDirectStyling(element) {
+      if (!element) return false;
+      
+      console.log('🎯 DIRECT STYLING: Applying inline styles to cart panel');
+      
+      // Force inline styles that cannot be overridden
+      const inlineStyles = {
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        right: 'unset',
+        bottom: 'unset',
+        margin: '0',
+        padding: '20px',
+        width: 'calc(100vw - 40px)',
+        maxWidth: '380px',
+        height: '80vh',
+        maxHeight: '550px',
+        minHeight: '300px',
+        transform: 'translate(-50%, -50%)',
+        background: 'rgba(248, 249, 248, 0.98)',
+        borderRadius: '20px',
+        border: '1px solid rgba(212, 196, 184, 0.3)',
+        boxShadow: '0 20px 60px rgba(139, 93, 75, 0.25)',
+        display: 'flex',
+        flexDirection: 'column',
+        zIndex: '10002'
+      };
+      
+      Object.entries(inlineStyles).forEach(([property, value]) => {
+        element.style.setProperty(property, value, 'important');
+      });
+      
+      console.log('✅ DIRECT STYLING: Applied inline styles');
+      return true;
+    }
+    
+    // METHOD 3: MUTATION OBSERVER FOR CART CREATION
+    function setupCartWatcher() {
+      console.log('👁️ MUTATION OBSERVER: Setting up cart panel watcher');
+      
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === 1) {
+              if (node.classList && node.classList.contains('naay-cart-panel')) {
+                console.log('🎯 MUTATION OBSERVER: Cart panel detected, applying emergency styling');
+                if (window.innerWidth <= 480) {
+                  applyDirectStyling(node);
+                }
+              }
+              
+              // Check children too
+              const cartPanels = node.querySelectorAll && node.querySelectorAll('.naay-cart-panel');
+              if (cartPanels) {
+                cartPanels.forEach(panel => {
+                  console.log('🎯 MUTATION OBSERVER: Cart panel child detected, applying emergency styling');
+                  if (window.innerWidth <= 480) {
+                    applyDirectStyling(panel);
+                  }
+                });
+              }
+            }
+          });
+        });
+      });
+      
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+      
+      console.log('✅ MUTATION OBSERVER: Cart watcher active');
+      return observer;
+    }
+    
+    // METHOD 4: AGGRESSIVE PERIODIC CHECKING
+    function setupPeriodicCheck() {
+      console.log('⏰ PERIODIC CHECK: Setting up aggressive cart styling checks');
+      
+      const checkInterval = setInterval(() => {
+        const cartPanel = document.querySelector('.naay-cart-panel');
+        if (cartPanel && window.innerWidth <= 480) {
+          const computedStyles = window.getComputedStyle(cartPanel);
+          const rect = cartPanel.getBoundingClientRect();
+          
+          // Check if cart is off-screen or incorrectly positioned
+          if (rect.left > window.innerWidth - 100 || rect.right < 100 || 
+              rect.top > window.innerHeight - 100 || rect.bottom < 100) {
+            console.log('🚨 PERIODIC CHECK: Cart detected off-screen, applying emergency fix');
+            applyDirectStyling(cartPanel);
+          }
+        }
+      }, 1000);
+      
+      // Clear after 30 seconds to prevent infinite checking
+      setTimeout(() => {
+        clearInterval(checkInterval);
+        console.log('⏰ PERIODIC CHECK: Cleanup after 30 seconds');
+      }, 30000);
+      
+      return checkInterval;
+    }
+    
+    // Apply existing cart panel styling immediately
+    const existingCartPanel = document.querySelector('.naay-cart-panel');
+    if (existingCartPanel && window.innerWidth <= 480) {
+      console.log('🎯 IMMEDIATE: Found existing cart panel, applying direct styling');
+      applyDirectStyling(existingCartPanel);
+    }
+    
+    // Setup all fallback methods
+    setupCartWatcher();
+    setupPeriodicCheck();
+    
+    console.log('✅ MOBILE CART EMERGENCY SYSTEM: All methods activated');
+    console.log('📊 Debug info available in browser console');
   }
   
   // Apply styles initially and on resize
@@ -5683,6 +5948,79 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(applyMobileCartStyles, 150);
   });
+
+  // GLOBAL EMERGENCY FUNCTIONS - Available before widget initialization
+  window.NAAY_EMERGENCY_DEBUG = function() {
+    console.log('🚨 GLOBAL EMERGENCY DEBUG CALLED');
+    console.log('Current viewport:', window.innerWidth + 'x' + window.innerHeight);
+    console.log('Is mobile:', window.innerWidth <= 480);
+    
+    const cartPanel = document.querySelector('.naay-cart-panel');
+    if (cartPanel) {
+      console.log('Cart panel found:', cartPanel);
+      console.log('Cart classes:', Array.from(cartPanel.classList));
+      console.log('Cart position:', cartPanel.getBoundingClientRect());
+      return cartPanel;
+    } else {
+      console.log('No cart panel found');
+      return null;
+    }
+  };
+
+  window.NAAY_FORCE_CENTER = function() {
+    console.log('🎯 GLOBAL FORCE CENTER CALLED');
+    const cartPanel = document.querySelector('.naay-cart-panel');
+    if (cartPanel && window.innerWidth <= 480) {
+      console.log('Applying emergency centering...');
+      
+      // Nuclear option - remove all classes and apply direct positioning
+      cartPanel.style.cssText = `
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: calc(100vw - 40px) !important;
+        max-width: 380px !important;
+        height: 80vh !important;
+        max-height: 550px !important;
+        margin: 0 !important;
+        padding: 20px !important;
+        background: rgba(248, 249, 248, 0.98) !important;
+        border-radius: 20px !important;
+        border: 1px solid rgba(212, 196, 184, 0.3) !important;
+        box-shadow: 0 20px 60px rgba(139, 93, 75, 0.25) !important;
+        z-index: 10002 !important;
+        display: flex !important;
+        flex-direction: column !important;
+      `;
+      
+      // Show if hidden
+      if (cartPanel.classList.contains('naay-cart-panel--open')) {
+        cartPanel.style.setProperty('opacity', '1', 'important');
+        cartPanel.style.setProperty('visibility', 'visible', 'important');
+      }
+      
+      console.log('✅ Nuclear cart centering applied');
+      return 'Cart forcefully centered!';
+    } else if (!cartPanel) {
+      console.log('❌ No cart panel found');
+      return 'No cart panel found!';
+    } else {
+      console.log('ℹ️ Not on mobile viewport');
+      return 'Not on mobile viewport - centering not needed';
+    }
+  };
+
+  window.NAAY_REAPPLY_STYLES = function() {
+    console.log('🔄 GLOBAL STYLE REAPPLICATION');
+    if (typeof applyMobileCartStyles === 'function') {
+      applyMobileCartStyles();
+      return 'Styles reapplied!';
+    } else {
+      console.log('❌ applyMobileCartStyles function not available');
+      return 'Function not available';
+    }
+  };
   
   // Initialize widget function
   function initializeWidget() {
@@ -5750,11 +6088,92 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       widget.updateCartDisplay();
       return 'Cart cleared successfully!';
     };
+
+    // EMERGENCY DEBUGGING FUNCTIONS
+    window.emergencyDebugCart = () => {
+      console.log('🚨 EMERGENCY CART DEBUG TRIGGERED BY USER');
+      return emergencyDebugCartPosition();
+    };
+
+    window.forceCartCenter = () => {
+      console.log('🎯 FORCING CART CENTER MANUALLY');
+      const cartPanel = document.querySelector('.naay-cart-panel');
+      if (cartPanel) {
+        // Apply direct inline styling with highest priority
+        cartPanel.style.setProperty('position', 'fixed', 'important');
+        cartPanel.style.setProperty('top', '50%', 'important');
+        cartPanel.style.setProperty('left', '50%', 'important');
+        cartPanel.style.setProperty('right', 'unset', 'important');
+        cartPanel.style.setProperty('bottom', 'unset', 'important');
+        cartPanel.style.setProperty('transform', 'translate(-50%, -50%)', 'important');
+        cartPanel.style.setProperty('margin', '0', 'important');
+        cartPanel.style.setProperty('width', 'calc(100vw - 40px)', 'important');
+        cartPanel.style.setProperty('max-width', '380px', 'important');
+        cartPanel.style.setProperty('height', '80vh', 'important');
+        cartPanel.style.setProperty('z-index', '10002', 'important');
+        console.log('✅ Direct inline styles applied to cart panel');
+        return 'Cart panel manually centered with inline styles!';
+      } else {
+        console.log('❌ No cart panel found to style');
+        return 'No cart panel found!';
+      }
+    };
+
+    window.reapplyMobileStyles = () => {
+      console.log('🔄 REAPPLYING MOBILE STYLES');
+      applyMobileCartStyles();
+      return 'Mobile styles reapplied!';
+    };
+
+    window.inspectCartStyles = () => {
+      const cartPanel = document.querySelector('.naay-cart-panel');
+      if (cartPanel) {
+        const computedStyles = window.getComputedStyle(cartPanel);
+        const rect = cartPanel.getBoundingClientRect();
+        const styleInfo = {
+          computed: {
+            position: computedStyles.position,
+            top: computedStyles.top,
+            left: computedStyles.left,
+            right: computedStyles.right,
+            bottom: computedStyles.bottom,
+            transform: computedStyles.transform,
+            width: computedStyles.width,
+            height: computedStyles.height,
+            zIndex: computedStyles.zIndex,
+            margin: computedStyles.margin,
+            display: computedStyles.display,
+            visibility: computedStyles.visibility,
+            opacity: computedStyles.opacity
+          },
+          bounding: {
+            top: rect.top,
+            left: rect.left,
+            right: rect.right,
+            bottom: rect.bottom,
+            width: rect.width,
+            height: rect.height
+          },
+          inline: cartPanel.style.cssText,
+          classList: Array.from(cartPanel.classList)
+        };
+        console.log('📊 CART STYLE INSPECTION:', styleInfo);
+        return styleInfo;
+      } else {
+        console.log('❌ No cart panel found to inspect');
+        return 'No cart panel found!';
+      }
+    };
     
     console.log('✨ Naay Widget initialized! New cart features ready:');
     console.log('🛒 Use window.testNewCartDesign() to test the new sidebar cart');
     console.log('📋 Use window.clearNaayCart() to clear cart items');
     console.log('🔄 Use window.showNaayCart() / window.hideNaayCart() to control visibility');
+    console.log('🚨 EMERGENCY DEBUG FUNCTIONS:');
+    console.log('   📊 window.emergencyDebugCart() - Full cart debug information');
+    console.log('   🎯 window.forceCartCenter() - Force cart to center with inline styles');
+    console.log('   🔄 window.reapplyMobileStyles() - Reapply mobile cart styles');
+    console.log('   📊 window.inspectCartStyles() - Inspect current cart styles');
   }
 
   // Single initialization based on document state
@@ -5765,4 +6184,11 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
   }
 
   console.log('✨ Naay Luxury Chat: Widget script loaded successfully');
+  console.log('🚨 EMERGENCY MOBILE CART DEBUGGING SYSTEM ACTIVE');
+  console.log('📋 Available Emergency Functions:');
+  console.log('   🚨 NAAY_EMERGENCY_DEBUG() - Full diagnostic information');
+  console.log('   🎯 NAAY_FORCE_CENTER() - Nuclear cart centering');
+  console.log('   🔄 NAAY_REAPPLY_STYLES() - Reapply mobile styles');
+  console.log('📊 Emergency system will automatically apply multiple fallbacks on mobile devices');
+  console.log('⚡ Mobile cart positioning will be enforced with 4 different methods simultaneously');
 })();
