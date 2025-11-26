@@ -2198,8 +2198,9 @@
             flex-shrink: 0 !important;
           }
           
-          /* Cart panel centered on mobile - override all other styles */
-          .naay-widget .naay-cart-panel {
+          /* Cart panel mobile positioning - maintain original design, only adjust position */
+          .naay-widget .naay-cart-panel,
+          .naay-cart-panel {
             position: fixed !important;
             top: 50% !important;
             left: 50% !important;
@@ -2208,18 +2209,23 @@
             width: calc(100vw - 32px) !important;
             max-width: 380px !important;
             height: 80vh !important;
-            max-height: 550px !important;
-            min-height: 400px !important;
+            max-height: 500px !important;
             transform: translate(-50%, -50%) scale(0.9) !important;
-            border-radius: 20px !important;
-            margin: 0 !important;
-            z-index: 10001 !important;
             opacity: 0 !important;
             visibility: hidden !important;
-            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+            z-index: 10001 !important;
+            transition: all 0.3s ease !important;
+            /* Maintain original design styles */
+            background: rgba(248, 249, 248, 0.98) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border-radius: 16px !important;
+            border: 1px solid rgba(212, 196, 184, 0.3) !important;
+            box-shadow: 0 8px 32px rgba(139, 93, 75, 0.15) !important;
           }
           
-          .naay-widget .naay-cart-panel--open {
+          .naay-widget .naay-cart-panel--open,
+          .naay-cart-panel--open {
             transform: translate(-50%, -50%) scale(1) !important;
             opacity: 1 !important;
             visibility: visible !important;
@@ -3047,17 +3053,15 @@
           }
         }
 
-        /* Responsive Design */
-        @media (max-width: 768px) {
+        /* Responsive Design - Tablet only (not mobile) */
+        @media (min-width: 481px) and (max-width: 768px) {
           .naay-widget {
             bottom: 10px !important;
             right: 10px !important;
           }
           
           .naay-cart-panel {
-            position: absolute !important;
             right: -320px !important; /* Hidden to right (offscreen) */
-            bottom: 0px !important;
             width: 300px !important;
             height: calc(100vh - 120px) !important;
           }
