@@ -3044,8 +3044,8 @@
           margin-left: 0 !important;
         }
 
-        /* Responsive Design for larger tablets */
-        @media (max-width: 1024px) {
+        /* Responsive Design for larger tablets - exclude mobile */
+        @media (min-width: 481px) and (max-width: 1024px) {
           .naay-cart-panel {
             right: 380px !important; /* Closer to chat on smaller screens */
             width: 350px !important;
@@ -5572,6 +5572,51 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
   // Expose class for constructor access
   window.NaayWidget = NaayWidget;
+
+  // Force mobile cart panel styles with highest specificity
+  if (window.innerWidth <= 480) {
+    const mobileCartStyles = `
+      @media (max-width: 480px) {
+        .naay-widget .naay-cart-panel,
+        body .naay-widget .naay-cart-panel,
+        html body .naay-widget .naay-cart-panel {
+          position: fixed !important;
+          top: 50% !important;
+          left: 50% !important;
+          right: auto !important;
+          bottom: auto !important;
+          width: calc(100vw - 32px) !important;
+          max-width: 380px !important;
+          height: 80vh !important;
+          max-height: 500px !important;
+          transform: translate(-50%, -50%) scale(0.9) !important;
+          opacity: 0 !important;
+          visibility: hidden !important;
+          z-index: 10001 !important;
+          transition: all 0.3s ease !important;
+          background: rgba(248, 249, 248, 0.98) !important;
+          backdrop-filter: blur(20px) !important;
+          -webkit-backdrop-filter: blur(20px) !important;
+          border-radius: 16px !important;
+          border: 1px solid rgba(212, 196, 184, 0.3) !important;
+          box-shadow: 0 8px 32px rgba(139, 93, 75, 0.15) !important;
+        }
+        
+        .naay-widget .naay-cart-panel--open,
+        body .naay-widget .naay-cart-panel--open,
+        html body .naay-widget .naay-cart-panel--open {
+          transform: translate(-50%, -50%) scale(1) !important;
+          opacity: 1 !important;
+          visibility: visible !important;
+        }
+      }
+    `;
+    
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = mobileCartStyles;
+    document.head.appendChild(styleSheet);
+    console.log('📱 Mobile cart panel styles force-applied');
+  }
   
   // Initialize widget function
   function initializeWidget() {
