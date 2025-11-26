@@ -3063,7 +3063,7 @@
           }
           
           .naay-cart-panel {
-            right: -320px !important; /* Hidden to right (offscreen) */
+            right: auto !important;
             width: 300px !important;
             height: calc(100vh - 120px) !important;
           }
@@ -4674,6 +4674,13 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
     showCart() {
       console.log('🛒 Showing cart panel...');
+      
+      // Force mobile styles if needed
+      if (window.innerWidth <= 480 && typeof applyMobileCartStyles === 'function') {
+        applyMobileCartStyles();
+        console.log('📱 Applied mobile cart styles before showing cart');
+      }
+      
       this.cartVisible = true;
       if (this.cartPanel) {
         this.cartPanel.classList.add('naay-cart-panel--open');
@@ -5575,7 +5582,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
   // Expose class for constructor access
   window.NaayWidget = NaayWidget;
 
-  // Force mobile cart panel styles with highest specificity and responsive handling
+  // COMPLETE MOBILE CART OVERRIDE - Remove all negative margins and off-screen positioning
   function applyMobileCartStyles() {
     // Remove existing mobile styles if they exist
     const existingStyle = document.getElementById('naay-mobile-cart-override');
@@ -5584,36 +5591,78 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     }
     
     const mobileCartStyles = `
+      /* MOBILE CART PANEL - Complete Reset and Center */
       @media (max-width: 480px) {
+        /* Reset all cart panel positioning completely */
+        .naay-cart-panel,
+        .naay-widget .naay-cart-panel,
         html body .naay-widget .naay-cart-panel,
         html body .naay-cart-panel {
+          /* Reset positioning */
           position: fixed !important;
           top: 50% !important;
           left: 50% !important;
-          right: auto !important;
-          bottom: auto !important;
-          width: calc(100vw - 32px) !important;
-          max-width: 380px !important;
-          height: 80vh !important;
-          max-height: 500px !important;
-          transform: translate(-50%, -50%) scale(0.9) !important;
-          opacity: 0 !important;
-          visibility: hidden !important;
-          z-index: 10001 !important;
-          transition: all 0.3s ease !important;
+          right: unset !important;
+          bottom: unset !important;
+          
+          /* Reset all margins and padding */
+          margin: 0 !important;
+          margin-top: 0 !important;
+          margin-left: 0 !important;
+          margin-right: 0 !important;
+          margin-bottom: 0 !important;
+          padding: 0 !important;
+          
+          /* Responsive size */
+          width: calc(100vw - 20px) !important;
+          max-width: 400px !important;
+          height: 85vh !important;
+          max-height: 600px !important;
+          min-height: 300px !important;
+          
+          /* Center transform */
+          transform: translate(-50%, -50%) !important;
+          
+          /* Visual design - keep original */
           background: rgba(248, 249, 248, 0.98) !important;
           backdrop-filter: blur(20px) !important;
           -webkit-backdrop-filter: blur(20px) !important;
-          border-radius: 16px !important;
+          border-radius: 20px !important;
           border: 1px solid rgba(212, 196, 184, 0.3) !important;
-          box-shadow: 0 8px 32px rgba(139, 93, 75, 0.15) !important;
+          box-shadow: 0 20px 60px rgba(139, 93, 75, 0.25) !important;
+          
+          /* State */
+          opacity: 0 !important;
+          visibility: hidden !important;
+          z-index: 10002 !important;
+          transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+          
+          /* Override any flexbox or grid */
+          display: flex !important;
+          flex-direction: column !important;
         }
         
+        /* Open state */
+        .naay-cart-panel--open,
+        .naay-widget .naay-cart-panel--open,
         html body .naay-widget .naay-cart-panel--open,
         html body .naay-cart-panel--open {
-          transform: translate(-50%, -50%) scale(1) !important;
           opacity: 1 !important;
           visibility: visible !important;
+          transform: translate(-50%, -50%) !important;
+        }
+        
+        /* Backdrop for mobile modal */
+        .naay-cart-panel--open::before {
+          content: '' !important;
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          background: rgba(0, 0, 0, 0.5) !important;
+          backdrop-filter: blur(5px) !important;
+          z-index: -1 !important;
         }
       }
     `;
@@ -5622,7 +5671,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     styleSheet.id = 'naay-mobile-cart-override';
     styleSheet.textContent = mobileCartStyles;
     document.head.appendChild(styleSheet);
-    console.log('📱 Mobile cart panel styles applied/updated');
+    console.log('📱 Mobile cart panel COMPLETELY RESET and centered - all margins removed');
   }
   
   // Apply styles initially and on resize
