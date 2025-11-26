@@ -2086,14 +2086,12 @@
           /* Enhanced mobile widget responsiveness */
           .naay-widget__chat {
             width: calc(100vw - 32px) !important;
-            height: calc(100vh - 180px) !important;
+            height: calc(100vh - 160px) !important;
             left: 16px !important;
             bottom: 88px !important;
-            top: 80px !important;
             border-radius: 16px !important;
             box-shadow: 0 12px 40px rgba(139, 93, 75, 0.25) !important;
-            max-width: 380px !important;
-            margin: 0 auto !important;
+            max-width: 400px !important;
           }
           
           /* Widget button mobile optimization */
@@ -2386,9 +2384,9 @@
 
         @media (max-width: 360px) {
           .naay-widget__chat {
-            width: calc(100vw - 12px) !important;
-            left: 6px !important;
-            bottom: 82px !important;
+            width: calc(100vw - 24px) !important;
+            left: 12px !important;
+            max-width: 360px !important;
           }
           
           .naay-widget__promotional-message {
@@ -2809,12 +2807,15 @@
           border-radius: 12px !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
           box-shadow: 0 2px 8px rgba(202, 149, 126, 0.08) !important;
-          transition: all 0.2s var(--naay-transition) !important;
+          transition: all 0.3s ease !important;
+          overflow: hidden !important;
+          transform-origin: center !important;
         }
-
+        
         .naay-cart-panel__item:hover {
-          box-shadow: 0 4px 12px rgba(202, 149, 126, 0.12) !important;
+          border-color: rgba(202, 149, 126, 0.3) !important;
           transform: translateY(-1px) !important;
+          box-shadow: 0 4px 12px rgba(202, 149, 126, 0.12) !important;
         }
 
         /* Item Image */
@@ -4911,10 +4912,21 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       }
       
       // Remove from local cart data
+      const previousLength = this.cartData.items.length;
       this.cartData.items = this.cartData.items.filter(item => item.id !== productId);
+      const newLength = this.cartData.items.length;
       
-      // Update display
+      console.log(`🗑️ Cart items before removal: ${previousLength}, after: ${newLength}`);
+      
+      // Force immediate update display
       this.updateCartDisplay();
+      
+      // Force re-render to ensure DOM is updated
+      setTimeout(() => {
+        this.renderCartItems();
+        console.log('🔄 Forced cart re-render after removal');
+      }, 50);
+      
       console.log('✅ Product removed from cart. Shopify sync:', removedFromShopify);
     }
 
@@ -5141,9 +5153,44 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         const increaseBtn = itemElement.querySelector('[data-action="increase"]');
         
         if (removeBtn) {
-          removeBtn.addEventListener('click', (e) => {
+          removeBtn.addEventListener('click', async (e) => {
             e.preventDefault();
-            this.removeFromCart(item.id);
+            
+            // Add immediate visual feedback with animation
+            itemElement.style.transition = 'all 0.3s ease';
+            itemElement.style.opacity = '0.5';
+            itemElement.style.transform = 'scale(0.95)';
+            itemElement.style.pointerEvents = 'none';
+            removeBtn.disabled = true;
+            
+            console.log('🗑️ Starting removal for item with ID:', item.id);
+            
+            try {
+              await this.removeFromCart(item.id);
+              
+              // Add exit animation before removal
+              itemElement.style.opacity = '0';
+              itemElement.style.transform = 'scale(0.8) translateX(-20px)';
+              itemElement.style.maxHeight = '0';
+              itemElement.style.marginBottom = '0';
+              itemElement.style.padding = '0';
+              
+              // Remove from DOM after animation
+              setTimeout(() => {
+                if (itemElement.parentNode) {
+                  itemElement.parentNode.removeChild(itemElement);
+                  console.log('✅ Item removed from DOM');
+                }
+              }, 300);
+              
+            } catch (error) {
+              console.error('❌ Error removing item:', error);
+              // Restore item if removal failed
+              itemElement.style.opacity = '1';
+              itemElement.style.transform = 'scale(1)';
+              itemElement.style.pointerEvents = 'auto';
+              removeBtn.disabled = false;
+            }
           });
         }
         
