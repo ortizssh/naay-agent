@@ -212,7 +212,7 @@
               <div class="naay-widget__promotional-content">
                 <div class="naay-widget__promotional-text">
                   ¿Necesitas ayuda? 🌿
-                  <span class="naay-widget__promotional-subtitle">Te ayudamos en tu compra</span>
+                  <span class="naay-widget__promotional-subtitle">Te guiamos en tu compra</span>
                 </div>
               </div>
               <div class="naay-widget__promotional-arrow"></div>
@@ -257,7 +257,10 @@
                 
                 <div class="naay-widget__welcome">
                   <div class="naay-widget__welcome-header">
-                    <h4 class="naay-widget__welcome-title">¡Hola! Soy tu asesora personal de Naay. ¿En qué puedo ayudarte? ✨🌿</h4>
+                    <h4 class="naay-widget__welcome-title">
+                      ¡Hola! Soy tu asesora personal de Naay.
+                      <span class="naay-widget__welcome-subtitle">¿En qué puedo ayudarte? ✨🌿</span>
+                    </h4>
                   </div>
                   <div class="naay-widget__welcome-features">
                     <div class="naay-widget__feature" data-message="¿Qué productos recomiendas para mi tipo de piel?">
@@ -1691,6 +1694,15 @@
           color: var(--naay-perfect) !important;
           margin: 0 !important;
           letter-spacing: -0.02em !important;
+          line-height: 1.4 !important;
+        }
+
+        .naay-widget__welcome-subtitle {
+          display: block !important;
+          color: var(--naay-secondary) !important;
+          font-size: 16px !important;
+          font-weight: var(--naay-font-weight-regular) !important;
+          margin-top: 8px !important;
         }
 
         .naay-widget__welcome-message {
@@ -2811,6 +2823,35 @@
             opacity: 1 !important;
             transform: translateY(0) !important;
           }
+        }
+
+        /* Cart Loading */
+        .naay-cart-loading {
+          display: flex !important;
+          justify-content: center !important;
+          align-items: center !important;
+          padding: 40px 20px !important;
+          flex: 1 !important;
+        }
+
+        .naay-cart-loading__content {
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: center !important;
+          gap: 12px !important;
+          color: var(--naay-perfect) !important;
+        }
+
+        .naay-cart-loading svg {
+          width: 32px !important;
+          height: 32px !important;
+          color: var(--naay-perfect) !important;
+        }
+
+        .naay-cart-loading span {
+          font-size: 14px !important;
+          font-weight: var(--naay-font-weight-medium) !important;
+          opacity: 0.8 !important;
         }
 
         /* Cart Item */
@@ -4400,11 +4441,11 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
                   Agregar al Carrito
                 </button>`
         }
-              <button class="naay-product-card__details-btn" data-action="view-details" title="Ver detalles">
+              <button class="naay-product-card__details-btn" data-action="go-checkout" title="Ir al checkout">
                 <svg viewBox="0 0 24 24" fill="none">
-                  <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19A2 2 0 01-2 2H9A2 2 0 017 19V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
-                Detalles
+                Ir al Checkout
               </button>
             </div>
           </div>
@@ -4431,12 +4472,12 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         });
       }
 
-      // View details button
-      const detailsButton = productElement.querySelector('[data-action="view-details"]');
-      if (detailsButton) {
-        detailsButton.addEventListener('click', (e) => {
+      // Go to checkout button
+      const checkoutButton = productElement.querySelector('[data-action="go-checkout"]');
+      if (checkoutButton) {
+        checkoutButton.addEventListener('click', (e) => {
           e.preventDefault();
-          this.showProductDetails(product);
+          this.openCart();
         });
       }
     }
@@ -4452,7 +4493,6 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       });
 
       // Update button state to loading
-      const originalHTML = buttonElement.innerHTML;
       buttonElement.innerHTML = `
         <svg class="naay-spinner" viewBox="0 0 24 24" fill="none">
           <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" opacity="0.3"/>
@@ -4473,22 +4513,16 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         handle: product.handle
       });
 
-      // Update button state to success
+      // Update button state to success (permanent)
       setTimeout(() => {
         buttonElement.innerHTML = `
           <svg viewBox="0 0 24 24" fill="none">
             <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          ¡Agregado!
+          Producto en el carrito
         `;
         buttonElement.classList.add('naay-product-card__add-btn--success');
-
-        // Reset button after 2 seconds
-        setTimeout(() => {
-          buttonElement.innerHTML = originalHTML;
-          buttonElement.disabled = false;
-          buttonElement.classList.remove('naay-product-card__add-btn--success');
-        }, 2000);
+        buttonElement.disabled = false; // Keep clickable for feedback
       }, 800);
     }
 
@@ -4819,6 +4853,9 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     async addToCart(product) {
       console.log('🛒 Adding product to cart:', product);
 
+      // Show loading state
+      this.showCartLoading();
+
       // First try to add to Shopify native cart if we're on a Shopify store
       let addedToShopify = false;
       // Check if we're on a Shopify store (either .myshopify.com or a custom domain with a configured shop)
@@ -4883,7 +4920,8 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         }
       }
 
-      this.updateCartDisplay();
+      // Hide loading and update cart display
+      this.hideCartLoading();
       // Cart stays visible always
     }
 
@@ -5011,10 +5049,14 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     async removeFromCart(productId) {
       console.log('🛒 Removing product from cart:', productId);
 
+      // Show loading state
+      this.showCartLoading();
+
       // Find the item to get its line index for Shopify
       const item = this.cartData.items.find(item => item.id === productId);
       if (!item) {
         console.warn('⚠️ Item not found in cart:', productId);
+        this.hideCartLoading();
         return;
       }
 
@@ -5046,8 +5088,8 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
       console.log(`🗑️ Cart items before removal: ${previousLength}, after: ${newLength}`);
 
-      // Force immediate update display
-      this.updateCartDisplay();
+      // Hide loading and update cart display
+      this.hideCartLoading();
 
       // Force re-render to ensure DOM is updated
       setTimeout(() => {
@@ -5364,6 +5406,43 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       } else {
         console.warn('⚠️ Cart empty element not found for hiding');
       }
+    }
+
+    showCartLoading() {
+      console.log('⏳ Showing cart loading state');
+      
+      if (!this.cartItems) {
+        console.warn('⚠️ Cart items container not found');
+        return;
+      }
+
+      // Hide empty state and footer temporarily
+      if (this.cartEmpty) {
+        this.cartEmpty.style.display = 'none';
+      }
+      if (this.cartFooter) {
+        this.cartFooter.style.display = 'none';
+      }
+
+      // Show loading state
+      this.cartItems.style.display = 'flex';
+      this.cartItems.innerHTML = `
+        <div class="naay-cart-loading">
+          <div class="naay-cart-loading__content">
+            <svg class="naay-spinner" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" opacity="0.3"/>
+              <path d="M22 12C22 6.48 17.52 2 12 2V22C17.52 22 22 17.52 22 12Z" fill="currentColor"/>
+            </svg>
+            <span>Actualizando carrito...</span>
+          </div>
+        </div>
+      `;
+    }
+
+    hideCartLoading() {
+      console.log('✅ Hiding cart loading state');
+      // updateCartDisplay will handle showing the correct state
+      this.updateCartDisplay();
     }
 
     proceedToCheckout() {
