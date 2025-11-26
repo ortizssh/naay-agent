@@ -89,6 +89,7 @@
 
       this.isOpen = false;
       this.messages = [];
+      this.sessionId = this.getOrCreateSessionId();
       this.conversationId = this.getStoredConversationId();
       this.eventListenersAdded = false; // Prevent duplicate event listeners
       this.isSending = false; // Prevent duplicate message sending
@@ -3963,6 +3964,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         const payload = {
           message: text,
           shop: this.config.shopDomain,
+          session_id: this.sessionId,
           conversationId: this.conversationId || null,
           context: this.config.context || {}
         };
@@ -4657,6 +4659,72 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         console.log('💾 Stored conversation ID:', conversationId);
       } catch (error) {
         console.warn('Could not store conversation ID in localStorage:', error);
+      }
+    }
+
+    getOrCreateSessionId() {
+      try {
+        const storageKey = `naay_session_${this.config.shopDomain}`;
+        let sessionId = localStorage.getItem(storageKey);
+        
+        if (!sessionId) {
+          // Generate unique session ID combining timestamp, random, and browser fingerprint
+          const timestamp = Date.now();
+          const random = Math.random().toString(36).substring(2, 15);
+          const userAgent = navigator.userAgent.substring(0, 50).replace(/[^a-zA-Z0-9]/g, '');
+          const screenSize = `${window.screen.width}x${window.screen.height}`;
+          const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          const language = navigator.language || 'unknown';
+          
+          // Create a fingerprint hash (simple version)
+          const fingerprint = btoa(`${userAgent}_${screenSize}_${timezone}_${language}`).substring(0, 16).replace(/[^a-zA-Z0-9]/g, '');
+          
+          sessionId = `naay_${timestamp}_${random}_${fingerprint}`;
+          
+          localStorage.setItem(storageKey, sessionId);
+          console.log('🆔 Generated new session ID:', sessionId);
+          
+          // Optionally try to enhance session with IP (non-blocking)
+          this.enhanceSessionWithIP(sessionId);
+        } else {
+          console.log('🆔 Retrieved existing session ID:', sessionId);
+        }
+        
+        return sessionId;
+      } catch (error) {
+        // Fallback if localStorage is not available
+        console.warn('Could not access localStorage for session ID, using fallback:', error);
+        const timestamp = Date.now();
+        const random = Math.random().toString(36).substring(2, 15);
+        return `naay_${timestamp}_${random}_fallback`;
+      }
+    }
+
+    async enhanceSessionWithIP(sessionId) {
+      try {
+        // Optional: Try to get IP for enhanced session tracking (non-blocking)
+        // This is for analytics purposes and doesn't affect core functionality
+        const ipResponse = await fetch('https://api.ipify.org?format=json', {
+          method: 'GET',
+          timeout: 2000 // Quick timeout to not delay the UI
+        });
+        
+        if (ipResponse.ok) {
+          const ipData = await ipResponse.json();
+          const ipHash = btoa(ipData.ip).substring(0, 8).replace(/[^a-zA-Z0-9]/g, '');
+          console.log('🌐 Enhanced session with IP info (hashed):', ipHash);
+          
+          // Store enhanced session info for analytics (optional)
+          const storageKey = `naay_session_enhanced_${this.config.shopDomain}`;
+          localStorage.setItem(storageKey, JSON.stringify({
+            sessionId: sessionId,
+            ipHash: ipHash,
+            timestamp: Date.now()
+          }));
+        }
+      } catch (error) {
+        // Silently fail - IP enhancement is optional
+        console.log('ℹ️ IP enhancement unavailable (non-critical):', error.message);
       }
     }
 
