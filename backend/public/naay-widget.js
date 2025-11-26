@@ -6,7 +6,7 @@
  * ✨ LUXURY WIDGET - Ultra-minimalist with glassmorphism
  */
 
-(function() {
+(function () {
   'use strict';
 
   // UNIQUE IDENTIFIER FOR VERSION DETECTION 
@@ -25,17 +25,17 @@
     console.warn('⚠️ Naay Widget: Already loading/initialized, preventing duplicate');
     return;
   }
-  
+
   // Mark as loading immediately to prevent race conditions
   window.__NAAY_WIDGET_LOADING__ = true;
-  
+
   // Prevent multiple widget loads - check for both class and instance
   if (window.NaayWidget && window.naayWidget) {
     console.warn('🔒 Naay Widget already loaded and instantiated, version:', window.__NAAY_WIDGET_VERSION__);
     window.__NAAY_WIDGET_LOADING__ = false;
     return;
   }
-  
+
   // Check if DOM already has widget
   if (document.querySelector('.naay-widget')) {
     console.warn('🔒 Naay Widget DOM already exists, skipping initialization');
@@ -48,7 +48,7 @@
     // Convert to number and remove decimals
     const numPrice = typeof price === 'string' ? parseFloat(price.replace(',', '')) : price;
     if (isNaN(numPrice)) return '$0';
-    
+
     // Round to nearest peso (no decimals) and format with thousands separator
     const roundedPrice = Math.round(numPrice);
     return `$${roundedPrice.toLocaleString('es-CL')}`;
@@ -90,7 +90,7 @@
       this.conversationId = this.getStoredConversationId();
       this.eventListenersAdded = false; // Prevent duplicate event listeners
       this.isSending = false; // Prevent duplicate message sending
-      
+
       // Cart state - visible only when chat is open
       this.cartVisible = false;
       this.cartId = null; // Shopify cart ID
@@ -99,7 +99,7 @@
         total: 0,
         itemCount: 0
       };
-      
+
       // Product tracking to prevent duplicates
       this.addedProducts = new Set();
 
@@ -109,7 +109,7 @@
     init() {
       console.log('✨ Initializing Naay Luxury Widget v2.1 with Cart Sidebar:', new Date().toISOString());
       console.log('🏪 Shop Domain:', this.config.shopDomain);
-      
+
       // Load settings from server
       this.loadSettings().then(() => {
         this.initializeWidget();
@@ -155,7 +155,7 @@
       this.container = document.createElement('div');
       this.container.id = 'naay-widget';
       this.container.className = `naay-widget naay-widget--${this.config.position} naay-widget--closed`;
-      
+
       // Create ultra-modern HTML with luxury design
       this.container.innerHTML = `
         <!-- Main Widget Layout Container -->
@@ -311,7 +311,7 @@
 
       // Append to document
       document.body.appendChild(this.container);
-      
+
       // Add initial fade-in animation
       setTimeout(() => {
         this.container.classList.add('naay-widget--loaded');
@@ -2086,12 +2086,14 @@
           /* Enhanced mobile widget responsiveness */
           .naay-widget__chat {
             width: calc(100vw - 32px) !important;
-            height: calc(100vh - 160px) !important;
+            height: calc(100dvh - 120px) !important; /* Use dvh for better mobile support */
             left: 16px !important;
             bottom: 88px !important;
             border-radius: 16px !important;
             box-shadow: 0 12px 40px rgba(139, 93, 75, 0.25) !important;
             max-width: 400px !important;
+            padding-bottom: env(safe-area-inset-bottom) !important; /* Respect safe area */
+            transition: height 0.3s ease, bottom 0.3s ease !important; /* Smooth transition for keyboard */
           }
           
           /* Widget button mobile optimization */
@@ -2187,7 +2189,7 @@
           
           .naay-widget__input {
             padding: 12px 16px !important;
-            font-size: 14px !important;
+            font-size: 16px !important; /* Prevent iOS zoom */
             border-radius: 20px !important;
           }
           
@@ -3341,11 +3343,49 @@
 
     addEventListeners() {
       console.log('✨ Adding luxury event listeners...');
-      
+
       // Prevent duplicate event listeners
       if (this.eventListenersAdded) {
         console.log('⚠️ Event listeners already added, skipping...');
         return;
+      }
+
+      // Mobile Viewport & Keyboard Handling
+      if (window.visualViewport) {
+        const handleViewportChange = () => {
+          if (!this.isOpen) return;
+
+          // Only apply on mobile devices (width <= 480px)
+          if (window.innerWidth > 480) return;
+
+          const viewport = window.visualViewport;
+          const chatContainer = this.container.querySelector('.naay-widget__chat');
+
+          if (chatContainer) {
+            // Adjust height to fit visible viewport
+            // Subtract header (88px) and some padding
+            const availableHeight = viewport.height;
+            const keyboardVisible = viewport.height < window.innerHeight;
+
+            if (keyboardVisible) {
+              // Keyboard is open
+              chatContainer.style.height = `${availableHeight - 20}px`;
+              chatContainer.style.bottom = `${window.innerHeight - viewport.height - viewport.offsetTop + 10}px`;
+
+              // Ensure input is visible
+              setTimeout(() => {
+                if (this.input) this.input.scrollIntoView({ block: 'end', behavior: 'smooth' });
+              }, 100);
+            } else {
+              // Keyboard is closed - reset to CSS defaults
+              chatContainer.style.height = '';
+              chatContainer.style.bottom = '';
+            }
+          }
+        };
+
+        window.visualViewport.addEventListener('resize', handleViewportChange);
+        window.visualViewport.addEventListener('scroll', handleViewportChange);
       }
 
       // Toggle widget open/close
@@ -3431,14 +3471,14 @@
         card.addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
-          
+
           // Prevent rapid double clicks
           if (card.dataset.clicked === 'true') return;
           card.dataset.clicked = 'true';
           setTimeout(() => {
             card.dataset.clicked = 'false';
           }, 1000);
-          
+
           const message = card.getAttribute('data-message');
           if (message && this.input && !this.isSending) {
             this.input.value = message;
@@ -3459,7 +3499,7 @@
         console.log('✅ Small cart toggle event listener added');
       }
 
-      
+
       // Cart close button
       if (this.cartClose) {
         this.cartClose.addEventListener('click', (e) => {
@@ -3508,14 +3548,14 @@
         this.forceHideEmptyMessage(); // Force hide after test
         this.showCart();
       };
-      
+
       console.log('🧪 Test function available: window.testAddToCart()');
-      
+
       // Test function for product recommendations
       const widget = this;
-      window.testProductRecommendations = function() {
+      window.testProductRecommendations = function () {
         console.log('🧪 Testing product recommendations from n8n format...');
-        
+
         // Latest n8n format: {output: [{product: {...}}, {product: {...}}]}
         const mockN8nResponse = {
           "output": [
@@ -3545,24 +3585,24 @@
             }
           ]
         };
-        
+
         // Test the detection and rendering logic - simulate the full response processing
         widget.addMessage('🌿 Te recomiendo estos productos perfectos para ti:', 'assistant');
-        
+
         // Extract products using the same logic as the main code
         const outputItems = mockN8nResponse.output.filter(item => item.product);
         const products = outputItems.map(item => item.product);
         widget.addProductRecommendations(products);
-        
+
         return 'Product recommendations test completed! Check the chat.';
       };
-      
+
       console.log('🧪 Test function available: window.testProductRecommendations()');
-      
+
       // Test function for mixed text and product JSON
-      window.testMixedResponse = function() {
+      window.testMixedResponse = function () {
         console.log('🧪 Testing mixed text and JSON response...');
-        
+
         // Simulate the exact response from the screenshot
         const mixedResponse = `Te recomiendo nuevamente el producto:
 
@@ -3591,28 +3631,28 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
         // Test the automatic detection and parsing
         const parseResult = widget.parseProductsFromText(mixedResponse);
-        
+
         console.log('Parsed result:', parseResult);
-        
+
         // Add the clean text
         if (parseResult.cleanText) {
           widget.addMessage(parseResult.cleanText, 'assistant');
         }
-        
+
         // Add products if found
         if (parseResult.products.length > 0) {
           widget.addProductRecommendations(parseResult.products);
         }
-        
+
         return 'Mixed response test completed! Check the chat.';
       }.bind(this);
-      
+
       console.log('🧪 Test function available: window.testMixedResponse()');
-      
+
       // Test function for real cart functionality
-      window.testRealCartAdd = function() {
+      window.testRealCartAdd = function () {
         console.log('🧪 Testing real cart functionality...');
-        
+
         // Sample product with real variant ID format
         const testProduct = {
           id: 14890558325102,
@@ -3623,23 +3663,23 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           variantId: 53019925709166,  // Real variant ID format from n8n
           handle: 'test-product-cart'
         };
-        
+
         console.log('🛒 Test product details:', testProduct);
-        widget.handleAddToCartFromRecommendation(testProduct, { 
+        widget.handleAddToCartFromRecommendation(testProduct, {
           innerHTML: 'Test Button',
           disabled: false,
-          classList: { add: function() {}, remove: function() {} }
+          classList: { add: function () { }, remove: function () { } }
         });
-        
+
         return 'Real cart test initiated! Check console for details.';
       }.bind(this);
-      
+
       console.log('🧪 Test function available: window.testRealCartAdd()');
-      
+
       // Test function for duplicate prevention
-      window.testDuplicatePrevention = function() {
+      window.testDuplicatePrevention = function () {
         console.log('🧪 Testing duplicate product prevention...');
-        
+
         // Sample products - same product repeated 3 times with slight variations
         const duplicateProducts = [
           {
@@ -3670,19 +3710,19 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             vendor: "Naay"
           }
         ];
-        
+
         console.log('🔍 Adding products with duplicates:', duplicateProducts);
         widget.addProductRecommendations(duplicateProducts);
-        
+
         return 'Duplicate prevention test completed! Check console for details.';
       }.bind(this);
-      
+
       console.log('🧪 Test function available: window.testDuplicatePrevention()');
-      
+
       // Test function for cart functionality
-      window.testCartFunctionality = function() {
+      window.testCartFunctionality = function () {
         console.log('🧪 Testing cart functionality...');
-        
+
         // Add a test product to cart
         const testProduct = {
           id: 'test-123',
@@ -3694,53 +3734,53 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           handle: 'test-product',
           line_index: 1
         };
-        
+
         // Add to local cart
         widget.cartData.items.push(testProduct);
         widget.updateCartDisplay();
-        
+
         console.log('✅ Test product added to cart');
         console.log('🧪 Current cart items:', widget.cartData.items);
         console.log('🧪 Cart panel visible:', widget.cartVisible);
-        
+
         // Show cart panel if not visible
         if (!widget.cartVisible) {
           widget.showCart();
         }
-        
+
         return 'Cart test completed! Check the cart panel for the test product.';
       }.bind(this);
-      
+
       // Test function for cart button interactions
-      window.testCartButtons = function() {
+      window.testCartButtons = function () {
         console.log('🧪 Testing cart button functionality...');
-        
+
         if (widget.cartData.items.length === 0) {
           console.log('⚠️  No items in cart. Add a test product first.');
           return 'Please add a product to test button functionality.';
         }
-        
+
         const firstItem = widget.cartData.items[0];
         console.log('🧪 Testing with item:', firstItem);
-        
+
         // Test quantity increase
         const originalQuantity = firstItem.quantity;
         widget.updateQuantity(firstItem.id, originalQuantity + 1);
-        
+
         console.log('✅ Quantity increased from', originalQuantity, 'to', firstItem.quantity);
-        
+
         // Show debug info
         console.log('🧪 Cart buttons should now be functional in the cart panel');
-        
+
         return 'Button test completed! Try clicking the +/- buttons in the cart.';
       }.bind(this);
-      
+
       console.log('🧪 Test functions available:');
       console.log('  - window.testCartFunctionality() - Add test product to cart');
       console.log('  - window.testCartButtons() - Test quantity and remove buttons');
-      
+
       // Debug function to check cart panel visibility
-      window.debugCartPanel = function() {
+      window.debugCartPanel = function () {
         console.log('🔍 Cart Panel Debug Info:');
         console.log('  - Cart panel exists:', !!widget.cartPanel);
         console.log('  - Cart panel ID:', widget.cartPanel?.id);
@@ -3750,25 +3790,25 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         console.log('  - Cart panel computed styles:', widget.cartPanel ? window.getComputedStyle(widget.cartPanel) : 'N/A');
         console.log('  - Cart toggle button exists:', !!widget.cartSmallToggle);
         console.log('  - Cart close button exists:', !!widget.cartClose);
-        
+
         if (widget.cartPanel) {
           const rect = widget.cartPanel.getBoundingClientRect();
           console.log('  - Cart panel position:', rect);
           console.log('  - Cart panel visible in viewport:', rect.width > 0 && rect.height > 0);
         }
-        
+
         return 'Debug info logged to console';
       }.bind(this);
-      
+
       // Force show cart function
-      window.forceShowCart = function() {
+      window.forceShowCart = function () {
         console.log('🛒 Force showing cart panel...');
-        
+
         if (!widget.cartPanel) {
           console.error('❌ Cart panel not found!');
           return 'Cart panel not found in DOM';
         }
-        
+
         // Force visibility
         widget.cartPanel.style.opacity = '1';
         widget.cartPanel.style.visibility = 'visible';
@@ -3776,18 +3816,18 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         widget.cartPanel.style.transform = 'translateX(0) scale(1)';
         widget.cartPanel.classList.add('naay-cart-panel--open');
         widget.cartVisible = true;
-        
+
         // Update display
         widget.updateCartDisplay();
-        
+
         console.log('✅ Cart panel forced to show');
         return 'Cart panel forced visible - check the left side of the chat';
       }.bind(this);
-      
+
       console.log('🧪 Debug functions available:');
       console.log('  - window.debugCartPanel() - Show cart panel debug info');
       console.log('  - window.forceShowCart() - Force cart panel to be visible');
-      
+
       // Mark event listeners as added to prevent duplicates
       this.eventListenersAdded = true;
       console.log('✅ Event listeners successfully added and flagged');
@@ -3809,10 +3849,10 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       this.container.classList.add('naay-widget--open');
       this.button.setAttribute('aria-expanded', 'true');
       console.log('✅ Classes after open:', this.container.className);
-      
+
       // Cart only shows when opened via cart button - not automatically
       // this.showCart(); // Removed automatic cart opening
-      
+
       // Focus input with delay for smooth animation
       setTimeout(() => {
         if (this.input) {
@@ -3824,17 +3864,17 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     close() {
       console.log('✨ Closing luxury chat...');
       this.isOpen = false;
-      
+
       // Hide cart if it's open when chat closes
       if (this.cartVisible) {
         this.hideCart();
       }
-      
+
       // Add closing animation class first
       this.container.classList.add('naay-widget--closing');
       this.container.classList.remove('naay-widget--open');
       this.button.setAttribute('aria-expanded', 'false');
-      
+
       // After animation completes, add closed class and remove closing
       setTimeout(() => {
         this.container.classList.remove('naay-widget--closing');
@@ -3895,10 +3935,10 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
         const data = await response.json();
         console.log('🌿 Naay Chat: n8n Response data:', data);
-        
+
         // Remove typing indicator
         this.removeTypingIndicator(typingIndicator);
-        
+
         // n8n response handling - expect direct response format
         if (response.ok) {
           // Check for n8n workflow errors
@@ -3907,12 +3947,12 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             this.addMessage('🔧 El asistente de IA está siendo actualizado. Por favor intenta en unos minutos. ¡Gracias por tu paciencia!', 'assistant');
             return;
           }
-          
+
           // Handle different n8n response formats
           let assistantMessage = '🔧 El asistente recibió tu mensaje pero está configurando la respuesta. Por favor intenta de nuevo en un momento.';
           let hasProducts = false;
           let products = [];
-          
+
           // Check if response contains products - Latest n8n format: {output: [{product: {...}}]}
           if (data && data.output && Array.isArray(data.output) && data.output.length > 0) {
             // Check for new simplified product format
@@ -3962,7 +4002,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           } else if (!data || Object.keys(data).length === 0) {
             assistantMessage = '🔧 El asistente está procesando tu mensaje. El flujo de n8n necesita configurar una respuesta.';
           }
-          
+
           // Parse products from text if not already found
           if (!hasProducts) {
             console.log('🔍 Processing n8n response for JSON detection. Message:', assistantMessage);
@@ -3978,23 +4018,23 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
               console.log('🔍 No products found in text response');
             }
           }
-          
+
           // Add the message
           if (assistantMessage) {
             this.addMessage(assistantMessage, 'assistant');
           }
-          
+
           // Add product recommendations if present
           if (hasProducts && products.length > 0) {
             this.addProductRecommendations(products);
           }
-          
+
           // Update conversation ID if provided by n8n
           if (data.conversationId) {
             this.conversationId = data.conversationId;
             this.storeConversationId(this.conversationId);
           }
-          
+
           console.log('✅ Naay Chat: Message processed successfully via n8n');
         } else {
           console.error('❌ Naay Chat: n8n API returned error', response.status, data);
@@ -4006,10 +4046,10 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         }
       } catch (error) {
         console.error('❌ Naay Chat: Network error sending message:', error);
-        
+
         // Remove typing indicator on error
         this.removeTypingIndicator(typingIndicator);
-        
+
         // Check if it's a CORS error
         if (error.name === 'TypeError' && error.message.includes('fetch')) {
           console.error('❌ Possible CORS error detected');
@@ -4031,17 +4071,17 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     addMessage(text, sender) {
       const messageDiv = document.createElement('div');
       messageDiv.className = `naay-widget__message naay-widget__message--${sender}`;
-      
+
       // Format text with proper line breaks and structure
       const formattedText = this.formatMessage(text);
       messageDiv.innerHTML = formattedText;
-      
+
       // Remove welcome message when first real message is added
       const welcome = this.messagesContainer.querySelector('.naay-widget__welcome');
       if (welcome && sender === 'user') {
         welcome.style.display = 'none';
       }
-      
+
       if (this.messagesContainer) {
         this.messagesContainer.appendChild(messageDiv);
         this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
@@ -4061,12 +4101,12 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           </div>
         </div>
       `;
-      
+
       if (this.messagesContainer) {
         this.messagesContainer.appendChild(typingDiv);
         this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
       }
-      
+
       return typingDiv;
     }
 
@@ -4083,7 +4123,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       console.log('🔍 JSON Detection: Starting to parse text:', text);
       const products = [];
       let cleanText = text;
-      
+
       try {
         // Look for JSON patterns in the text
         const jsonPatterns = [
@@ -4094,13 +4134,13 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           // Pattern 3: Individual {product: {...}} objects
           /\{\s*"product"\s*:\s*\{[\s\S]*?\}\s*\}/g
         ];
-        
+
         console.log('🔍 JSON Detection: Testing patterns...');
-        
+
         for (let i = 0; i < jsonPatterns.length; i++) {
           const pattern = jsonPatterns[i];
           console.log(`🔍 JSON Detection: Testing pattern ${i + 1}:`, pattern);
-          
+
           let match;
           while ((match = pattern.exec(text)) !== null) {
             console.log('🔍 JSON Detection: Found match:', match[0]);
@@ -4108,7 +4148,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
               const jsonStr = match[0];
               const parsed = JSON.parse(jsonStr);
               console.log('🔍 JSON Detection: Parsed JSON:', parsed);
-              
+
               // Process different JSON structures
               if (parsed.output && Array.isArray(parsed.output)) {
                 console.log('🔍 JSON Detection: Processing output array format');
@@ -4140,12 +4180,12 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             }
           }
         }
-        
+
         console.log('🔍 JSON Detection: Final result - Products:', products, 'Clean text:', cleanText);
       } catch (error) {
         console.error('🔍 JSON Detection: Error parsing products from text:', error);
       }
-      
+
       return {
         products: products,
         cleanText: cleanText.replace(/\n\s*\n/g, '\n').trim()
@@ -4157,17 +4197,17 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       console.log('🛍️ Adding multiple product recommendations:', products);
       console.log('🔍 Currently added products:', Array.from(this.addedProducts));
       console.trace('📍 addProductRecommendations called from:');
-      
+
       // Create horizontal container for recommendations
       const recommendationsContainer = document.createElement('div');
       recommendationsContainer.className = 'naay-widget__message naay-widget__message--assistant';
-      
+
       // Process products and store valid ones
       const validProducts = [];
       const productsHTML = products.map(shopifyProduct => {
         const product = this.transformShopifyProduct(shopifyProduct);
         const productKey = `${product.id}-${product.variantId}-${product.title}`.replace(/\s+/g, '_');
-        
+
         // Only add if not already added in this session
         if (!this.addedProducts.has(productKey)) {
           this.addedProducts.add(productKey);
@@ -4187,9 +4227,9 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           </div>
         </div>
       `;
-      
+
       recommendationsContainer.innerHTML = recommendationsHTML;
-      
+
       // Add event listeners for all product cards using valid products array
       const productCards = recommendationsContainer.querySelectorAll('.naay-product-card');
       productCards.forEach((card, index) => {
@@ -4198,31 +4238,31 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           this.setupProductCardListeners(card, product);
         }
       });
-      
+
       if (this.messagesContainer) {
         this.messagesContainer.appendChild(recommendationsContainer);
         this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
       }
-      
+
       console.log('🔍 Total unique products added so far:', this.addedProducts.size);
     }
-    
+
     // Method to clear product history (useful for new conversations)
     clearProductHistory() {
       console.log('🗑️  Clearing product history...');
       this.addedProducts.clear();
       console.log('✅ Product history cleared');
     }
-    
+
     // Transform Shopify product format to widget format
     transformShopifyProduct(shopifyProduct) {
       // Handle simplified n8n format vs full Shopify format
       const isSimplified = shopifyProduct.variant_id && !shopifyProduct.variants;
-      
+
       let price = '0.00';
       let variantId = null;
       let available = true;
-      
+
       if (isSimplified) {
         // New simplified format from n8n
         price = shopifyProduct.price ? parseFloat(shopifyProduct.price) : 0;
@@ -4234,7 +4274,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         variantId = variant ? variant.id : null;
         available = variant ? variant.inventory_quantity > 0 : true;
       }
-      
+
       // Handle image format
       let imageUrl = '';
       if (shopifyProduct.images && Array.isArray(shopifyProduct.images) && shopifyProduct.images.length > 0) {
@@ -4242,7 +4282,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       } else if (shopifyProduct.image) {
         imageUrl = shopifyProduct.image.src || shopifyProduct.image || '';
       }
-      
+
       return {
         id: shopifyProduct.id || '',
         title: shopifyProduct.title || 'Producto sin nombre',
@@ -4256,7 +4296,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         available: available
       };
     }
-    
+
     // Strip HTML tags from description
     stripHTML(html) {
       const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -4265,22 +4305,22 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
     addProductRecommendation(product) {
       console.log('🛍️ Adding product recommendation:', product);
-      
+
       const productDiv = document.createElement('div');
       productDiv.className = 'naay-widget__message naay-widget__message--assistant';
-      
+
       // Create product card HTML
       const productHTML = this.createProductCardHTML(product);
       productDiv.innerHTML = productHTML;
-      
+
       // Add event listeners for the product card
       this.setupProductCardListeners(productDiv, product);
-      
+
       if (this.messagesContainer) {
         this.messagesContainer.appendChild(productDiv);
         this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
       }
-      
+
       console.log('✅ Product recommendation added to chat');
     }
 
@@ -4298,7 +4338,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
       const hasDiscount = comparePrice && parseFloat(comparePrice) > parseFloat(price);
       const discountPercent = hasDiscount ? Math.round(((parseFloat(comparePrice) - parseFloat(price)) / parseFloat(comparePrice)) * 100) : 0;
-      
+
       return `
         <div class="naay-product-card" data-product-id="${id}">
           ${hasDiscount ? `<div class="naay-product-card__header">
@@ -4306,14 +4346,14 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           </div>` : ''}
           
           <div class="naay-product-card__media">
-            ${image ? 
-              `<img class="naay-product-card__image" src="${image}" alt="${title}" loading="lazy">` : 
-              `<div class="naay-product-card__placeholder">
+            ${image ?
+          `<img class="naay-product-card__image" src="${image}" alt="${title}" loading="lazy">` :
+          `<div class="naay-product-card__placeholder">
                 <svg viewBox="0 0 24 24" fill="none">
                   <path d="M21 16V8C21 6.9 20.1 6 19 6H5C3.9 6 3 6.9 3 8V16C3 17.1 3.9 18 5 18H19C20.1 18 21 17.1 21 16ZM5 16L8.5 11.5L11 14.5L14.5 10L19 16H5Z" fill="currentColor"/>
                 </svg>
               </div>`
-            }
+        }
             <div class="naay-product-card__overlay">
               <button class="naay-product-card__quick-view" data-action="quick-view" title="Vista rápida">
                 <svg viewBox="0 0 24 24" fill="none">
@@ -4341,20 +4381,20 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             </div>
             
             <div class="naay-product-card__actions">
-              ${!available ? 
-                `<button class="naay-product-card__add-btn naay-product-card__add-btn--disabled" disabled>
+              ${!available ?
+          `<button class="naay-product-card__add-btn naay-product-card__add-btn--disabled" disabled>
                   <svg viewBox="0 0 24 24" fill="none">
                     <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2"/>
                   </svg>
                   Agotado
                 </button>` :
-                `<button class="naay-product-card__add-btn" data-action="add-to-cart" title="Agregar al carrito">
+          `<button class="naay-product-card__add-btn" data-action="add-to-cart" title="Agregar al carrito">
                   <svg viewBox="0 0 24 24" fill="none">
                     <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19C17 19.6 16.6 20 16 20H14C13.4 20 13 19.6 13 19V13" stroke="currentColor" stroke-width="2"/>
                   </svg>
                   Agregar al Carrito
                 </button>`
-              }
+        }
               <button class="naay-product-card__details-btn" data-action="view-details" title="Ver detalles">
                 <svg viewBox="0 0 24 24" fill="none">
                   <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -4405,7 +4445,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         price: product.price,
         handle: product.handle
       });
-      
+
       // Update button state to loading
       const originalHTML = buttonElement.innerHTML;
       buttonElement.innerHTML = `
@@ -4437,7 +4477,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           ¡Agregado!
         `;
         buttonElement.classList.add('naay-product-card__add-btn--success');
-        
+
         // Reset button after 2 seconds
         setTimeout(() => {
           buttonElement.innerHTML = originalHTML;
@@ -4449,7 +4489,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
     showProductQuickView(product) {
       console.log('👁️ Showing quick view for:', product.title);
-      
+
       // Create quick view modal
       const modal = document.createElement('div');
       modal.className = 'naay-product-modal';
@@ -4500,7 +4540,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
     showProductDetails(product) {
       console.log('📄 Showing details for:', product.title);
-      
+
       // Open product page in new tab
       if (product.handle) {
         const productUrl = `https://${this.config.shopDomain}/products/${product.handle}`;
@@ -4519,7 +4559,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         .replace(/\n/g, '<br>')
         .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
         .replace(/([A-ZÁ-Ú][^:]{2,30}):/g, '<strong>$1:</strong>');
-      
+
       return formatted;
     }
 
@@ -4529,27 +4569,27 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         // Remove all messages
         const messages = this.messagesContainer.querySelectorAll('.naay-widget__message:not(.naay-widget__welcome)');
         messages.forEach(message => message.remove());
-        
+
         // Show welcome message again
         const welcome = this.messagesContainer.querySelector('.naay-widget__welcome');
         if (welcome) {
           welcome.style.display = 'block';
         }
-        
+
         // Scroll to top
         this.messagesContainer.scrollTop = 0;
       }
-      
+
       // Clear input
       if (this.input) {
         this.input.value = '';
       }
-      
+
       // Reset conversation state completely
       this.messages = [];
       this.conversationId = null;
       this.clearStoredConversationId(); // Clear from localStorage too
-      
+
       console.log('✅ Conversation reset to welcome state');
     }
 
@@ -4604,7 +4644,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         variantId: 'variant-123',
         handle: 'crema-hidratante-aloe-vera'
       };
-      
+
       this.addToCart(sampleProduct);
       console.log('🧪 Test product added to cart');
     }
@@ -4612,10 +4652,10 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     // Test function to show product recommendations (for development)
     async testProductRecommendation() {
       console.log('🧪 Testing real product recommendations...');
-      
+
       // Test with real API
       const products = await this.getRecommendations('grasa', ['hidratación']);
-      
+
       if (products.length > 0) {
         products.forEach(product => {
           this.addProductRecommendation(product);
@@ -4623,7 +4663,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         console.log('✅ Real recommendations loaded:', products);
       } else {
         console.log('⚠️ No products found, using sample data...');
-        
+
         // Fallback to sample products
         const sampleProducts = [
           {
@@ -4652,12 +4692,12 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             variants: [{ id: 'variant-2', price: '32.50', shopifyVariantId: 'gid://shopify/ProductVariant/2' }]
           }
         ];
-        
+
         sampleProducts.forEach(product => {
           this.addProductRecommendation(product);
         });
       }
-      
+
       console.log('🧪 Product recommendations test completed');
     }
 
@@ -4674,17 +4714,17 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
     showCart() {
       console.log('🛒 Showing cart panel...');
-      
+
       // AGGRESSIVE MOBILE POSITIONING ENFORCEMENT
       if (window.innerWidth <= 480) {
         console.log('📱 MOBILE DETECTED: Applying emergency cart positioning');
-        
+
         // Method 1: Apply mobile styles
         if (typeof applyMobileCartStyles === 'function') {
           applyMobileCartStyles();
           console.log('✅ Applied mobile cart styles before showing cart');
         }
-        
+
         // Method 2: Direct cart panel styling if it exists
         if (this.cartPanel) {
           console.log('🎯 DIRECT STYLING: Forcing cart panel position');
@@ -4701,7 +4741,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           this.cartPanel.style.setProperty('z-index', '10002', 'important');
           console.log('✅ Direct cart panel styling applied');
         }
-        
+
         // Method 3: Delayed verification and re-application
         setTimeout(() => {
           const panel = this.cartPanel || document.querySelector('.naay-cart-panel');
@@ -4716,12 +4756,12 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
               width: rect.width,
               height: rect.height
             });
-            
+
             // If cart is off-screen, force it back
-            if (rect.left > window.innerWidth - 50 || rect.right < 50 || 
-                rect.top > window.innerHeight - 50 || rect.bottom < 50) {
+            if (rect.left > window.innerWidth - 50 || rect.right < 50 ||
+              rect.top > window.innerHeight - 50 || rect.bottom < 50) {
               console.log('🚨 DELAYED CHECK: Cart is off-screen, forcing re-center');
-              
+
               // Nuclear option - completely override with inline styles
               panel.style.cssText = `
                 position: fixed !important;
@@ -4750,7 +4790,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           }
         }, 500);
       }
-      
+
       this.cartVisible = true;
       if (this.cartPanel) {
         this.cartPanel.classList.add('naay-cart-panel--open');
@@ -4773,27 +4813,27 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
     async addToCart(product) {
       console.log('🛒 Adding product to cart:', product);
-      
+
       // First try to add to Shopify native cart if we're on a Shopify store
       let addedToShopify = false;
       // Check if we're on a Shopify store (either .myshopify.com or a custom domain with a configured shop)
-      const isShopifyDomain = window.location.hostname.includes('myshopify.com') || 
-                              window.location.hostname.includes('shopify.com');
-      
+      const isShopifyDomain = window.location.hostname.includes('myshopify.com') ||
+        window.location.hostname.includes('shopify.com');
+
       // Always check window.NaayConfig for the most up-to-date configuration
       const currentShopDomain = (window.NaayConfig && window.NaayConfig.shopDomain) || this.config.shopDomain;
       const hasShopConfig = currentShopDomain && currentShopDomain.trim() !== '';
       const isShopifyStore = isShopifyDomain || hasShopConfig;
-      
+
       console.log('🏪 Is Shopify store?', isShopifyStore, 'Hostname:', window.location.hostname, 'Shop config:', currentShopDomain);
       console.log('🔧 Config sources - this.config.shopDomain:', this.config.shopDomain, 'window.NaayConfig.shopDomain:', window.NaayConfig?.shopDomain);
-      
+
       if (isShopifyStore && hasShopConfig) {
         addedToShopify = await this.addToShopifyNativeCart(product.variantId, product.quantity || 1);
       } else {
         console.log('⚠️  No Shopify configuration or domain, skipping native cart addition');
       }
-      
+
       // Also add via our API for consistency (only if we have shop config)
       if (hasShopConfig) {
         try {
@@ -4810,19 +4850,19 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             }),
           });
 
-        const data = await response.json();
-        
-        if (data.success && data.data.cart) {
-          // Update local cart with Shopify cart data
-          this.cartId = data.data.cart.id;
-          this.syncCartFromShopify(data.data.cart);
-          
-          console.log('✅ Product added to Shopify cart via API:', data.data.cart);
-        } else if (!addedToShopify) {
-          console.error('❌ Failed to add to cart via API:', data);
-          // Fallback to local cart only if Shopify native also failed
-          this.addToCartLocal(product);
-        }
+          const data = await response.json();
+
+          if (data.success && data.data.cart) {
+            // Update local cart with Shopify cart data
+            this.cartId = data.data.cart.id;
+            this.syncCartFromShopify(data.data.cart);
+
+            console.log('✅ Product added to Shopify cart via API:', data.data.cart);
+          } else if (!addedToShopify) {
+            console.error('❌ Failed to add to cart via API:', data);
+            // Fallback to local cart only if Shopify native also failed
+            this.addToCartLocal(product);
+          }
         } catch (error) {
           console.error('❌ Error adding to cart via API:', error);
           if (!addedToShopify) {
@@ -4837,7 +4877,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           this.addToCartLocal(product);
         }
       }
-      
+
       this.updateCartDisplay();
       // Cart stays visible always
     }
@@ -4846,10 +4886,10 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     // Fallback method for local cart management
     addToCartLocal(product) {
       console.log('🛒 Adding product to local cart (fallback):', product);
-      
+
       // Check if product already exists in cart
       const existingItem = this.cartData.items.find(item => item.id === product.id);
-      
+
       if (existingItem) {
         // Update quantity
         existingItem.quantity += product.quantity || 1;
@@ -4865,12 +4905,12 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           handle: product.handle
         });
       }
-      
+
       console.log('✅ Product added to local cart');
-      
+
       // Update cart display to reflect changes
       this.updateCartDisplay();
-      
+
       // Force hide empty message after any cart update
       this.forceHideEmptyMessage();
     }
@@ -4878,7 +4918,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     // Sync local cart data from Shopify cart
     syncCartFromShopify(shopifyCart) {
       console.log('🔄 Syncing cart from Shopify:', shopifyCart);
-      
+
       // Transform Shopify cart lines to our format
       this.cartData.items = shopifyCart.lines?.edges?.map(edge => ({
         id: edge.node.id,
@@ -4889,18 +4929,18 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         variantId: edge.node.merchandise?.id || '',
         handle: edge.node.merchandise?.product?.handle || ''
       })) || [];
-      
+
       // Update totals
       this.cartData.total = shopifyCart.cost?.totalAmount?.amount || 0;
       this.cartData.itemCount = shopifyCart.totalQuantity || 0;
-      
+
       console.log('✅ Cart synced with Shopify');
     }
 
     // Search for products using the new endpoint
     async searchProducts(query, skinType) {
       console.log('🔍 Searching products:', { query, skinType });
-      
+
       try {
         const response = await fetch(`${this.config.apiEndpoint}/api/public/products/search`, {
           method: 'POST',
@@ -4916,7 +4956,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         });
 
         const data = await response.json();
-        
+
         if (data.success && data.data.products) {
           console.log('✅ Products found:', data.data.products);
           return data.data.products;
@@ -4933,7 +4973,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     // Get product recommendations
     async getRecommendations(skinType, concerns) {
       console.log('💡 Getting product recommendations:', { skinType, concerns });
-      
+
       try {
         const response = await fetch(`${this.config.apiEndpoint}/api/public/products/recommendations`, {
           method: 'POST',
@@ -4949,7 +4989,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         });
 
         const data = await response.json();
-        
+
         if (data.success && data.data.products) {
           console.log('✅ Recommendations found:', data.data.products);
           return data.data.products;
@@ -4965,27 +5005,27 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
     async removeFromCart(productId) {
       console.log('🛒 Removing product from cart:', productId);
-      
+
       // Find the item to get its line index for Shopify
       const item = this.cartData.items.find(item => item.id === productId);
       if (!item) {
         console.warn('⚠️ Item not found in cart:', productId);
         return;
       }
-      
+
       // Try to remove from Shopify native cart first
       let removedFromShopify = false;
-      const isShopifyDomain = window.location.hostname.includes('myshopify.com') || 
-                              window.location.hostname.includes('shopify.com');
-      
+      const isShopifyDomain = window.location.hostname.includes('myshopify.com') ||
+        window.location.hostname.includes('shopify.com');
+
       // Always check window.NaayConfig for the most up-to-date configuration
       const currentShopDomain = (window.NaayConfig && window.NaayConfig.shopDomain) || this.config.shopDomain;
       const hasShopConfig = currentShopDomain && currentShopDomain.trim() !== '';
       const isShopifyStore = isShopifyDomain || hasShopConfig;
-      
+
       console.log('🗑️ Remove from Shopify?', isShopifyStore, 'Has line_index:', !!item.line_index, 'Shop config:', currentShopDomain);
       console.log('🔍 Item details:', { id: item.id, title: item.title, line_index: item.line_index, variantId: item.variantId });
-      
+
       if (isShopifyStore && item.line_index) {
         try {
           removedFromShopify = await this.removeFromShopifyNativeCart(item.line_index);
@@ -4993,53 +5033,53 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           console.error('❌ Failed to remove from Shopify cart:', error);
         }
       }
-      
+
       // Remove from local cart data
       const previousLength = this.cartData.items.length;
       this.cartData.items = this.cartData.items.filter(item => item.id !== productId);
       const newLength = this.cartData.items.length;
-      
+
       console.log(`🗑️ Cart items before removal: ${previousLength}, after: ${newLength}`);
-      
+
       // Force immediate update display
       this.updateCartDisplay();
-      
+
       // Force re-render to ensure DOM is updated
       setTimeout(() => {
         this.renderCartItems();
         console.log('🔄 Forced cart re-render after removal');
       }, 50);
-      
+
       console.log('✅ Product removed from cart. Shopify sync:', removedFromShopify);
     }
 
     async updateQuantity(productId, newQuantity) {
       console.log('🛒 Updating quantity for product:', productId, 'to:', newQuantity);
-      
+
       const item = this.cartData.items.find(item => item.id === productId);
       if (!item) {
         console.warn('⚠️ Item not found in cart:', productId);
         return;
       }
-      
+
       if (newQuantity <= 0) {
         await this.removeFromCart(productId);
         return;
       }
-      
+
       // Try to update quantity in Shopify native cart first
       let updatedInShopify = false;
-      const isShopifyDomain = window.location.hostname.includes('myshopify.com') || 
-                              window.location.hostname.includes('shopify.com');
-      
+      const isShopifyDomain = window.location.hostname.includes('myshopify.com') ||
+        window.location.hostname.includes('shopify.com');
+
       // Always check window.NaayConfig for the most up-to-date configuration
       const currentShopDomain = (window.NaayConfig && window.NaayConfig.shopDomain) || this.config.shopDomain;
       const hasShopConfig = currentShopDomain && currentShopDomain.trim() !== '';
       const isShopifyStore = isShopifyDomain || hasShopConfig;
-      
+
       console.log('🔄 Update in Shopify?', isShopifyStore, 'Has line_index:', !!item.line_index, 'New quantity:', newQuantity);
       console.log('🔍 Item details:', { id: item.id, title: item.title, line_index: item.line_index, variantId: item.variantId });
-      
+
       if (isShopifyStore && item.line_index) {
         try {
           updatedInShopify = await this.updateShopifyCartQuantity(item.line_index, newQuantity);
@@ -5047,11 +5087,11 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           console.error('❌ Failed to update Shopify cart quantity:', error);
         }
       }
-      
+
       // Update local cart data
       item.quantity = newQuantity;
       this.updateCartDisplay();
-      
+
       console.log('✅ Quantity updated. Shopify sync:', updatedInShopify);
     }
 
@@ -5064,32 +5104,32 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         cartTotal: !!this.cartTotal,
         cartBadge: !!this.cartBadge
       });
-      
+
       // Ensure cartData.items is an array
       if (!Array.isArray(this.cartData.items)) {
         console.warn('⚠️ Cart items is not an array, resetting to empty array');
         this.cartData.items = [];
       }
-      
+
       // Calculate totals
       let total = 0;
       let itemCount = 0;
-      
+
       this.cartData.items.forEach(item => {
         const itemPrice = parseFloat(item.price) || 0;
         const itemQuantity = parseInt(item.quantity) || 0;
         total += itemPrice * itemQuantity;
         itemCount += itemQuantity;
       });
-      
+
       this.cartData.total = total;
       this.cartData.itemCount = itemCount;
-      
+
       console.log('📊 Cart calculations: items count =', this.cartData.items.length, ', total items =', itemCount, ', total price =', total);
-      
+
       // Update UI based on cart content
       const hasItems = this.cartData.items.length > 0 && itemCount > 0;
-      
+
       console.log('🔍 Cart UI Update Debug:', {
         'cartData.items.length': this.cartData.items.length,
         'itemCount': itemCount,
@@ -5099,7 +5139,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         'cartFooter exists': !!this.cartFooter,
         'cart items array': this.cartData.items
       });
-      
+
       if (this.cartEmpty && this.cartItems && this.cartFooter) {
         if (!hasItems) {
           // Show empty state
@@ -5111,7 +5151,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         } else {
           // Show items
           console.log('📋 HIDING EMPTY STATE - SHOWING ITEMS');
-          
+
           // FORCE HIDE empty state with multiple methods
           if (this.cartEmpty) {
             this.cartEmpty.style.display = 'none';
@@ -5120,25 +5160,25 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             this.cartEmpty.style.height = '0';
             this.cartEmpty.style.overflow = 'hidden';
           }
-          
+
           // Show items container
           if (this.cartItems) {
             this.cartItems.style.display = 'flex';
             this.cartItems.classList.add('naay-cart-panel__items--visible');
           }
-          
+
           // Show footer
           if (this.cartFooter) {
             this.cartFooter.style.display = 'block';
           }
-          
+
           console.log('📋 Showing cart with items');
-          
+
           // Update total
           if (this.cartTotal) {
             this.cartTotal.textContent = formatChileanPrice(total);
           }
-          
+
           // Render cart items
           this.renderCartItems();
         }
@@ -5149,7 +5189,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           cartFooter: !!this.cartFooter
         });
       }
-      
+
       // Update cart badge - small button in chat
       if (this.cartSmallCount) {
         if (itemCount > 0) {
@@ -5160,43 +5200,43 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           this.cartSmallCount.style.display = 'none';
         }
       }
-      
+
       console.log('✅ Cart display updated successfully. Has items:', hasItems, 'Item count:', itemCount);
     }
 
     renderCartItems() {
       console.log('🎨 Rendering cart items. Items count:', this.cartData.items.length);
       console.log('🎨 Cart items container exists:', !!this.cartItems);
-      
+
       if (!this.cartItems) {
         console.error('❌ Cart items container not found!');
         return;
       }
-      
+
       this.cartItems.innerHTML = '';
       console.log('🎨 Cleared cart items container');
-      
+
       this.cartData.items.forEach((item, index) => {
         console.log(`🎨 Rendering item ${index + 1}:`, item);
         const itemElement = document.createElement('div');
         itemElement.className = 'naay-cart-panel__item';
-        
+
         // Get product image (try different image properties)
         const imageUrl = item.image || item.featured_image || item.images?.[0] || item.product_image || null;
         const variantTitle = item.variantTitle && item.variantTitle !== 'Default Title' ? item.variantTitle : '';
         const unitPrice = parseFloat(item.price) || 0;
         const totalPrice = unitPrice * item.quantity;
-        
+
         itemElement.innerHTML = `
           <div class="naay-cart-panel__item-image-container">
-            ${imageUrl ? 
-              `<img src="${imageUrl}" alt="${item.title}" class="naay-cart-panel__item-image" loading="lazy">` :
-              `<div class="naay-cart-panel__item-image naay-cart-panel__item-image--placeholder">
+            ${imageUrl ?
+            `<img src="${imageUrl}" alt="${item.title}" class="naay-cart-panel__item-image" loading="lazy">` :
+            `<div class="naay-cart-panel__item-image naay-cart-panel__item-image--placeholder">
                 <svg viewBox="0 0 24 24" fill="none">
                   <path d="M21 19V5C21 3.9 20.1 3 19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19ZM8.5 13.5L11 16.51L14.5 12L19 18H5L8.5 13.5Z" fill="currentColor"/>
                 </svg>
               </div>`
-            }
+          }
           </div>
           <div class="naay-cart-panel__item-details">
             <div class="naay-cart-panel__item-info">
@@ -5229,35 +5269,35 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             </div>
           </div>
         `;
-        
+
         // Add event listeners for this item
         const removeBtn = itemElement.querySelector('.naay-cart-panel__item-remove');
         const decreaseBtn = itemElement.querySelector('[data-action="decrease"]');
         const increaseBtn = itemElement.querySelector('[data-action="increase"]');
-        
+
         if (removeBtn) {
           removeBtn.addEventListener('click', async (e) => {
             e.preventDefault();
-            
+
             // Add immediate visual feedback with animation
             itemElement.style.transition = 'all 0.3s ease';
             itemElement.style.opacity = '0.5';
             itemElement.style.transform = 'scale(0.95)';
             itemElement.style.pointerEvents = 'none';
             removeBtn.disabled = true;
-            
+
             console.log('🗑️ Starting removal for item with ID:', item.id);
-            
+
             try {
               await this.removeFromCart(item.id);
-              
+
               // Add exit animation before removal
               itemElement.style.opacity = '0';
               itemElement.style.transform = 'scale(0.8) translateX(-20px)';
               itemElement.style.maxHeight = '0';
               itemElement.style.marginBottom = '0';
               itemElement.style.padding = '0';
-              
+
               // Remove from DOM after animation
               setTimeout(() => {
                 if (itemElement.parentNode) {
@@ -5265,7 +5305,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
                   console.log('✅ Item removed from DOM');
                 }
               }, 300);
-              
+
             } catch (error) {
               console.error('❌ Error removing item:', error);
               // Restore item if removal failed
@@ -5276,45 +5316,45 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             }
           });
         }
-        
+
         if (decreaseBtn) {
           decreaseBtn.addEventListener('click', (e) => {
             e.preventDefault();
             this.updateQuantity(item.id, item.quantity - 1);
           });
         }
-        
+
         if (increaseBtn) {
           increaseBtn.addEventListener('click', (e) => {
             e.preventDefault();
             this.updateQuantity(item.id, item.quantity + 1);
           });
         }
-        
+
         this.cartItems.appendChild(itemElement);
         console.log(`✅ Item ${index + 1} added to cart container`);
       });
-      
+
       console.log('🎨 Finished rendering all cart items. Total items rendered:', this.cartData.items.length);
     }
 
     forceHideEmptyMessage() {
       console.log('🚫 Force hiding empty cart message');
-      
+
       if (this.cartEmpty) {
         // Multiple methods to ensure it's hidden
         this.cartEmpty.style.display = 'none';
-        this.cartEmpty.style.visibility = 'hidden'; 
+        this.cartEmpty.style.visibility = 'hidden';
         this.cartEmpty.style.opacity = '0';
         this.cartEmpty.style.height = '0';
         this.cartEmpty.style.overflow = 'hidden';
         this.cartEmpty.style.position = 'absolute';
         this.cartEmpty.style.left = '-9999px';
-        
+
         // Remove from DOM flow
         this.cartEmpty.setAttribute('hidden', 'true');
         this.cartEmpty.setAttribute('aria-hidden', 'true');
-        
+
         console.log('✅ Empty message forcefully hidden');
       } else {
         console.warn('⚠️ Cart empty element not found for hiding');
@@ -5323,13 +5363,13 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
     proceedToCheckout() {
       console.log('🛒 Proceeding to checkout...');
-      
+
       if (this.cartData.items.length === 0) {
         console.warn('Cart is empty, cannot proceed to checkout');
         this.addMessage('Tu carrito está vacío. Agrega productos antes de proceder al checkout.', 'assistant');
         return;
       }
-      
+
       try {
         // If we have a checkout URL from Shopify Storefront API, use it
         if (this.cartData.checkoutUrl) {
@@ -5337,7 +5377,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           window.open(this.cartData.checkoutUrl, '_blank');
           return;
         }
-        
+
         // Fallback: construct checkout URL based on shop domain
         const shopDomain = (window.NaayConfig && window.NaayConfig.shopDomain) || this.config.shopDomain;
         console.log('🔍 Using shop domain for checkout:', shopDomain);
@@ -5346,11 +5386,11 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           this.addMessage('Error: No se pudo obtener la información de la tienda.', 'assistant');
           return;
         }
-        
+
         // Determine the correct checkout URL format
         let checkoutUrl;
-        if (window.location.hostname.includes('myshopify.com') || 
-            window.location.hostname.includes('shopify.com')) {
+        if (window.location.hostname.includes('myshopify.com') ||
+          window.location.hostname.includes('shopify.com')) {
           // If we're on a Shopify domain, use relative path
           checkoutUrl = '/cart';
           window.location.href = checkoutUrl;
@@ -5359,12 +5399,12 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           checkoutUrl = `https://${shopDomain}/cart`;
           window.open(checkoutUrl, '_blank');
         }
-        
+
         console.log('✅ Redirected to checkout:', checkoutUrl);
-        
+
         // Show confirmation message
         this.addMessage('Abriendo checkout... Serás redirigido a completar tu compra.', 'assistant');
-        
+
       } catch (error) {
         console.error('❌ Error proceeding to checkout:', error);
         this.addMessage('Error al proceder al checkout. Por favor, inténtalo de nuevo.', 'assistant');
@@ -5380,21 +5420,21 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     }
 
     // ======= SHOPIFY CART SYNCHRONIZATION =======
-    
+
     async loadShopifyCart() {
       console.log('🔄 Loading Shopify cart...');
-      
+
       try {
         // Try to get cart from Shopify's native cart.js if available
-        const isShopifyDomain = window.location.hostname.includes('myshopify.com') || 
-                                window.location.hostname.includes('shopify.com');
+        const isShopifyDomain = window.location.hostname.includes('myshopify.com') ||
+          window.location.hostname.includes('shopify.com');
         const hasShopConfig = this.config.shopDomain && this.config.shopDomain.trim() !== '';
-        
+
         if (window.fetch && (isShopifyDomain || hasShopConfig)) {
           // Use Shopify's cart.js API
           const response = await fetch('/cart.js');
           const cartData = await response.json();
-          
+
           if (cartData) {
             console.log('✅ Loaded Shopify cart:', cartData);
             this.syncFromShopifyNativeCart(cartData);
@@ -5402,7 +5442,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             return;
           }
         }
-        
+
         // Fallback: Try to get cart from our API if cartId exists
         if (this.cartId) {
           const response = await fetch(`${this.config.apiEndpoint}/api/public/cart/get`, {
@@ -5415,7 +5455,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
               cartId: this.cartId
             }),
           });
-          
+
           const data = await response.json();
           if (data.success && data.data.cart) {
             console.log('✅ Loaded cart from API:', data.data.cart);
@@ -5427,10 +5467,10 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         console.error('❌ Error loading Shopify cart:', error);
       }
     }
-    
+
     syncFromShopifyNativeCart(shopifyCart) {
       console.log('🔄 Syncing from Shopify native cart:', shopifyCart);
-      
+
       // Transform Shopify native cart to our format
       this.cartData.items = shopifyCart.items?.map((item, index) => ({
         id: item.variant_id.toString(),
@@ -5444,23 +5484,23 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         url: item.url,
         line_index: index + 1 // Shopify line indices are 1-based
       })) || [];
-      
+
       // Update totals
       this.cartData.total = shopifyCart.total_price / 100; // Convert from cents
       this.cartData.itemCount = shopifyCart.item_count || 0;
-      
+
       console.log('✅ Cart synced from Shopify native cart');
     }
-    
+
     setupShopifyCartSync() {
       console.log('🔄 Setting up Shopify cart synchronization...');
-      
+
       // Prevent duplicate sync intervals
       if (this.cartSyncInterval) {
         console.log('🔄 Cart sync already running, skipping setup');
         return;
       }
-      
+
       // Listen for Shopify cart updates if available
       if (window.addEventListener) {
         // Store event handlers for cleanup
@@ -5471,33 +5511,33 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             this.updateCartDisplay();
           }
         };
-        
+
         this.visibilityChangeHandler = () => {
           if (!document.hidden) {
             this.loadShopifyCart();
           }
         };
-        
+
         // Listen for cart drawer updates
         document.addEventListener('cart:updated', this.cartUpdateHandler);
-        
+
         // Periodically sync with Shopify cart (every 5 seconds)
         this.cartSyncInterval = setInterval(() => {
           this.loadShopifyCart();
         }, 5000);
-        
+
         // Listen for page visibility changes to sync when user returns
         document.addEventListener('visibilitychange', this.visibilityChangeHandler);
-        
+
         console.log('✅ Shopify cart sync listeners setup');
       }
     }
-    
+
     async addToShopifyNativeCart(variantId, quantity = 1) {
       console.log('🛒 Adding to Shopify native cart:', { variantId, quantity });
       console.log('🌐 Current hostname:', window.location.hostname);
       console.log('🔗 Cart API endpoint: /cart/add.js');
-      
+
       try {
         // Use Shopify's cart API
         const payload = {
@@ -5505,7 +5545,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           quantity: parseInt(quantity)
         };
         console.log('📤 Sending to /cart/add.js:', payload);
-        
+
         const response = await fetch('/cart/add.js', {
           method: 'POST',
           headers: {
@@ -5515,19 +5555,19 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           },
           body: JSON.stringify(payload),
         });
-        
+
         console.log('📥 Response status:', response.status, response.statusText);
-        
+
         if (response.ok) {
           const result = await response.json();
           console.log('✅ Added to Shopify native cart:', result);
-          
+
           // Trigger custom event
           document.dispatchEvent(new CustomEvent('cart:updated'));
-          
+
           // Reload cart data
           await this.loadShopifyCart();
-          
+
           return true;
         } else {
           // Try to get error details from response body
@@ -5546,17 +5586,17 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         return false;
       }
     }
-    
+
     async removeFromShopifyNativeCart(lineIndex) {
       console.log('🛒 Removing from Shopify native cart line:', lineIndex);
-      
+
       try {
         const payload = {
           line: lineIndex,
           quantity: 0
         };
         console.log('📤 Sending to /cart/change.js:', payload);
-        
+
         const response = await fetch('/cart/change.js', {
           method: 'POST',
           headers: {
@@ -5566,19 +5606,19 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           },
           body: JSON.stringify(payload),
         });
-        
+
         console.log('📥 Response status:', response.status, response.statusText);
-        
+
         if (response.ok) {
           const result = await response.json();
           console.log('✅ Removed from Shopify native cart:', result);
-          
+
           // Trigger custom event
           document.dispatchEvent(new CustomEvent('cart:updated'));
-          
+
           // Reload cart data
           await this.loadShopifyCart();
-          
+
           return true;
         } else {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -5588,17 +5628,17 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         return false;
       }
     }
-    
+
     async updateShopifyCartQuantity(lineIndex, newQuantity) {
       console.log('🛒 Updating Shopify cart quantity. Line:', lineIndex, 'Quantity:', newQuantity);
-      
+
       try {
         const payload = {
           line: lineIndex,
           quantity: newQuantity
         };
         console.log('📤 Sending to /cart/change.js:', payload);
-        
+
         const response = await fetch('/cart/change.js', {
           method: 'POST',
           headers: {
@@ -5608,19 +5648,19 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           },
           body: JSON.stringify(payload),
         });
-        
+
         console.log('📥 Response status:', response.status, response.statusText);
-        
+
         if (response.ok) {
           const result = await response.json();
           console.log('✅ Updated Shopify cart quantity:', result);
-          
+
           // Trigger custom event
           document.dispatchEvent(new CustomEvent('cart:updated'));
-          
+
           // Reload cart data
           await this.loadShopifyCart();
-          
+
           return true;
         } else {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -5630,21 +5670,21 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         return false;
       }
     }
-    
+
     // Cleanup function
     destroy() {
       console.log('🧹 Cleaning up Naay Widget...');
-      
+
       // Clear cart sync interval
       if (this.cartSyncInterval) {
         clearInterval(this.cartSyncInterval);
         console.log('✅ Cart sync interval cleared');
       }
-      
+
       // Remove event listeners
       document.removeEventListener('cart:updated', this.cartUpdateHandler);
       document.removeEventListener('visibilitychange', this.visibilityChangeHandler);
-      
+
       console.log('✅ Naay Widget cleanup completed');
     }
   }
@@ -5669,20 +5709,20 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         size: document.querySelector('script[src*="naay-widget.js"]')?.getAttribute('data-size') || 'UNKNOWN'
       }
     };
-    
+
     console.log('🚨 EMERGENCY CART DEBUG START', debugInfo);
-    
+
     // Check if our function is accessible
     console.log('📊 Function Check:', {
       applyMobileCartStyles: typeof applyMobileCartStyles,
       emergencyDebugCartPosition: typeof emergencyDebugCartPosition,
       window_applyMobileCartStyles: typeof window.applyMobileCartStyles
     });
-    
+
     // Check for existing style elements
     const existingStyles = document.querySelectorAll('#naay-mobile-cart-override, style[data-naay-mobile]');
     console.log('📄 Existing style elements:', existingStyles.length, Array.from(existingStyles));
-    
+
     // Check for cart panel element
     const cartPanel = document.querySelector('.naay-cart-panel');
     if (cartPanel) {
@@ -5714,23 +5754,23 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     } else {
       console.log('🛒 Cart panel element NOT FOUND');
     }
-    
+
     return debugInfo;
   }
 
   // AGGRESSIVE MOBILE CART OVERRIDE WITH MULTIPLE FALLBACK METHODS
   function applyMobileCartStyles() {
     console.log('📱 STARTING MOBILE CART STYLES APPLICATION...');
-    
+
     const debugInfo = emergencyDebugCartPosition();
-    
+
     // Remove existing mobile styles if they exist
     const existingStyles = document.querySelectorAll('#naay-mobile-cart-override, style[data-naay-mobile]');
     existingStyles.forEach(style => {
       console.log('🗑️ Removing existing style:', style.id || style.getAttribute('data-naay-mobile'));
       style.remove();
     });
-    
+
     // METHOD 1: CSS INJECTION WITH ULTRA-HIGH SPECIFICITY
     const mobileCartStyles = `
       /* EMERGENCY MOBILE CART PANEL - MAXIMUM OVERRIDE PRIORITY */
@@ -5811,20 +5851,20 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         }
       }
     `;
-    
+
     const styleSheet = document.createElement('style');
     styleSheet.id = 'naay-mobile-cart-override';
     styleSheet.setAttribute('data-naay-mobile', 'emergency-override');
     styleSheet.textContent = mobileCartStyles;
     document.head.appendChild(styleSheet);
     console.log('✅ CSS INJECTION: Mobile cart styles injected');
-    
+
     // METHOD 2: DIRECT DOM MANIPULATION FALLBACK
     function applyDirectStyling(element) {
       if (!element) return false;
-      
+
       console.log('🎯 DIRECT STYLING: Applying inline styles to cart panel');
-      
+
       // Force inline styles that cannot be overridden
       const inlineStyles = {
         position: 'fixed',
@@ -5848,19 +5888,19 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         flexDirection: 'column',
         zIndex: '10002'
       };
-      
+
       Object.entries(inlineStyles).forEach(([property, value]) => {
         element.style.setProperty(property, value, 'important');
       });
-      
+
       console.log('✅ DIRECT STYLING: Applied inline styles');
       return true;
     }
-    
+
     // METHOD 3: MUTATION OBSERVER FOR CART CREATION
     function setupCartWatcher() {
       console.log('👁️ MUTATION OBSERVER: Setting up cart panel watcher');
-      
+
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
           mutation.addedNodes.forEach((node) => {
@@ -5871,7 +5911,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
                   applyDirectStyling(node);
                 }
               }
-              
+
               // Check children too
               const cartPanels = node.querySelectorAll && node.querySelectorAll('.naay-cart-panel');
               if (cartPanels) {
@@ -5886,75 +5926,75 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           });
         });
       });
-      
+
       observer.observe(document.body, {
         childList: true,
         subtree: true
       });
-      
+
       console.log('✅ MUTATION OBSERVER: Cart watcher active');
       return observer;
     }
-    
+
     // METHOD 4: AGGRESSIVE PERIODIC CHECKING
     function setupPeriodicCheck() {
       console.log('⏰ PERIODIC CHECK: Setting up aggressive cart styling checks');
-      
+
       const checkInterval = setInterval(() => {
         const cartPanel = document.querySelector('.naay-cart-panel');
         if (cartPanel && window.innerWidth <= 480) {
           const computedStyles = window.getComputedStyle(cartPanel);
           const rect = cartPanel.getBoundingClientRect();
-          
+
           // Check if cart is off-screen or incorrectly positioned
-          if (rect.left > window.innerWidth - 100 || rect.right < 100 || 
-              rect.top > window.innerHeight - 100 || rect.bottom < 100) {
+          if (rect.left > window.innerWidth - 100 || rect.right < 100 ||
+            rect.top > window.innerHeight - 100 || rect.bottom < 100) {
             console.log('🚨 PERIODIC CHECK: Cart detected off-screen, applying emergency fix');
             applyDirectStyling(cartPanel);
           }
         }
       }, 1000);
-      
+
       // Clear after 30 seconds to prevent infinite checking
       setTimeout(() => {
         clearInterval(checkInterval);
         console.log('⏰ PERIODIC CHECK: Cleanup after 30 seconds');
       }, 30000);
-      
+
       return checkInterval;
     }
-    
+
     // Apply existing cart panel styling immediately
     const existingCartPanel = document.querySelector('.naay-cart-panel');
     if (existingCartPanel && window.innerWidth <= 480) {
       console.log('🎯 IMMEDIATE: Found existing cart panel, applying direct styling');
       applyDirectStyling(existingCartPanel);
     }
-    
+
     // Setup all fallback methods
     setupCartWatcher();
     setupPeriodicCheck();
-    
+
     console.log('✅ MOBILE CART EMERGENCY SYSTEM: All methods activated');
     console.log('📊 Debug info available in browser console');
   }
-  
+
   // Apply styles initially and on resize
   applyMobileCartStyles();
-  
+
   // Handle viewport changes (rotation, resize)
   let resizeTimeout;
-  window.addEventListener('resize', function() {
+  window.addEventListener('resize', function () {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(applyMobileCartStyles, 150);
   });
 
   // GLOBAL EMERGENCY FUNCTIONS - Available before widget initialization
-  window.NAAY_EMERGENCY_DEBUG = function() {
+  window.NAAY_EMERGENCY_DEBUG = function () {
     console.log('🚨 GLOBAL EMERGENCY DEBUG CALLED');
     console.log('Current viewport:', window.innerWidth + 'x' + window.innerHeight);
     console.log('Is mobile:', window.innerWidth <= 480);
-    
+
     const cartPanel = document.querySelector('.naay-cart-panel');
     if (cartPanel) {
       console.log('Cart panel found:', cartPanel);
@@ -5967,12 +6007,12 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     }
   };
 
-  window.NAAY_FORCE_CENTER = function() {
+  window.NAAY_FORCE_CENTER = function () {
     console.log('🎯 GLOBAL FORCE CENTER CALLED');
     const cartPanel = document.querySelector('.naay-cart-panel');
     if (cartPanel && window.innerWidth <= 480) {
       console.log('Applying emergency centering...');
-      
+
       // Nuclear option - remove all classes and apply direct positioning
       cartPanel.style.cssText = `
         position: fixed !important;
@@ -5993,13 +6033,13 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         display: flex !important;
         flex-direction: column !important;
       `;
-      
+
       // Show if hidden
       if (cartPanel.classList.contains('naay-cart-panel--open')) {
         cartPanel.style.setProperty('opacity', '1', 'important');
         cartPanel.style.setProperty('visibility', 'visible', 'important');
       }
-      
+
       console.log('✅ Nuclear cart centering applied');
       return 'Cart forcefully centered!';
     } else if (!cartPanel) {
@@ -6011,7 +6051,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     }
   };
 
-  window.NAAY_REAPPLY_STYLES = function() {
+  window.NAAY_REAPPLY_STYLES = function () {
     console.log('🔄 GLOBAL STYLE REAPPLICATION');
     if (typeof applyMobileCartStyles === 'function') {
       applyMobileCartStyles();
@@ -6021,7 +6061,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       return 'Function not available';
     }
   };
-  
+
   // Initialize widget function
   function initializeWidget() {
     if (window.naayWidget) {
@@ -6032,11 +6072,11 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     console.log('🚀 Launching Naay Luxury Widget v2.1...');
     const widget = new NaayWidget();
     window.naayWidget = widget;
-    
+
     // Mark as fully initialized
     window.__NAAY_WIDGET_INITIALIZED__ = true;
     window.__NAAY_WIDGET_LOADING__ = false;
-    
+
     // Expose testing functions for development
     window.testNaayCart = () => {
       console.log('🧪 Testing Naay Cart functionality...');
@@ -6062,11 +6102,11 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       widget.hideCart();
       return 'Cart is now hidden!';
     };
-    
+
     // Additional testing function for new cart design
     window.testNewCartDesign = () => {
       console.log('🎨 Testing new cart sidebar design...');
-      
+
       // Add a test product
       const testProduct = {
         id: 'test-' + Date.now(),
@@ -6075,10 +6115,10 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         variantId: 'test-variant-123',
         quantity: 1
       };
-      
+
       widget.addToCartLocal(testProduct);
       widget.showCart();
-      
+
       return 'New cart design test completed! Check the sidebar cart.';
     };
 
@@ -6164,7 +6204,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         return 'No cart panel found!';
       }
     };
-    
+
     console.log('✨ Naay Widget initialized! New cart features ready:');
     console.log('🛒 Use window.testNewCartDesign() to test the new sidebar cart');
     console.log('📋 Use window.clearNaayCart() to clear cart items');
