@@ -43,6 +43,17 @@
     return;
   }
 
+  // Helper function to format prices in Chilean peso format (no decimals, with thousands separator)
+  function formatChileanPrice(price) {
+    // Convert to number and remove decimals
+    const numPrice = typeof price === 'string' ? parseFloat(price.replace(',', '')) : price;
+    if (isNaN(numPrice)) return '$0';
+    
+    // Round to nearest peso (no decimals) and format with thousands separator
+    const roundedPrice = Math.round(numPrice);
+    return `$${roundedPrice.toLocaleString('es-CL')}`;
+  }
+
   class NaayWidget {
     constructor(config = {}) {
       this.config = {
@@ -182,7 +193,7 @@
             <footer class="naay-cart-panel__footer" id="naay-cart-footer">
               <div class="naay-cart-panel__total">
                 <span class="naay-cart-panel__total-label">Total:</span>
-                <span class="naay-cart-panel__total-price" id="naay-cart-total">$0.00</span>
+                <span class="naay-cart-panel__total-price" id="naay-cart-total">$0</span>
               </div>
               <button class="naay-cart-panel__checkout" id="naay-cart-checkout">
                 <span>Ir al Checkout</span>
@@ -1978,15 +1989,20 @@
             left: 50% !important;
             right: auto !important;
             bottom: auto !important;
-            width: calc(100vw - 32px) !important;
-            max-width: 400px !important;
-            height: 80vh !important;
-            max-height: 600px !important;
-            transform: translate(-50%, -50%) scale(0.8) !important;
-            border-radius: 20px !important;
+            width: calc(100vw - 24px) !important;
+            max-width: 420px !important;
+            height: 85vh !important;
+            max-height: 650px !important;
+            min-height: 400px !important;
+            transform: translate(-50%, -50%) scale(0.85) !important;
+            border-radius: 24px !important;
             border: 1px solid rgba(212, 196, 184, 0.3) !important;
-            box-shadow: 0 20px 60px rgba(139, 93, 75, 0.3) !important;
+            box-shadow: 0 25px 80px rgba(139, 93, 75, 0.4) !important;
             opacity: 0 !important;
+            z-index: 10000 !important;
+            background: rgba(248, 249, 248, 0.98) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
           }
           
           .naay-cart-panel--open {
@@ -2814,13 +2830,7 @@
             right: 5px !important;
           }
           
-          .naay-cart-panel {
-            position: absolute !important;
-            right: 100vw !important; /* Hide completely offscreen on mobile */
-            bottom: 0px !important;
-            width: 280px !important;
-            height: calc(100vh - 100px) !important;
-          }
+          /* Cart panel uses centered modal on mobile (configured above) */
           
           .naay-cart-toggle {
             width: 45px !important;
@@ -2829,10 +2839,6 @@
             opacity: 0 !important;
             visibility: hidden !important;
             pointer-events: none !important;
-          }
-          
-          .naay-cart-panel--open {
-            right: calc(100vw - 16px) !important; /* Keep hidden on mobile - no space */
           }
           
           .naay-widget--open .naay-cart-toggle {
@@ -3105,7 +3111,7 @@
                 "image": {
                   "src": "https://cdn.shopify.com/s/files/1/example/loving-touch.jpg"
                 },
-                "price": 25.00,
+                "price": 25990,
                 "handle": "loving-touch-aceite-de-masaje-my-little-one",
                 "variant_id": 53019925709166
               }
@@ -3804,12 +3810,12 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       
       if (isSimplified) {
         // New simplified format from n8n
-        price = shopifyProduct.price ? parseFloat(shopifyProduct.price).toFixed(2) : '0.00';
+        price = shopifyProduct.price ? parseFloat(shopifyProduct.price) : 0;
         variantId = shopifyProduct.variant_id || null;
       } else {
         // Full Shopify format
         const variant = shopifyProduct.variants && shopifyProduct.variants[0];
-        price = variant ? parseFloat(variant.price).toFixed(2) : '0.00';
+        price = variant ? parseFloat(variant.price) : 0;
         variantId = variant ? variant.id : null;
         available = variant ? variant.inventory_quantity > 0 : true;
       }
@@ -3868,7 +3874,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         id = '',
         title = 'Producto sin nombre',
         description = '',
-        price = '0.00',
+        price = 0,
         comparePrice = null,
         image = '',
         tags = [],
@@ -3909,8 +3915,8 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             
             <div class="naay-product-card__price-section">
               <div class="naay-product-card__pricing">
-                <span class="naay-product-card__price">$${price}</span>
-                ${hasDiscount ? `<span class="naay-product-card__compare-price">$${comparePrice}</span>` : ''}
+                <span class="naay-product-card__price">${formatChileanPrice(price)}</span>
+                ${hasDiscount ? `<span class="naay-product-card__compare-price">${formatChileanPrice(comparePrice)}</span>` : ''}
               </div>
               ${tags.length > 0 ? `
                 <div class="naay-product-card__tags">
@@ -4047,7 +4053,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             ${product.image ? `<img src="${product.image}" alt="${product.title}">` : ''}
             <div class="naay-product-modal__info">
               <p class="naay-product-modal__description">${product.description || 'Producto de cosmética natural Naay.'}</p>
-              <div class="naay-product-modal__price">$${product.price}</div>
+              <div class="naay-product-modal__price">${formatChileanPrice(product.price)}</div>
               <button class="naay-product-modal__add-btn">Agregar al Carrito</button>
             </div>
           </div>
@@ -4385,7 +4391,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       this.cartData.items = shopifyCart.lines?.edges?.map(edge => ({
         id: edge.node.id,
         title: edge.node.merchandise?.product?.title || 'Product',
-        price: edge.node.merchandise?.priceV2?.amount || '0.00',
+        price: edge.node.merchandise?.priceV2?.amount || 0,
         quantity: edge.node.quantity,
         image: edge.node.merchandise?.image?.url || '',
         variantId: edge.node.merchandise?.id || '',
@@ -4393,7 +4399,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       })) || [];
       
       // Update totals
-      this.cartData.total = shopifyCart.cost?.totalAmount?.amount || '0.00';
+      this.cartData.total = shopifyCart.cost?.totalAmount?.amount || 0;
       this.cartData.itemCount = shopifyCart.totalQuantity || 0;
       
       console.log('✅ Cart synced with Shopify');
@@ -4627,7 +4633,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           
           // Update total
           if (this.cartTotal) {
-            this.cartTotal.textContent = `$${total.toFixed(2)}`;
+            this.cartTotal.textContent = formatChileanPrice(total);
           }
           
           // Render cart items
@@ -4694,8 +4700,8 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
               <h4 class="naay-cart-panel__item-title">${item.title}</h4>
               ${variantTitle ? `<p class="naay-cart-panel__item-variant">${variantTitle}</p>` : ''}
               <div class="naay-cart-panel__item-price-info">
-                <span class="naay-cart-panel__item-unit-price">$${unitPrice.toFixed(2)} c/u</span>
-                <span class="naay-cart-panel__item-total-price">$${totalPrice.toFixed(2)}</span>
+                <span class="naay-cart-panel__item-unit-price">${formatChileanPrice(unitPrice)} c/u</span>
+                <span class="naay-cart-panel__item-total-price">${formatChileanPrice(totalPrice)}</span>
               </div>
             </div>
             <div class="naay-cart-panel__item-controls">
@@ -4902,7 +4908,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       })) || [];
       
       // Update totals
-      this.cartData.total = (shopifyCart.total_price / 100).toFixed(2); // Convert from cents
+      this.cartData.total = shopifyCart.total_price / 100; // Convert from cents
       this.cartData.itemCount = shopifyCart.item_count || 0;
       
       console.log('✅ Cart synced from Shopify native cart');
