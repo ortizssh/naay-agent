@@ -74,7 +74,7 @@
         dark: '#212120',        // NEW Secondary - Dark charcoal
         terracotta: '#cf795e',  // NEW Tertiary - Warm terracotta
         greeting: '',
-        placeholder: 'Pregúntanos lo que quieras...',
+        placeholder: 'Pregúntanos sobre tu compra...',
         avatar: '🌿',
         brandName: 'Naay',
         language: 'es',
@@ -211,8 +211,8 @@
             <div class="naay-widget__promotional-message" id="naay-promotional-message" role="dialog" aria-label="Mensaje promocional">
               <div class="naay-widget__promotional-content">
                 <div class="naay-widget__promotional-text">
-                  ¿Necesitas ayuda?
-                  <span class="naay-widget__promotional-subtitle">Pregúntanos sobre cuidado natural</span>
+                  ¿Necesitas ayuda? 🌿
+                  <span class="naay-widget__promotional-subtitle">Te ayudamos en tu compra</span>
                 </div>
               </div>
               <div class="naay-widget__promotional-arrow"></div>
@@ -288,7 +288,7 @@
                     type="text" 
                     class="naay-widget__input" 
                     id="naay-widget-input" 
-                    placeholder="Pregúntanos lo que quieras..."
+                    placeholder="Pregúntanos sobre tu compra..."
                     aria-label="Campo de mensaje"
                   />
                   <button 
@@ -456,7 +456,7 @@
           background: var(--naay-white) !important;
           backdrop-filter: blur(20px) !important;
           -webkit-backdrop-filter: blur(20px) !important;
-          border: 1px solid rgba(212, 196, 184, 0.2) !important;
+          border: 1px solid var(--naay-secondary) !important;
           border-radius: 8px !important;
           padding: 20px 24px !important;
           max-width: 380px !important;
@@ -472,7 +472,7 @@
         .naay-widget__promotional-message:hover {
           transform: translateY(-4px) scale(1.02) !important;
           box-shadow: var(--naay-shadow-strong) !important;
-          border-color: rgba(212, 196, 184, 0.3) !important;
+          border-color: var(--naay-secondary) !important;
         }
 
         .naay-widget__promotional-content {
@@ -496,7 +496,7 @@
 
         .naay-widget__promotional-subtitle {
           display: block !important;
-          color: var(--naay-delicate) !important;
+          color: var(--naay-secondary) !important;
           font-size: 11px !important;
           font-weight: var(--naay-font-weight-regular) !important;
           margin-top: 2px !important;
