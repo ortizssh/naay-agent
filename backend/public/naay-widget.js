@@ -1940,7 +1940,7 @@
           }
         }
 
-        @media (max-width: 768px) {
+        @media (min-width: 481px) and (max-width: 768px) {
           /* Tablet responsive enhancements */
           .naay-widget__chat {
             width: calc(100vw - 24px) !important;
@@ -2200,6 +2200,7 @@
           
           /* Cart panel mobile positioning - maintain original design, only adjust position */
           .naay-widget .naay-cart-panel,
+          html .naay-widget .naay-cart-panel,
           .naay-cart-panel {
             position: fixed !important;
             top: 50% !important;
@@ -2225,6 +2226,7 @@
           }
           
           .naay-widget .naay-cart-panel--open,
+          html .naay-widget .naay-cart-panel--open,
           .naay-cart-panel--open {
             transform: translate(-50%, -50%) scale(1) !important;
             opacity: 1 !important;
@@ -5573,13 +5575,18 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
   // Expose class for constructor access
   window.NaayWidget = NaayWidget;
 
-  // Force mobile cart panel styles with highest specificity
-  if (window.innerWidth <= 480) {
+  // Force mobile cart panel styles with highest specificity and responsive handling
+  function applyMobileCartStyles() {
+    // Remove existing mobile styles if they exist
+    const existingStyle = document.getElementById('naay-mobile-cart-override');
+    if (existingStyle) {
+      existingStyle.remove();
+    }
+    
     const mobileCartStyles = `
       @media (max-width: 480px) {
-        .naay-widget .naay-cart-panel,
-        body .naay-widget .naay-cart-panel,
-        html body .naay-widget .naay-cart-panel {
+        html body .naay-widget .naay-cart-panel,
+        html body .naay-cart-panel {
           position: fixed !important;
           top: 50% !important;
           left: 50% !important;
@@ -5602,9 +5609,8 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           box-shadow: 0 8px 32px rgba(139, 93, 75, 0.15) !important;
         }
         
-        .naay-widget .naay-cart-panel--open,
-        body .naay-widget .naay-cart-panel--open,
-        html body .naay-widget .naay-cart-panel--open {
+        html body .naay-widget .naay-cart-panel--open,
+        html body .naay-cart-panel--open {
           transform: translate(-50%, -50%) scale(1) !important;
           opacity: 1 !important;
           visibility: visible !important;
@@ -5613,10 +5619,21 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     `;
     
     const styleSheet = document.createElement('style');
+    styleSheet.id = 'naay-mobile-cart-override';
     styleSheet.textContent = mobileCartStyles;
     document.head.appendChild(styleSheet);
-    console.log('📱 Mobile cart panel styles force-applied');
+    console.log('📱 Mobile cart panel styles applied/updated');
   }
+  
+  // Apply styles initially and on resize
+  applyMobileCartStyles();
+  
+  // Handle viewport changes (rotation, resize)
+  let resizeTimeout;
+  window.addEventListener('resize', function() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(applyMobileCartStyles, 150);
+  });
   
   // Initialize widget function
   function initializeWidget() {
