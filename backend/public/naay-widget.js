@@ -60,17 +60,19 @@
         shopDomain: '',
         apiEndpoint: 'https://naay-agent-app1763504937.azurewebsites.net',
         position: 'bottom-right',
-        // Naay Brand Colors from Design Guidelines
-        everyday: '#cec8ae',    // Primary - Warm cream
-        fresh: '#90a284',       // Secondary - Sage green  
-        delicate: '#c3ab79',    // Tertiary - Soft gold
-        forever: '#ca957e',     // Accent - Warm terracotta
+        // Naay Brand Colors - Updated Palette 2024
+        everyday: '#cec8ae',    // Warm cream (preserved)
+        fresh: '#90a284',       // Sage green (preserved)  
+        delicate: '#c3ab79',    // Soft gold (preserved)
+        forever: '#a59457',     // NEW Primary - Golden mustard
         hydra: '#A8C4C4',       // Soft blue-gray (preserved)
         deep: '#D4B82C',        // Mustard yellow (preserved)
         rich: '#B8943C',        // Golden brown (preserved)
         radiant: '#A68A3C',     // Olive gold (preserved)
-        perfect: '#ca957e',     // Accent - Warm terracotta
+        perfect: '#a59457',     // NEW Primary - Golden mustard
         sage: '#F8F9F8',        // Ultra-light sage (preserved)
+        dark: '#212120',        // NEW Secondary - Dark charcoal
+        terracotta: '#cf795e',  // NEW Tertiary - Warm terracotta
         greeting: '',
         placeholder: 'Pregúntanos lo que quieras...',
         avatar: '🌿',
@@ -367,24 +369,27 @@
           --naay-everyday: #cec8ae;
           --naay-fresh: #90a284;
           --naay-delicate: #c3ab79;
-          --naay-forever: #ca957e;
+          --naay-forever: #a59457;
           --naay-hydra: #A8C4C4;
           --naay-deep: #D4B82C;
           --naay-rich: #B8943C;
           --naay-radiant: #A68A3C;
-          --naay-perfect: #ca957e;
+          --naay-perfect: #a59457;
           --naay-sage: #F8F9F8;
+          --naay-dark: #212120;
+          --naay-terracotta: #cf795e;
           --naay-white: #FFFFFF;
-          --naay-black: #1A1A1A;
+          --naay-black: #212120;
           
-          /* Semantic Color Aliases */
-          --naay-primary: var(--naay-everyday);    /* #cec8ae - Primary actions */
-          --naay-secondary: var(--naay-fresh);     /* #90a284 - Secondary elements */
+          /* Semantic Color Aliases - Updated */
+          --naay-primary: var(--naay-perfect);     /* #a59457 - Primary actions */
+          --naay-secondary: var(--naay-dark);      /* #212120 - Secondary elements */
+          --naay-accent: var(--naay-terracotta);   /* #cf795e - Accent elements */
           --naay-tertiary: var(--naay-delicate);   /* #c3ab79 - Tertiary elements */
-          --naay-accent: var(--naay-perfect);      /* #ca957e - Accent/highlights */
+          --naay-highlight: var(--naay-perfect);   /* #a59457 - Highlights */
           --naay-surface: var(--naay-sage);        /* #F8F9F8 - Background surfaces */
-          --naay-text-primary: var(--naay-black);  /* #1A1A1A - Primary text */
-          --naay-text-secondary: var(--naay-perfect); /* #ca957e - Secondary text */
+          --naay-text-primary: var(--naay-black);  /* #212120 - Primary text */
+          --naay-text-secondary: var(--naay-perfect); /* #a59457 - Secondary text */
           
           /* Typography */
           --naay-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
@@ -393,9 +398,9 @@
           --naay-font-weight-semibold: 600;
           
           /* Shadows & Effects */
-          --naay-shadow-soft: 0 4px 24px rgba(202, 149, 126, 0.08);
-          --naay-shadow-medium: 0 8px 32px rgba(202, 149, 126, 0.12);
-          --naay-shadow-strong: 0 16px 48px rgba(202, 149, 126, 0.16);
+          --naay-shadow-soft: 0 4px 24px rgba(165, 148, 87, 0.08);
+          --naay-shadow-medium: 0 8px 32px rgba(165, 148, 87, 0.12);
+          --naay-shadow-strong: 0 16px 48px rgba(165, 148, 87, 0.16);
           --naay-blur: backdrop-filter: blur(16px);
           
           /* Transitions */
@@ -507,7 +512,7 @@
           border-right: 8px solid var(--naay-white) !important;
           border-top: 8px solid transparent !important;
           border-bottom: 8px solid transparent !important;
-          filter: drop-shadow(-2px 0 4px rgba(202, 149, 126, 0.1)) !important;
+          filter: drop-shadow(-2px 0 4px rgba(165, 148, 87, 0.1)) !important;
         }
         
         .naay-widget--bottom-left .naay-widget__promotional-arrow {
@@ -694,11 +699,11 @@
           backdrop-filter: blur(20px) !important;
           -webkit-backdrop-filter: blur(20px) !important;
           border-radius: 0 16px 16px 0 !important;
-          border: 1px solid rgba(202, 149, 126, 0.15) !important;
+          border: 1px solid rgba(165, 148, 87, 0.15) !important;
           border-left: none !important;
           box-shadow: 
-            4px 0 32px rgba(202, 149, 126, 0.12),
-            2px 0 16px rgba(202, 149, 126, 0.08) !important;
+            4px 0 32px rgba(165, 148, 87, 0.12),
+            2px 0 16px rgba(165, 148, 87, 0.08) !important;
           display: flex !important;
           flex-direction: column !important;
           overflow: hidden !important;
@@ -738,11 +743,11 @@
           backdrop-filter: blur(24px) !important;
           -webkit-backdrop-filter: blur(24px) !important;
           border-radius: 20px !important;
-          border: 1px solid rgba(202, 149, 126, 0.15) !important;
+          border: 1px solid rgba(165, 148, 87, 0.15) !important;
           box-shadow: 
-            0 32px 64px rgba(202, 149, 126, 0.12),
-            0 16px 32px rgba(202, 149, 126, 0.08),
-            0 8px 16px rgba(202, 149, 126, 0.05),
+            0 32px 64px rgba(165, 148, 87, 0.12),
+            0 16px 32px rgba(165, 148, 87, 0.08),
+            0 8px 16px rgba(165, 148, 87, 0.05),
             inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
           display: none !important;
           flex-direction: column !important;
@@ -903,12 +908,12 @@
           border-radius: 12px !important;
           padding: 16px !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
-          box-shadow: 0 2px 8px rgba(202, 149, 126, 0.05) !important;
+          box-shadow: 0 2px 8px rgba(165, 148, 87, 0.05) !important;
           transition: all 0.2s var(--naay-transition) !important;
         }
 
         .naay-cart__item:hover {
-          box-shadow: 0 4px 12px rgba(202, 149, 126, 0.1) !important;
+          box-shadow: 0 4px 12px rgba(165, 148, 87, 0.1) !important;
           transform: translateY(-1px) !important;
         }
 
@@ -1038,12 +1043,12 @@
           align-items: center !important;
           justify-content: center !important;
           gap: 8px !important;
-          box-shadow: 0 4px 16px rgba(202, 149, 126, 0.3) !important;
+          box-shadow: 0 4px 16px rgba(165, 148, 87, 0.3) !important;
         }
 
         .naay-cart__checkout:hover {
           transform: translateY(-2px) !important;
-          box-shadow: 0 6px 20px rgba(202, 149, 126, 0.4) !important;
+          box-shadow: 0 6px 20px rgba(165, 148, 87, 0.4) !important;
         }
 
         .naay-cart__checkout svg {
@@ -1071,7 +1076,7 @@
           border-radius: 16px !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
           overflow: hidden !important;
-          box-shadow: 0 2px 8px rgba(202, 149, 126, 0.08) !important;
+          box-shadow: 0 2px 8px rgba(165, 148, 87, 0.08) !important;
           transition: none !important;
           margin: 0 !important;
           width: 100% !important;
@@ -1294,7 +1299,7 @@
         /* Add button hover effect removed */
 
         .naay-product-card__add-btn--disabled {
-          background: rgba(202, 149, 126, 0.3) !important;
+          background: rgba(165, 148, 87, 0.3) !important;
           cursor: not-allowed !important;
           transform: none !important;
           box-shadow: none !important;
@@ -1319,9 +1324,9 @@
         }
 
         .naay-product-card__details-btn {
-          background: rgba(202, 149, 126, 0.1) !important;
+          background: rgba(165, 148, 87, 0.1) !important;
           color: var(--naay-perfect) !important;
-          border: 1px solid rgba(202, 149, 126, 0.3) !important;
+          border: 1px solid rgba(165, 148, 87, 0.3) !important;
           border-radius: 4px !important;
           padding: 6px 10px !important;
           font-size: 11px !important;
@@ -1382,7 +1387,7 @@
           width: 90vw !important;
           max-height: 80vh !important;
           overflow: hidden !important;
-          box-shadow: 0 20px 40px rgba(202, 149, 126, 0.2) !important;
+          box-shadow: 0 20px 40px rgba(165, 148, 87, 0.2) !important;
         }
 
         .naay-product-modal__header {
@@ -1412,7 +1417,7 @@
         }
 
         .naay-product-modal__close:hover {
-          background: rgba(202, 149, 126, 0.1) !important;
+          background: rgba(165, 148, 87, 0.1) !important;
         }
 
         .naay-product-modal__close svg {
@@ -1463,12 +1468,12 @@
           font-weight: var(--naay-font-weight-semibold) !important;
           cursor: pointer !important;
           transition: none !important;
-          box-shadow: 0 4px 16px rgba(202, 149, 126, 0.3) !important;
+          box-shadow: 0 4px 16px rgba(165, 148, 87, 0.3) !important;
         }
 
         .naay-product-modal__add-btn:hover {
           transform: translateY(-2px) !important;
-          box-shadow: 0 6px 20px rgba(202, 149, 126, 0.4) !important;
+          box-shadow: 0 6px 20px rgba(165, 148, 87, 0.4) !important;
         }
 
         /* Simple Header */
@@ -1567,7 +1572,7 @@
           padding: 6px !important;
           cursor: pointer !important;
           transition: none !important;
-          box-shadow: 0 2px 8px rgba(202, 149, 126, 0.1) !important;
+          box-shadow: 0 2px 8px rgba(165, 148, 87, 0.1) !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
@@ -1579,7 +1584,7 @@
           background: var(--naay-white) !important;
           border-color: var(--naay-perfect) !important;
           transform: translateY(-2px) !important;
-          box-shadow: 0 4px 16px rgba(202, 149, 126, 0.2) !important;
+          box-shadow: 0 4px 16px rgba(165, 148, 87, 0.2) !important;
         }
 
         /* Back Button in Conversation */
@@ -1591,7 +1596,7 @@
           padding: 6px !important;
           cursor: pointer !important;
           transition: none !important;
-          box-shadow: 0 2px 8px rgba(202, 149, 126, 0.1) !important;
+          box-shadow: 0 2px 8px rgba(165, 148, 87, 0.1) !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
@@ -1603,7 +1608,7 @@
           background: var(--naay-white) !important;
           border-color: var(--naay-perfect) !important;
           transform: translateY(-2px) !important;
-          box-shadow: 0 4px 16px rgba(202, 149, 126, 0.2) !important;
+          box-shadow: 0 4px 16px rgba(165, 148, 87, 0.2) !important;
         }
 
         .naay-widget__back-btn svg {
@@ -1711,7 +1716,7 @@
           padding: 16px !important;
           background: var(--naay-white) !important;
           border-radius: 12px !important;
-          border: 1px solid rgba(202, 149, 126, 0.15) !important;
+          border: 1px solid rgba(165, 148, 87, 0.15) !important;
           transition: all 0.2s var(--naay-transition) !important;
           cursor: pointer !important;
         }
@@ -1720,7 +1725,7 @@
           background: var(--naay-sage) !important;
           border-color: var(--naay-perfect) !important;
           transform: translateY(-2px) !important;
-          box-shadow: 0 4px 12px rgba(202, 149, 126, 0.12) !important;
+          box-shadow: 0 4px 12px rgba(165, 148, 87, 0.12) !important;
         }
 
         .naay-feature-icon {
@@ -1778,7 +1783,7 @@
 
         .naay-widget__input:focus {
           border-color: var(--naay-perfect) !important;
-          box-shadow: 0 0 0 3px rgba(202, 149, 126, 0.1) !important;
+          box-shadow: 0 0 0 3px rgba(165, 148, 87, 0.1) !important;
           transform: translateY(-1px) !important;
         }
 
@@ -1948,7 +1953,7 @@
             left: 12px !important;
             bottom: 100px !important;
             border-radius: 20px !important;
-            box-shadow: 0 10px 35px rgba(139, 93, 75, 0.2) !important;
+            box-shadow: 0 10px 35px rgba(207, 121, 94, 0.2) !important;
           }
           
           /* Widget button tablet optimization */
@@ -2032,7 +2037,7 @@
             border-radius: 24px 24px 0 0 !important;
             border: 1px solid rgba(212, 196, 184, 0.3) !important;
             border-bottom: none !important;
-            box-shadow: 0 -10px 40px rgba(139, 93, 75, 0.18) !important;
+            box-shadow: 0 -10px 40px rgba(207, 121, 94, 0.18) !important;
             transition: bottom 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
           }
           
@@ -2090,7 +2095,7 @@
             left: 16px !important;
             bottom: 88px !important;
             border-radius: 16px !important;
-            box-shadow: 0 12px 40px rgba(139, 93, 75, 0.25) !important;
+            box-shadow: 0 12px 40px rgba(207, 121, 94, 0.25) !important;
             max-width: 400px !important;
             padding-bottom: env(safe-area-inset-bottom) !important; /* Respect safe area */
             transition: height 0.3s ease, bottom 0.3s ease !important; /* Smooth transition for keyboard */
@@ -2100,7 +2105,7 @@
           .naay-widget__button {
             width: 56px !important;
             height: 56px !important;
-            box-shadow: 0 6px 20px rgba(202, 149, 126, 0.3) !important;
+            box-shadow: 0 6px 20px rgba(165, 148, 87, 0.3) !important;
             position: fixed !important;
             bottom: 16px !important;
             right: 16px !important;
@@ -2224,7 +2229,7 @@
             -webkit-backdrop-filter: blur(20px) !important;
             border-radius: 16px !important;
             border: 1px solid rgba(212, 196, 184, 0.3) !important;
-            box-shadow: 0 8px 32px rgba(139, 93, 75, 0.15) !important;
+            box-shadow: 0 8px 32px rgba(207, 121, 94, 0.15) !important;
           }
           
           .naay-widget .naay-cart-panel--open,
@@ -2256,7 +2261,7 @@
             width: calc(100vw - 88px) !important;
             padding: 14px 18px !important;
             border-radius: 16px !important;
-            box-shadow: 0 8px 24px rgba(202, 149, 126, 0.2) !important;
+            box-shadow: 0 8px 24px rgba(165, 148, 87, 0.2) !important;
           }
           
           .naay-widget__promotional-text {
@@ -2565,7 +2570,7 @@
 
         .naay-cart-toggle:hover {
           transform: translateX(-2px) !important;
-          box-shadow: 0 12px 28px rgba(139, 93, 75, 0.35), 0 4px 12px rgba(139, 93, 75, 0.2) !important;
+          box-shadow: 0 12px 28px rgba(207, 121, 94, 0.35), 0 4px 12px rgba(207, 121, 94, 0.2) !important;
           background: rgba(255, 255, 255, 0.98) !important;
         }
 
@@ -2622,7 +2627,7 @@
           border-radius: 16px 0 0 16px !important; /* Rounded only on left side */
           border: 1px solid rgba(212, 196, 184, 0.3) !important;
           border-right: none !important; /* No right border to connect with chat */
-          box-shadow: -4px 0 16px rgba(139, 93, 75, 0.1) !important; /* Shadow only on left */
+          box-shadow: -4px 0 16px rgba(207, 121, 94, 0.1) !important; /* Shadow only on left */
           display: flex !important;
           flex-direction: column !important;
           overflow: hidden !important;
@@ -2656,7 +2661,7 @@
           border-radius: 0 16px 16px 0 !important; /* Rounded only on right side */
           border-right: none !important; /* No right border to connect with chat */
           border-left: 1px solid rgba(212, 196, 184, 0.3) !important;
-          box-shadow: 4px 0 16px rgba(139, 93, 75, 0.1) !important; /* Shadow only on right */
+          box-shadow: 4px 0 16px rgba(207, 121, 94, 0.1) !important; /* Shadow only on right */
         }
 
         .naay-widget--bottom-left .naay-cart-panel--open {
@@ -2704,7 +2709,7 @@
         }
 
         .naay-cart-panel__close {
-          background: rgba(139, 93, 75, 0.1) !important;
+          background: rgba(207, 121, 94, 0.1) !important;
           border: none !important;
           border-radius: 8px !important;
           padding: 8px !important;
@@ -2714,7 +2719,7 @@
         }
 
         .naay-cart-panel__close:hover {
-          background: rgba(139, 93, 75, 0.15) !important;
+          background: rgba(207, 121, 94, 0.15) !important;
           transform: scale(1.05) !important;
         }
 
@@ -2816,16 +2821,16 @@
           background: var(--naay-white) !important;
           border-radius: 12px !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
-          box-shadow: 0 2px 8px rgba(202, 149, 126, 0.08) !important;
+          box-shadow: 0 2px 8px rgba(165, 148, 87, 0.08) !important;
           transition: all 0.3s ease !important;
           overflow: hidden !important;
           transform-origin: center !important;
         }
         
         .naay-cart-panel__item:hover {
-          border-color: rgba(202, 149, 126, 0.3) !important;
+          border-color: rgba(165, 148, 87, 0.3) !important;
           transform: translateY(-1px) !important;
-          box-shadow: 0 4px 12px rgba(202, 149, 126, 0.12) !important;
+          box-shadow: 0 4px 12px rgba(165, 148, 87, 0.12) !important;
         }
 
         /* Item Image */
@@ -2848,7 +2853,7 @@
           align-items: center !important;
           justify-content: center !important;
           background: rgba(212, 196, 184, 0.1) !important;
-          color: rgba(202, 149, 126, 0.5) !important;
+          color: rgba(165, 148, 87, 0.5) !important;
         }
 
         .naay-cart-panel__item-image--placeholder svg {
@@ -3125,7 +3130,7 @@
             padding: 16px !important;
             margin-bottom: 12px !important;
             border-radius: 16px !important;
-            box-shadow: 0 4px 16px rgba(202, 149, 126, 0.12) !important;
+            box-shadow: 0 4px 16px rgba(165, 148, 87, 0.12) !important;
             background: var(--naay-white) !important;
             border: 1px solid rgba(212, 196, 184, 0.25) !important;
             transition: all 0.3s ease !important;
@@ -3133,8 +3138,8 @@
           
           .naay-product-card:hover {
             transform: translateY(-2px) !important;
-            box-shadow: 0 8px 24px rgba(202, 149, 126, 0.18) !important;
-            border-color: rgba(202, 149, 126, 0.4) !important;
+            box-shadow: 0 8px 24px rgba(165, 148, 87, 0.18) !important;
+            border-color: rgba(165, 148, 87, 0.4) !important;
           }
           
           .naay-product-card__media {
@@ -3205,7 +3210,7 @@
           
           .naay-product-card__compare-price {
             font-size: 13px !important;
-            color: rgba(202, 149, 126, 0.6) !important;
+            color: rgba(165, 148, 87, 0.6) !important;
           }
           
           .naay-product-card__tags {
@@ -3217,7 +3222,7 @@
             font-size: 10px !important;
             padding: 2px 6px !important;
             border-radius: 8px !important;
-            background: rgba(202, 149, 126, 0.1) !important;
+            background: rgba(165, 148, 87, 0.1) !important;
             color: var(--naay-perfect) !important;
           }
           
@@ -3246,11 +3251,11 @@
           .naay-product-card__add-btn:hover {
             background: var(--naay-rich) !important;
             transform: translateY(-1px) !important;
-            box-shadow: 0 4px 12px rgba(202, 149, 126, 0.3) !important;
+            box-shadow: 0 4px 12px rgba(165, 148, 87, 0.3) !important;
           }
           
           .naay-product-card__add-btn--disabled {
-            background: rgba(202, 149, 126, 0.3) !important;
+            background: rgba(165, 148, 87, 0.3) !important;
             cursor: not-allowed !important;
             transform: none !important;
             box-shadow: none !important;
@@ -3265,8 +3270,8 @@
             min-width: 40px !important;
             height: 40px !important;
             border-radius: 12px !important;
-            background: rgba(202, 149, 126, 0.1) !important;
-            border: 1px solid rgba(202, 149, 126, 0.3) !important;
+            background: rgba(165, 148, 87, 0.1) !important;
+            border: 1px solid rgba(165, 148, 87, 0.3) !important;
             color: var(--naay-perfect) !important;
             display: flex !important;
             align-items: center !important;
@@ -3275,7 +3280,7 @@
           }
           
           .naay-product-card__details-btn:hover {
-            background: rgba(202, 149, 126, 0.15) !important;
+            background: rgba(165, 148, 87, 0.15) !important;
             border-color: var(--naay-perfect) !important;
             transform: translateY(-1px) !important;
           }
@@ -4776,7 +4781,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
                 background: rgba(248, 249, 248, 0.98) !important;
                 border-radius: 20px !important;
                 border: 1px solid rgba(212, 196, 184, 0.3) !important;
-                box-shadow: 0 20px 60px rgba(139, 93, 75, 0.25) !important;
+                box-shadow: 0 20px 60px rgba(207, 121, 94, 0.25) !important;
                 z-index: 10002 !important;
                 display: flex !important;
                 flex-direction: column !important;
@@ -5816,7 +5821,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           -webkit-backdrop-filter: blur(20px) !important;
           border-radius: 20px !important;
           border: 1px solid rgba(212, 196, 184, 0.3) !important;
-          box-shadow: 0 20px 60px rgba(139, 93, 75, 0.25) !important;
+          box-shadow: 0 20px 60px rgba(207, 121, 94, 0.25) !important;
           
           /* DISPLAY AND LAYERING */
           display: flex !important;
@@ -5883,7 +5888,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         background: 'rgba(248, 249, 248, 0.98)',
         borderRadius: '20px',
         border: '1px solid rgba(212, 196, 184, 0.3)',
-        boxShadow: '0 20px 60px rgba(139, 93, 75, 0.25)',
+        boxShadow: '0 20px 60px rgba(207, 121, 94, 0.25)',
         display: 'flex',
         flexDirection: 'column',
         zIndex: '10002'
@@ -5990,6 +5995,42 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
   });
 
   // GLOBAL EMERGENCY FUNCTIONS - Available before widget initialization
+  // Quick cart position check
+  window.NAAY_WHERE_IS_CART = function() {
+    const cartPanel = document.querySelector('.naay-cart-panel');
+    if (!cartPanel) {
+      console.log('❌ NO CART PANEL FOUND');
+      return 'No cart panel found';
+    }
+    
+    const rect = cartPanel.getBoundingClientRect();
+    const computed = window.getComputedStyle(cartPanel);
+    const viewport = { width: window.innerWidth, height: window.innerHeight };
+    
+    console.log('🎯 CART POSITION DEBUG:');
+    console.log('   Position:', computed.position);
+    console.log('   Top:', computed.top, 'Left:', computed.left);
+    console.log('   Right:', computed.right, 'Bottom:', computed.bottom);
+    console.log('   Transform:', computed.transform);
+    console.log('   Bounding Rect:', rect);
+    console.log('   Viewport:', viewport);
+    console.log('   Visible?', rect.left >= 0 && rect.top >= 0 && rect.right <= viewport.width && rect.bottom <= viewport.height);
+    
+    // Simple visibility check
+    const isVisible = rect.width > 0 && rect.height > 0;
+    const isOnScreen = rect.left < viewport.width && rect.right > 0 && rect.top < viewport.height && rect.bottom > 0;
+    
+    console.log('   Has dimensions?', isVisible);
+    console.log('   On screen?', isOnScreen);
+    
+    return {
+      found: true,
+      position: { top: rect.top, left: rect.left, right: rect.right, bottom: rect.bottom },
+      visible: isVisible,
+      onScreen: isOnScreen
+    };
+  };
+
   window.NAAY_EMERGENCY_DEBUG = function () {
     console.log('🚨 GLOBAL EMERGENCY DEBUG CALLED');
     console.log('Current viewport:', window.innerWidth + 'x' + window.innerHeight);
@@ -6008,31 +6049,24 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
   };
 
   window.NAAY_FORCE_CENTER = function () {
-    console.log('🎯 GLOBAL FORCE CENTER CALLED');
+    console.log('🎯 GENTLE FORCE CENTER CALLED');
     const cartPanel = document.querySelector('.naay-cart-panel');
     if (cartPanel && window.innerWidth <= 480) {
-      console.log('Applying emergency centering...');
+      console.log('Applying gentle emergency centering...');
 
-      // Nuclear option - remove all classes and apply direct positioning
-      cartPanel.style.cssText = `
-        position: fixed !important;
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) !important;
-        width: calc(100vw - 40px) !important;
-        max-width: 380px !important;
-        height: 80vh !important;
-        max-height: 550px !important;
-        margin: 0 !important;
-        padding: 20px !important;
-        background: rgba(248, 249, 248, 0.98) !important;
-        border-radius: 20px !important;
-        border: 1px solid rgba(212, 196, 184, 0.3) !important;
-        box-shadow: 0 20px 60px rgba(139, 93, 75, 0.25) !important;
-        z-index: 10002 !important;
-        display: flex !important;
-        flex-direction: column !important;
-      `;
+      // Gentle option - only set essential positioning properties
+      cartPanel.style.setProperty('position', 'fixed', 'important');
+      cartPanel.style.setProperty('top', '50%', 'important');
+      cartPanel.style.setProperty('left', '50%', 'important');
+      cartPanel.style.setProperty('right', 'auto', 'important');
+      cartPanel.style.setProperty('bottom', 'auto', 'important');
+      cartPanel.style.setProperty('transform', 'translate(-50%, -50%)', 'important');
+      cartPanel.style.setProperty('width', 'calc(100vw - 32px)', 'important');
+      cartPanel.style.setProperty('max-width', '380px', 'important');
+      cartPanel.style.setProperty('height', '80vh', 'important');
+      cartPanel.style.setProperty('max-height', '500px', 'important');
+      cartPanel.style.setProperty('margin', '0', 'important');
+      cartPanel.style.setProperty('z-index', '10002', 'important');
 
       // Show if hidden
       if (cartPanel.classList.contains('naay-cart-panel--open')) {
@@ -6040,8 +6074,8 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         cartPanel.style.setProperty('visibility', 'visible', 'important');
       }
 
-      console.log('✅ Nuclear cart centering applied');
-      return 'Cart forcefully centered!';
+      console.log('✅ Gentle cart centering applied');
+      return 'Cart gently centered!';
     } else if (!cartPanel) {
       console.log('❌ No cart panel found');
       return 'No cart panel found!';
