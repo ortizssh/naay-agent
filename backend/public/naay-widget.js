@@ -2085,12 +2085,15 @@
         @media (max-width: 480px) {
           /* Enhanced mobile widget responsiveness */
           .naay-widget__chat {
-            width: calc(100vw - 16px) !important;
-            height: calc(100vh - 100px) !important;
-            left: 8px !important;
+            width: calc(100vw - 32px) !important;
+            height: calc(100vh - 180px) !important;
+            left: 16px !important;
             bottom: 88px !important;
+            top: 80px !important;
             border-radius: 16px !important;
             box-shadow: 0 12px 40px rgba(139, 93, 75, 0.25) !important;
+            max-width: 380px !important;
+            margin: 0 auto !important;
           }
           
           /* Widget button mobile optimization */
@@ -2098,6 +2101,10 @@
             width: 56px !important;
             height: 56px !important;
             box-shadow: 0 6px 20px rgba(202, 149, 126, 0.3) !important;
+            position: fixed !important;
+            bottom: 16px !important;
+            right: 16px !important;
+            z-index: 9999 !important;
           }
           
           .naay-widget__button-content {
@@ -2193,33 +2200,31 @@
             flex-shrink: 0 !important;
           }
           
-          /* Cart panel centered on mobile */
-          .naay-cart-panel {
+          /* Cart panel centered on mobile - override all other styles */
+          .naay-widget .naay-cart-panel {
             position: fixed !important;
             top: 50% !important;
             left: 50% !important;
             right: auto !important;
             bottom: auto !important;
-            width: calc(100vw - 24px) !important;
-            max-width: 420px !important;
-            height: 85vh !important;
-            max-height: 650px !important;
+            width: calc(100vw - 32px) !important;
+            max-width: 380px !important;
+            height: 80vh !important;
+            max-height: 550px !important;
             min-height: 400px !important;
-            transform: translate(-50%, -50%) scale(0.85) !important;
-            border-radius: 24px !important;
-            border: 1px solid rgba(212, 196, 184, 0.3) !important;
-            box-shadow: 0 25px 80px rgba(139, 93, 75, 0.4) !important;
+            transform: translate(-50%, -50%) scale(0.9) !important;
+            border-radius: 20px !important;
+            margin: 0 !important;
+            z-index: 10001 !important;
             opacity: 0 !important;
-            z-index: 10000 !important;
-            background: rgba(248, 249, 248, 0.98) !important;
-            backdrop-filter: blur(20px) !important;
-            -webkit-backdrop-filter: blur(20px) !important;
+            visibility: hidden !important;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
           }
           
-          .naay-cart-panel--open {
+          .naay-widget .naay-cart-panel--open {
             transform: translate(-50%, -50%) scale(1) !important;
             opacity: 1 !important;
-            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+            visibility: visible !important;
           }
           
           /* Add backdrop when cart is open on mobile */
