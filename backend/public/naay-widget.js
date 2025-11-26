@@ -264,19 +264,19 @@
                   </div>
                   <div class="naay-widget__welcome-features">
                     <div class="naay-widget__feature" data-message="¿Qué productos recomiendas para mi tipo de piel?">
-                      <svg class="naay-feature-icon" viewBox="0 0 20 20" fill="none">
+                      <svg class="naay-feature-icon" viewBox="0 0 24 24" fill="none">
                         <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                       </svg>
                       <span>Recomendaciones personalizadas para tu piel</span>
                     </div>
                     <div class="naay-widget__feature" data-message="¿Me ayudas a conocer mi tipo de piel?">
-                      <svg class="naay-feature-icon" viewBox="0 0 20 20" fill="none">
+                      <svg class="naay-feature-icon" viewBox="0 0 24 24" fill="none">
                         <path d="M13 10V3L4 14H11L11 21L20 10H13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                       </svg>
                       <span>Test rápido para conocer tu tipo de piel</span>
                     </div>
                     <div class="naay-widget__feature" data-message="¿Puedes ayudarme a elegir productos para mi rutina?">
-                      <svg class="naay-feature-icon" viewBox="0 0 20 20" fill="none">
+                      <svg class="naay-feature-icon" viewBox="0 0 24 24" fill="none">
                         <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19C17 19.6 16.6 20 16 20H14C13.4 20 13 19.6 13 19V13M17 13H13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                       </svg>
                       <span>Ayuda con tu compra</span>
@@ -1743,8 +1743,14 @@
         .naay-feature-icon {
           width: 20px !important;
           height: 20px !important;
+          min-width: 20px !important;
+          min-height: 20px !important;
           color: var(--naay-perfect) !important;
           flex-shrink: 0 !important;
+          display: block !important;
+          stroke: currentColor !important;
+          fill: none !important;
+          overflow: visible !important;
         }
 
         .naay-widget__feature span {
@@ -2384,6 +2390,8 @@
           .naay-feature-icon {
             width: 24px !important;
             height: 24px !important;
+            min-width: 24px !important;
+            min-height: 24px !important;
           }
 
           .naay-widget__welcome-title {
