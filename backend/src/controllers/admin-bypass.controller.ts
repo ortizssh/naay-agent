@@ -694,7 +694,17 @@ router.get(
 
       if (sessionsError) {
         logger.error('Error fetching chat sessions:', sessionsError);
-        throw new Error('Failed to fetch conversations');
+        // Return empty data instead of throwing error
+        return res.json({
+          success: true,
+          data: [],
+          pagination: {
+            total: 0,
+            limit: limitNum,
+            totalPages: 0,
+            currentPage: pageNum,
+          },
+        });
       }
 
       if (!sessions || sessions.length === 0) {
