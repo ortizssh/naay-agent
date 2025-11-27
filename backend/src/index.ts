@@ -170,7 +170,6 @@ async function startServer() {
       next();
     });
 
-
     // Security middleware - allow iframe embedding for Shopify (but not for widget files)
     app.use((req, res, next) => {
       if (!req.path.includes('naay-widget.js')) {
@@ -267,10 +266,12 @@ async function startServer() {
     // Rate limiting (exclude widget routes from rate limiting)
     app.use((req, res, next) => {
       // Skip rate limiting for all widget-related routes
-      if (req.path.startsWith('/widget/') || 
-          req.path.startsWith('/static/naay-widget') || 
-          req.path.startsWith('/api/widget/') || 
-          req.path.startsWith('/api/public/')) {
+      if (
+        req.path.startsWith('/widget/') ||
+        req.path.startsWith('/static/naay-widget') ||
+        req.path.startsWith('/api/widget/') ||
+        req.path.startsWith('/api/public/')
+      ) {
         return next();
       }
       // Apply rate limiting to all other routes
@@ -1549,7 +1550,10 @@ async function startServer() {
     });
 
     // Serve admin static files
-    app.use('/admin-static', express.static(path.join(__dirname, '../../frontend-admin/public')));
+    app.use(
+      '/admin-static',
+      express.static(path.join(__dirname, '../../frontend-admin/public'))
+    );
 
     // 404 handler
     app.use('*', (req, res) => {
