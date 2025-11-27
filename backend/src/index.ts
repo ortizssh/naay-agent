@@ -389,7 +389,7 @@ async function startServer() {
     <div class="container" >
       <div class="success-icon" >🎉</div>
         <h1>¡Instalación Completada! </h1>
-          < p > Naay Agent ha sido instalado exitosamente en < span class="shop-name" > ${ shop } </span></p >
+          < p > Naay Agent ha sido instalado exitosamente en < span class="shop-name" > ${shop} </span></p >
 
             <div class="next-steps" >
               <h3>🚀 Próximos Pasos: </h3>
@@ -405,7 +405,7 @@ async function startServer() {
 
     < div class="footer" >
       <p>Naay Agent v1.0.0 - AI Shopping Assistant </p>
-        < p > Instalado: ${ new Date().toLocaleString('es-ES') } </p>
+        < p > Instalado: ${new Date().toLocaleString('es-ES')} </p>
           </div>
           </div>
           </body>
@@ -429,78 +429,78 @@ async function startServer() {
 
       // Redirect to OAuth flow
       const scopes = 'read_products,write_products,read_orders,read_customers';
-      const redirectUri = `${ config.shopify.appUrl } /auth/callback`;
+      const redirectUri = `${config.shopify.appUrl} /auth/callback`;
       const installUrl =
         `https://${shop}/admin/oauth/authorize` +
-  `?client_id=${config.shopify.apiKey}` +
-    `&scope=${scopes}` +
-    `&redirect_uri=${redirectUri}` +
-    `&state=${Date.now()}`;
+        `?client_id=${config.shopify.apiKey}` +
+        `&scope=${scopes}` +
+        `&redirect_uri=${redirectUri}` +
+        `&state=${Date.now()}`;
 
-  res.redirect(installUrl);
-});
+      res.redirect(installUrl);
+    });
 
-// API Routes
-app.use('/auth', authRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/webhooks', webhookRoutes);
-app.use('/api/webhooks-admin', webhookAdminRoutes);
-app.use('/api/chat', chatRoutes);
+    // API Routes
+    app.use('/auth', authRoutes);
+    app.use('/api/products', productRoutes);
+    app.use('/api/webhooks', webhookRoutes);
+    app.use('/api/webhooks-admin', webhookAdminRoutes);
+    app.use('/api/chat', chatRoutes);
 
-// CORS configuration specifically for simple-chat endpoint
-app.use(
-  '/api/simple-chat',
-  cors({
-    origin: true, // Allow all origins for widget integration
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-    credentials: false,
-  })
-);
-app.use('/api/simple-chat', simpleChatRoutes);
+    // CORS configuration specifically for simple-chat endpoint
+    app.use(
+      '/api/simple-chat',
+      cors({
+        origin: true, // Allow all origins for widget integration
+        methods: ['GET', 'POST', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+        credentials: false,
+      })
+    );
+    app.use('/api/simple-chat', simpleChatRoutes);
 
-// Public APIs (no authentication required)
-app.use('/api/public/cart', publicCartRoutes);
-app.use('/api/public/products', publicProductsRoutes);
+    // Public APIs (no authentication required)
+    app.use('/api/public/cart', publicCartRoutes);
+    app.use('/api/public/products', publicProductsRoutes);
 
-app.use('/api/widget', widgetRoutes);
-app.use('/api/settings', settingsRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/admin-bypass', adminBypassRoutes);
+    app.use('/api/widget', widgetRoutes);
+    app.use('/api/settings', settingsRoutes);
+    app.use('/api/admin', adminRoutes);
+    app.use('/api/admin-bypass', adminBypassRoutes);
 
-// Serve admin panel
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/admin.html'));
-});
+    // Serve admin panel
+    app.get('/admin', (req, res) => {
+      res.sendFile(path.join(__dirname, '../public/admin.html'));
+    });
 
-// Serve admin static files
-app.use(
-  '/admin-static',
-  express.static(path.join(__dirname, '../../frontend-admin/public'))
-);
+    // Serve admin static files
+    app.use(
+      '/admin-static',
+      express.static(path.join(__dirname, '../../frontend-admin/public'))
+    );
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    error: 'Route not found',
-  });
-});
+    // 404 handler
+    app.use('*', (req, res) => {
+      res.status(404).json({
+        success: false,
+        error: 'Route not found',
+      });
+    });
 
-// Error handling middleware (must be last)
-app.use(errorHandler);
+    // Error handling middleware (must be last)
+    app.use(errorHandler);
 
-// Start server
-const port = config.server.port;
-app.listen(port, () => {
-  logger.info(`🚀 Naay Agent Backend running on port ${port}`);
-  logger.info(`📱 Environment: ${config.server.nodeEnv}`);
-  logger.info(`🔐 Shopify App URL: ${config.shopify.appUrl}`);
-});
+    // Start server
+    const port = config.server.port;
+    app.listen(port, () => {
+      logger.info(`🚀 Naay Agent Backend running on port ${port}`);
+      logger.info(`📱 Environment: ${config.server.nodeEnv}`);
+      logger.info(`🔐 Shopify App URL: ${config.shopify.appUrl}`);
+    });
   } catch (error) {
-  logger.error('Failed to start server:', error);
-  process.exit(1);
-}
+    logger.error('Failed to start server:', error);
+    process.exit(1);
+  }
 }
 
 // Handle uncaught exceptions
