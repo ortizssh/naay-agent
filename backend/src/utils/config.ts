@@ -2,12 +2,12 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { AppConfig } from '@/types';
 
-// Configure dotenv to look for .env file in the backend directory
+// Configure dotenv to look for .env file in the config directory
 dotenv.config({
   path:
     process.env.NODE_ENV === 'production'
-      ? path.join(__dirname, '../../.env')
-      : path.join(__dirname, '../../.env'), // Load from backend/.env
+      ? path.join(__dirname, '../../../config/.env')
+      : path.join(__dirname, '../../../config/.env'), // Load from config/.env
 });
 
 export const config: AppConfig = {

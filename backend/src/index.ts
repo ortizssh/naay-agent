@@ -379,25 +379,18 @@ async function startServer() {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
             <style>
-              /* Sistema de colores primarios simplificado */
+              /* Sistema de colores primarios CSS básicos */
               :root {
-                --primary: #007bff;      /* Azul primario */
-                --secondary: #6c757d;    /* Gris secundario */
-                --success: #28a745;      /* Verde éxito */
-                --warning: #ffc107;      /* Amarillo advertencia */
-                --danger: #dc3545;       /* Rojo peligro */
+                --primary: blue;
+                --secondary: gray;
+                --success: green;
+                --warning: orange;
+                --danger: red;
                 
-                --white: #ffffff;
-                --black: #000000;
-                --gray-100: #f8f9fa;
-                --gray-200: #e9ecef;
-                --gray-300: #dee2e6;
-                --gray-400: #ced4da;
-                --gray-500: #adb5bd;
-                --gray-600: #6c757d;
-                --gray-700: #495057;
-                --gray-800: #343a40;
-                --gray-900: #212529;
+                --white: white;
+                --black: black;
+                --light-gray: lightgray;
+                --dark-gray: darkgray;
                 
                 --border-radius: 8px;
                 --box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -411,8 +404,8 @@ async function startServer() {
 
               body {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                background: var(--gray-100);
-                color: var(--gray-900);
+                background: var(--light-gray);
+                color: var(--black);
                 line-height: 1.5;
               }
 
@@ -430,7 +423,7 @@ async function startServer() {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                border-bottom: 1px solid var(--gray-300);
+                border-bottom: 1px solid var(--light-gray);
               }
 
               .naay-admin__logo {
@@ -447,11 +440,11 @@ async function startServer() {
               }
 
               .naay-admin__store-info {
-                background: var(--gray-100);
+                background: var(--light-gray);
                 padding: 6px 12px;
                 border-radius: var(--border-radius);
                 font-size: 14px;
-                color: var(--gray-700);
+                color: var(--dark-gray);
               }
 
               /* Main content */
@@ -489,7 +482,7 @@ async function startServer() {
 
               .naay-stat-card {
                 background: var(--white);
-                border: 1px solid var(--gray-300);
+                border: 1px solid var(--light-gray);
                 border-radius: var(--border-radius);
                 padding: 20px;
                 display: flex;
@@ -506,19 +499,19 @@ async function startServer() {
                 height: 40px;
                 background: var(--primary);
                 border-radius: var(--border-radius);
-                color: white;
+                color: var(--white);
               }
 
               .naay-stat-card__number {
                 font-size: 24px;
                 font-weight: 600;
-                color: var(--gray-900);
+                color: var(--black);
                 line-height: 1;
               }
 
               .naay-stat-card__label {
                 font-size: 14px;
-                color: var(--gray-600);
+                color: var(--dark-gray);
                 margin-top: 4px;
               }
 
@@ -526,7 +519,7 @@ async function startServer() {
               .naay-admin__section-title {
                 font-size: 18px;
                 font-weight: 600;
-                color: var(--gray-900);
+                color: var(--black);
                 margin-bottom: 16px;
               }
 
@@ -537,7 +530,7 @@ async function startServer() {
 
               .naay-quick-action {
                 background: var(--white);
-                border: 1px solid var(--gray-300);
+                border: 1px solid var(--light-gray);
                 border-radius: var(--border-radius);
                 padding: 16px;
                 margin-bottom: 12px;
@@ -549,13 +542,13 @@ async function startServer() {
               .naay-quick-action h3 {
                 font-size: 16px;
                 font-weight: 600;
-                color: var(--gray-900);
+                color: var(--black);
                 margin-bottom: 4px;
               }
 
               .naay-quick-action p {
                 font-size: 14px;
-                color: var(--gray-600);
+                color: var(--dark-gray);
               }
 
               /* Botones */
@@ -575,21 +568,22 @@ async function startServer() {
 
               .naay-btn--primary {
                 background: var(--primary);
-                color: white;
+                color: var(--white);
               }
 
               .naay-btn--primary:hover:not(:disabled) {
-                background: #0056b3;
+                background: darkblue;
               }
 
               .naay-btn--secondary {
-                background: var(--gray-200);
-                color: var(--gray-700);
-                border: 1px solid var(--gray-300);
+                background: var(--light-gray);
+                color: var(--dark-gray);
+                border: 1px solid var(--secondary);
               }
 
               .naay-btn--secondary:hover:not(:disabled) {
-                background: var(--gray-300);
+                background: var(--dark-gray);
+                color: var(--white);
               }
 
               .naay-btn:disabled {
@@ -602,7 +596,7 @@ async function startServer() {
                 display: inline-block;
                 width: 14px;
                 height: 14px;
-                border: 2px solid var(--gray-300);
+                border: 2px solid var(--light-gray);
                 border-radius: 50%;
                 border-top-color: var(--primary);
                 animation: spin 1s linear infinite;
@@ -623,7 +617,7 @@ async function startServer() {
 
               .naay-conversation-item {
                 background: var(--white);
-                border: 1px solid var(--gray-300);
+                border: 1px solid var(--light-gray);
                 border-radius: var(--border-radius);
                 padding: 16px;
                 display: flex;
@@ -651,8 +645,8 @@ async function startServer() {
 
               .naay-conversation-item__id {
                 font-size: 11px;
-                background: var(--gray-100);
-                color: var(--gray-700);
+                background: var(--light-gray);
+                color: var(--dark-gray);
                 padding: 3px 6px;
                 border-radius: 4px;
                 font-family: monospace;
@@ -660,12 +654,12 @@ async function startServer() {
 
               .naay-conversation-item__date {
                 font-size: 12px;
-                color: var(--gray-500);
+                color: var(--secondary);
               }
 
               .naay-conversation-item__preview {
                 font-size: 14px;
-                color: var(--gray-900);
+                color: var(--black);
                 margin-bottom: 4px;
                 display: -webkit-box;
                 -webkit-line-clamp: 2;
@@ -675,7 +669,7 @@ async function startServer() {
 
               .naay-conversation-item__message-count {
                 background: var(--primary);
-                color: white;
+                color: var(--white);
                 font-size: 11px;
                 font-weight: 500;
                 padding: 2px 6px;
@@ -690,7 +684,7 @@ async function startServer() {
                 align-items: center;
                 justify-content: center;
                 padding: 30px;
-                color: var(--gray-600);
+                color: var(--dark-gray);
                 font-size: 14px;
                 gap: 8px;
               }
@@ -699,7 +693,7 @@ async function startServer() {
               .naay-conversations-empty {
                 text-align: center;
                 padding: 30px;
-                color: var(--gray-600);
+                color: var(--dark-gray);
                 font-size: 14px;
               }
 
@@ -738,7 +732,7 @@ async function startServer() {
 
               .naay-modal__header {
                 padding: 16px 20px;
-                border-bottom: 1px solid var(--gray-300);
+                border-bottom: 1px solid var(--light-gray);
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -749,7 +743,7 @@ async function startServer() {
                 border: none;
                 font-size: 18px;
                 cursor: pointer;
-                color: var(--gray-500);
+                color: var(--secondary);
                 padding: 4px;
               }
 
@@ -764,11 +758,11 @@ async function startServer() {
                 margin-bottom: 16px;
                 padding: 12px;
                 border-radius: var(--border-radius);
-                border: 1px solid var(--gray-300);
+                border: 1px solid var(--light-gray);
               }
 
               .naay-message--user {
-                background: var(--gray-100);
+                background: var(--light-gray);
                 border-left: 3px solid var(--primary);
               }
 
@@ -786,13 +780,13 @@ async function startServer() {
 
               .naay-message__time {
                 font-size: 12px;
-                color: var(--gray-500);
+                color: var(--secondary);
               }
 
               .naay-message__content {
                 font-size: 14px;
                 line-height: 1.4;
-                color: var(--gray-900);
+                color: var(--black);
               }
 
               /* Pagination */
@@ -836,35 +830,8 @@ async function startServer() {
           </head>
           <body>
             <div class="naay-admin">
-              <!-- Header -->
-              <header class="naay-admin__header">
-                <div class="naay-admin__logo">
-                  <span class="naay-admin__logo-icon">🌿</span>
-                  <span class="naay-admin__logo-text">Naay Agent</span>
-                </div>
-                <div class="naay-admin__store-info">
-                  <span id="store-name">${shop || 'tu tienda'}</span>
-                </div>
-              </header>
-
               <!-- Main Content -->
               <main class="naay-admin__main">
-                <!-- Success Banner -->
-                <div class="naay-banner">
-                  <span class="naay-banner__icon">✅</span>
-                  <div>
-                    <strong>Conexión exitosa</strong> - App conectada correctamente a ${shop || 'tu tienda'}
-                  </div>
-                </div>
-
-                <!-- Panel en desarrollo -->
-                <div class="naay-banner" style="background: var(--warning); color: var(--gray-900); margin-bottom: 20px;">
-                  <span class="naay-banner__icon">🚧</span>
-                  <div>
-                    <strong>Panel en desarrollo</strong> - Funcionalidades adicionales próximamente
-                  </div>
-                </div>
-
                 <!-- Stats Cards -->
                 <section class="naay-admin__stats">
                   <div class="naay-stat-card">
