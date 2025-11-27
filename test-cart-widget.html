@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Naay Cart Widget - Enhanced</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        button {
+            background: #a59457;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #8d7a47;
+        }
+        .instructions {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .feature-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .feature-list li {
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .feature-list li:before {
+            content: "✓ ";
+            color: #4CAF50;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🛒 Test Naay Cart Widget - Enhanced Version</h1>
+        
+        <div class="instructions">
+            <h2>🎯 New Features to Test</h2>
+            <ul class="feature-list">
+                <li><strong>Multiple Products</strong>: Add the same product multiple times - each will be a separate cart entry</li>
+                <li><strong>Enhanced Scroll</strong>: Cart list now has smooth scrolling with custom scrollbars and fade indicators</li>
+                <li><strong>Individual Item Control</strong>: Each cart item can be controlled independently (quantity, delete)</li>
+                <li><strong>Unlimited Cart</strong>: No restrictions on how many items you can add</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h3>1. Multiple Product Addition Test</h3>
+            <p>Click multiple times to add the same product several times:</p>
+            <button onclick="testMultipleAdditions()">Add Product Multiple Times</button>
+            <button onclick="addDifferentProducts()">Add Different Test Products</button>
+        </div>
+
+        <div class="test-section">
+            <h3>2. Cart Control Test</h3>
+            <p>Test cart visibility and individual item controls:</p>
+            <button onclick="openCart()">Open Cart Panel</button>
+            <button onclick="closeCart()">Close Cart Panel</button>
+            <button onclick="clearCart()">Clear All Cart Items</button>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Scroll Test</h3>
+            <p>Add many items to test scrolling functionality:</p>
+            <button onclick="addManyItems()">Add 10 Test Items</button>
+            <button onclick="addManyItems(20)">Add 20 Test Items</button>
+            <button onclick="addManyItems(50)">Add 50 Test Items (Stress Test)</button>
+        </div>
+
+        <div class="test-section">
+            <h3>4. Console Logs</h3>
+            <p>Open browser console (F12) to see detailed logs of cart operations.</p>
+        </div>
+    </div>
+
+    <!-- Include the enhanced widget -->
+    <script src="/backend/public/naay-widget.js"></script>
+    
+    <script>
+        // Initialize widget after DOM loads
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('🧪 Initializing Naay Widget for testing...');
+            
+            // Initialize widget with test configuration
+            window.naayWidget = new window.NaayWidget({
+                shopDomain: 'test-shop.myshopify.com',
+                apiEndpoint: 'http://localhost:3000',
+                position: 'bottom-right',
+                enabled: true
+            });
+        });
+
+        // Test Functions
+        function testMultipleAdditions() {
+            console.log('🧪 Testing multiple additions of same product...');
+            const testProduct = {
+                id: 'test-product-001',
+                title: 'Test Product - Crema Hidratante',
+                price: '25.90',
+                image: 'https://via.placeholder.com/200x200?text=Crema',
+                variantId: 'variant-001',
+                handle: 'crema-hidratante-test'
+            };
+            
+            // Add the same product 5 times
+            for (let i = 0; i < 5; i++) {
+                console.log(`🧪 Adding product ${i + 1}/5`);
+                if (window.naayWidget) {
+                    window.naayWidget.addToCartLocal(testProduct);
+                }
+                
+                // Small delay between additions
+                setTimeout(() => {
+                    if (i === 4) {
+                        console.log('✅ Multiple additions test completed!');
+                        if (window.naayWidget) {
+                            window.naayWidget.showCart();
+                        }
+                    }
+                }, i * 100);
+            }
+        }
+
+        function addDifferentProducts() {
+            console.log('🧪 Adding different test products...');
+            const products = [
+                {
+                    id: 'product-002',
+                    title: 'Sérum Vitamina C',
+                    price: '35.90',
+                    image: 'https://via.placeholder.com/200x200?text=Serum',
+                    variantId: 'variant-002',
+                    handle: 'serum-vitamina-c'
+                },
+                {
+                    id: 'product-003',
+                    title: 'Limpiador Facial',
+                    price: '18.50',
+                    image: 'https://via.placeholder.com/200x200?text=Limpiador',
+                    variantId: 'variant-003',
+                    handle: 'limpiador-facial'
+                },
+                {
+                    id: 'product-004',
+                    title: 'Protector Solar',
+                    price: '42.00',
+                    image: 'https://via.placeholder.com/200x200?text=Solar',
+                    variantId: 'variant-004',
+                    handle: 'protector-solar'
+                }
+            ];
+
+            products.forEach((product, index) => {
+                setTimeout(() => {
+                    if (window.naayWidget) {
+                        window.naayWidget.addToCartLocal(product);
+                    }
+                    if (index === products.length - 1) {
+                        console.log('✅ Different products added!');
+                        setTimeout(() => {
+                            if (window.naayWidget) {
+                                window.naayWidget.showCart();
+                            }
+                        }, 200);
+                    }
+                }, index * 150);
+            });
+        }
+
+        function openCart() {
+            console.log('🛒 Opening cart...');
+            if (window.naayWidget) {
+                window.naayWidget.showCart();
+            }
+        }
+
+        function closeCart() {
+            console.log('🛒 Closing cart...');
+            if (window.naayWidget) {
+                window.naayWidget.hideCart();
+            }
+        }
+
+        function clearCart() {
+            console.log('🗑️ Clearing cart...');
+            if (window.naayWidget && window.naayWidget.cartData) {
+                window.naayWidget.cartData.items = [];
+                window.naayWidget.updateCartDisplay();
+                console.log('✅ Cart cleared!');
+            }
+        }
+
+        function addManyItems(count = 10) {
+            console.log(`🧪 Adding ${count} items for scroll test...`);
+            
+            const baseProducts = [
+                { id: 'scroll-test-1', title: 'Producto Scroll Test 1', price: '15.90' },
+                { id: 'scroll-test-2', title: 'Producto Scroll Test 2', price: '22.50' },
+                { id: 'scroll-test-3', title: 'Producto Scroll Test 3', price: '31.00' },
+                { id: 'scroll-test-4', title: 'Producto Scroll Test 4', price: '28.75' },
+                { id: 'scroll-test-5', title: 'Producto Scroll Test 5', price: '19.99' }
+            ];
+
+            for (let i = 0; i < count; i++) {
+                const baseProduct = baseProducts[i % baseProducts.length];
+                const testProduct = {
+                    ...baseProduct,
+                    id: `${baseProduct.id}-${i}`,
+                    title: `${baseProduct.title} #${i + 1}`,
+                    image: `https://via.placeholder.com/200x200?text=Item${i + 1}`,
+                    variantId: `variant-scroll-${i}`,
+                    handle: `scroll-test-${i}`
+                };
+
+                setTimeout(() => {
+                    if (window.naayWidget) {
+                        window.naayWidget.addToCartLocal(testProduct);
+                    }
+                    
+                    if (i === count - 1) {
+                        console.log(`✅ ${count} items added for scroll test!`);
+                        setTimeout(() => {
+                            if (window.naayWidget) {
+                                window.naayWidget.showCart();
+                            }
+                        }, 200);
+                    }
+                }, i * 50);
+            }
+        }
+
+        // Debug helper
+        window.debugCart = function() {
+            if (window.naayWidget && window.naayWidget.cartData) {
+                console.log('🛒 Current cart state:', window.naayWidget.cartData);
+                console.log('📊 Total items:', window.naayWidget.cartData.items.length);
+                console.log('💰 Total value:', window.naayWidget.cartData.total);
+            } else {
+                console.log('⚠️ Widget not found or not initialized');
+            }
+        };
+
+        console.log('🧪 Test functions available:');
+        console.log('  - testMultipleAdditions()');
+        console.log('  - addDifferentProducts()'); 
+        console.log('  - addManyItems(count)');
+        console.log('  - openCart() / closeCart()');
+        console.log('  - clearCart()');
+        console.log('  - debugCart()');
+    </script>
+</body>
+</html>

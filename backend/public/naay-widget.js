@@ -2809,14 +2809,66 @@
           overflow: hidden !important;
         }
 
-        /* Items Container */
+        /* Items Container - Enhanced scrolling */
         .naay-cart-panel__items {
           padding: 20px 24px 0 24px !important;
           flex: 1 !important;
           overflow-y: auto !important;
+          overflow-x: hidden !important;
           display: flex !important;
           flex-direction: column !important;
           gap: 16px !important;
+          /* Enhanced scrolling properties */
+          scroll-behavior: smooth !important;
+          scrollbar-width: thin !important;
+          scrollbar-color: var(--naay-perfect) rgba(212, 196, 184, 0.2) !important;
+          /* Max height to ensure scroll is visible */
+          max-height: calc(100% - 80px) !important;
+          /* Better scroll performance */
+          will-change: scroll-position !important;
+        }
+
+        /* Custom scrollbar for webkit browsers */
+        .naay-cart-panel__items::-webkit-scrollbar {
+          width: 6px !important;
+        }
+
+        .naay-cart-panel__items::-webkit-scrollbar-track {
+          background: rgba(212, 196, 184, 0.1) !important;
+          border-radius: 3px !important;
+        }
+
+        .naay-cart-panel__items::-webkit-scrollbar-thumb {
+          background: var(--naay-perfect) !important;
+          border-radius: 3px !important;
+          transition: background 0.2s ease !important;
+        }
+
+        .naay-cart-panel__items::-webkit-scrollbar-thumb:hover {
+          background: var(--naay-rich) !important;
+        }
+
+        /* Scroll shadow indicators */
+        .naay-cart-panel__items::before {
+          content: '' !important;
+          position: sticky !important;
+          top: 0 !important;
+          height: 20px !important;
+          background: linear-gradient(to bottom, rgba(248, 249, 248, 0.98), transparent) !important;
+          z-index: 1 !important;
+          pointer-events: none !important;
+          margin: -20px -24px 0 -24px !important;
+        }
+
+        .naay-cart-panel__items::after {
+          content: '' !important;
+          position: sticky !important;
+          bottom: 0 !important;
+          height: 20px !important;
+          background: linear-gradient(to top, rgba(248, 249, 248, 0.98), transparent) !important;
+          z-index: 1 !important;
+          pointer-events: none !important;
+          margin: 0 -24px -20px -24px !important;
         }
 
         .naay-cart-panel__items--visible {
@@ -5001,31 +5053,96 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       // Cart stays visible always
     }
 
+    // ENHANCED: Remove from cart by unique cart item ID
+    async removeFromCartByItemId(cartItemId) {
+      console.log('🛒 Removing cart item by ID:', cartItemId);
+
+      // Show loading state
+      this.showCartLoading();
+
+      // Find the specific cart item by unique ID
+      const itemIndex = this.cartData.items.findIndex(item => 
+        (item.cartItemId && item.cartItemId === cartItemId) || 
+        (!item.cartItemId && item.id === cartItemId)
+      );
+
+      if (itemIndex === -1) {
+        console.warn('⚠️ Cart item not found:', cartItemId);
+        this.hideCartLoading();
+        return;
+      }
+
+      const item = this.cartData.items[itemIndex];
+      console.log('🗑️ Found item to remove:', item);
+
+      // Remove the specific item from local cart
+      this.cartData.items.splice(itemIndex, 1);
+
+      // TODO: In future, handle Shopify cart removal if needed
+      // For now, focus on local cart management
+
+      console.log('✅ Cart item removed successfully. Remaining items:', this.cartData.items.length);
+
+      // Update cart display to reflect changes
+      this.updateCartDisplay();
+      this.hideCartLoading();
+    }
+
+    // ENHANCED: Update quantity by unique cart item ID
+    async updateQuantityByItemId(cartItemId, newQuantity) {
+      console.log('🛒 Updating cart item quantity:', cartItemId, 'to', newQuantity);
+
+      // Find the specific cart item by unique ID
+      const item = this.cartData.items.find(item => 
+        (item.cartItemId && item.cartItemId === cartItemId) || 
+        (!item.cartItemId && item.id === cartItemId)
+      );
+
+      if (!item) {
+        console.warn('⚠️ Cart item not found:', cartItemId);
+        return;
+      }
+
+      if (newQuantity <= 0) {
+        // If quantity is 0 or less, remove the item
+        await this.removeFromCartByItemId(cartItemId);
+        return;
+      }
+
+      // Update the quantity
+      item.quantity = newQuantity;
+
+      console.log('✅ Cart item quantity updated:', item);
+
+      // Update cart display to reflect changes
+      this.updateCartDisplay();
+    }
+
 
     // Fallback method for local cart management
     addToCartLocal(product) {
       console.log('🛒 Adding product to local cart (fallback):', product);
 
-      // Check if product already exists in cart
-      const existingItem = this.cartData.items.find(item => item.id === product.id);
+      // ENHANCED: Allow multiple products without limitations
+      // Instead of checking for existing items, always add as new entry
+      // This allows customers to add the same product multiple times
+      // Generate unique cart item ID to allow multiple instances of same product
+      const uniqueCartItemId = `${product.id}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+      
+      // Always add as new item - no quantity merging
+      this.cartData.items.push({
+        id: product.id, // Keep original product ID for reference
+        cartItemId: uniqueCartItemId, // Unique cart entry ID
+        title: product.title,
+        price: product.price,
+        quantity: product.quantity || 1,
+        image: product.image,
+        variantId: product.variantId,
+        handle: product.handle,
+        addedAt: new Date().toISOString() // Track when item was added
+      });
 
-      if (existingItem) {
-        // Update quantity
-        existingItem.quantity += product.quantity || 1;
-      } else {
-        // Add new item
-        this.cartData.items.push({
-          id: product.id,
-          title: product.title,
-          price: product.price,
-          quantity: product.quantity || 1,
-          image: product.image,
-          variantId: product.variantId,
-          handle: product.handle
-        });
-      }
-
-      console.log('✅ Product added to local cart');
+      console.log('✅ Product added to local cart as new entry. Total items in cart:', this.cartData.items.length);
 
       // Update cart display to reflect changes
       this.updateCartDisplay();
@@ -5372,19 +5489,19 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             </div>
             <div class="naay-cart-panel__item-controls">
               <div class="naay-cart-panel__item-quantity">
-                <button class="naay-cart-panel__quantity-btn naay-cart-panel__quantity-btn--decrease" data-action="decrease" data-product-id="${item.id}" aria-label="Disminuir cantidad">
+                <button class="naay-cart-panel__quantity-btn naay-cart-panel__quantity-btn--decrease" data-action="decrease" data-cart-item-id="${item.cartItemId || item.id}" aria-label="Disminuir cantidad">
                   <svg viewBox="0 0 24 24" fill="none">
                     <path d="M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                   </svg>
                 </button>
                 <span class="naay-cart-panel__quantity-value">${item.quantity}</span>
-                <button class="naay-cart-panel__quantity-btn naay-cart-panel__quantity-btn--increase" data-action="increase" data-product-id="${item.id}" aria-label="Aumentar cantidad">
+                <button class="naay-cart-panel__quantity-btn naay-cart-panel__quantity-btn--increase" data-action="increase" data-cart-item-id="${item.cartItemId || item.id}" aria-label="Aumentar cantidad">
                   <svg viewBox="0 0 24 24" fill="none">
                     <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                   </svg>
                 </button>
               </div>
-              <button class="naay-cart-panel__item-remove" data-product-id="${item.id}" aria-label="Eliminar producto">
+              <button class="naay-cart-panel__item-remove" data-cart-item-id="${item.cartItemId || item.id}" aria-label="Eliminar producto">
                 <svg viewBox="0 0 24 24" fill="none">
                   <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
@@ -5409,10 +5526,11 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             itemElement.style.pointerEvents = 'none';
             removeBtn.disabled = true;
 
-            console.log('🗑️ Starting removal for item with ID:', item.id);
+            const cartItemId = removeBtn.getAttribute('data-cart-item-id');
+            console.log('🗑️ Starting removal for cart item with ID:', cartItemId);
 
             try {
-              await this.removeFromCart(item.id);
+              await this.removeFromCartByItemId(cartItemId);
 
               // Add exit animation before removal
               itemElement.style.opacity = '0';
@@ -5443,14 +5561,16 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         if (decreaseBtn) {
           decreaseBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            this.updateQuantity(item.id, item.quantity - 1);
+            const cartItemId = decreaseBtn.getAttribute('data-cart-item-id');
+            this.updateQuantityByItemId(cartItemId, item.quantity - 1);
           });
         }
 
         if (increaseBtn) {
           increaseBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            this.updateQuantity(item.id, item.quantity + 1);
+            const cartItemId = increaseBtn.getAttribute('data-cart-item-id');
+            this.updateQuantityByItemId(cartItemId, item.quantity + 1);
           });
         }
 
