@@ -556,7 +556,10 @@ router.get(
         .select('*', { count: 'exact', head: true });
 
       if (messagesError) {
-        logger.error('Error fetching chat sessions count for stats:', messagesError);
+        logger.error(
+          'Error fetching chat sessions count for stats:',
+          messagesError
+        );
       }
 
       // Get other stats
@@ -679,9 +682,11 @@ router.get(
       });
 
       // 1. Get sessions first (paginated)
-      const { data: sessions, count: totalSessions, error: sessionsError } = await (
-        supabaseService as any
-      ).serviceClient
+      const {
+        data: sessions,
+        count: totalSessions,
+        error: sessionsError,
+      } = await (supabaseService as any).serviceClient
         .from('chat_sessions')
         .select('*', { count: 'exact' })
         .order('last_activity', { ascending: false })
@@ -729,17 +734,21 @@ router.get(
       // 3. Combine data
       const conversationsList = sessions.map(session => {
         // Find messages for this session
-        const sessionMessages = messages?.filter((m: any) => m.session_id === session.id) || [];
+        const sessionMessages =
+          messages?.filter((m: any) => m.session_id === session.id) || [];
 
         // Get last message (first in the array because we ordered by timestamp desc)
-        const lastMessage = sessionMessages.length > 0 ? sessionMessages[0] : null;
+        const lastMessage =
+          sessionMessages.length > 0 ? sessionMessages[0] : null;
 
         return {
           session_id: session.id,
           message_count: sessionMessages.length, // This is just count of fetched messages, ideally we'd have a count column on session
           last_activity: session.last_activity,
-          last_message: lastMessage ? lastMessage.content : 'Nueva conversación',
-          status: session.status
+          last_message: lastMessage
+            ? lastMessage.content
+            : 'Nueva conversación',
+          status: session.status,
         };
       });
 
@@ -774,61 +783,61 @@ router.get(
         const demoMessages =
           sessionId === 'demo-session-1'
             ? [
-              {
-                id: 'demo-1',
-                role: 'client',
-                content: 'Hola, ¿puedes ayudarme a encontrar un producto?',
-                timestamp: new Date(Date.now() - 3600000).toISOString(),
-              },
-              {
-                id: 'demo-2',
-                role: 'agent',
-                content:
-                  '¡Hola! Claro, estaré encantado de ayudarte. ¿Qué tipo de producto estás buscando?',
-                timestamp: new Date(Date.now() - 3500000).toISOString(),
-              },
-              {
-                id: 'demo-3',
-                role: 'client',
-                content:
-                  'Busco una chaqueta para el invierno, algo que sea abrigado pero elegante.',
-                timestamp: new Date(Date.now() - 3000000).toISOString(),
-              },
-              {
-                id: 'demo-4',
-                role: 'agent',
-                content:
-                  'Perfecto. Tenemos una excelente selección de chaquetas de invierno. Te recomiendo nuestra chaqueta de lana merino que es muy elegante y abrigada.',
-                timestamp: new Date(Date.now() - 2500000).toISOString(),
-              },
-              {
-                id: 'demo-5',
-                role: 'client',
-                content: '¿Podrías mostrarme algunas opciones?',
-                timestamp: new Date(Date.now() - 2000000).toISOString(),
-              },
-            ]
+                {
+                  id: 'demo-1',
+                  role: 'client',
+                  content: 'Hola, ¿puedes ayudarme a encontrar un producto?',
+                  timestamp: new Date(Date.now() - 3600000).toISOString(),
+                },
+                {
+                  id: 'demo-2',
+                  role: 'agent',
+                  content:
+                    '¡Hola! Claro, estaré encantado de ayudarte. ¿Qué tipo de producto estás buscando?',
+                  timestamp: new Date(Date.now() - 3500000).toISOString(),
+                },
+                {
+                  id: 'demo-3',
+                  role: 'client',
+                  content:
+                    'Busco una chaqueta para el invierno, algo que sea abrigado pero elegante.',
+                  timestamp: new Date(Date.now() - 3000000).toISOString(),
+                },
+                {
+                  id: 'demo-4',
+                  role: 'agent',
+                  content:
+                    'Perfecto. Tenemos una excelente selección de chaquetas de invierno. Te recomiendo nuestra chaqueta de lana merino que es muy elegante y abrigada.',
+                  timestamp: new Date(Date.now() - 2500000).toISOString(),
+                },
+                {
+                  id: 'demo-5',
+                  role: 'client',
+                  content: '¿Podrías mostrarme algunas opciones?',
+                  timestamp: new Date(Date.now() - 2000000).toISOString(),
+                },
+              ]
             : [
-              {
-                id: 'demo-6',
-                role: 'client',
-                content: '¿Cuánto cuesta el envío?',
-                timestamp: new Date(Date.now() - 86400000).toISOString(),
-              },
-              {
-                id: 'demo-7',
-                role: 'agent',
-                content:
-                  'El envío estándar es gratuito para compras superiores a $50. Para envío express (1-2 días) el costo es de $15.',
-                timestamp: new Date(Date.now() - 86300000).toISOString(),
-              },
-              {
-                id: 'demo-8',
-                role: 'client',
-                content: 'Perfecto, gracias por la información.',
-                timestamp: new Date(Date.now() - 86200000).toISOString(),
-              },
-            ];
+                {
+                  id: 'demo-6',
+                  role: 'client',
+                  content: '¿Cuánto cuesta el envío?',
+                  timestamp: new Date(Date.now() - 86400000).toISOString(),
+                },
+                {
+                  id: 'demo-7',
+                  role: 'agent',
+                  content:
+                    'El envío estándar es gratuito para compras superiores a $50. Para envío express (1-2 días) el costo es de $15.',
+                  timestamp: new Date(Date.now() - 86300000).toISOString(),
+                },
+                {
+                  id: 'demo-8',
+                  role: 'client',
+                  content: 'Perfecto, gracias por la información.',
+                  timestamp: new Date(Date.now() - 86200000).toISOString(),
+                },
+              ];
 
         return res.json({
           success: true,
