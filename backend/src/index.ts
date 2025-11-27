@@ -1090,23 +1090,20 @@ async function startServer() {
                 <!-- Stats Cards -->
                 <section class="naay-admin__stats">
                   <div class="naay-stat-card">
-                    <div class="naay-stat-card__icon">📦</div>
                     <div class="naay-stat-card__content">
-                      <div class="naay-stat-card__number" id="products-count">⏳</div>
+                      <div class="naay-stat-card__number" id="products-count">0</div>
                       <div class="naay-stat-card__label">Productos sincronizados</div>
                     </div>
                   </div>
                   
                   <div class="naay-stat-card">
-                    <div class="naay-stat-card__icon">💬</div>
                     <div class="naay-stat-card__content">
-                      <div class="naay-stat-card__number" id="conversations-count">⏳</div>
+                      <div class="naay-stat-card__number" id="conversations-count">0</div>
                       <div class="naay-stat-card__label">Conversaciones</div>
                     </div>
                   </div>
                   
                   <div class="naay-stat-card">
-                    <div class="naay-stat-card__icon">🔄</div>
                     <div class="naay-stat-card__content">
                       <div class="naay-stat-card__number" id="chat-status">Active</div>
                       <div class="naay-stat-card__label">Estado del Chat</div>
@@ -1114,9 +1111,8 @@ async function startServer() {
                   </div>
                   
                   <div class="naay-stat-card">
-                    <div class="naay-stat-card__icon">💰</div>
                     <div class="naay-stat-card__content">
-                      <div class="naay-stat-card__number" id="sales-total">⏳</div>
+                      <div class="naay-stat-card__number" id="sales-total">$0</div>
                       <div class="naay-stat-card__label">Ventas del Mes</div>
                     </div>
                   </div>
@@ -1230,6 +1226,11 @@ async function startServer() {
 
             <script>
               let isLoading = false;
+              
+              // Get base URL for API calls
+              const getBaseUrl = () => {
+                return window.location.origin || '${config.shopify.appUrl}';
+              };
 
               // Inicialización con App Bridge (opcional para este panel)
               // const app = window.ShopifyApp && window.ShopifyApp.createApp({
@@ -1269,22 +1270,70 @@ async function startServer() {
               });
 
               async function loadStats() {
+                console.log('🔄 Loading stats...');
+                const baseUrl = getBaseUrl();
+                console.log('🌐 Base URL:', baseUrl);
+                
                 try {
-                  const response = await fetch('/api/admin-bypass/stats');
+                  const url = baseUrl + '/api/admin-bypass/stats';
+                  console.log('📡 Fetching stats from:', url);
+                  
+                  const response = await fetch(url);
+                  console.log('📊 Stats response status:', response.status);
+                  
                   if (response.ok) {
                     const data = await response.json();
+                    console.log('✅ Stats data received:', data);
                     
-                    document.getElementById('products-count').textContent = data.data?.products || '0';
-                    document.getElementById('conversations-count').textContent = data.data?.conversations || '0';
-                    document.getElementById('sales-total').textContent = data.data?.salesTotal || '$0';
+                    // Update conversation count specifically
+                    const conversationsCount = data.data?.conversations || 0;
+                    const productsCount = data.data?.products || 0;
+                    const salesTotal = data.data?.salesTotal || '$0';
+                    
+                    console.log('💬 Setting conversations count to:', conversationsCount);
+                    console.log('📦 Setting products count to:', productsCount);
+                    console.log('💰 Setting sales total to:', salesTotal);
+                    
+                    // Ensure elements exist before setting their content
+                    const convCountEl = document.getElementById('conversations-count');
+                    const prodCountEl = document.getElementById('products-count');
+                    const salesTotalEl = document.getElementById('sales-total');
+                    
+                    if (convCountEl) {
+                      convCountEl.textContent = conversationsCount.toString();
+                      console.log('✅ Conversations count updated to:', convCountEl.textContent);
+                    } else {
+                      console.error('❌ conversations-count element not found');
+                    }
+                    
+                    if (prodCountEl) {
+                      prodCountEl.textContent = productsCount.toString();
+                    } else {
+                      console.error('❌ products-count element not found');
+                    }
+                    
+                    if (salesTotalEl) {
+                      salesTotalEl.textContent = salesTotal;
+                    } else {
+                      console.error('❌ sales-total element not found');
+                    }
+                    
                   } else {
-                    throw new Error('Failed to load stats');
+                    console.error('❌ Stats response not OK:', response.status, response.statusText);
+                    throw new Error('Failed to load stats: ' + response.status);
                   }
                 } catch (error) {
-                  console.error('Error loading stats:', error);
-                  document.getElementById('products-count').textContent = '0';
-                  document.getElementById('conversations-count').textContent = '0';
-                  document.getElementById('sales-total').textContent = '$0';
+                  console.error('❌ Error loading stats:', error);
+                  console.error('Error details:', error.message, error.stack);
+                  
+                  // Show error state
+                  const convCountEl = document.getElementById('conversations-count');
+                  const prodCountEl = document.getElementById('products-count');
+                  const salesTotalEl = document.getElementById('sales-total');
+                  
+                  if (convCountEl) convCountEl.textContent = 'Error';
+                  if (prodCountEl) prodCountEl.textContent = 'Error';
+                  if (salesTotalEl) salesTotalEl.textContent = 'Error';
                 }
               }
 
@@ -1311,7 +1360,7 @@ async function startServer() {
                   emptyEl.style.display = 'none';
                   paginationEl.style.display = 'none';
 
-                  const url = \`/api/admin-bypass/conversations?page=\${page}&limit=\${conversationsPerPage}\`;
+                  const url = \`\${getBaseUrl()}/api/admin-bypass/conversations?page=\${page}&limit=\${conversationsPerPage}\`;
                   console.log('Fetching conversations from:', url);
                   const response = await fetch(url);
                   
@@ -1401,7 +1450,7 @@ async function startServer() {
                   
                   modal.style.display = 'flex';
 
-                  const response = await fetch(\`/api/admin-bypass/conversations/\${sessionId}\`);
+                  const response = await fetch(\`\${getBaseUrl()}/api/admin-bypass/conversations/\${sessionId}\`);
                   
                   if (!response.ok) {
                     throw new Error('Failed to load conversation details');
@@ -1492,8 +1541,8 @@ async function startServer() {
                 summaryEl.style.display = 'none';
 
                 try {
-                  console.log('Fetching sales data from /api/admin-bypass/sales/chart...');
-                  const response = await fetch('/api/admin-bypass/sales/chart');
+                  console.log('Fetching sales data from:', getBaseUrl() + '/api/admin-bypass/sales/chart');
+                  const response = await fetch(getBaseUrl() + '/api/admin-bypass/sales/chart');
                   
                   console.log('Sales response status:', response.status);
                   
