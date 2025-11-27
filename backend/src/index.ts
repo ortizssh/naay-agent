@@ -381,32 +381,39 @@ async function startServer() {
             <style>
               /* Naay Brand Colors - Paleta oficial del widget */
               :root {
-                --primary: #a59457;      /* NEW Primary - Golden mustard (forever/perfect) */
-                --secondary: #212120;    /* NEW Secondary - Dark charcoal (dark) */
-                --tertiary: #cf795e;     /* NEW Tertiary - Warm terracotta */
+                /* Shopify-style colors - Clean & Minimal */
+                --primary: #000000;      /* Black for primary actions */
+                --secondary: #303030;    /* Dark gray for secondary text */
+                --tertiary: #606060;     /* Medium gray for tertiary elements */
                 
-                /* Colores adicionales de la marca */
-                --everyday: #cec8ae;     /* Warm cream */
-                --fresh: #90a284;        /* Sage green */
-                --delicate: #c3ab79;     /* Soft gold */
-                --hydra: #A8C4C4;        /* Soft blue-gray */
-                --deep: #D4B82C;         /* Mustard yellow */
-                --rich: #B8943C;         /* Golden brown */
-                --radiant: #A68A3C;      /* Olive gold */
-                --sage: #F8F9F8;         /* Ultra-light sage */
+                /* UI colors */
+                --success: #008060;      /* Shopify green */
+                --warning: #FFC453;      /* Shopify yellow */
+                --danger: #D72C0D;       /* Shopify red */
+                --info: #006EFF;         /* Shopify blue */
                 
-                /* Estados de UI */
-                --success: #90a284;      /* Verde usando fresh */
-                --warning: #D4B82C;      /* Amarillo usando deep */
-                --danger: #cf795e;       /* Rojo usando terracotta */
+                /* Background and surfaces */
+                --white: #FFFFFF;
+                --background: #FAFBFB;   /* Very light gray background */
+                --surface: #FFFFFF;      /* White surface */
+                --border: #E1E3E5;       /* Light border */
+                --divider: #F1F2F3;      /* Very light divider */
                 
-                --white: white;
-                --black: black;
-                --light-gray: #F8F9F8;   /* Usando sage */
-                --dark-gray: #cec8ae;    /* Usando everyday */
+                /* Text colors */
+                --text-primary: #202223;   /* Primary text */
+                --text-secondary: #6D7175; /* Secondary text */
+                --text-disabled: #8C9196;  /* Disabled text */
                 
-                --border-radius: 8px;
-                --box-shadow: 0 2px 4px rgba(165, 148, 87, 0.1);
+                /* Legacy color mappings for compatibility */
+                --black: #000000;
+                --light-gray: #F1F2F3;
+                --dark-gray: #6D7175;
+                
+                /* Shopify-style properties */
+                --border-radius: 4px;
+                --border-radius-large: 8px;
+                --box-shadow: 0 1px 0 rgba(22, 29, 37, 0.05);
+                --box-shadow-card: 0 0 0 1px rgba(63, 63, 68, 0.05), 0 1px 3px rgba(63, 63, 68, 0.15);
               }
 
               * {
@@ -417,9 +424,9 @@ async function startServer() {
 
               body {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                background: linear-gradient(135deg, var(--sage) 0%, var(--fresh) 100%);
-                color: var(--secondary);
-                line-height: 1.6;
+                background: var(--background);
+                color: var(--text-primary);
+                line-height: 1.5;
                 min-height: 100vh;
               }
 
@@ -432,27 +439,25 @@ async function startServer() {
 
               /* Header */
               .naay-admin__header {
-                background: rgba(255, 255, 255, 0.95);
-                backdrop-filter: blur(10px);
-                padding: 20px 24px;
+                background: var(--white);
+                padding: 16px 24px;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                border-bottom: 1px solid rgba(165, 148, 87, 0.1);
+                border-bottom: 1px solid var(--border);
                 position: sticky;
                 top: 0;
                 z-index: 100;
-                box-shadow: 0 2px 20px rgba(0, 0, 0, 0.05);
+                box-shadow: var(--box-shadow);
               }
 
               .naay-admin__logo {
                 display: flex;
                 align-items: center;
-                gap: 12px;
-                font-weight: 700;
-                font-size: 20px;
-                color: var(--primary);
-                letter-spacing: -0.02em;
+                gap: 8px;
+                font-weight: 600;
+                font-size: 18px;
+                color: var(--text-primary);
               }
 
               .naay-admin__logo-icon {
@@ -460,13 +465,13 @@ async function startServer() {
               }
 
               .naay-admin__store-info {
-                background: linear-gradient(135deg, var(--everyday) 0%, var(--delicate) 100%);
-                padding: 8px 16px;
-                border-radius: 20px;
-                font-size: 13px;
+                background: var(--divider);
+                padding: 6px 12px;
+                border-radius: var(--border-radius);
+                font-size: 12px;
                 font-weight: 500;
-                color: var(--secondary);
-                border: 1px solid rgba(165, 148, 87, 0.2);
+                color: var(--text-secondary);
+                border: 1px solid var(--border);
               }
 
               /* Main content */
@@ -503,70 +508,46 @@ async function startServer() {
               }
 
               .naay-stat-card {
-                background: rgba(255, 255, 255, 0.9);
-                backdrop-filter: blur(10px);
-                border: 1px solid rgba(165, 148, 87, 0.1);
-                border-radius: 16px;
-                padding: 24px;
+                background: var(--white);
+                border: 1px solid var(--border);
+                border-radius: var(--border-radius-large);
+                padding: 20px;
                 display: flex;
                 align-items: center;
                 gap: 16px;
-                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                position: relative;
-                overflow: hidden;
-              }
-
-              .naay-stat-card::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                height: 3px;
-                background: linear-gradient(90deg, var(--primary), var(--tertiary));
-                opacity: 0;
-                transition: opacity 0.3s ease;
+                transition: box-shadow 0.2s ease;
+                box-shadow: var(--box-shadow-card);
               }
 
               .naay-stat-card:hover {
-                transform: translateY(-4px);
-                box-shadow: 0 10px 40px rgba(165, 148, 87, 0.15);
-                border-color: var(--primary);
-              }
-
-              .naay-stat-card:hover::before {
-                opacity: 1;
+                box-shadow: 0 0 0 1px rgba(63, 63, 68, 0.05), 0 4px 16px rgba(63, 63, 68, 0.15);
               }
 
               .naay-stat-card__icon {
-                font-size: 24px;
+                font-size: 20px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                width: 48px;
-                height: 48px;
-                background: linear-gradient(135deg, var(--primary), var(--tertiary));
-                border-radius: 12px;
+                width: 40px;
+                height: 40px;
+                background: var(--primary);
+                border-radius: var(--border-radius);
                 color: var(--white);
-                box-shadow: 0 4px 20px rgba(165, 148, 87, 0.3);
                 flex-shrink: 0;
               }
 
               .naay-stat-card__number {
-                font-size: 28px;
-                font-weight: 700;
-                color: var(--secondary);
+                font-size: 24px;
+                font-weight: 600;
+                color: var(--text-primary);
                 line-height: 1;
-                letter-spacing: -0.02em;
               }
 
               .naay-stat-card__label {
-                font-size: 13px;
-                font-weight: 500;
-                color: var(--primary);
-                margin-top: 6px;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
+                font-size: 14px;
+                font-weight: 400;
+                color: var(--text-secondary);
+                margin-top: 4px;
               }
 
               /* Section titles */
@@ -579,14 +560,13 @@ async function startServer() {
 
               /* Section titles */
               .naay-admin__section-title {
-                font-size: 20px;
-                font-weight: 700;
-                color: var(--secondary);
-                margin-bottom: 20px;
+                font-size: 18px;
+                font-weight: 600;
+                color: var(--text-primary);
+                margin-bottom: 16px;
                 display: flex;
                 align-items: center;
-                gap: 12px;
-                letter-spacing: -0.02em;
+                gap: 8px;
               }
 
               /* Quick actions */
@@ -595,80 +575,71 @@ async function startServer() {
               }
 
               .naay-quick-action {
-                background: rgba(255, 255, 255, 0.9);
-                backdrop-filter: blur(10px);
-                border: 1px solid rgba(165, 148, 87, 0.1);
-                border-radius: 12px;
-                padding: 20px;
-                margin-bottom: 16px;
+                background: var(--white);
+                border: 1px solid var(--border);
+                border-radius: var(--border-radius-large);
+                padding: 16px;
+                margin-bottom: 12px;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                transition: all 0.3s ease;
+                box-shadow: var(--box-shadow-card);
+                transition: box-shadow 0.2s ease;
               }
 
               .naay-quick-action:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 8px 25px rgba(165, 148, 87, 0.1);
-                border-color: var(--primary);
+                box-shadow: 0 0 0 1px rgba(63, 63, 68, 0.05), 0 4px 16px rgba(63, 63, 68, 0.15);
               }
 
               .naay-quick-action h3 {
-                font-size: 16px;
-                font-weight: 600;
-                color: var(--secondary);
-                margin-bottom: 6px;
-                letter-spacing: -0.01em;
+                font-size: 15px;
+                font-weight: 500;
+                color: var(--text-primary);
+                margin-bottom: 4px;
               }
 
               .naay-quick-action p {
                 font-size: 13px;
-                color: var(--primary);
-                opacity: 0.8;
+                color: var(--text-secondary);
                 line-height: 1.4;
               }
 
               /* Botones */
               .naay-btn {
-                padding: 10px 20px;
-                border: none;
-                border-radius: 10px;
-                font-size: 13px;
-                font-weight: 600;
+                padding: 8px 16px;
+                border: 1px solid transparent;
+                border-radius: var(--border-radius);
+                font-size: 14px;
+                font-weight: 500;
                 cursor: pointer;
-                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                transition: all 0.2s ease;
                 text-decoration: none;
                 display: inline-flex;
                 align-items: center;
-                gap: 8px;
-                letter-spacing: 0.3px;
-                position: relative;
-                overflow: hidden;
+                gap: 6px;
+                min-height: 32px;
               }
 
               .naay-btn--primary {
-                background: linear-gradient(135deg, var(--primary), var(--tertiary));
+                background: var(--primary);
                 color: var(--white);
-                box-shadow: 0 4px 15px rgba(165, 148, 87, 0.3);
+                border-color: var(--primary);
               }
 
               .naay-btn--primary:hover:not(:disabled) {
-                transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(165, 148, 87, 0.4);
+                background: var(--secondary);
+                border-color: var(--secondary);
               }
 
               .naay-btn--secondary {
-                background: rgba(255, 255, 255, 0.8);
-                color: var(--primary);
-                border: 1.5px solid var(--primary);
-                backdrop-filter: blur(10px);
+                background: var(--white);
+                color: var(--text-primary);
+                border-color: var(--border);
               }
 
               .naay-btn--secondary:hover:not(:disabled) {
-                background: var(--primary);
-                color: var(--white);
-                transform: translateY(-2px);
-                box-shadow: 0 4px 15px rgba(165, 148, 87, 0.2);
+                background: var(--divider);
+                border-color: var(--text-secondary);
               }
 
               .naay-btn:disabled {
@@ -681,7 +652,7 @@ async function startServer() {
                 display: inline-block;
                 width: 14px;
                 height: 14px;
-                border: 2px solid var(--everyday);
+                border: 2px solid var(--border);
                 border-radius: 50%;
                 border-top-color: var(--primary);
                 animation: spin 1s linear infinite;
@@ -702,19 +673,20 @@ async function startServer() {
 
               .naay-conversation-item {
                 background: var(--white);
-                border: 1px solid var(--light-gray);
-                border-radius: var(--border-radius);
+                border: 1px solid var(--border);
+                border-radius: var(--border-radius-large);
                 padding: 16px;
                 display: flex;
                 justify-content: space-between;
                 align-items: flex-start;
                 cursor: pointer;
                 transition: all 0.2s ease;
+                box-shadow: var(--box-shadow-card);
               }
 
               .naay-conversation-item:hover {
-                border-color: var(--primary);
-                box-shadow: var(--box-shadow);
+                border-color: var(--text-secondary);
+                box-shadow: 0 0 0 1px rgba(63, 63, 68, 0.05), 0 4px 16px rgba(63, 63, 68, 0.15);
               }
 
               .naay-conversation-item__content {
@@ -730,21 +702,21 @@ async function startServer() {
 
               .naay-conversation-item__id {
                 font-size: 11px;
-                background: var(--everyday);
-                color: var(--secondary);
+                background: var(--divider);
+                color: var(--text-secondary);
                 padding: 3px 6px;
-                border-radius: 4px;
+                border-radius: var(--border-radius);
                 font-family: monospace;
               }
 
               .naay-conversation-item__date {
                 font-size: 12px;
-                color: var(--secondary);
+                color: var(--text-secondary);
               }
 
               .naay-conversation-item__preview {
                 font-size: 14px;
-                color: var(--secondary);
+                color: var(--text-primary);
                 margin-bottom: 4px;
                 display: -webkit-box;
                 -webkit-line-clamp: 2;
@@ -753,12 +725,12 @@ async function startServer() {
               }
 
               .naay-conversation-item__message-count {
-                background: var(--tertiary);
+                background: var(--primary);
                 color: var(--white);
                 font-size: 11px;
                 font-weight: 500;
                 padding: 2px 6px;
-                border-radius: 6px;
+                border-radius: 10px;
                 min-width: 18px;
                 text-align: center;
               }
@@ -769,7 +741,7 @@ async function startServer() {
                 align-items: center;
                 justify-content: center;
                 padding: 30px;
-                color: var(--primary);
+                color: var(--text-secondary);
                 font-size: 14px;
                 gap: 8px;
               }
@@ -778,7 +750,7 @@ async function startServer() {
               .naay-conversations-empty {
                 text-align: center;
                 padding: 30px;
-                color: var(--primary);
+                color: var(--text-secondary);
                 font-size: 14px;
               }
 
@@ -920,46 +892,40 @@ async function startServer() {
 
               /* Sales Chart */
               .naay-chart-container {
-                background: rgba(255, 255, 255, 0.9);
-                backdrop-filter: blur(10px);
-                border: 1px solid rgba(165, 148, 87, 0.1);
-                border-radius: 16px;
-                padding: 24px;
-                margin-bottom: 40px;
-                transition: all 0.3s ease;
-              }
-
-              .naay-chart-container:hover {
-                box-shadow: 0 8px 30px rgba(165, 148, 87, 0.1);
-                transform: translateY(-2px);
+                background: var(--white);
+                border: 1px solid var(--border);
+                border-radius: var(--border-radius-large);
+                padding: 20px;
+                margin-bottom: 32px;
+                box-shadow: var(--box-shadow-card);
               }
 
               .naay-chart-header {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                margin-bottom: 24px;
-                padding-bottom: 16px;
-                border-bottom: 1px solid rgba(165, 148, 87, 0.1);
+                margin-bottom: 20px;
+                padding-bottom: 12px;
+                border-bottom: 1px solid var(--border);
               }
 
               .naay-chart-title {
-                font-size: 18px;
+                font-size: 16px;
                 font-weight: 600;
-                color: var(--secondary);
+                color: var(--text-primary);
                 display: flex;
                 align-items: center;
-                gap: 8px;
+                gap: 6px;
               }
 
               .naay-chart-period {
-                background: var(--everyday);
-                color: var(--secondary);
-                padding: 6px 12px;
-                border-radius: 20px;
+                background: var(--divider);
+                color: var(--text-secondary);
+                padding: 4px 8px;
+                border-radius: var(--border-radius);
                 font-size: 12px;
-                font-weight: 500;
-                border: 1px solid rgba(165, 148, 87, 0.2);
+                font-weight: 400;
+                border: 1px solid var(--border);
               }
 
               .naay-chart-canvas {
@@ -973,7 +939,7 @@ async function startServer() {
                 align-items: center;
                 justify-content: center;
                 height: 300px;
-                color: var(--primary);
+                color: var(--text-secondary);
                 font-size: 14px;
                 flex-direction: column;
                 gap: 12px;
@@ -1003,18 +969,17 @@ async function startServer() {
 
               .naay-chart-bar {
                 flex: 1;
-                margin: 0 4px;
-                background: linear-gradient(135deg, var(--primary), var(--tertiary));
-                border-radius: 4px 4px 0 0;
-                min-height: 8px;
-                transition: all 0.3s ease;
+                margin: 0 2px;
+                background: var(--primary);
+                border-radius: 2px 2px 0 0;
+                min-height: 4px;
+                transition: all 0.2s ease;
                 position: relative;
                 cursor: pointer;
               }
 
               .naay-chart-bar:hover {
-                transform: scaleY(1.05);
-                filter: brightness(1.1);
+                background: var(--secondary);
               }
 
               .naay-chart-bar-value {
@@ -1023,13 +988,15 @@ async function startServer() {
                 left: 50%;
                 transform: translateX(-50%);
                 font-size: 10px;
-                color: var(--secondary);
+                color: var(--text-primary);
                 font-weight: 500;
-                background: rgba(255, 255, 255, 0.9);
+                background: var(--white);
                 padding: 2px 6px;
-                border-radius: 4px;
+                border-radius: var(--border-radius);
+                border: 1px solid var(--border);
                 opacity: 0;
-                transition: opacity 0.3s ease;
+                transition: opacity 0.2s ease;
+                white-space: nowrap;
               }
 
               .naay-chart-bar:hover .naay-chart-bar-value {
@@ -1039,17 +1006,17 @@ async function startServer() {
               .naay-chart-labels {
                 display: flex;
                 justify-content: space-between;
-                padding: 0 20px;
+                padding: 0 16px;
                 font-size: 11px;
-                color: var(--primary);
+                color: var(--text-secondary);
               }
 
               .naay-chart-summary {
                 display: flex;
                 justify-content: space-around;
-                margin-top: 20px;
+                margin-top: 16px;
                 padding-top: 16px;
-                border-top: 1px solid rgba(165, 148, 87, 0.1);
+                border-top: 1px solid var(--border);
               }
 
               .naay-chart-metric {
@@ -1057,18 +1024,16 @@ async function startServer() {
               }
 
               .naay-chart-metric-value {
-                font-size: 20px;
-                font-weight: 700;
-                color: var(--secondary);
+                font-size: 18px;
+                font-weight: 600;
+                color: var(--text-primary);
                 line-height: 1;
               }
 
               .naay-chart-metric-label {
-                font-size: 11px;
-                color: var(--primary);
+                font-size: 12px;
+                color: var(--text-secondary);
                 margin-top: 4px;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
               }
             </style>
           </head>
@@ -1244,11 +1209,11 @@ async function startServer() {
             <script>
               let isLoading = false;
 
-              // Inicialización con App Bridge
-              const app = createApp({
-                apiKey: '${process.env.SHOPIFY_API_KEY || 'api_key_placeholder'}',
-                host: '${host}',
-              });
+              // Inicialización con App Bridge (opcional para este panel)
+              // const app = window.ShopifyApp && window.ShopifyApp.createApp({
+              //   apiKey: '${process.env.SHOPIFY_API_KEY || 'api_key_placeholder'}',
+              //   host: '${host}',
+              // });
 
               // Cargar datos iniciales
               document.addEventListener('DOMContentLoaded', async function() {
