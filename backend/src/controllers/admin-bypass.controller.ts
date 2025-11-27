@@ -687,4 +687,144 @@ router.get(
   }
 );
 
+// Get conversations - bypass version
+router.get(
+  '/conversations',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop, limit = 50, offset = 0 } = req.query;
+      
+      logger.info('Admin bypass: Getting conversations', { shop, limit, offset });
+
+      // Query to get all messages and group by session_id
+      const { data: messages, error } = await (supabaseService as any)
+        .serviceClient
+        .from('chat_messages')
+        .select('id, session_id, role, content, timestamp')
+        .order('timestamp', { ascending: false });
+
+      if (error) {
+        logger.error('Error fetching conversations:', error);
+        throw error;
+      }
+
+      // Group messages by session_id
+      const sessionGroups: { [key: string]: any } = {};
+      
+      messages?.forEach((message: any) => {
+        const sessionId = message.session_id;
+        if (!sessionGroups[sessionId]) {
+          sessionGroups[sessionId] = {
+            session_id: sessionId,
+            messages: [],
+            first_message_timestamp: message.timestamp,
+            last_message_timestamp: message.timestamp,
+            message_count: 0
+          };
+        }
+        
+        sessionGroups[sessionId].messages.push({
+          id: message.id,
+          role: message.role,
+          content: message.content,
+          timestamp: message.timestamp
+        });
+        
+        sessionGroups[sessionId].message_count++;
+        
+        // Update timestamps
+        if (new Date(message.timestamp) < new Date(sessionGroups[sessionId].first_message_timestamp)) {
+          sessionGroups[sessionId].first_message_timestamp = message.timestamp;
+        }
+        if (new Date(message.timestamp) > new Date(sessionGroups[sessionId].last_message_timestamp)) {
+          sessionGroups[sessionId].last_message_timestamp = message.timestamp;
+        }
+      });
+
+      // Convert to array, sort by latest activity, and apply pagination
+      const conversationsList = Object.values(sessionGroups)
+        .sort((a: any, b: any) => new Date(b.last_message_timestamp).getTime() - new Date(a.last_message_timestamp).getTime())
+        .slice(parseInt(offset as string), parseInt(offset as string) + parseInt(limit as string))
+        .map((conversation: any) => ({
+          ...conversation,
+          // Sort messages chronologically within each conversation
+          messages: conversation.messages.sort((a: any, b: any) => 
+            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+          )
+        }));
+
+      // Get total count
+      const totalConversations = Object.keys(sessionGroups).length;
+
+      res.json({
+        success: true,
+        data: {
+          conversations: conversationsList,
+          pagination: {
+            total: totalConversations,
+            limit: parseInt(limit as string),
+            offset: parseInt(offset as string),
+            hasMore: (parseInt(offset as string) + parseInt(limit as string)) < totalConversations
+          }
+        }
+      });
+    } catch (error) {
+      logger.error('Admin bypass conversations error:', error);
+      next(error);
+    }
+  }
+);
+
+// Get single conversation details
+router.get(
+  '/conversations/:sessionId',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { sessionId } = req.params;
+      
+      logger.info('Admin bypass: Getting conversation details', { sessionId });
+
+      const { data: messages, error } = await (supabaseService as any)
+        .serviceClient
+        .from('chat_messages')
+        .select('id, role, content, timestamp')
+        .eq('session_id', sessionId)
+        .order('timestamp', { ascending: true });
+
+      if (error) {
+        logger.error('Error fetching conversation details:', error);
+        throw error;
+      }
+
+      if (!messages || messages.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: 'Conversation not found'
+        });
+      }
+
+      const conversation = {
+        session_id: sessionId,
+        message_count: messages.length,
+        first_message_timestamp: messages[0].timestamp,
+        last_message_timestamp: messages[messages.length - 1].timestamp,
+        messages: messages.map((msg: any) => ({
+          id: msg.id,
+          role: msg.role,
+          content: msg.content,
+          timestamp: msg.timestamp
+        }))
+      };
+
+      res.json({
+        success: true,
+        data: conversation
+      });
+    } catch (error) {
+      logger.error('Admin bypass conversation details error:', error);
+      next(error);
+    }
+  }
+);
+
 export default router;
