@@ -22,7 +22,6 @@
   },
   "include": [
     "backend/src/**/*",
-    "frontend-widget/src/**/*",
     "scripts/**/*"
   ],
   "exclude": [
@@ -39,9 +38,6 @@
   "references": [
     {
       "path": "./backend"
-    },
-    {
-      "path": "./frontend-widget"
     }
   ]
 }

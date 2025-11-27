@@ -14,8 +14,14 @@ export class CacheService {
   private misses: number = 0;
 
   constructor() {
+    // Check if Redis is explicitly enabled and has URL
     if (config.redis.enabled && config.redis.url) {
       try {
+        logger.info('Attempting to connect to Redis...', {
+          enabled: config.redis.enabled,
+          hasUrl: !!config.redis.url,
+        });
+
         this.redis = new Redis(config.redis.url);
         this.useRedis = true;
 
@@ -32,6 +38,8 @@ export class CacheService {
         logger.error('Failed to initialize Redis:', error);
         this.useRedis = false;
       }
+    } else {
+      logger.info('Redis not available, using direct processing mode');
     }
   }
 

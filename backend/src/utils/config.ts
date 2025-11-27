@@ -34,7 +34,8 @@ export const config: AppConfig = {
     jwtSecret: process.env.JWT_SECRET || 'default-secret',
   },
   redis: {
-    url: process.env.REDIS_URL,
+    url:
+      process.env.REDIS_ENABLED === 'false' ? undefined : process.env.REDIS_URL,
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT || '6379'),
     password: process.env.REDIS_PASSWORD,
@@ -70,6 +71,9 @@ export function validateConfig(): void {
     hasOpenAIKey: !!process.env.OPENAI_API_KEY,
     hasShopifyKey: !!process.env.SHOPIFY_API_KEY,
     totalEnvVars: Object.keys(process.env).length,
+    redisEnabled: process.env.REDIS_ENABLED,
+    redisEnabledConfig: config.redis.enabled,
+    hasRedisUrl: !!config.redis.url,
   });
 
   const missing = required.filter(key => !process.env[key]);
