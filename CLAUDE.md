@@ -42,6 +42,10 @@ npm run lint:fix            # Auto-fix linting issues
 npm run shopify:generate    # Generate Shopify extensions
 npm run shopify:deploy      # Deploy Shopify app
 npm run shopify:info        # Show app info
+
+# Asset management
+npm run sync:assets         # Copy assets to backend dist
+npm run verify:sync         # Verify widget files are synced between source and dist
 ```
 
 ### Backend-Specific Commands

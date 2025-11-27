@@ -247,7 +247,12 @@ async function startServer() {
       cors({
         origin:
           process.env.NODE_ENV === 'production'
-            ? [config.shopify.appUrl, /.*\.shopify\.com$/, /.*\.shop\.app$/]
+            ? [
+                config.shopify.appUrl,
+                /.*\.shopify\.com$/,
+                /.*\.shop\.app$/,
+                /.*\.myshopify\.com$/,
+              ]
             : ['http://localhost:3000', 'http://localhost:3001'],
         credentials: true,
       })
@@ -434,7 +439,7 @@ async function startServer() {
 
       // Redirect to OAuth flow
       const scopes = 'read_products,write_products,read_orders,read_customers';
-      const redirectUri = `${config.shopify.appUrl} /auth/callback`;
+      const redirectUri = `${config.shopify.appUrl}/auth/callback`;
       const installUrl =
         `https://${shop}/admin/oauth/authorize` +
         `?client_id=${config.shopify.apiKey}` +
@@ -475,7 +480,7 @@ async function startServer() {
 
     // Serve admin panel
     app.get('/admin', (req, res) => {
-      res.sendFile(path.join(__dirname, '../public/admin.html'));
+      res.sendFile(path.join(__dirname, '../public/admin/index.html'));
     });
 
     // Serve admin static files
