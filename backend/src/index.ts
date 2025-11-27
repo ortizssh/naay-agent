@@ -1076,30 +1076,6 @@ async function startServer() {
                   </div>
                 </section>
 
-                <!-- Quick Actions -->
-                <section class="naay-admin__actions">
-                  <h2 class="naay-admin__section-title">🚀 Acciones principales</h2>
-                  
-                  <div class="naay-quick-action">
-                    <div class="naay-quick-action__content">
-                      <h3>Sincronizar productos</h3>
-                      <p>Actualizar el catálogo de productos en la base de datos</p>
-                    </div>
-                    <button class="naay-btn naay-btn--primary" onclick="syncProducts()">
-                      <span id="sync-btn-text">Sincronizar</span>
-                    </button>
-                  </div>
-
-                  <div class="naay-quick-action">
-                    <div class="naay-quick-action__content">
-                      <h3>Ver estado del sistema</h3>
-                      <p>Verificar el estado de todos los servicios</p>
-                    </div>
-                    <button class="naay-btn naay-btn--secondary" onclick="checkSystemHealth()">
-                      Verificar estado
-                    </button>
-                  </div>
-                </section>
 
                 <!-- Sales Chart Section -->
                 <section class="naay-admin__actions">
@@ -1217,9 +1193,33 @@ async function startServer() {
 
               // Cargar datos iniciales
               document.addEventListener('DOMContentLoaded', async function() {
-                await loadStats();
-                await loadConversations();
-                await loadSalesData();
+                console.log('DOM loaded, starting data loading...');
+                
+                try {
+                  console.log('Loading stats...');
+                  await loadStats();
+                  console.log('Stats loaded successfully');
+                } catch (error) {
+                  console.error('Error loading stats:', error);
+                }
+                
+                try {
+                  console.log('Loading conversations...');
+                  await loadConversations();
+                  console.log('Conversations loaded successfully');
+                } catch (error) {
+                  console.error('Error loading conversations:', error);
+                }
+                
+                try {
+                  console.log('Loading sales data...');
+                  await loadSalesData();
+                  console.log('Sales data loaded successfully');
+                } catch (error) {
+                  console.error('Error loading sales data:', error);
+                }
+                
+                console.log('All data loading attempts completed');
               });
 
               async function loadStats() {
@@ -1242,54 +1242,6 @@ async function startServer() {
                 }
               }
 
-              async function syncProducts() {
-                if (isLoading) return;
-                
-                const button = event.target;
-                const btnText = document.getElementById('sync-btn-text');
-                
-                isLoading = true;
-                button.disabled = true;
-                btnText.innerHTML = '<span class="naay-loading"></span> Sincronizando...';
-                
-                try {
-                  const response = await fetch('/api/admin-bypass/products/sync', { 
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json'
-                    }
-                  });
-                  
-                  if (response.ok) {
-                    alert('Productos sincronizados correctamente');
-                    await loadStats(); // Recargar estadísticas
-                  } else {
-                    throw new Error('Sync failed');
-                  }
-                } catch (error) {
-                  console.error('Sync error:', error);
-                  alert('Error al sincronizar productos');
-                } finally {
-                  isLoading = false;
-                  button.disabled = false;
-                  btnText.textContent = 'Sincronizar';
-                }
-              }
-
-              async function checkSystemHealth() {
-                try {
-                  const response = await fetch('/health/detailed');
-                  if (response.ok) {
-                    const data = await response.json();
-                    alert('Estado del sistema: \\n\\nBase de datos: ' + (data.database?.status || 'unknown') + '\\nOpenAI: ' + (data.openai?.status || 'unknown') + '\\nRedis: ' + (data.redis?.status || 'unknown'));
-                  } else {
-                    throw new Error('Health check failed');
-                  }
-                } catch (error) {
-                  console.error('Health check error:', error);
-                  alert('Error al verificar el sistema');
-                }
-              }
 
               // Conversations functionality
               let currentPage = 1;
@@ -1473,10 +1425,19 @@ async function startServer() {
 
               // Sales Data Functions
               async function loadSalesData() {
+                console.log('Starting loadSalesData...');
+                
                 const loadingEl = document.getElementById('sales-chart-loading');
                 const errorEl = document.getElementById('sales-chart-error');
                 const contentEl = document.getElementById('sales-chart-content');
                 const summaryEl = document.getElementById('sales-chart-summary');
+
+                if (!loadingEl || !errorEl || !contentEl || !summaryEl) {
+                  console.error('Missing sales chart elements:', { loadingEl, errorEl, contentEl, summaryEl });
+                  return;
+                }
+
+                console.log('All sales chart elements found, showing loading state...');
 
                 // Show loading state
                 loadingEl.style.display = 'flex';
@@ -1485,18 +1446,25 @@ async function startServer() {
                 summaryEl.style.display = 'none';
 
                 try {
+                  console.log('Fetching sales data from /api/admin-bypass/sales/chart...');
                   const response = await fetch('/api/admin-bypass/sales/chart');
+                  
+                  console.log('Sales response status:', response.status);
+                  
                   if (!response.ok) {
-                    throw new Error('Failed to fetch sales data');
+                    throw new Error(\`Failed to fetch sales data: \${response.status} \${response.statusText}\`);
                   }
 
                   const data = await response.json();
+                  console.log('Sales data received:', data);
                   
                   if (data.success && data.data) {
+                    console.log('Rendering sales chart...');
                     renderSalesChart(data.data);
                     loadingEl.style.display = 'none';
                     contentEl.style.display = 'block';
                     summaryEl.style.display = 'flex';
+                    console.log('Sales chart rendered successfully');
                   } else {
                     throw new Error(data.message || 'Invalid sales data');
                   }
@@ -1508,8 +1476,15 @@ async function startServer() {
               }
 
               function renderSalesChart(salesData) {
+                console.log('Starting renderSalesChart with data:', salesData);
+                
                 const barsContainer = document.getElementById('sales-chart-bars');
                 const labelsContainer = document.getElementById('sales-chart-labels');
+
+                if (!barsContainer || !labelsContainer) {
+                  console.error('Missing chart containers:', { barsContainer, labelsContainer });
+                  return;
+                }
 
                 // Clear existing content
                 barsContainer.innerHTML = '';
@@ -1517,10 +1492,15 @@ async function startServer() {
 
                 const { daily_sales, total_amount, total_orders, average_order } = salesData;
                 
+                console.log('Extracted data:', { daily_sales, total_amount, total_orders, average_order });
+                
                 if (!daily_sales || daily_sales.length === 0) {
-                  barsContainer.innerHTML = '<div style="text-align: center; color: var(--primary);">No hay datos de ventas disponibles</div>';
+                  console.log('No daily sales data, showing empty message');
+                  barsContainer.innerHTML = '<div style="text-align: center; color: var(--text-secondary);">No hay datos de ventas disponibles</div>';
                   return;
                 }
+
+                console.log('Processing', daily_sales.length, 'days of sales data');
 
                 // Find max value for scaling
                 const maxSale = Math.max(...daily_sales.map(day => parseFloat(day.total_sales)));
