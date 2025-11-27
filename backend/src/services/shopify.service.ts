@@ -1581,4 +1581,110 @@ export class ShopifyService {
       throw new AppError(`Failed to update cart buyer identity: ${error}`, 500);
     }
   }
+
+  /**
+   * Get orders within a date range using Admin API
+   */
+  async getOrdersByDateRange(
+    startDate: string,
+    endDate: string
+  ): Promise<any[]> {
+    try {
+      logger.info('Fetching orders from Shopify', { startDate, endDate });
+
+      const client = adminApiClient({
+        storeDomain: this.shopDomain,
+        accessToken: this.accessToken,
+        apiVersion: '2024-01',
+      });
+
+      const query = `
+        query getOrders($query: String!, $first: Int!) {
+          orders(query: $query, first: $first) {
+            edges {
+              node {
+                id
+                name
+                createdAt
+                totalPrice
+                subtotalPrice
+                totalTax
+                currencyCode
+                lineItems(first: 10) {
+                  edges {
+                    node {
+                      id
+                      title
+                      quantity
+                      variant {
+                        id
+                        title
+                        price
+                      }
+                      product {
+                        id
+                        title
+                        handle
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
+          }
+        }
+      `;
+
+      const queryString = `created_at:>=${startDate} AND created_at:<=${endDate} AND status:any`;
+
+      const response = await client.request(query, {
+        variables: {
+          query: queryString,
+          first: 250, // Maximum allowed
+        },
+      });
+
+      if (response.errors) {
+        logger.error(
+          'GraphQL errors in getOrdersByDateRange:',
+          response.errors
+        );
+        throw new AppError(
+          `GraphQL errors: ${response.errors[0].message}`,
+          400
+        );
+      }
+
+      const orders =
+        response.data?.orders?.edges?.map((edge: any) => ({
+          id: edge.node.id,
+          name: edge.node.name,
+          created_at: edge.node.createdAt,
+          total_price: edge.node.totalPrice,
+          subtotal_price: edge.node.subtotalPrice,
+          total_tax: edge.node.totalTax,
+          currency: edge.node.currencyCode,
+          line_items:
+            edge.node.lineItems?.edges?.map((lineEdge: any) => ({
+              id: lineEdge.node.id,
+              title: lineEdge.node.title,
+              quantity: lineEdge.node.quantity,
+              variant: lineEdge.node.variant,
+              product: lineEdge.node.product,
+            })) || [],
+        })) || [];
+
+      logger.info('Successfully fetched orders', { count: orders.length });
+      return orders;
+    } catch (error) {
+      logger.error('Error fetching orders by date range:', error);
+
+      // Don't throw error, let caller handle fallback
+      throw error;
+    }
+  }
 }

@@ -379,21 +379,34 @@ async function startServer() {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
             <style>
-              /* Sistema de colores primarios CSS básicos */
+              /* Naay Brand Colors - Paleta oficial del widget */
               :root {
-                --primary: blue;
-                --secondary: gray;
-                --success: green;
-                --warning: orange;
-                --danger: red;
+                --primary: #a59457;      /* NEW Primary - Golden mustard (forever/perfect) */
+                --secondary: #212120;    /* NEW Secondary - Dark charcoal (dark) */
+                --tertiary: #cf795e;     /* NEW Tertiary - Warm terracotta */
+                
+                /* Colores adicionales de la marca */
+                --everyday: #cec8ae;     /* Warm cream */
+                --fresh: #90a284;        /* Sage green */
+                --delicate: #c3ab79;     /* Soft gold */
+                --hydra: #A8C4C4;        /* Soft blue-gray */
+                --deep: #D4B82C;         /* Mustard yellow */
+                --rich: #B8943C;         /* Golden brown */
+                --radiant: #A68A3C;      /* Olive gold */
+                --sage: #F8F9F8;         /* Ultra-light sage */
+                
+                /* Estados de UI */
+                --success: #90a284;      /* Verde usando fresh */
+                --warning: #D4B82C;      /* Amarillo usando deep */
+                --danger: #cf795e;       /* Rojo usando terracotta */
                 
                 --white: white;
                 --black: black;
-                --light-gray: lightgray;
-                --dark-gray: darkgray;
+                --light-gray: #F8F9F8;   /* Usando sage */
+                --dark-gray: #cec8ae;    /* Usando everyday */
                 
                 --border-radius: 8px;
-                --box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                --box-shadow: 0 2px 4px rgba(165, 148, 87, 0.1);
               }
 
               * {
@@ -404,9 +417,10 @@ async function startServer() {
 
               body {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                background: var(--light-gray);
-                color: var(--black);
-                line-height: 1.5;
+                background: linear-gradient(135deg, var(--sage) 0%, var(--fresh) 100%);
+                color: var(--secondary);
+                line-height: 1.6;
+                min-height: 100vh;
               }
 
               /* Layout principal */
@@ -418,21 +432,27 @@ async function startServer() {
 
               /* Header */
               .naay-admin__header {
-                background: var(--white);
-                padding: 16px 24px;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                padding: 20px 24px;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                border-bottom: 1px solid var(--light-gray);
+                border-bottom: 1px solid rgba(165, 148, 87, 0.1);
+                position: sticky;
+                top: 0;
+                z-index: 100;
+                box-shadow: 0 2px 20px rgba(0, 0, 0, 0.05);
               }
 
               .naay-admin__logo {
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                font-weight: 600;
-                font-size: 18px;
+                gap: 12px;
+                font-weight: 700;
+                font-size: 20px;
                 color: var(--primary);
+                letter-spacing: -0.02em;
               }
 
               .naay-admin__logo-icon {
@@ -440,11 +460,13 @@ async function startServer() {
               }
 
               .naay-admin__store-info {
-                background: var(--light-gray);
-                padding: 6px 12px;
-                border-radius: var(--border-radius);
-                font-size: 14px;
-                color: var(--dark-gray);
+                background: linear-gradient(135deg, var(--everyday) 0%, var(--delicate) 100%);
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 13px;
+                font-weight: 500;
+                color: var(--secondary);
+                border: 1px solid rgba(165, 148, 87, 0.2);
               }
 
               /* Main content */
@@ -475,19 +497,45 @@ async function startServer() {
               /* Stats cards */
               .naay-admin__stats {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 16px;
-                margin-bottom: 30px;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 20px;
+                margin-bottom: 40px;
               }
 
               .naay-stat-card {
-                background: var(--white);
-                border: 1px solid var(--light-gray);
-                border-radius: var(--border-radius);
-                padding: 20px;
+                background: rgba(255, 255, 255, 0.9);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(165, 148, 87, 0.1);
+                border-radius: 16px;
+                padding: 24px;
                 display: flex;
                 align-items: center;
-                gap: 12px;
+                gap: 16px;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                position: relative;
+                overflow: hidden;
+              }
+
+              .naay-stat-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 3px;
+                background: linear-gradient(90deg, var(--primary), var(--tertiary));
+                opacity: 0;
+                transition: opacity 0.3s ease;
+              }
+
+              .naay-stat-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 10px 40px rgba(165, 148, 87, 0.15);
+                border-color: var(--primary);
+              }
+
+              .naay-stat-card:hover::before {
+                opacity: 1;
               }
 
               .naay-stat-card__icon {
@@ -495,95 +543,132 @@ async function startServer() {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                width: 40px;
-                height: 40px;
-                background: var(--primary);
-                border-radius: var(--border-radius);
+                width: 48px;
+                height: 48px;
+                background: linear-gradient(135deg, var(--primary), var(--tertiary));
+                border-radius: 12px;
                 color: var(--white);
+                box-shadow: 0 4px 20px rgba(165, 148, 87, 0.3);
+                flex-shrink: 0;
               }
 
               .naay-stat-card__number {
-                font-size: 24px;
-                font-weight: 600;
-                color: var(--black);
+                font-size: 28px;
+                font-weight: 700;
+                color: var(--secondary);
                 line-height: 1;
+                letter-spacing: -0.02em;
               }
 
               .naay-stat-card__label {
-                font-size: 14px;
-                color: var(--dark-gray);
-                margin-top: 4px;
+                font-size: 13px;
+                font-weight: 500;
+                color: var(--primary);
+                margin-top: 6px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
               }
 
               /* Section titles */
               .naay-admin__section-title {
                 font-size: 18px;
                 font-weight: 600;
-                color: var(--black);
+                color: var(--secondary);
                 margin-bottom: 16px;
+              }
+
+              /* Section titles */
+              .naay-admin__section-title {
+                font-size: 20px;
+                font-weight: 700;
+                color: var(--secondary);
+                margin-bottom: 20px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                letter-spacing: -0.02em;
               }
 
               /* Quick actions */
               .naay-admin__actions {
-                margin-bottom: 30px;
+                margin-bottom: 40px;
               }
 
               .naay-quick-action {
-                background: var(--white);
-                border: 1px solid var(--light-gray);
-                border-radius: var(--border-radius);
-                padding: 16px;
-                margin-bottom: 12px;
+                background: rgba(255, 255, 255, 0.9);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(165, 148, 87, 0.1);
+                border-radius: 12px;
+                padding: 20px;
+                margin-bottom: 16px;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
+                transition: all 0.3s ease;
+              }
+
+              .naay-quick-action:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(165, 148, 87, 0.1);
+                border-color: var(--primary);
               }
 
               .naay-quick-action h3 {
                 font-size: 16px;
                 font-weight: 600;
-                color: var(--black);
-                margin-bottom: 4px;
+                color: var(--secondary);
+                margin-bottom: 6px;
+                letter-spacing: -0.01em;
               }
 
               .naay-quick-action p {
-                font-size: 14px;
-                color: var(--dark-gray);
+                font-size: 13px;
+                color: var(--primary);
+                opacity: 0.8;
+                line-height: 1.4;
               }
 
               /* Botones */
               .naay-btn {
-                padding: 8px 16px;
+                padding: 10px 20px;
                 border: none;
-                border-radius: var(--border-radius);
-                font-size: 14px;
-                font-weight: 500;
+                border-radius: 10px;
+                font-size: 13px;
+                font-weight: 600;
                 cursor: pointer;
-                transition: all 0.2s ease;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 text-decoration: none;
                 display: inline-flex;
                 align-items: center;
-                gap: 6px;
+                gap: 8px;
+                letter-spacing: 0.3px;
+                position: relative;
+                overflow: hidden;
               }
 
               .naay-btn--primary {
-                background: var(--primary);
+                background: linear-gradient(135deg, var(--primary), var(--tertiary));
                 color: var(--white);
+                box-shadow: 0 4px 15px rgba(165, 148, 87, 0.3);
               }
 
               .naay-btn--primary:hover:not(:disabled) {
-                background: darkblue;
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(165, 148, 87, 0.4);
               }
 
               .naay-btn--secondary {
-                background: var(--light-gray);
-                color: var(--dark-gray);
-                border: 1px solid var(--secondary);
+                background: rgba(255, 255, 255, 0.8);
+                color: var(--primary);
+                border: 1.5px solid var(--primary);
+                backdrop-filter: blur(10px);
               }
 
               .naay-btn--secondary:hover:not(:disabled) {
-                background: var(--dark-gray);
+                background: var(--primary);
                 color: var(--white);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 15px rgba(165, 148, 87, 0.2);
               }
 
               .naay-btn:disabled {
@@ -596,7 +681,7 @@ async function startServer() {
                 display: inline-block;
                 width: 14px;
                 height: 14px;
-                border: 2px solid var(--light-gray);
+                border: 2px solid var(--everyday);
                 border-radius: 50%;
                 border-top-color: var(--primary);
                 animation: spin 1s linear infinite;
@@ -645,8 +730,8 @@ async function startServer() {
 
               .naay-conversation-item__id {
                 font-size: 11px;
-                background: var(--light-gray);
-                color: var(--dark-gray);
+                background: var(--everyday);
+                color: var(--secondary);
                 padding: 3px 6px;
                 border-radius: 4px;
                 font-family: monospace;
@@ -659,7 +744,7 @@ async function startServer() {
 
               .naay-conversation-item__preview {
                 font-size: 14px;
-                color: var(--black);
+                color: var(--secondary);
                 margin-bottom: 4px;
                 display: -webkit-box;
                 -webkit-line-clamp: 2;
@@ -668,7 +753,7 @@ async function startServer() {
               }
 
               .naay-conversation-item__message-count {
-                background: var(--primary);
+                background: var(--tertiary);
                 color: var(--white);
                 font-size: 11px;
                 font-weight: 500;
@@ -684,7 +769,7 @@ async function startServer() {
                 align-items: center;
                 justify-content: center;
                 padding: 30px;
-                color: var(--dark-gray);
+                color: var(--primary);
                 font-size: 14px;
                 gap: 8px;
               }
@@ -693,7 +778,7 @@ async function startServer() {
               .naay-conversations-empty {
                 text-align: center;
                 padding: 30px;
-                color: var(--dark-gray);
+                color: var(--primary);
                 font-size: 14px;
               }
 
@@ -732,7 +817,8 @@ async function startServer() {
 
               .naay-modal__header {
                 padding: 16px 20px;
-                border-bottom: 1px solid var(--light-gray);
+                border-bottom: 1px solid var(--everyday);
+                background: var(--fresh);
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -743,8 +829,13 @@ async function startServer() {
                 border: none;
                 font-size: 18px;
                 cursor: pointer;
-                color: var(--secondary);
+                color: var(--white);
                 padding: 4px;
+                transition: color 0.2s ease;
+              }
+
+              .naay-modal__close:hover {
+                color: var(--everyday);
               }
 
               .naay-modal__body {
@@ -762,13 +853,13 @@ async function startServer() {
               }
 
               .naay-message--user {
-                background: var(--light-gray);
+                background: var(--everyday);
                 border-left: 3px solid var(--primary);
               }
 
               .naay-message--assistant {
                 background: var(--white);
-                border-left: 3px solid var(--success);
+                border-left: 3px solid var(--fresh);
               }
 
               .naay-message__header {
@@ -786,7 +877,7 @@ async function startServer() {
               .naay-message__content {
                 font-size: 14px;
                 line-height: 1.4;
-                color: var(--black);
+                color: var(--secondary);
               }
 
               /* Pagination */
@@ -826,6 +917,159 @@ async function startServer() {
                   text-align: center;
                 }
               }
+
+              /* Sales Chart */
+              .naay-chart-container {
+                background: rgba(255, 255, 255, 0.9);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(165, 148, 87, 0.1);
+                border-radius: 16px;
+                padding: 24px;
+                margin-bottom: 40px;
+                transition: all 0.3s ease;
+              }
+
+              .naay-chart-container:hover {
+                box-shadow: 0 8px 30px rgba(165, 148, 87, 0.1);
+                transform: translateY(-2px);
+              }
+
+              .naay-chart-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 24px;
+                padding-bottom: 16px;
+                border-bottom: 1px solid rgba(165, 148, 87, 0.1);
+              }
+
+              .naay-chart-title {
+                font-size: 18px;
+                font-weight: 600;
+                color: var(--secondary);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+              }
+
+              .naay-chart-period {
+                background: var(--everyday);
+                color: var(--secondary);
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 500;
+                border: 1px solid rgba(165, 148, 87, 0.2);
+              }
+
+              .naay-chart-canvas {
+                width: 100%;
+                height: 300px;
+                position: relative;
+              }
+
+              .naay-chart-loading {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 300px;
+                color: var(--primary);
+                font-size: 14px;
+                flex-direction: column;
+                gap: 12px;
+              }
+
+              .naay-chart-error {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 300px;
+                color: var(--danger);
+                font-size: 14px;
+                flex-direction: column;
+                gap: 12px;
+                text-align: center;
+              }
+
+              /* Chart bars */
+              .naay-chart-bars {
+                display: flex;
+                align-items: end;
+                justify-content: space-between;
+                height: 250px;
+                padding: 0 16px;
+                margin-bottom: 16px;
+              }
+
+              .naay-chart-bar {
+                flex: 1;
+                margin: 0 4px;
+                background: linear-gradient(135deg, var(--primary), var(--tertiary));
+                border-radius: 4px 4px 0 0;
+                min-height: 8px;
+                transition: all 0.3s ease;
+                position: relative;
+                cursor: pointer;
+              }
+
+              .naay-chart-bar:hover {
+                transform: scaleY(1.05);
+                filter: brightness(1.1);
+              }
+
+              .naay-chart-bar-value {
+                position: absolute;
+                top: -20px;
+                left: 50%;
+                transform: translateX(-50%);
+                font-size: 10px;
+                color: var(--secondary);
+                font-weight: 500;
+                background: rgba(255, 255, 255, 0.9);
+                padding: 2px 6px;
+                border-radius: 4px;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+              }
+
+              .naay-chart-bar:hover .naay-chart-bar-value {
+                opacity: 1;
+              }
+
+              .naay-chart-labels {
+                display: flex;
+                justify-content: space-between;
+                padding: 0 20px;
+                font-size: 11px;
+                color: var(--primary);
+              }
+
+              .naay-chart-summary {
+                display: flex;
+                justify-content: space-around;
+                margin-top: 20px;
+                padding-top: 16px;
+                border-top: 1px solid rgba(165, 148, 87, 0.1);
+              }
+
+              .naay-chart-metric {
+                text-align: center;
+              }
+
+              .naay-chart-metric-value {
+                font-size: 20px;
+                font-weight: 700;
+                color: var(--secondary);
+                line-height: 1;
+              }
+
+              .naay-chart-metric-label {
+                font-size: 11px;
+                color: var(--primary);
+                margin-top: 4px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+              }
             </style>
           </head>
           <body>
@@ -857,6 +1101,14 @@ async function startServer() {
                       <div class="naay-stat-card__label">Estado del Chat</div>
                     </div>
                   </div>
+                  
+                  <div class="naay-stat-card">
+                    <div class="naay-stat-card__icon">💰</div>
+                    <div class="naay-stat-card__content">
+                      <div class="naay-stat-card__number" id="sales-total">⏳</div>
+                      <div class="naay-stat-card__label">Ventas del Mes</div>
+                    </div>
+                  </div>
                 </section>
 
                 <!-- Quick Actions -->
@@ -884,6 +1136,63 @@ async function startServer() {
                   </div>
                 </section>
 
+                <!-- Sales Chart Section -->
+                <section class="naay-admin__actions">
+                  <h2 class="naay-admin__section-title">📈 Análisis de Ventas</h2>
+                  
+                  <div class="naay-chart-container">
+                    <div class="naay-chart-header">
+                      <div class="naay-chart-title">
+                        <span>💰</span>
+                        Ventas de los últimos 30 días
+                      </div>
+                      <div class="naay-chart-period">Últimos 30 días</div>
+                    </div>
+                    
+                    <div class="naay-chart-canvas">
+                      <div id="sales-chart-loading" class="naay-chart-loading">
+                        <div class="naay-loading"></div>
+                        <span>Cargando datos de ventas...</span>
+                      </div>
+                      
+                      <div id="sales-chart-error" class="naay-chart-error" style="display: none;">
+                        <span>⚠️</span>
+                        <div>
+                          <div>No se pudieron cargar los datos de ventas</div>
+                          <small>Verifica la conexión con Shopify</small>
+                        </div>
+                        <button class="naay-btn naay-btn--secondary" onclick="loadSalesData()">
+                          Reintentar
+                        </button>
+                      </div>
+                      
+                      <div id="sales-chart-content" style="display: none;">
+                        <div class="naay-chart-bars" id="sales-chart-bars">
+                          <!-- Chart bars will be generated dynamically -->
+                        </div>
+                        <div class="naay-chart-labels" id="sales-chart-labels">
+                          <!-- Chart labels will be generated dynamically -->
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="naay-chart-summary" id="sales-chart-summary" style="display: none;">
+                      <div class="naay-chart-metric">
+                        <div class="naay-chart-metric-value" id="sales-total-amount">$0</div>
+                        <div class="naay-chart-metric-label">Total Vendido</div>
+                      </div>
+                      <div class="naay-chart-metric">
+                        <div class="naay-chart-metric-value" id="sales-orders-count">0</div>
+                        <div class="naay-chart-metric-label">Órdenes</div>
+                      </div>
+                      <div class="naay-chart-metric">
+                        <div class="naay-chart-metric-value" id="sales-average-order">$0</div>
+                        <div class="naay-chart-metric-label">Ticket Promedio</div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
                 <!-- Conversations Section -->
                 <section class="naay-admin__actions">
                   <h2 class="naay-admin__section-title">💬 Conversaciones</h2>
@@ -894,7 +1203,7 @@ async function startServer() {
                     </div>
                     
                     <div id="conversations-list" class="naay-conversations-list">
-                      <!-- Las conversaciones se cargarán aquí dinámicamente -->
+                      <!-- Conversations will be loaded dynamically -->
                     </div>
                     
                     <div id="conversations-empty" class="naay-conversations-empty" style="display: none;">
@@ -945,6 +1254,7 @@ async function startServer() {
               document.addEventListener('DOMContentLoaded', async function() {
                 await loadStats();
                 await loadConversations();
+                await loadSalesData();
               });
 
               async function loadStats() {
@@ -955,6 +1265,7 @@ async function startServer() {
                     
                     document.getElementById('products-count').textContent = data.data?.products || '0';
                     document.getElementById('conversations-count').textContent = data.data?.conversations || '0';
+                    document.getElementById('sales-total').textContent = data.data?.salesTotal || '$0';
                   } else {
                     throw new Error('Failed to load stats');
                   }
@@ -962,6 +1273,7 @@ async function startServer() {
                   console.error('Error loading stats:', error);
                   document.getElementById('products-count').textContent = '0';
                   document.getElementById('conversations-count').textContent = '0';
+                  document.getElementById('sales-total').textContent = '$0';
                 }
               }
 
@@ -1019,10 +1331,16 @@ async function startServer() {
               const conversationsPerPage = 10;
 
               async function loadConversations(page = 1) {
+                console.log('Loading conversations for page:', page);
                 const loadingEl = document.getElementById('conversations-loading');
                 const listEl = document.getElementById('conversations-list');
                 const emptyEl = document.getElementById('conversations-empty');
                 const paginationEl = document.getElementById('conversations-pagination');
+
+                if (!loadingEl || !listEl || !emptyEl || !paginationEl) {
+                  console.error('Missing conversation elements:', { loadingEl, listEl, emptyEl, paginationEl });
+                  return;
+                }
 
                 try {
                   loadingEl.style.display = 'block';
@@ -1030,22 +1348,28 @@ async function startServer() {
                   emptyEl.style.display = 'none';
                   paginationEl.style.display = 'none';
 
-                  const response = await fetch(\`/api/admin-bypass/conversations?page=\${page}&limit=\${conversationsPerPage}\`);
+                  const url = \`/api/admin-bypass/conversations?page=\${page}&limit=\${conversationsPerPage}\`;
+                  console.log('Fetching conversations from:', url);
+                  const response = await fetch(url);
                   
                   if (!response.ok) {
+                    console.error('Response not ok:', response.status, response.statusText);
                     throw new Error('Failed to load conversations');
                   }
 
                   const data = await response.json();
+                  console.log('Conversations data received:', data);
                   const conversations = data.data || [];
 
                   loadingEl.style.display = 'none';
 
                   if (conversations.length === 0) {
+                    console.log('No conversations found, showing empty state');
                     emptyEl.style.display = 'block';
                     return;
                   }
 
+                  console.log('Rendering', conversations.length, 'conversations');
                   // Render conversations
                   listEl.innerHTML = conversations.map(conv => \`
                     <div class="naay-conversation-item" onclick="openConversation('\${conv.session_id}')">
@@ -1062,6 +1386,7 @@ async function startServer() {
                     </div>
                   \`).join('');
 
+                  console.log('Conversations HTML created, showing list');
                   listEl.style.display = 'block';
 
                   // Update pagination
@@ -1179,6 +1504,101 @@ async function startServer() {
                 const div = document.createElement('div');
                 div.textContent = text;
                 return div.innerHTML;
+              }
+
+              // Sales Data Functions
+              async function loadSalesData() {
+                const loadingEl = document.getElementById('sales-chart-loading');
+                const errorEl = document.getElementById('sales-chart-error');
+                const contentEl = document.getElementById('sales-chart-content');
+                const summaryEl = document.getElementById('sales-chart-summary');
+
+                // Show loading state
+                loadingEl.style.display = 'flex';
+                errorEl.style.display = 'none';
+                contentEl.style.display = 'none';
+                summaryEl.style.display = 'none';
+
+                try {
+                  const response = await fetch('/api/admin-bypass/sales/chart');
+                  if (!response.ok) {
+                    throw new Error('Failed to fetch sales data');
+                  }
+
+                  const data = await response.json();
+                  
+                  if (data.success && data.data) {
+                    renderSalesChart(data.data);
+                    loadingEl.style.display = 'none';
+                    contentEl.style.display = 'block';
+                    summaryEl.style.display = 'flex';
+                  } else {
+                    throw new Error(data.message || 'Invalid sales data');
+                  }
+                } catch (error) {
+                  console.error('Error loading sales data:', error);
+                  loadingEl.style.display = 'none';
+                  errorEl.style.display = 'flex';
+                }
+              }
+
+              function renderSalesChart(salesData) {
+                const barsContainer = document.getElementById('sales-chart-bars');
+                const labelsContainer = document.getElementById('sales-chart-labels');
+
+                // Clear existing content
+                barsContainer.innerHTML = '';
+                labelsContainer.innerHTML = '';
+
+                const { daily_sales, total_amount, total_orders, average_order } = salesData;
+                
+                if (!daily_sales || daily_sales.length === 0) {
+                  barsContainer.innerHTML = '<div style="text-align: center; color: var(--primary);">No hay datos de ventas disponibles</div>';
+                  return;
+                }
+
+                // Find max value for scaling
+                const maxSale = Math.max(...daily_sales.map(day => parseFloat(day.total_sales)));
+                
+                // Create bars
+                daily_sales.forEach(day => {
+                  const barHeight = maxSale > 0 ? (parseFloat(day.total_sales) / maxSale) * 240 : 0;
+                  const formattedAmount = new Intl.NumberFormat('es-MX', {
+                    style: 'currency',
+                    currency: 'MXN'
+                  }).format(parseFloat(day.total_sales));
+
+                  const bar = document.createElement('div');
+                  bar.className = 'naay-chart-bar';
+                  bar.style.height = barHeight + 'px';
+                  bar.innerHTML = \`<div class="naay-chart-bar-value">\${formattedAmount}</div>\`;
+                  
+                  barsContainer.appendChild(bar);
+                });
+
+                // Create labels (showing every 5 days to avoid overcrowding)
+                daily_sales.forEach((day, index) => {
+                  const label = document.createElement('div');
+                  const date = new Date(day.date);
+                  
+                  if (index % 5 === 0 || index === daily_sales.length - 1) {
+                    label.textContent = date.getDate() + '/' + (date.getMonth() + 1);
+                  } else {
+                    label.textContent = '';
+                  }
+                  
+                  labelsContainer.appendChild(label);
+                });
+
+                // Update summary metrics
+                const formatCurrency = (amount) => new Intl.NumberFormat('es-MX', {
+                  style: 'currency',
+                  currency: 'MXN'
+                }).format(amount);
+
+                document.getElementById('sales-total-amount').textContent = formatCurrency(total_amount);
+                document.getElementById('sales-orders-count').textContent = total_orders;
+                document.getElementById('sales-average-order').textContent = formatCurrency(average_order);
               }
             </script>
           </body>
