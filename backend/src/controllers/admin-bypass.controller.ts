@@ -537,30 +537,26 @@ router.get(
   '/stats',
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      logger.info('Admin bypass: Getting stats');
+      const { shop } = req.query;
 
-      // Get conversations count from chat_messages by counting unique session_ids
-      const { data: messagesData, error: messagesError } = await (
+      if (!shop) {
+        return res.status(400).json({
+          success: false,
+          error: 'Shop parameter required',
+        });
+      }
+
+      logger.info('Admin bypass: Getting stats', { shop });
+
+      // Get conversations count from chat_sessions (no filter)
+      const { count: conversationCount, error: messagesError } = await (
         supabaseService as any
       ).serviceClient
-        .from('chat_messages')
-        .select('session_id');
-
-      let conversationCount = 0;
+        .from('chat_sessions')
+        .select('*', { count: 'exact', head: true });
 
       if (messagesError) {
-        logger.error('Error fetching chat messages for stats:', messagesError);
-        // Use demo data
-        conversationCount = 2;
-      } else if (messagesData && messagesData.length > 0) {
-        // Count unique session_ids
-        const uniqueSessionIds = new Set(
-          messagesData.map((msg: any) => msg.session_id)
-        );
-        conversationCount = uniqueSessionIds.size;
-      } else {
-        // No data, use demo count
-        conversationCount = 2;
+        logger.error('Error fetching chat sessions count for stats:', messagesError);
       }
 
       // Get other stats
@@ -568,12 +564,12 @@ router.get(
         // Products count
         (supabaseService as any).serviceClient
           .from('products')
-          .select('id', { count: 'exact' }),
+          .select('*', { count: 'exact', head: true }),
 
         // Webhooks count
         (supabaseService as any).serviceClient
           .from('webhook_events')
-          .select('id', { count: 'exact' }),
+          .select('*', { count: 'exact', head: true }),
       ]);
 
       // Get sales total for the current month
@@ -583,6 +579,7 @@ router.get(
         const shopsQuery = await (supabaseService as any).serviceClient
           .from('shops')
           .select('shop_domain, access_token')
+          .eq('shop_domain', shop)
           .limit(1)
           .single();
 
@@ -620,7 +617,7 @@ router.get(
       }
 
       const stats = {
-        conversations: conversationCount,
+        conversations: conversationCount || 0,
         products:
           productsResult.status === 'fulfilled'
             ? productsResult.value.count || 0
@@ -645,11 +642,11 @@ router.get(
       res.json({
         success: true,
         data: {
-          conversations: 2,
+          conversations: 0,
           products: 0,
           webhooks: 0,
-          salesTotal: '$32,450.00',
-          chatStatus: 'Active',
+          salesTotal: '$0.00',
+          chatStatus: 'Error',
         },
       });
     }
@@ -662,7 +659,17 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { shop, limit = 10, page = 1 } = req.query;
-      const offset = (parseInt(page as string) - 1) * parseInt(limit as string);
+
+      if (!shop) {
+        return res.status(400).json({
+          success: false,
+          error: 'Shop parameter required',
+        });
+      }
+
+      const pageNum = parseInt(page as string);
+      const limitNum = parseInt(limit as string);
+      const offset = (pageNum - 1) * limitNum;
 
       logger.info('Admin bypass: Getting conversations', {
         shop,
@@ -671,151 +678,79 @@ router.get(
         offset,
       });
 
-      // Query to get all messages and group by session_id
-      const { data: messages, error } = await (
+      // 1. Get sessions first (paginated)
+      const { data: sessions, count: totalSessions, error: sessionsError } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('chat_sessions')
+        .select('*', { count: 'exact' })
+        .order('last_activity', { ascending: false })
+        .range(offset, offset + limitNum - 1);
+
+      if (sessionsError) {
+        logger.error('Error fetching chat sessions:', sessionsError);
+        throw new Error('Failed to fetch conversations');
+      }
+
+      if (!sessions || sessions.length === 0) {
+        return res.json({
+          success: true,
+          data: [],
+          pagination: {
+            total: 0,
+            limit: limitNum,
+            totalPages: 0,
+            currentPage: pageNum,
+          },
+        });
+      }
+
+      // 2. Get messages for these sessions to show preview
+      const sessionIds = sessions.map(s => s.id);
+
+      // We need the last message for each session
+      // This is a bit tricky with Supabase/Postgres without a lateral join or window function
+      // For now, we'll fetch the last few messages for these sessions and process in memory
+      // A better approach would be a database view or function
+
+      const { data: messages, error: messagesError } = await (
         supabaseService as any
       ).serviceClient
         .from('chat_messages')
-        .select('id, session_id, role, content, timestamp')
+        .select('session_id, content, timestamp, role')
+        .in('session_id', sessionIds)
         .order('timestamp', { ascending: false });
 
-      if (error) {
-        logger.error('Error fetching conversations:', error);
-        // Return mock data if there's an error
-        return res.json({
-          success: true,
-          data: [
-            {
-              session_id: 'demo-session-1',
-              message_count: 5,
-              last_activity: new Date().toISOString(),
-              last_message: 'Hola, ¿puedes ayudarme a encontrar un producto?',
-            },
-            {
-              session_id: 'demo-session-2',
-              message_count: 3,
-              last_activity: new Date(Date.now() - 86400000).toISOString(),
-              last_message: '¿Cuánto cuesta el envío?',
-            },
-          ],
-          pagination: {
-            total: 2,
-            limit: parseInt(limit as string),
-            totalPages: 1,
-            currentPage: 1,
-          },
-        });
+      if (messagesError) {
+        logger.error('Error fetching chat messages:', messagesError);
+        // Continue with sessions only if messages fail
       }
 
-      logger.info(
-        `Found ${messages?.length || 0} messages in chat_messages table`
-      );
+      // 3. Combine data
+      const conversationsList = sessions.map(session => {
+        // Find messages for this session
+        const sessionMessages = messages?.filter((m: any) => m.session_id === session.id) || [];
 
-      // If no messages, return mock data
-      if (!messages || messages.length === 0) {
-        return res.json({
-          success: true,
-          data: [
-            {
-              session_id: 'demo-session-1',
-              message_count: 5,
-              last_activity: new Date().toISOString(),
-              last_message: 'Hola, ¿puedes ayudarme a encontrar un producto?',
-            },
-            {
-              session_id: 'demo-session-2',
-              message_count: 3,
-              last_activity: new Date(Date.now() - 86400000).toISOString(),
-              last_message: '¿Cuánto cuesta el envío?',
-            },
-          ],
-          pagination: {
-            total: 2,
-            limit: parseInt(limit as string),
-            totalPages: 1,
-            currentPage: 1,
-          },
-        });
-      }
+        // Get last message (first in the array because we ordered by timestamp desc)
+        const lastMessage = sessionMessages.length > 0 ? sessionMessages[0] : null;
 
-      // Group messages by session_id
-      const sessionGroups: { [key: string]: any } = {};
-
-      messages.forEach((message: any) => {
-        const sessionId = message.session_id;
-        if (!sessionGroups[sessionId]) {
-          sessionGroups[sessionId] = {
-            session_id: sessionId,
-            messages: [],
-            first_message_timestamp: message.timestamp,
-            last_message_timestamp: message.timestamp,
-            message_count: 0,
-          };
-        }
-
-        sessionGroups[sessionId].messages.push({
-          id: message.id,
-          role: message.role,
-          content: message.content,
-          timestamp: message.timestamp,
-        });
-
-        sessionGroups[sessionId].message_count++;
-
-        // Update timestamps
-        if (
-          new Date(message.timestamp) <
-          new Date(sessionGroups[sessionId].first_message_timestamp)
-        ) {
-          sessionGroups[sessionId].first_message_timestamp = message.timestamp;
-        }
-        if (
-          new Date(message.timestamp) >
-          new Date(sessionGroups[sessionId].last_message_timestamp)
-        ) {
-          sessionGroups[sessionId].last_message_timestamp = message.timestamp;
-        }
+        return {
+          session_id: session.id,
+          message_count: sessionMessages.length, // This is just count of fetched messages, ideally we'd have a count column on session
+          last_activity: session.last_activity,
+          last_message: lastMessage ? lastMessage.content : 'Nueva conversación',
+          status: session.status
+        };
       });
-
-      // Convert to array, sort by latest activity, and apply pagination
-      const conversationsList = Object.values(sessionGroups)
-        .sort(
-          (a: any, b: any) =>
-            new Date(b.last_message_timestamp).getTime() -
-            new Date(a.last_message_timestamp).getTime()
-        )
-        .slice(offset, offset + parseInt(limit as string))
-        .map((conversation: any) => ({
-          ...conversation,
-          // Sort messages chronologically within each conversation
-          messages: conversation.messages.sort(
-            (a: any, b: any) =>
-              new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-          ),
-        }));
-
-      // Get total count
-      const totalConversations = Object.keys(sessionGroups).length;
 
       res.json({
         success: true,
-        data: conversationsList.map((conv: any) => ({
-          session_id: conv.session_id,
-          message_count: conv.message_count,
-          last_activity: conv.last_message_timestamp,
-          last_message:
-            conv.messages[conv.messages.length - 1]?.content?.substring(
-              0,
-              100
-            ) || 'Sin mensajes',
-        })),
+        data: conversationsList,
         pagination: {
-          total: totalConversations,
-          limit: parseInt(limit as string),
-          offset: offset,
-          hasMore: offset + parseInt(limit as string) < totalConversations,
-          totalPages: Math.ceil(totalConversations / parseInt(limit as string)),
-          currentPage: Math.floor(offset / parseInt(limit as string)) + 1,
+          total: totalSessions || 0,
+          limit: limitNum,
+          totalPages: Math.ceil((totalSessions || 0) / limitNum),
+          currentPage: pageNum,
         },
       });
     } catch (error) {
@@ -839,61 +774,61 @@ router.get(
         const demoMessages =
           sessionId === 'demo-session-1'
             ? [
-                {
-                  id: 'demo-1',
-                  role: 'client',
-                  content: 'Hola, ¿puedes ayudarme a encontrar un producto?',
-                  timestamp: new Date(Date.now() - 3600000).toISOString(),
-                },
-                {
-                  id: 'demo-2',
-                  role: 'agent',
-                  content:
-                    '¡Hola! Claro, estaré encantado de ayudarte. ¿Qué tipo de producto estás buscando?',
-                  timestamp: new Date(Date.now() - 3500000).toISOString(),
-                },
-                {
-                  id: 'demo-3',
-                  role: 'client',
-                  content:
-                    'Busco una chaqueta para el invierno, algo que sea abrigado pero elegante.',
-                  timestamp: new Date(Date.now() - 3000000).toISOString(),
-                },
-                {
-                  id: 'demo-4',
-                  role: 'agent',
-                  content:
-                    'Perfecto. Tenemos una excelente selección de chaquetas de invierno. Te recomiendo nuestra chaqueta de lana merino que es muy elegante y abrigada.',
-                  timestamp: new Date(Date.now() - 2500000).toISOString(),
-                },
-                {
-                  id: 'demo-5',
-                  role: 'client',
-                  content: '¿Podrías mostrarme algunas opciones?',
-                  timestamp: new Date(Date.now() - 2000000).toISOString(),
-                },
-              ]
+              {
+                id: 'demo-1',
+                role: 'client',
+                content: 'Hola, ¿puedes ayudarme a encontrar un producto?',
+                timestamp: new Date(Date.now() - 3600000).toISOString(),
+              },
+              {
+                id: 'demo-2',
+                role: 'agent',
+                content:
+                  '¡Hola! Claro, estaré encantado de ayudarte. ¿Qué tipo de producto estás buscando?',
+                timestamp: new Date(Date.now() - 3500000).toISOString(),
+              },
+              {
+                id: 'demo-3',
+                role: 'client',
+                content:
+                  'Busco una chaqueta para el invierno, algo que sea abrigado pero elegante.',
+                timestamp: new Date(Date.now() - 3000000).toISOString(),
+              },
+              {
+                id: 'demo-4',
+                role: 'agent',
+                content:
+                  'Perfecto. Tenemos una excelente selección de chaquetas de invierno. Te recomiendo nuestra chaqueta de lana merino que es muy elegante y abrigada.',
+                timestamp: new Date(Date.now() - 2500000).toISOString(),
+              },
+              {
+                id: 'demo-5',
+                role: 'client',
+                content: '¿Podrías mostrarme algunas opciones?',
+                timestamp: new Date(Date.now() - 2000000).toISOString(),
+              },
+            ]
             : [
-                {
-                  id: 'demo-6',
-                  role: 'client',
-                  content: '¿Cuánto cuesta el envío?',
-                  timestamp: new Date(Date.now() - 86400000).toISOString(),
-                },
-                {
-                  id: 'demo-7',
-                  role: 'agent',
-                  content:
-                    'El envío estándar es gratuito para compras superiores a $50. Para envío express (1-2 días) el costo es de $15.',
-                  timestamp: new Date(Date.now() - 86300000).toISOString(),
-                },
-                {
-                  id: 'demo-8',
-                  role: 'client',
-                  content: 'Perfecto, gracias por la información.',
-                  timestamp: new Date(Date.now() - 86200000).toISOString(),
-                },
-              ];
+              {
+                id: 'demo-6',
+                role: 'client',
+                content: '¿Cuánto cuesta el envío?',
+                timestamp: new Date(Date.now() - 86400000).toISOString(),
+              },
+              {
+                id: 'demo-7',
+                role: 'agent',
+                content:
+                  'El envío estándar es gratuito para compras superiores a $50. Para envío express (1-2 días) el costo es de $15.',
+                timestamp: new Date(Date.now() - 86300000).toISOString(),
+              },
+              {
+                id: 'demo-8',
+                role: 'client',
+                content: 'Perfecto, gracias por la información.',
+                timestamp: new Date(Date.now() - 86200000).toISOString(),
+              },
+            ];
 
         return res.json({
           success: true,
