@@ -365,7 +365,6 @@ router.post(
   }
 );
 
-
 // Get recommended products stats - bypass version
 router.get(
   '/analytics/products',
@@ -548,14 +547,16 @@ router.get(
         .select('session_id');
 
       let conversationCount = 0;
-      
+
       if (messagesError) {
         logger.error('Error fetching chat messages for stats:', messagesError);
         // Use demo data
         conversationCount = 2;
       } else if (messagesData && messagesData.length > 0) {
         // Count unique session_ids
-        const uniqueSessionIds = new Set(messagesData.map((msg: any) => msg.session_id));
+        const uniqueSessionIds = new Set(
+          messagesData.map((msg: any) => msg.session_id)
+        );
         conversationCount = uniqueSessionIds.size;
       } else {
         // No data, use demo count
@@ -643,25 +644,27 @@ router.get(
               session_id: 'demo-session-1',
               message_count: 5,
               last_activity: new Date().toISOString(),
-              last_message: 'Hola, ¿puedes ayudarme a encontrar un producto?'
+              last_message: 'Hola, ¿puedes ayudarme a encontrar un producto?',
             },
             {
-              session_id: 'demo-session-2', 
+              session_id: 'demo-session-2',
               message_count: 3,
               last_activity: new Date(Date.now() - 86400000).toISOString(),
-              last_message: '¿Cuánto cuesta el envío?'
-            }
+              last_message: '¿Cuánto cuesta el envío?',
+            },
           ],
           pagination: {
             total: 2,
             limit: parseInt(limit as string),
             totalPages: 1,
-            currentPage: 1
-          }
+            currentPage: 1,
+          },
         });
       }
 
-      logger.info(`Found ${messages?.length || 0} messages in chat_messages table`);
+      logger.info(
+        `Found ${messages?.length || 0} messages in chat_messages table`
+      );
 
       // If no messages, return mock data
       if (!messages || messages.length === 0) {
@@ -672,21 +675,21 @@ router.get(
               session_id: 'demo-session-1',
               message_count: 5,
               last_activity: new Date().toISOString(),
-              last_message: 'Hola, ¿puedes ayudarme a encontrar un producto?'
+              last_message: 'Hola, ¿puedes ayudarme a encontrar un producto?',
             },
             {
               session_id: 'demo-session-2',
               message_count: 3,
-              last_activity: new Date(Date.now() - 86400000).toISOString(), 
-              last_message: '¿Cuánto cuesta el envío?'
-            }
+              last_activity: new Date(Date.now() - 86400000).toISOString(),
+              last_message: '¿Cuánto cuesta el envío?',
+            },
           ],
           pagination: {
             total: 2,
             limit: parseInt(limit as string),
             totalPages: 1,
-            currentPage: 1
-          }
+            currentPage: 1,
+          },
         });
       }
 
@@ -755,7 +758,11 @@ router.get(
           session_id: conv.session_id,
           message_count: conv.message_count,
           last_activity: conv.last_message_timestamp,
-          last_message: conv.messages[conv.messages.length - 1]?.content?.substring(0, 100) || 'Sin mensajes'
+          last_message:
+            conv.messages[conv.messages.length - 1]?.content?.substring(
+              0,
+              100
+            ) || 'Sin mensajes',
         })),
         pagination: {
           total: totalConversations,
@@ -765,8 +772,10 @@ router.get(
             parseInt(offset as string) + parseInt(limit as string) <
             totalConversations,
           totalPages: Math.ceil(totalConversations / parseInt(limit as string)),
-          currentPage: Math.floor(parseInt(offset as string) / parseInt(limit as string)) + 1
-        }
+          currentPage:
+            Math.floor(parseInt(offset as string) / parseInt(limit as string)) +
+            1,
+        },
       });
     } catch (error) {
       logger.error('Admin bypass conversations error:', error);
@@ -786,57 +795,64 @@ router.get(
 
       // Handle demo sessions
       if (sessionId.startsWith('demo-session-')) {
-        const demoMessages = sessionId === 'demo-session-1' ? [
-          {
-            id: 'demo-1',
-            role: 'client',
-            content: 'Hola, ¿puedes ayudarme a encontrar un producto?',
-            timestamp: new Date(Date.now() - 3600000).toISOString()
-          },
-          {
-            id: 'demo-2', 
-            role: 'agent',
-            content: '¡Hola! Claro, estaré encantado de ayudarte. ¿Qué tipo de producto estás buscando?',
-            timestamp: new Date(Date.now() - 3500000).toISOString()
-          },
-          {
-            id: 'demo-3',
-            role: 'client',
-            content: 'Busco una chaqueta para el invierno, algo que sea abrigado pero elegante.',
-            timestamp: new Date(Date.now() - 3000000).toISOString()
-          },
-          {
-            id: 'demo-4',
-            role: 'agent', 
-            content: 'Perfecto. Tenemos una excelente selección de chaquetas de invierno. Te recomiendo nuestra chaqueta de lana merino que es muy elegante y abrigada.',
-            timestamp: new Date(Date.now() - 2500000).toISOString()
-          },
-          {
-            id: 'demo-5',
-            role: 'client',
-            content: '¿Podrías mostrarme algunas opciones?',
-            timestamp: new Date(Date.now() - 2000000).toISOString()
-          }
-        ] : [
-          {
-            id: 'demo-6',
-            role: 'client',
-            content: '¿Cuánto cuesta el envío?',
-            timestamp: new Date(Date.now() - 86400000).toISOString()
-          },
-          {
-            id: 'demo-7',
-            role: 'agent',
-            content: 'El envío estándar es gratuito para compras superiores a $50. Para envío express (1-2 días) el costo es de $15.',
-            timestamp: new Date(Date.now() - 86300000).toISOString()
-          },
-          {
-            id: 'demo-8',
-            role: 'client',
-            content: 'Perfecto, gracias por la información.',
-            timestamp: new Date(Date.now() - 86200000).toISOString()
-          }
-        ];
+        const demoMessages =
+          sessionId === 'demo-session-1'
+            ? [
+                {
+                  id: 'demo-1',
+                  role: 'client',
+                  content: 'Hola, ¿puedes ayudarme a encontrar un producto?',
+                  timestamp: new Date(Date.now() - 3600000).toISOString(),
+                },
+                {
+                  id: 'demo-2',
+                  role: 'agent',
+                  content:
+                    '¡Hola! Claro, estaré encantado de ayudarte. ¿Qué tipo de producto estás buscando?',
+                  timestamp: new Date(Date.now() - 3500000).toISOString(),
+                },
+                {
+                  id: 'demo-3',
+                  role: 'client',
+                  content:
+                    'Busco una chaqueta para el invierno, algo que sea abrigado pero elegante.',
+                  timestamp: new Date(Date.now() - 3000000).toISOString(),
+                },
+                {
+                  id: 'demo-4',
+                  role: 'agent',
+                  content:
+                    'Perfecto. Tenemos una excelente selección de chaquetas de invierno. Te recomiendo nuestra chaqueta de lana merino que es muy elegante y abrigada.',
+                  timestamp: new Date(Date.now() - 2500000).toISOString(),
+                },
+                {
+                  id: 'demo-5',
+                  role: 'client',
+                  content: '¿Podrías mostrarme algunas opciones?',
+                  timestamp: new Date(Date.now() - 2000000).toISOString(),
+                },
+              ]
+            : [
+                {
+                  id: 'demo-6',
+                  role: 'client',
+                  content: '¿Cuánto cuesta el envío?',
+                  timestamp: new Date(Date.now() - 86400000).toISOString(),
+                },
+                {
+                  id: 'demo-7',
+                  role: 'agent',
+                  content:
+                    'El envío estándar es gratuito para compras superiores a $50. Para envío express (1-2 días) el costo es de $15.',
+                  timestamp: new Date(Date.now() - 86300000).toISOString(),
+                },
+                {
+                  id: 'demo-8',
+                  role: 'client',
+                  content: 'Perfecto, gracias por la información.',
+                  timestamp: new Date(Date.now() - 86200000).toISOString(),
+                },
+              ];
 
         return res.json({
           success: true,
