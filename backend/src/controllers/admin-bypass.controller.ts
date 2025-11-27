@@ -587,10 +587,7 @@ router.get(
           .single();
 
         if (shopsQuery.data) {
-          const shopifyService = new ShopifyService(
-            shopsQuery.data.shop_domain,
-            shopsQuery.data.access_token
-          );
+          const shopifyService = new ShopifyService();
 
           // Get current month orders
           const startOfMonth = new Date();
@@ -600,6 +597,8 @@ router.get(
           const endOfMonth = new Date();
 
           const orders = await shopifyService.getOrdersByDateRange(
+            shopsQuery.data.shop_domain,
+            shopsQuery.data.access_token,
             startOfMonth.toISOString(),
             endOfMonth.toISOString()
           );
@@ -968,10 +967,7 @@ router.get(
         });
       }
 
-      const shopifyService = new ShopifyService(
-        shopsQuery.data.shop_domain,
-        shopsQuery.data.access_token
-      );
+      const shopifyService = new ShopifyService();
 
       // Get sales data from last 30 days
       const endDate = new Date();
@@ -981,6 +977,8 @@ router.get(
       try {
         // Query orders from Shopify
         const orders = await shopifyService.getOrdersByDateRange(
+          shopsQuery.data.shop_domain,
+          shopsQuery.data.access_token,
           startDate.toISOString(),
           endDate.toISOString()
         );

@@ -1586,17 +1586,15 @@ export class ShopifyService {
    * Get orders within a date range using Admin API
    */
   async getOrdersByDateRange(
+    shop: string,
+    accessToken: string,
     startDate: string,
     endDate: string
   ): Promise<any[]> {
     try {
-      logger.info('Fetching orders from Shopify', { startDate, endDate });
+      logger.info('Fetching orders from Shopify', { shop, startDate, endDate });
 
-      const client = adminApiClient({
-        storeDomain: this.shopDomain,
-        accessToken: this.accessToken,
-        apiVersion: '2024-01',
-      });
+      const client = this.getAdminClient(shop, accessToken);
 
       const query = `
         query getOrders($query: String!, $first: Int!) {
