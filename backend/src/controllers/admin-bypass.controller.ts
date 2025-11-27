@@ -767,14 +767,10 @@ router.get(
         pagination: {
           total: totalConversations,
           limit: parseInt(limit as string),
-          offset: parseInt(offset as string),
-          hasMore:
-            parseInt(offset as string) + parseInt(limit as string) <
-            totalConversations,
+          offset: offset,
+          hasMore: offset + parseInt(limit as string) < totalConversations,
           totalPages: Math.ceil(totalConversations / parseInt(limit as string)),
-          currentPage:
-            Math.floor(parseInt(offset as string) / parseInt(limit as string)) +
-            1,
+          currentPage: Math.floor(offset / parseInt(limit as string)) + 1,
         },
       });
     } catch (error) {
