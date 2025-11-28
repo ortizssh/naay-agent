@@ -567,74 +567,98 @@ router.get(
         );
       }
 
-      // Get other stats
-      const [productsResult, webhooksResult] = await Promise.allSettled([
-        // Products count
-        (supabaseService as any).serviceClient
-          .from('products')
-          .select('*', { count: 'exact', head: true }),
+      // Get recommended products from chat messages
+      let recommendedProducts = 0;
+      let totalRecommendations = 0;
 
-        // Webhooks count
-        (supabaseService as any).serviceClient
-          .from('webhook_events')
-          .select('*', { count: 'exact', head: true }),
-      ]);
-
-      // Get sales total for the current month
-      let salesTotal = '$0';
       try {
-        // Get shop from database
-        const shopsQuery = await (supabaseService as any).serviceClient
-          .from('shops')
-          .select('shop_domain, access_token')
-          .eq('shop_domain', shop)
-          .limit(1)
-          .single();
+        const { data: allMessages, error: messageAnalysisError } = await (
+          supabaseService as any
+        ).serviceClient
+          .from('chat_messages')
+          .select('content, metadata')
+          .eq('role', 'agent')
+          .not('content', 'is', null);
 
-        if (shopsQuery.data) {
-          const shopifyService = new ShopifyService();
+        if (!messageAnalysisError && allMessages) {
+          const uniqueProducts = new Set();
 
-          // Get current month orders
-          const startOfMonth = new Date();
-          startOfMonth.setDate(1);
-          startOfMonth.setHours(0, 0, 0, 0);
+          allMessages.forEach((message: any) => {
+            try {
+              // Check if content contains product references in JSON format
+              const content = message.content;
 
-          const endOfMonth = new Date();
+              // Look for product IDs or JSON objects in content
+              const productIdMatches = content.match(
+                /product[_-]?id["\s]*:?\s*["']?(\w+)["']?/gi
+              );
+              const jsonMatches = content.match(/\{[^}]*"id"[^}]*\}/g);
 
-          const orders = await shopifyService.getOrdersByDateRange(
-            shopsQuery.data.shop_domain,
-            shopsQuery.data.access_token,
-            startOfMonth.toISOString(),
-            endOfMonth.toISOString()
-          );
+              if (productIdMatches) {
+                productIdMatches.forEach((match: string) => {
+                  const idMatch = match.match(/["']?(\w+)["']?$/);
+                  if (idMatch && idMatch[1]) {
+                    uniqueProducts.add(idMatch[1]);
+                    totalRecommendations++;
+                  }
+                });
+              }
 
-          const totalAmount = orders.reduce(
-            (sum, order) => sum + parseFloat(order.total_price || '0'),
-            0
-          );
+              if (jsonMatches) {
+                jsonMatches.forEach((jsonStr: string) => {
+                  try {
+                    const obj = JSON.parse(jsonStr);
+                    if (obj.id) {
+                      uniqueProducts.add(obj.id);
+                      totalRecommendations++;
+                    }
+                  } catch (e) {
+                    // Ignore invalid JSON
+                  }
+                });
+              }
 
-          salesTotal = new Intl.NumberFormat('es-MX', {
-            style: 'currency',
-            currency: 'MXN',
-          }).format(totalAmount);
+              // Also check metadata if available
+              if (message.metadata && typeof message.metadata === 'object') {
+                const metadata = message.metadata;
+                if (metadata.recommended_products) {
+                  metadata.recommended_products.forEach((product: any) => {
+                    if (product.id) {
+                      uniqueProducts.add(product.id);
+                      totalRecommendations++;
+                    }
+                  });
+                }
+                if (metadata.products) {
+                  metadata.products.forEach((product: any) => {
+                    if (product.id) {
+                      uniqueProducts.add(product.id);
+                      totalRecommendations++;
+                    }
+                  });
+                }
+              }
+            } catch (error) {
+              // Ignore parsing errors for individual messages
+            }
+          });
+
+          recommendedProducts = uniqueProducts.size;
+
+          logger.info('Product recommendation stats:', {
+            uniqueProducts: recommendedProducts,
+            totalRecommendations: totalRecommendations,
+            messagesAnalyzed: allMessages.length,
+          });
         }
-      } catch (salesError) {
-        logger.warn('Could not fetch sales data for stats:', salesError);
-        // Use demo sales data
-        salesTotal = '$32,450.00';
+      } catch (error) {
+        logger.error('Error analyzing product recommendations:', error);
       }
 
       const stats = {
         conversations: conversationCount || 0,
-        products:
-          productsResult.status === 'fulfilled'
-            ? productsResult.value.count || 0
-            : 0,
-        webhooks:
-          webhooksResult.status === 'fulfilled'
-            ? webhooksResult.value.count || 0
-            : 0,
-        salesTotal: salesTotal,
+        recommendedProducts: recommendedProducts,
+        totalRecommendations: totalRecommendations,
         chatStatus: 'Active',
       };
 
@@ -651,9 +675,8 @@ router.get(
         success: true,
         data: {
           conversations: 0,
-          products: 0,
-          webhooks: 0,
-          salesTotal: '$0.00',
+          recommendedProducts: 0,
+          totalRecommendations: 0,
           chatStatus: 'Error',
         },
       });
