@@ -264,7 +264,10 @@
                 currentShop = savedShop;
                 document.getElementById('shop-name').textContent = currentShop;
             } else {
-                showError('No se ha detectado ninguna tienda. Por favor, abre esta aplicación desde el panel de Shopify.');
+                // Hardcode naaycl shop as default
+                currentShop = 'naaycl.myshopify.com';
+                document.getElementById('shop-name').textContent = currentShop;
+                localStorage.setItem('naay_shop', currentShop);
             }
         }
 
