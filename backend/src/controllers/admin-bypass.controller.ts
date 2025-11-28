@@ -926,7 +926,7 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { shop, days = 30 } = req.query;
-      
+
       if (!shop) {
         return res.status(400).json({
           success: false,
@@ -969,7 +969,7 @@ router.get(
         if (!chatError && chatMessages) {
           // Group by session and date to count unique conversations per day
           const sessionsByDate = new Map();
-          
+
           chatMessages.forEach((msg: any) => {
             const dateKey = new Date(msg.timestamp).toISOString().split('T')[0];
             if (!sessionsByDate.has(dateKey)) {
@@ -993,10 +993,10 @@ router.get(
       try {
         // Get store credentials
         const store = await supabaseService.getStore(shop as string);
-        
+
         if (store) {
           const shopifyService = new ShopifyService();
-          
+
           try {
             // Query orders from Shopify
             const orders = await shopifyService.getOrdersByDateRange(
@@ -1019,10 +1019,9 @@ router.get(
                 dayData.orders_count += 1;
               }
             });
-
           } catch (shopifyError) {
             logger.error('Error fetching orders from Shopify:', shopifyError);
-            
+
             // Generate demo sales data when Shopify is unavailable
             const demoSales = generateDemoSalesData();
             demoSales.daily_sales.forEach((daySale: any) => {
@@ -1044,13 +1043,22 @@ router.get(
       );
 
       // Calculate totals
-      const totalConversations = chartData.reduce((sum, day) => sum + day.conversations, 0);
+      const totalConversations = chartData.reduce(
+        (sum, day) => sum + day.conversations,
+        0
+      );
       const totalSales = chartData.reduce((sum, day) => sum + day.sales, 0);
-      const totalOrders = chartData.reduce((sum, day) => sum + day.orders_count, 0);
+      const totalOrders = chartData.reduce(
+        (sum, day) => sum + day.orders_count,
+        0
+      );
 
       // If no real data, use demo data for better visualization
       if (totalConversations === 0 && totalSales === 0) {
-        logger.info('No real data found, using demo analytics data', { shop, daysCount });
+        logger.info('No real data found, using demo analytics data', {
+          shop,
+          daysCount,
+        });
         const demoData = generateDemoAnalyticsData(daysCount);
         return res.json({
           success: true,
@@ -1073,9 +1081,11 @@ router.get(
       });
     } catch (error) {
       logger.error('Admin bypass analytics chart error:', error);
-      
+
       // Return demo data on error
-      const demoData = generateDemoAnalyticsData(parseInt(req.query.days as string) || 30);
+      const demoData = generateDemoAnalyticsData(
+        parseInt(req.query.days as string) || 30
+      );
       res.json({
         success: true,
         data: demoData,
@@ -1213,16 +1223,19 @@ function generateDemoAnalyticsData(days: number = 30) {
 
     // Generate random data with realistic patterns
     const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-    
+
     // Conversations: more on weekdays, fewer on weekends
     const baseConversations = isWeekend ? 2 : 8;
-    const conversations = Math.max(0, baseConversations + Math.floor(Math.random() * 5) - 2);
-    
+    const conversations = Math.max(
+      0,
+      baseConversations + Math.floor(Math.random() * 5) - 2
+    );
+
     // Sales: higher on weekends typically
     const baseSales = isWeekend ? 800 : 1200;
     const salesVariation = (Math.random() - 0.5) * 600;
     const sales = Math.max(0, baseSales + salesVariation);
-    
+
     const orders = Math.floor(sales / 150) + Math.floor(Math.random() * 3);
 
     totalConversations += conversations;
