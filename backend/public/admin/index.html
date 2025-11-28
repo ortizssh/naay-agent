@@ -603,6 +603,18 @@
     </div>
 
     <script>
+        // API Configuration
+        const getApiBaseUrl = () => {
+            // For development, use localhost
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                return 'http://localhost:3000';
+            }
+            // For production, use current origin
+            return window.location.origin;
+        };
+        
+        const API_BASE_URL = getApiBaseUrl();
+
         // State
         let currentPage = 1;
         let currentShop = '';
@@ -644,7 +656,7 @@
 
         async function loadStats() {
             try {
-                const response = await fetch(`/api/admin-bypass/stats?shop=${currentShop}`);
+                const response = await fetch(`${API_BASE_URL}/api/admin-bypass/stats?shop=${currentShop}`);
                 const data = await response.json();
 
                 if (data.success) {
@@ -671,7 +683,7 @@
             container.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
             
             try {
-                const response = await fetch(`/api/admin-bypass/conversations?shop=${currentShop}&page=${currentPage}&limit=${limit}`);
+                const response = await fetch(`${API_BASE_URL}/api/admin-bypass/conversations?shop=${currentShop}&page=${currentPage}&limit=${limit}`);
                 const data = await response.json();
 
                 if (data.success) {
@@ -778,7 +790,7 @@
             
             try {
                 // Fetch conversation details
-                const response = await fetch(`/api/admin-bypass/conversations/${sessionId}`);
+                const response = await fetch(`${API_BASE_URL}/api/admin-bypass/conversations/${sessionId}`);
                 const data = await response.json();
                 
                 if (data.success) {
@@ -977,7 +989,7 @@
         async function loadChartData() {
             try {
                 const period = document.getElementById('chart-period').value;
-                const response = await fetch(`/api/admin-bypass/analytics/chart?shop=${currentShop}&days=${period}`);
+                const response = await fetch(`${API_BASE_URL}/api/admin-bypass/analytics/chart?shop=${currentShop}&days=${period}`);
                 const data = await response.json();
 
                 if (data.success) {
@@ -1137,7 +1149,7 @@
         // Load conversion metrics
         async function loadConversionMetrics() {
             try {
-                const response = await fetch(`/api/admin-bypass/analytics/conversion?shop=${currentShop}&days=30`);
+                const response = await fetch(`${API_BASE_URL}/api/admin-bypass/analytics/conversion?shop=${currentShop}&days=30`);
                 const data = await response.json();
 
                 if (data.success) {
@@ -1166,7 +1178,7 @@
                 const container = document.getElementById('products-performance-container');
                 container.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
 
-                const response = await fetch(`/api/admin-bypass/analytics/products-performance?shop=${currentShop}&days=${period}`);
+                const response = await fetch(`${API_BASE_URL}/api/admin-bypass/analytics/products-performance?shop=${currentShop}&days=${period}`);
                 const data = await response.json();
 
                 if (data.success) {
