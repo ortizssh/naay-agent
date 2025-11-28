@@ -926,7 +926,7 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { shop, days = 30 } = req.query;
-      
+
       if (!shop) {
         return res.status(400).json({
           success: false,
@@ -960,25 +960,28 @@ router.get(
             conversionsCount: 0,
             revenueAttributed: 0,
             averageConversionTime: 0,
-          }
+          },
         });
       }
 
       // Group by session and extract mentioned products
       const sessionProducts = new Map();
       const sessionTimes = new Map();
-      
+
       if (chatSessions) {
         chatSessions.forEach((message: any) => {
           const sessionId = message.session_id;
           const timestamp = new Date(message.timestamp);
-          
+
           if (!sessionTimes.has(sessionId)) {
             sessionTimes.set(sessionId, timestamp);
           }
-          
+
           // Extract mentioned products from content
-          const mentionedProducts = extractProductsFromMessage(message.content, message.metadata);
+          const mentionedProducts = extractProductsFromMessage(
+            message.content,
+            message.metadata
+          );
           if (mentionedProducts.length > 0) {
             if (!sessionProducts.has(sessionId)) {
               sessionProducts.set(sessionId, new Set());
@@ -1013,26 +1016,32 @@ router.get(
           // Analyze conversions
           orders.forEach((order: any) => {
             const orderTime = new Date(order.created_at);
-            
+
             // Check if this order has products mentioned in chat sessions within 48h before order
             sessionProducts.forEach((productIds, sessionId) => {
               const sessionTime = sessionTimes.get(sessionId);
               if (!sessionTime) return;
-              
+
               const timeDiff = orderTime.getTime() - sessionTime.getTime();
               const hoursAfterChat = timeDiff / (1000 * 60 * 60);
-              
+
               // Check if order was within 48 hours of chat session
               if (hoursAfterChat >= 0 && hoursAfterChat <= 48) {
                 // Check if any order line items match mentioned products
-                const orderProductIds = order.line_items?.map((item: any) => 
-                  item.variant?.product_id?.toString() || item.product_id?.toString()
-                ).filter(Boolean) || [];
-                
-                const hasMatchingProduct = orderProductIds.some((orderProductId: string) =>
-                  Array.from(productIds).includes(orderProductId)
+                const orderProductIds =
+                  order.line_items
+                    ?.map(
+                      (item: any) =>
+                        item.variant?.product_id?.toString() ||
+                        item.product_id?.toString()
+                    )
+                    .filter(Boolean) || [];
+
+                const hasMatchingProduct = orderProductIds.some(
+                  (orderProductId: string) =>
+                    Array.from(productIds).includes(orderProductId)
                 );
-                
+
                 if (hasMatchingProduct) {
                   conversions++;
                   totalRevenue += parseFloat(order.total_price || '0');
@@ -1047,10 +1056,12 @@ router.get(
       }
 
       const totalSessions = sessionProducts.size;
-      const conversionRate = totalSessions > 0 ? (conversions / totalSessions) * 100 : 0;
-      const averageConversionTime = conversionTimes.length > 0 
-        ? conversionTimes.reduce((a, b) => a + b, 0) / conversionTimes.length 
-        : 0;
+      const conversionRate =
+        totalSessions > 0 ? (conversions / totalSessions) * 100 : 0;
+      const averageConversionTime =
+        conversionTimes.length > 0
+          ? conversionTimes.reduce((a, b) => a + b, 0) / conversionTimes.length
+          : 0;
 
       res.json({
         success: true,
@@ -1061,7 +1072,7 @@ router.get(
           revenueAttributed: Math.round(totalRevenue * 100) / 100,
           averageConversionTime: Math.round(averageConversionTime * 100) / 100,
           period_days: daysCount,
-        }
+        },
       });
     } catch (error) {
       logger.error('Admin bypass conversion analytics error:', error);
@@ -1073,7 +1084,7 @@ router.get(
           conversionsCount: 0,
           revenueAttributed: 0,
           averageConversionTime: 0,
-        }
+        },
       });
     }
   }
@@ -1085,7 +1096,7 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { shop, days = 30 } = req.query;
-      
+
       if (!shop) {
         return res.status(400).json({
           success: false,
@@ -1114,13 +1125,23 @@ router.get(
 
       if (chatSessions) {
         chatSessions.forEach((message: any) => {
-          const mentionedProducts = extractProductsFromMessage(message.content, message.metadata);
-          
+          const mentionedProducts = extractProductsFromMessage(
+            message.content,
+            message.metadata
+          );
+
           // Also extract product details from JSON for titles
-          extractProductDetailsFromMessage(message.content, message.metadata, productDetails);
-          
+          extractProductDetailsFromMessage(
+            message.content,
+            message.metadata,
+            productDetails
+          );
+
           mentionedProducts.forEach(productId => {
-            productMentions.set(productId, (productMentions.get(productId) || 0) + 1);
+            productMentions.set(
+              productId,
+              (productMentions.get(productId) || 0) + 1
+            );
           });
         });
       }
@@ -1142,15 +1163,22 @@ router.get(
 
           orders.forEach((order: any) => {
             totalRevenue += parseFloat(order.total_price || '0');
-            
+
             order.line_items?.forEach((item: any) => {
-              const productId = (item.variant?.product_id || item.product_id)?.toString();
+              const productId = (
+                item.variant?.product_id || item.product_id
+              )?.toString();
               if (productId) {
-                const currentSales = productSales.get(productId) || { quantity: 0, revenue: 0 };
+                const currentSales = productSales.get(productId) || {
+                  quantity: 0,
+                  revenue: 0,
+                };
                 currentSales.quantity += parseInt(item.quantity || '0');
-                currentSales.revenue += parseFloat(item.price || '0') * parseInt(item.quantity || '0');
+                currentSales.revenue +=
+                  parseFloat(item.price || '0') *
+                  parseInt(item.quantity || '0');
                 productSales.set(productId, currentSales);
-                
+
                 // Store product name if available
                 if (item.title && !productDetails.has(productId)) {
                   productDetails.set(productId, { title: item.title });
@@ -1166,43 +1194,62 @@ router.get(
       // Combine mentioned and sold data
       const allProductIds = new Set([
         ...productMentions.keys(),
-        ...productSales.keys()
+        ...productSales.keys(),
       ]);
 
-      const productAnalysis = Array.from(allProductIds).map(productId => {
-        const mentions = productMentions.get(productId) || 0;
-        const sales = productSales.get(productId) || { quantity: 0, revenue: 0 };
-        const details = productDetails.get(productId) || {};
-        
-        // Calculate gap percentage
-        const gapPercentage = mentions > 0 && sales.quantity === 0 
-          ? -100 
-          : mentions === 0 && sales.quantity > 0 
-          ? 100 
-          : mentions > 0 
-          ? Math.round(((sales.quantity - mentions) / mentions) * 100)
-          : 0;
+      const productAnalysis = Array.from(allProductIds)
+        .map(productId => {
+          const mentions = productMentions.get(productId) || 0;
+          const sales = productSales.get(productId) || {
+            quantity: 0,
+            revenue: 0,
+          };
+          const details = productDetails.get(productId) || {};
 
-        return {
-          productId,
-          title: details.title || `Product ${productId}`,
-          mentions,
-          salesQuantity: sales.quantity,
-          salesRevenue: sales.revenue,
-          gapPercentage,
-          conversionRate: mentions > 0 ? (sales.quantity / mentions) * 100 : 0
-        };
-      })
-      .filter(item => item.mentions > 0 || item.salesQuantity > 0) // Only show products with activity
-      .sort((a, b) => (b.mentions + b.salesQuantity) - (a.mentions + a.salesQuantity)) // Sort by total activity
-      .slice(0, 20); // Top 20 products
+          // Calculate gap percentage
+          const gapPercentage =
+            mentions > 0 && sales.quantity === 0
+              ? -100
+              : mentions === 0 && sales.quantity > 0
+                ? 100
+                : mentions > 0
+                  ? Math.round(((sales.quantity - mentions) / mentions) * 100)
+                  : 0;
+
+          return {
+            productId,
+            title: details.title || `Product ${productId}`,
+            mentions,
+            salesQuantity: sales.quantity,
+            salesRevenue: sales.revenue,
+            gapPercentage,
+            conversionRate:
+              mentions > 0 ? (sales.quantity / mentions) * 100 : 0,
+          };
+        })
+        .filter(item => item.mentions > 0 || item.salesQuantity > 0) // Only show products with activity
+        .sort(
+          (a, b) =>
+            b.mentions + b.salesQuantity - (a.mentions + a.salesQuantity)
+        ) // Sort by total activity
+        .slice(0, 20); // Top 20 products
 
       // Calculate summary metrics
-      const totalMentions = Array.from(productMentions.values()).reduce((sum, count) => sum + count, 0);
-      const totalSalesQuantity = Array.from(productSales.values()).reduce((sum, sales) => sum + sales.quantity, 0);
-      const averageConversionRate = productAnalysis.length > 0 
-        ? productAnalysis.reduce((sum, item) => sum + item.conversionRate, 0) / productAnalysis.length
-        : 0;
+      const totalMentions = Array.from(productMentions.values()).reduce(
+        (sum, count) => sum + count,
+        0
+      );
+      const totalSalesQuantity = Array.from(productSales.values()).reduce(
+        (sum, sales) => sum + sales.quantity,
+        0
+      );
+      const averageConversionRate =
+        productAnalysis.length > 0
+          ? productAnalysis.reduce(
+              (sum, item) => sum + item.conversionRate,
+              0
+            ) / productAnalysis.length
+          : 0;
 
       res.json({
         success: true,
@@ -1212,11 +1259,12 @@ router.get(
             totalMentions,
             totalSalesQuantity,
             totalRevenue: Math.round(totalRevenue * 100) / 100,
-            averageConversionRate: Math.round(averageConversionRate * 100) / 100,
+            averageConversionRate:
+              Math.round(averageConversionRate * 100) / 100,
             analyzedProducts: productAnalysis.length,
           },
           period_days: daysCount,
-        }
+        },
       });
     } catch (error) {
       logger.error('Admin bypass product performance error:', error);
@@ -1230,8 +1278,8 @@ router.get(
             totalRevenue: 0,
             averageConversionRate: 0,
             analyzedProducts: 0,
-          }
-        }
+          },
+        },
       });
     }
   }
@@ -1375,17 +1423,20 @@ router.get(
       if (totalConversations === 0 && totalSales === 0 && totalOrders === 0) {
         // Generate demo conversations but keep real sales data structure
         const demoConversations = generateDemoConversationsData(daysCount);
-        
+
         // Merge demo conversations with real (empty) sales data
         chartData.forEach((day, index) => {
           if (demoConversations[index]) {
             day.conversations = demoConversations[index].conversations;
           }
         });
-        
+
         // Recalculate totals
-        const newTotalConversations = chartData.reduce((sum, day) => sum + day.conversations, 0);
-        
+        const newTotalConversations = chartData.reduce(
+          (sum, day) => sum + day.conversations,
+          0
+        );
+
         return res.json({
           success: true,
           data: {
@@ -1555,7 +1606,10 @@ function generateDemoConversationsData(days: number = 30) {
     // Generate realistic conversation patterns
     const isWeekend = date.getDay() === 0 || date.getDay() === 6;
     const baseConversations = isWeekend ? 2 : 8;
-    const conversations = Math.max(0, baseConversations + Math.floor(Math.random() * 5) - 2);
+    const conversations = Math.max(
+      0,
+      baseConversations + Math.floor(Math.random() * 5) - 2
+    );
 
     conversationsData.push({
       conversations: conversations,
@@ -1703,7 +1757,7 @@ function extractProductsFromMessage(content: string, metadata: any): string[] {
       // Extract simple product ID patterns
       const simpleJsonRegex = /\{\s*"id"\s*:\s*(\d+)[^}]*\}/g;
       const simpleMatches = content.match(simpleJsonRegex);
-      
+
       if (simpleMatches) {
         simpleMatches.forEach(match => {
           try {
@@ -1734,7 +1788,11 @@ function extractProductsFromMessage(content: string, metadata: any): string[] {
 }
 
 // Helper function to extract product details from chat messages
-function extractProductDetailsFromMessage(content: string, metadata: any, productDetailsMap: Map<string, any>) {
+function extractProductDetailsFromMessage(
+  content: string,
+  metadata: any,
+  productDetailsMap: Map<string, any>
+) {
   try {
     // Extract from metadata if available
     if (metadata) {
@@ -1789,7 +1847,8 @@ function extractProductDetailsFromMessage(content: string, metadata: any, produc
       }
 
       // Extract simple product data
-      const simpleJsonRegex = /\{\s*"id"\s*:\s*(\d+)[^}]*"title"\s*:\s*"([^"]*)"[^}]*\}/g;
+      const simpleJsonRegex =
+        /\{\s*"id"\s*:\s*(\d+)[^}]*"title"\s*:\s*"([^"]*)"[^}]*\}/g;
       let match;
       while ((match = simpleJsonRegex.exec(content)) !== null) {
         try {
