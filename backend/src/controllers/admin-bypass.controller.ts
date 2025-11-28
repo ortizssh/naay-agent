@@ -556,7 +556,9 @@ router.get(
         .select('session_id')
         .not('session_id', 'is', null);
 
-      const conversationCount = uniqueSessions ? new Set(uniqueSessions.map(msg => msg.session_id)).size : 0;
+      const conversationCount = uniqueSessions
+        ? new Set(uniqueSessions.map(msg => msg.session_id)).size
+        : 0;
 
       if (messagesError) {
         logger.error(
@@ -722,7 +724,7 @@ router.get(
 
       // Group messages by session_id and get the latest message for each
       const sessionsMap = new Map();
-      
+
       allMessages.forEach((message: any) => {
         const sessionId = message.session_id;
         if (!sessionsMap.has(sessionId)) {
@@ -731,13 +733,13 @@ router.get(
             last_message: message.content,
             last_activity: message.timestamp,
             message_count: 0,
-            status: 'active'
+            status: 'active',
           });
         }
-        
+
         const session = sessionsMap.get(sessionId);
         session.message_count++;
-        
+
         // Keep the most recent message (first due to desc order)
         if (new Date(message.timestamp) > new Date(session.last_activity)) {
           session.last_message = message.content;
@@ -746,8 +748,11 @@ router.get(
       });
 
       // Convert to array and sort by last activity
-      const allSessions = Array.from(sessionsMap.values())
-        .sort((a, b) => new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime());
+      const allSessions = Array.from(sessionsMap.values()).sort(
+        (a, b) =>
+          new Date(b.last_activity).getTime() -
+          new Date(a.last_activity).getTime()
+      );
 
       // Apply pagination
       const totalSessions = allSessions.length;
