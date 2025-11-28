@@ -49,6 +49,18 @@
             font-family: inherit;
         }
 
+        /* Select dropdown styles */
+        select.btn {
+            background-color: var(--naay-white);
+            color: var(--naay-dark);
+            border: 1px solid var(--naay-primary);
+        }
+
+        select.btn:hover {
+            background-color: var(--naay-light);
+            color: var(--naay-dark);
+        }
+
         .btn:hover {
             background-color: var(--naay-dark);
             border-color: var(--naay-dark);
@@ -803,18 +815,23 @@
             }
         }
 
-        // Initialize
+        // Initialize with staggered loading to prevent too many requests
         if (currentShop) {
             loadStats();
-            loadConversations();
-            loadChartData();
-            loadConversionMetrics();
-            loadTopRecommendedProducts();
+            setTimeout(() => loadConversations(), 100);
+            setTimeout(() => loadChartData(), 200);
+            setTimeout(() => loadConversionMetrics(), 300);
+            setTimeout(() => loadTopRecommendedProducts(), 400);
         }
 
         async function loadStats() {
             try {
                 const response = await fetch(`${API_BASE_URL}/api/admin-bypass/stats?shop=${currentShop}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 const data = await response.json();
 
                 if (data.success) {
@@ -830,9 +847,14 @@
                     } else {
                         statusEl.style.color = 'var(--naay-dark)';
                     }
+                } else {
+                    console.warn('Stats API returned error:', data.error);
                 }
             } catch (error) {
-                // Error loading stats - continue silently
+                console.error('Error loading stats:', error);
+                if (error.message.includes('429')) {
+                    showError('Too many requests. Please wait a moment and refresh.');
+                }
             }
         }
 
@@ -842,6 +864,11 @@
             
             try {
                 const response = await fetch(`${API_BASE_URL}/api/admin-bypass/conversations?shop=${currentShop}&page=${currentPage}&limit=${limit}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 const data = await response.json();
 
                 if (data.success) {
@@ -851,7 +878,12 @@
                     showError('Error al cargar conversaciones: ' + (data.error || 'Error desconocido'));
                 }
             } catch (error) {
-                showError('Error de conexión al cargar conversaciones');
+                console.error('Error loading conversations:', error);
+                if (error.message.includes('429')) {
+                    showError('Too many requests. Please wait and refresh.');
+                } else {
+                    showError('Error de conexión al cargar conversaciones');
+                }
                 container.innerHTML = '<div style="padding: 20px; text-align: center; color: #6d7175;">No se pudieron cargar las conversaciones</div>';
             }
         }

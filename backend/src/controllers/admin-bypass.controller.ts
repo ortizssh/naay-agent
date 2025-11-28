@@ -1128,14 +1128,17 @@ router.get(
       } = {};
 
       if (chatMessages) {
+        const productDetailsMap = new Map<string, any>();
+        
         for (const message of chatMessages) {
           const products = extractProductsFromMessage(
             message.content || '',
             message.metadata
           );
-          const productDetails = extractProductDetailsFromMessage(
+          extractProductDetailsFromMessage(
             message.content || '',
-            message.metadata
+            message.metadata,
+            productDetailsMap
           );
 
           for (const productId of products) {
@@ -1145,13 +1148,9 @@ router.get(
             productCounts[productId].count++;
 
             // Store product details if found
-            if (productDetails && productDetails.length > 0) {
-              const productDetail = productDetails.find(
-                (p: any) => p.id?.toString() === productId
-              );
-              if (productDetail && !productCounts[productId].details) {
-                productCounts[productId].details = productDetail;
-              }
+            const productDetail = productDetailsMap.get(productId);
+            if (productDetail && !productCounts[productId].details) {
+              productCounts[productId].details = productDetail;
             }
           }
         }
