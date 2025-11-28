@@ -353,7 +353,7 @@ async function startServer() {
 
     // Health check (before auth)
     app.use('/health', healthRoutes);
-    
+
     // Debug endpoint to check file paths in production
     app.get('/debug/files', (req: express.Request, res: express.Response) => {
       const paths = [
@@ -361,18 +361,18 @@ async function startServer() {
         path.join(__dirname, 'public/admin/index.html'),
         path.join(__dirname, '../../backend/public/admin/index.html'),
         path.join(process.cwd(), 'public/admin/index.html'),
-        path.join(process.cwd(), 'backend/public/admin/index.html')
+        path.join(process.cwd(), 'backend/public/admin/index.html'),
       ];
-      
+
       const result = {
         __dirname: __dirname,
         'process.cwd()': process.cwd(),
         paths: paths.map(p => ({
           path: p,
-          exists: fs.existsSync(p)
-        }))
+          exists: fs.existsSync(p),
+        })),
       };
-      
+
       res.json(result);
     });
 
