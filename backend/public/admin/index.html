@@ -264,10 +264,11 @@
                 currentShop = savedShop;
                 document.getElementById('shop-name').textContent = currentShop;
             } else {
-                // Hardcode naaycl shop as default
+                // Hardcode naaycl shop as default (try custom domain first, then shopify domain)
                 currentShop = 'naaycl.myshopify.com';
                 document.getElementById('shop-name').textContent = currentShop;
                 localStorage.setItem('naay_shop', currentShop);
+                // Note: Custom domain naay.cl is also available for this shop
             }
         }
 

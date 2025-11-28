@@ -548,12 +548,15 @@ router.get(
 
       logger.info('Admin bypass: Getting stats', { shop });
 
-      // Get conversations count from chat_sessions (no filter)
-      const { count: conversationCount, error: messagesError } = await (
+      // Get conversations count from unique session_id in chat_messages
+      const { data: uniqueSessions, error: messagesError } = await (
         supabaseService as any
       ).serviceClient
-        .from('chat_sessions')
-        .select('*', { count: 'exact', head: true });
+        .from('chat_messages')
+        .select('session_id')
+        .not('session_id', 'is', null);
+
+      const conversationCount = uniqueSessions ? new Set(uniqueSessions.map(msg => msg.session_id)).size : 0;
 
       if (messagesError) {
         logger.error(
@@ -681,86 +684,76 @@ router.get(
         offset,
       });
 
-      // 1. Get sessions first (paginated)
-      const {
-        data: sessions,
-        count: totalSessions,
-        error: sessionsError,
-      } = await (supabaseService as any).serviceClient
-        .from('chat_sessions')
-        .select('*', { count: 'exact' })
-        .order('last_activity', { ascending: false })
-        .range(offset, offset + limitNum - 1);
-
-      if (sessionsError) {
-        logger.error('Error fetching chat sessions:', sessionsError);
-        // Return empty data instead of throwing error
-        return res.json({
-          success: true,
-          data: [],
-          pagination: {
-            total: 0,
-            limit: limitNum,
-            totalPages: 0,
-            currentPage: pageNum,
-          },
-        });
-      }
-
-      if (!sessions || sessions.length === 0) {
-        return res.json({
-          success: true,
-          data: [],
-          pagination: {
-            total: 0,
-            limit: limitNum,
-            totalPages: 0,
-            currentPage: pageNum,
-          },
-        });
-      }
-
-      // 2. Get messages for these sessions to show preview
-      const sessionIds = sessions.map(s => s.id);
-
-      // We need the last message for each session
-      // This is a bit tricky with Supabase/Postgres without a lateral join or window function
-      // For now, we'll fetch the last few messages for these sessions and process in memory
-      // A better approach would be a database view or function
-
-      const { data: messages, error: messagesError } = await (
+      // Get all messages and group by session_id
+      const { data: allMessages, error: messagesError } = await (
         supabaseService as any
       ).serviceClient
         .from('chat_messages')
         .select('session_id, content, timestamp, role')
-        .in('session_id', sessionIds)
+        .not('session_id', 'is', null)
         .order('timestamp', { ascending: false });
 
       if (messagesError) {
         logger.error('Error fetching chat messages:', messagesError);
-        // Continue with sessions only if messages fail
+        return res.json({
+          success: true,
+          data: [],
+          pagination: {
+            total: 0,
+            limit: limitNum,
+            totalPages: 0,
+            currentPage: pageNum,
+          },
+        });
       }
 
-      // 3. Combine data
-      const conversationsList = sessions.map(session => {
-        // Find messages for this session
-        const sessionMessages =
-          messages?.filter((m: any) => m.session_id === session.id) || [];
+      if (!allMessages || allMessages.length === 0) {
+        return res.json({
+          success: true,
+          data: [],
+          pagination: {
+            total: 0,
+            limit: limitNum,
+            totalPages: 0,
+            currentPage: pageNum,
+          },
+        });
+      }
 
-        // Get last message (first in the array because we ordered by timestamp desc)
-        const lastMessage =
-          sessionMessages.length > 0 ? sessionMessages[0] : null;
-
-        return {
-          session_id: session.id,
-          message_count: sessionMessages.length, // This is just count of fetched messages, ideally we'd have a count column on session
-          last_activity: session.last_activity,
-          last_message: lastMessage
-            ? lastMessage.content
-            : 'Nueva conversación',
-          status: session.status,
-        };
+      // Group messages by session_id and get the latest message for each
+      const sessionsMap = new Map();
+      
+      allMessages.forEach((message: any) => {
+        const sessionId = message.session_id;
+        if (!sessionsMap.has(sessionId)) {
+          sessionsMap.set(sessionId, {
+            session_id: sessionId,
+            last_message: message.content,
+            last_activity: message.timestamp,
+            message_count: 0,
+            status: 'active'
+          });
+        }
+        
+        const session = sessionsMap.get(sessionId);
+        session.message_count++;
+        
+        // Keep the most recent message (first due to desc order)
+        if (new Date(message.timestamp) > new Date(session.last_activity)) {
+          session.last_message = message.content;
+          session.last_activity = message.timestamp;
+        }
       });
+
+      // Convert to array and sort by last activity
+      const allSessions = Array.from(sessionsMap.values())
+        .sort((a, b) => new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime());
+
+      // Apply pagination
+      const totalSessions = allSessions.length;
+      const paginatedSessions = allSessions.slice(offset, offset + limitNum);
+
+      const conversationsList = paginatedSessions;
 
       res.json({
         success: true,
