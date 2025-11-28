@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Naay Agent Admin</title>
     <link rel="stylesheet" href="https://unpkg.com/@shopify/polaris@12.0.0/build/esm/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --p-color-bg-surface: #fff;
@@ -320,6 +321,77 @@
             text-align: left;
         }
 
+        /* Product recommendation styles */
+        .product-recommendations {
+            margin-top: 12px;
+            padding: 12px;
+            background-color: #f1f2f4;
+            border-radius: 8px;
+            border-left: 3px solid #008060;
+        }
+
+        .product-recommendation {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            margin-bottom: 8px;
+            background-color: white;
+            border-radius: 6px;
+            border: 1px solid #e1e3e5;
+            transition: all 0.2s ease;
+        }
+
+        .product-recommendation:hover {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transform: translateY(-1px);
+        }
+
+        .product-recommendation:last-child {
+            margin-bottom: 0;
+        }
+
+        .product-image {
+            width: 48px;
+            height: 48px;
+            border-radius: 4px;
+            object-fit: cover;
+            margin-right: 12px;
+            border: 1px solid #e1e3e5;
+        }
+
+        .product-info {
+            flex: 1;
+        }
+
+        .product-title {
+            font-weight: 600;
+            font-size: 13px;
+            color: #202223;
+            margin-bottom: 2px;
+            line-height: 1.3;
+        }
+
+        .product-price {
+            font-size: 12px;
+            color: #008060;
+            font-weight: 500;
+        }
+
+        .product-handle {
+            font-size: 11px;
+            color: #6d7175;
+            margin-top: 2px;
+        }
+
+        .recommendations-header {
+            font-size: 11px;
+            font-weight: 600;
+            color: #008060;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
         .loading-messages {
             display: flex;
             justify-content: center;
@@ -370,6 +442,46 @@
 
         <div class="Polaris-Card">
             <div class="Polaris-Card__Header">
+                <h2 style="font-size: 16px; font-weight: 600; margin: 0;">Análisis de Conversaciones y Ventas</h2>
+                <div style="display: flex; gap: 10px;">
+                    <select id="chart-period" class="btn" style="padding: 4px 8px;">
+                        <option value="7">7 días</option>
+                        <option value="14">14 días</option>
+                        <option value="30" selected>30 días</option>
+                        <option value="60">60 días</option>
+                    </select>
+                    <button class="btn" onclick="loadChartData()">Actualizar</button>
+                </div>
+            </div>
+            <div class="Polaris-Card__Section">
+                <div style="position: relative; height: 400px; background: #f9fafb; border-radius: 8px; padding: 20px;">
+                    <canvas id="analytics-chart" style="width: 100%; height: 100%;"></canvas>
+                </div>
+                <div id="chart-summary" style="margin-top: 15px; padding: 15px; background: #f1f2f4; border-radius: 6px; display: none;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; text-align: center;">
+                        <div>
+                            <div style="font-size: 18px; font-weight: 600; color: #008060;" id="total-conversations">-</div>
+                            <div style="font-size: 12px; color: #6d7175;">Total Conversaciones</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 18px; font-weight: 600; color: #2563eb;" id="total-sales">-</div>
+                            <div style="font-size: 12px; color: #6d7175;">Total Ventas</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 18px; font-weight: 600; color: #dc2626;" id="total-orders">-</div>
+                            <div style="font-size: 12px; color: #6d7175;">Total Órdenes</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 18px; font-weight: 600; color: #7c3aed;" id="avg-order">-</div>
+                            <div style="font-size: 12px; color: #6d7175;">Promedio por Orden</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="Polaris-Card">
+            <div class="Polaris-Card__Header">
                 <h2 style="font-size: 16px; font-weight: 600; margin: 0;">Historial de Conversaciones</h2>
                 <button class="btn" onclick="loadConversations()">Actualizar</button>
             </div>
@@ -391,6 +503,7 @@
         let currentPage = 1;
         let currentShop = '';
         const limit = 10;
+        let analyticsChart = null;
 
         // Get shop from URL parameters
         const urlParams = new URLSearchParams(window.location.search);
@@ -420,6 +533,7 @@
         if (currentShop) {
             loadStats();
             loadConversations();
+            loadChartData();
         }
 
         async function loadStats() {
@@ -612,9 +726,18 @@
                     minute: '2-digit'
                 });
                 
+                // Parse message content and extract products if it's from agent
+                const { content, products } = parseMessageContent(message.content, message.role);
+                
+                let productRecommendationsHTML = '';
+                if (products && products.length > 0) {
+                    productRecommendationsHTML = renderProductRecommendations(products);
+                }
+                
                 messageDiv.innerHTML = `
                     <div class="message-bubble">
-                        <div>${escapeHtml(message.content)}</div>
+                        <div>${content}</div>
+                        ${productRecommendationsHTML}
                         <div class="message-info">${date}</div>
                     </div>
                 `;
@@ -627,6 +750,108 @@
             
             // Scroll to bottom
             chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function parseMessageContent(content, role) {
+            if (role !== 'agent' || !content) {
+                return { content: escapeHtml(content), products: [] };
+            }
+
+            let products = [];
+            let cleanContent = content;
+
+            try {
+                // Look for JSON patterns in the content
+                const jsonRegex = /\{\s*"output"\s*:\s*\[[^\]]*\]\s*\}/g;
+                const matches = content.match(jsonRegex);
+
+                if (matches) {
+                    matches.forEach(match => {
+                        try {
+                            const jsonData = JSON.parse(match);
+                            if (jsonData.output && Array.isArray(jsonData.output)) {
+                                jsonData.output.forEach(item => {
+                                    if (item.product) {
+                                        products.push(item.product);
+                                    }
+                                });
+                            }
+                            // Remove the JSON from the content
+                            cleanContent = cleanContent.replace(match, '').trim();
+                        } catch (e) {
+                            console.warn('Error parsing JSON in message:', e);
+                        }
+                    });
+                }
+
+                // Also look for simpler JSON patterns
+                const simpleJsonRegex = /\{\s*"id"\s*:\s*\d+[^}]*\}/g;
+                const simpleMatches = content.match(simpleJsonRegex);
+                
+                if (simpleMatches) {
+                    simpleMatches.forEach(match => {
+                        try {
+                            const productData = JSON.parse(match);
+                            if (productData.id && productData.title) {
+                                products.push(productData);
+                                // Remove the JSON from the content
+                                cleanContent = cleanContent.replace(match, '').trim();
+                            }
+                        } catch (e) {
+                            console.warn('Error parsing simple JSON in message:', e);
+                        }
+                    });
+                }
+
+            } catch (error) {
+                console.warn('Error processing message content:', error);
+            }
+
+            return {
+                content: escapeHtml(cleanContent),
+                products: products
+            };
+        }
+
+        function renderProductRecommendations(products) {
+            if (!products || products.length === 0) {
+                return '';
+            }
+
+            const productsHTML = products.map(product => {
+                const price = product.price ? formatPrice(product.price) : 'Precio no disponible';
+                const image = product.image?.src || '/placeholder-product.jpg';
+                const title = product.title || 'Producto sin título';
+                const handle = product.handle || '';
+
+                return `
+                    <div class="product-recommendation">
+                        <img src="${image}" alt="${escapeHtml(title)}" class="product-image" onerror="this.src='/placeholder-product.jpg'">
+                        <div class="product-info">
+                            <div class="product-title">${escapeHtml(title)}</div>
+                            <div class="product-price">${price}</div>
+                            ${handle ? `<div class="product-handle">/${handle}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="product-recommendations">
+                    <div class="recommendations-header">Productos Recomendados</div>
+                    ${productsHTML}
+                </div>
+            `;
+        }
+
+        function formatPrice(price) {
+            // Assume price is in cents, convert to CLP
+            const priceInCLP = typeof price === 'number' ? price : parseInt(price);
+            return new Intl.NumberFormat('es-CL', {
+                style: 'currency',
+                currency: 'CLP',
+                minimumFractionDigits: 0
+            }).format(priceInCLP);
         }
         
         // Close modal when clicking outside
@@ -643,6 +868,164 @@
             div.textContent = text;
             return div.innerHTML;
         }
+
+        // Analytics Chart Functions
+        async function loadChartData() {
+            try {
+                const period = document.getElementById('chart-period').value;
+                const response = await fetch(`/api/admin-bypass/analytics/chart?shop=${currentShop}&days=${period}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    renderAnalyticsChart(data.data);
+                    updateChartSummary(data.data.totals);
+                } else {
+                    console.error('Error loading chart data:', data.error);
+                    showError('Error al cargar datos del gráfico: ' + (data.error || 'Error desconocido'));
+                }
+            } catch (error) {
+                console.error('Error loading chart data:', error);
+                showError('Error de conexión al cargar datos del gráfico');
+            }
+        }
+
+        function renderAnalyticsChart(data) {
+            const ctx = document.getElementById('analytics-chart').getContext('2d');
+
+            // Destroy existing chart if it exists
+            if (analyticsChart) {
+                analyticsChart.destroy();
+            }
+
+            const chartData = data.daily_data;
+            const dates = chartData.map(d => {
+                const date = new Date(d.date);
+                return date.toLocaleDateString('es-ES', { 
+                    month: 'short', 
+                    day: 'numeric' 
+                });
+            });
+
+            analyticsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: 'Conversaciones',
+                            data: chartData.map(d => d.conversations),
+                            borderColor: '#008060',
+                            backgroundColor: 'rgba(0, 128, 96, 0.1)',
+                            fill: false,
+                            tension: 0.4,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Ventas ($)',
+                            data: chartData.map(d => d.sales),
+                            borderColor: '#2563eb',
+                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                            fill: false,
+                            tension: 0.4,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        title: {
+                            display: false
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function(context) {
+                                    const dataIndex = context.dataIndex;
+                                    const dayData = chartData[dataIndex];
+                                    if (context.dataset.label === 'Ventas ($)') {
+                                        return `Órdenes: ${dayData.orders_count}`;
+                                    }
+                                    return '';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Fecha'
+                            },
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Conversaciones',
+                                color: '#008060'
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            },
+                            ticks: {
+                                beginAtZero: true,
+                                color: '#008060'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Ventas ($)',
+                                color: '#2563eb'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                            ticks: {
+                                beginAtZero: true,
+                                color: '#2563eb',
+                                callback: function(value) {
+                                    return '$' + value.toFixed(0);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChartSummary(totals) {
+            document.getElementById('total-conversations').textContent = totals.conversations || 0;
+            document.getElementById('total-sales').textContent = '$' + (totals.sales || 0).toFixed(2);
+            document.getElementById('total-orders').textContent = totals.orders || 0;
+            document.getElementById('avg-order').textContent = '$' + (totals.average_order || 0).toFixed(2);
+            
+            // Show the summary section
+            document.getElementById('chart-summary').style.display = 'block';
+        }
+
+        // Chart period change handler
+        document.getElementById('chart-period').addEventListener('change', function() {
+            loadChartData();
+        });
     </script>
 
     <!-- Conversation Modal -->
