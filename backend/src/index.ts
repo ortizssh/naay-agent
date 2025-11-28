@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
 import helmet from 'helmet';
 import { config, validateConfig } from '@/utils/config';
 import { logger } from '@/utils/logger';
@@ -352,11 +353,34 @@ async function startServer() {
 
     // Health check (before auth)
     app.use('/health', healthRoutes);
+    
+    // Debug endpoint to check file paths in production
+    app.get('/debug/files', (req: express.Request, res: express.Response) => {
+      const paths = [
+        path.join(__dirname, '../public/admin/index.html'),
+        path.join(__dirname, 'public/admin/index.html'),
+        path.join(__dirname, '../../backend/public/admin/index.html'),
+        path.join(process.cwd(), 'public/admin/index.html'),
+        path.join(process.cwd(), 'backend/public/admin/index.html')
+      ];
+      
+      const result = {
+        __dirname: __dirname,
+        'process.cwd()': process.cwd(),
+        paths: paths.map(p => ({
+          path: p,
+          exists: fs.existsSync(p)
+        }))
+      };
+      
+      res.json(result);
+    });
 
     // Root route for Shopify app installation
     app.get('/', (req: express.Request, res: express.Response) => {
-      const adminPath = path.join(__dirname, '../public/admin/index.html');
-      res.sendFile(adminPath);
+      // Admin panel is available via static route, redirect there
+      logger.info('Redirecting root to admin panel via static route');
+      res.redirect('/static/admin/index.html');
     });
 
     // Success page after Shopify app installation
