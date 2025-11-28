@@ -807,7 +807,7 @@ router.get(
     try {
       const { sessionId } = req.params;
 
-      logger.info('Admin bypass: Getting conversation details', { sessionId });
+      // logger.info('Admin bypass: Getting conversation details', { sessionId });
 
       // Handle demo sessions
       if (sessionId.startsWith('demo-session-')) {
@@ -920,6 +920,323 @@ router.get(
   }
 );
 
+// Get conversion metrics (chat to sales)
+router.get(
+  '/analytics/conversion',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop, days = 30 } = req.query;
+      
+      if (!shop) {
+        return res.status(400).json({
+          success: false,
+          error: 'Shop parameter required',
+        });
+      }
+
+      const daysCount = parseInt(days as string);
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - daysCount);
+
+      // Get chat sessions from the period
+      const { data: chatSessions, error: chatError } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('chat_messages')
+        .select('session_id, timestamp, content, metadata')
+        .gte('timestamp', startDate.toISOString())
+        .lte('timestamp', endDate.toISOString())
+        .not('session_id', 'is', null)
+        .eq('role', 'agent');
+
+      if (chatError) {
+        logger.error('Error fetching chat sessions:', chatError);
+        return res.json({
+          success: true,
+          data: {
+            conversionRate: 0,
+            totalConversations: 0,
+            conversionsCount: 0,
+            revenueAttributed: 0,
+            averageConversionTime: 0,
+          }
+        });
+      }
+
+      // Group by session and extract mentioned products
+      const sessionProducts = new Map();
+      const sessionTimes = new Map();
+      
+      if (chatSessions) {
+        chatSessions.forEach((message: any) => {
+          const sessionId = message.session_id;
+          const timestamp = new Date(message.timestamp);
+          
+          if (!sessionTimes.has(sessionId)) {
+            sessionTimes.set(sessionId, timestamp);
+          }
+          
+          // Extract mentioned products from content
+          const mentionedProducts = extractProductsFromMessage(message.content, message.metadata);
+          if (mentionedProducts.length > 0) {
+            if (!sessionProducts.has(sessionId)) {
+              sessionProducts.set(sessionId, new Set());
+            }
+            mentionedProducts.forEach(productId => {
+              sessionProducts.get(sessionId).add(productId);
+            });
+          }
+        });
+      }
+
+      // Get orders from the same period + 48h buffer
+      const extendedEndDate = new Date(endDate);
+      extendedEndDate.setHours(extendedEndDate.getHours() + 48);
+
+      let orders = [];
+      let conversions = 0;
+      let totalRevenue = 0;
+      let conversionTimes = [];
+
+      try {
+        const store = await supabaseService.getStore(shop as string);
+        if (store) {
+          const shopifyService = new ShopifyService();
+          orders = await shopifyService.getOrdersByDateRange(
+            store.shop_domain,
+            store.access_token,
+            startDate.toISOString(),
+            extendedEndDate.toISOString()
+          );
+
+          // Analyze conversions
+          orders.forEach((order: any) => {
+            const orderTime = new Date(order.created_at);
+            
+            // Check if this order has products mentioned in chat sessions within 48h before order
+            sessionProducts.forEach((productIds, sessionId) => {
+              const sessionTime = sessionTimes.get(sessionId);
+              if (!sessionTime) return;
+              
+              const timeDiff = orderTime.getTime() - sessionTime.getTime();
+              const hoursAfterChat = timeDiff / (1000 * 60 * 60);
+              
+              // Check if order was within 48 hours of chat session
+              if (hoursAfterChat >= 0 && hoursAfterChat <= 48) {
+                // Check if any order line items match mentioned products
+                const orderProductIds = order.line_items?.map((item: any) => 
+                  item.variant?.product_id?.toString() || item.product_id?.toString()
+                ).filter(Boolean) || [];
+                
+                const hasMatchingProduct = orderProductIds.some((orderProductId: string) =>
+                  Array.from(productIds).includes(orderProductId)
+                );
+                
+                if (hasMatchingProduct) {
+                  conversions++;
+                  totalRevenue += parseFloat(order.total_price || '0');
+                  conversionTimes.push(hoursAfterChat);
+                }
+              }
+            });
+          });
+        }
+      } catch (error) {
+        logger.error('Error analyzing conversions:', error);
+      }
+
+      const totalSessions = sessionProducts.size;
+      const conversionRate = totalSessions > 0 ? (conversions / totalSessions) * 100 : 0;
+      const averageConversionTime = conversionTimes.length > 0 
+        ? conversionTimes.reduce((a, b) => a + b, 0) / conversionTimes.length 
+        : 0;
+
+      res.json({
+        success: true,
+        data: {
+          conversionRate: Math.round(conversionRate * 100) / 100,
+          totalConversations: totalSessions,
+          conversionsCount: conversions,
+          revenueAttributed: Math.round(totalRevenue * 100) / 100,
+          averageConversionTime: Math.round(averageConversionTime * 100) / 100,
+          period_days: daysCount,
+        }
+      });
+    } catch (error) {
+      logger.error('Admin bypass conversion analytics error:', error);
+      res.json({
+        success: true,
+        data: {
+          conversionRate: 0,
+          totalConversations: 0,
+          conversionsCount: 0,
+          revenueAttributed: 0,
+          averageConversionTime: 0,
+        }
+      });
+    }
+  }
+);
+
+// Get product performance analysis (mentioned vs sold)
+router.get(
+  '/analytics/products-performance',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop, days = 30 } = req.query;
+      
+      if (!shop) {
+        return res.status(400).json({
+          success: false,
+          error: 'Shop parameter required',
+        });
+      }
+
+      const daysCount = parseInt(days as string);
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - daysCount);
+
+      // Get mentioned products from chat messages
+      const { data: chatSessions, error: chatError } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('chat_messages')
+        .select('session_id, content, metadata')
+        .gte('timestamp', startDate.toISOString())
+        .lte('timestamp', endDate.toISOString())
+        .not('session_id', 'is', null)
+        .eq('role', 'agent');
+
+      const productMentions = new Map();
+      const productDetails = new Map();
+
+      if (chatSessions) {
+        chatSessions.forEach((message: any) => {
+          const mentionedProducts = extractProductsFromMessage(message.content, message.metadata);
+          
+          // Also extract product details from JSON for titles
+          extractProductDetailsFromMessage(message.content, message.metadata, productDetails);
+          
+          mentionedProducts.forEach(productId => {
+            productMentions.set(productId, (productMentions.get(productId) || 0) + 1);
+          });
+        });
+      }
+
+      // Get sales data for the same period
+      const productSales = new Map();
+      let totalRevenue = 0;
+
+      try {
+        const store = await supabaseService.getStore(shop as string);
+        if (store) {
+          const shopifyService = new ShopifyService();
+          const orders = await shopifyService.getOrdersByDateRange(
+            store.shop_domain,
+            store.access_token,
+            startDate.toISOString(),
+            endDate.toISOString()
+          );
+
+          orders.forEach((order: any) => {
+            totalRevenue += parseFloat(order.total_price || '0');
+            
+            order.line_items?.forEach((item: any) => {
+              const productId = (item.variant?.product_id || item.product_id)?.toString();
+              if (productId) {
+                const currentSales = productSales.get(productId) || { quantity: 0, revenue: 0 };
+                currentSales.quantity += parseInt(item.quantity || '0');
+                currentSales.revenue += parseFloat(item.price || '0') * parseInt(item.quantity || '0');
+                productSales.set(productId, currentSales);
+                
+                // Store product name if available
+                if (item.title && !productDetails.has(productId)) {
+                  productDetails.set(productId, { title: item.title });
+                }
+              }
+            });
+          });
+        }
+      } catch (error) {
+        logger.error('Error fetching product sales:', error);
+      }
+
+      // Combine mentioned and sold data
+      const allProductIds = new Set([
+        ...productMentions.keys(),
+        ...productSales.keys()
+      ]);
+
+      const productAnalysis = Array.from(allProductIds).map(productId => {
+        const mentions = productMentions.get(productId) || 0;
+        const sales = productSales.get(productId) || { quantity: 0, revenue: 0 };
+        const details = productDetails.get(productId) || {};
+        
+        // Calculate gap percentage
+        const gapPercentage = mentions > 0 && sales.quantity === 0 
+          ? -100 
+          : mentions === 0 && sales.quantity > 0 
+          ? 100 
+          : mentions > 0 
+          ? Math.round(((sales.quantity - mentions) / mentions) * 100)
+          : 0;
+
+        return {
+          productId,
+          title: details.title || `Product ${productId}`,
+          mentions,
+          salesQuantity: sales.quantity,
+          salesRevenue: sales.revenue,
+          gapPercentage,
+          conversionRate: mentions > 0 ? (sales.quantity / mentions) * 100 : 0
+        };
+      })
+      .filter(item => item.mentions > 0 || item.salesQuantity > 0) // Only show products with activity
+      .sort((a, b) => (b.mentions + b.salesQuantity) - (a.mentions + a.salesQuantity)) // Sort by total activity
+      .slice(0, 20); // Top 20 products
+
+      // Calculate summary metrics
+      const totalMentions = Array.from(productMentions.values()).reduce((sum, count) => sum + count, 0);
+      const totalSalesQuantity = Array.from(productSales.values()).reduce((sum, sales) => sum + sales.quantity, 0);
+      const averageConversionRate = productAnalysis.length > 0 
+        ? productAnalysis.reduce((sum, item) => sum + item.conversionRate, 0) / productAnalysis.length
+        : 0;
+
+      res.json({
+        success: true,
+        data: {
+          products: productAnalysis,
+          summary: {
+            totalMentions,
+            totalSalesQuantity,
+            totalRevenue: Math.round(totalRevenue * 100) / 100,
+            averageConversionRate: Math.round(averageConversionRate * 100) / 100,
+            analyzedProducts: productAnalysis.length,
+          },
+          period_days: daysCount,
+        }
+      });
+    } catch (error) {
+      logger.error('Admin bypass product performance error:', error);
+      res.json({
+        success: true,
+        data: {
+          products: [],
+          summary: {
+            totalMentions: 0,
+            totalSalesQuantity: 0,
+            totalRevenue: 0,
+            averageConversionRate: 0,
+            analyzedProducts: 0,
+          }
+        }
+      });
+    }
+  }
+);
+
 // Get analytics data for charts (conversations + sales)
 router.get(
   '/analytics/chart',
@@ -934,7 +1251,7 @@ router.get(
         });
       }
 
-      logger.info('Admin bypass: Getting analytics chart data', { shop, days });
+      // logger.info('Admin bypass: Getting analytics chart data', { shop, days });
 
       const daysCount = parseInt(days as string);
       const endDate = new Date();
@@ -1053,16 +1370,34 @@ router.get(
         0
       );
 
-      // If no real data, use demo data for better visualization
-      if (totalConversations === 0 && totalSales === 0) {
-        logger.info('No real data found, using demo analytics data', {
-          shop,
-          daysCount,
+      // Only use demo data for conversations if there are no real conversations
+      // Always try to use real sales data from Shopify
+      if (totalConversations === 0 && totalSales === 0 && totalOrders === 0) {
+        // Generate demo conversations but keep real sales data structure
+        const demoConversations = generateDemoConversationsData(daysCount);
+        
+        // Merge demo conversations with real (empty) sales data
+        chartData.forEach((day, index) => {
+          if (demoConversations[index]) {
+            day.conversations = demoConversations[index].conversations;
+          }
         });
-        const demoData = generateDemoAnalyticsData(daysCount);
+        
+        // Recalculate totals
+        const newTotalConversations = chartData.reduce((sum, day) => sum + day.conversations, 0);
+        
         return res.json({
           success: true,
-          data: demoData,
+          data: {
+            daily_data: chartData,
+            totals: {
+              conversations: newTotalConversations,
+              sales: totalSales,
+              orders: totalOrders,
+              average_order: totalOrders > 0 ? totalSales / totalOrders : 0,
+            },
+            period_days: daysCount,
+          },
         });
       }
 
@@ -1208,7 +1543,29 @@ router.get(
   }
 );
 
-// Helper function to generate demo analytics data
+// Helper function to generate demo conversations data only
+function generateDemoConversationsData(days: number = 30) {
+  const conversationsData = [];
+  const today = new Date();
+
+  for (let i = days - 1; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(date.getDate() - i);
+
+    // Generate realistic conversation patterns
+    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+    const baseConversations = isWeekend ? 2 : 8;
+    const conversations = Math.max(0, baseConversations + Math.floor(Math.random() * 5) - 2);
+
+    conversationsData.push({
+      conversations: conversations,
+    });
+  }
+
+  return conversationsData;
+}
+
+// Helper function to generate demo analytics data (fallback only)
 function generateDemoAnalyticsData(days: number = 30) {
   const dailyData = [];
   const today = new Date();
@@ -1296,6 +1653,162 @@ function generateDemoSalesData() {
     total_orders: totalOrders,
     average_order: totalOrders > 0 ? totalAmount / totalOrders : 0,
   };
+}
+
+// Helper function to extract product IDs from chat messages
+function extractProductsFromMessage(content: string, metadata: any): string[] {
+  const productIds = new Set<string>();
+
+  try {
+    // Extract from metadata if available
+    if (metadata) {
+      if (metadata.recommended_products) {
+        metadata.recommended_products.forEach((product: any) => {
+          if (product.id) {
+            productIds.add(product.id.toString());
+          }
+        });
+      }
+      if (metadata.products) {
+        metadata.products.forEach((product: any) => {
+          if (product.id) {
+            productIds.add(product.id.toString());
+          }
+        });
+      }
+    }
+
+    if (content) {
+      // Extract from JSON patterns in content
+      const jsonRegex = /\{\s*"output"\s*:\s*\[[^\]]*\]\s*\}/g;
+      const matches = content.match(jsonRegex);
+
+      if (matches) {
+        matches.forEach(match => {
+          try {
+            const jsonData = JSON.parse(match);
+            if (jsonData.output && Array.isArray(jsonData.output)) {
+              jsonData.output.forEach((item: any) => {
+                if (item.product && item.product.id) {
+                  productIds.add(item.product.id.toString());
+                }
+              });
+            }
+          } catch (e) {
+            // Ignore parsing errors
+          }
+        });
+      }
+
+      // Extract simple product ID patterns
+      const simpleJsonRegex = /\{\s*"id"\s*:\s*(\d+)[^}]*\}/g;
+      const simpleMatches = content.match(simpleJsonRegex);
+      
+      if (simpleMatches) {
+        simpleMatches.forEach(match => {
+          try {
+            const productData = JSON.parse(match);
+            if (productData.id) {
+              productIds.add(productData.id.toString());
+            }
+          } catch (e) {
+            // Ignore parsing errors
+          }
+        });
+      }
+
+      // Extract product_id mentions
+      const productIdRegex = /product[_-]?id["\s]*:?\s*["']?(\d+)["']?/gi;
+      const idMatches = content.matchAll(productIdRegex);
+      for (const match of idMatches) {
+        if (match[1]) {
+          productIds.add(match[1]);
+        }
+      }
+    }
+  } catch (error) {
+    // Ignore extraction errors
+  }
+
+  return Array.from(productIds);
+}
+
+// Helper function to extract product details from chat messages
+function extractProductDetailsFromMessage(content: string, metadata: any, productDetailsMap: Map<string, any>) {
+  try {
+    // Extract from metadata if available
+    if (metadata) {
+      if (metadata.recommended_products) {
+        metadata.recommended_products.forEach((product: any) => {
+          if (product.id) {
+            productDetailsMap.set(product.id.toString(), {
+              title: product.title || product.name || `Product ${product.id}`,
+              price: product.price,
+              handle: product.handle,
+            });
+          }
+        });
+      }
+      if (metadata.products) {
+        metadata.products.forEach((product: any) => {
+          if (product.id) {
+            productDetailsMap.set(product.id.toString(), {
+              title: product.title || product.name || `Product ${product.id}`,
+              price: product.price,
+              handle: product.handle,
+            });
+          }
+        });
+      }
+    }
+
+    if (content) {
+      // Extract from JSON patterns in content
+      const jsonRegex = /\{\s*"output"\s*:\s*\[[^\]]*\]\s*\}/g;
+      const matches = content.match(jsonRegex);
+
+      if (matches) {
+        matches.forEach(match => {
+          try {
+            const jsonData = JSON.parse(match);
+            if (jsonData.output && Array.isArray(jsonData.output)) {
+              jsonData.output.forEach((item: any) => {
+                if (item.product && item.product.id) {
+                  productDetailsMap.set(item.product.id.toString(), {
+                    title: item.product.title || `Product ${item.product.id}`,
+                    price: item.product.price,
+                    handle: item.product.handle,
+                  });
+                }
+              });
+            }
+          } catch (e) {
+            // Ignore parsing errors
+          }
+        });
+      }
+
+      // Extract simple product data
+      const simpleJsonRegex = /\{\s*"id"\s*:\s*(\d+)[^}]*"title"\s*:\s*"([^"]*)"[^}]*\}/g;
+      let match;
+      while ((match = simpleJsonRegex.exec(content)) !== null) {
+        try {
+          const productData = JSON.parse(match[0]);
+          if (productData.id && productData.title) {
+            productDetailsMap.set(productData.id.toString(), {
+              title: productData.title,
+              price: productData.price,
+              handle: productData.handle,
+            });
+          }
+        } catch (e) {
+          // Ignore parsing errors
+        }
+      }
+    }
+  } catch (error) {
+    // Ignore extraction errors
+  }
 }
 
 export default router;
