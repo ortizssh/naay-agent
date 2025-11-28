@@ -1090,7 +1090,99 @@ router.get(
   }
 );
 
-// Get product performance analysis (mentioned vs sold)
+// Get analytics/top-recommended-products  
+router.get(
+  '/analytics/top-recommended-products',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop, days = 30 } = req.query;
+
+      if (!shop) {
+        return res.status(400).json({
+          success: false,
+          error: 'Shop parameter required',
+        });
+      }
+
+      const daysCount = parseInt(days as string);
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - daysCount);
+
+      // Get mentioned products from chat messages
+      const { data: chatMessages, error: chatError } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('chat_messages')
+        .select('session_id, content, metadata, timestamp')
+        .gte('timestamp', startDate.toISOString())
+        .lte('timestamp', endDate.toISOString())
+        .not('content', 'is', null)
+        .eq('role', 'agent');
+
+      if (chatError) throw chatError;
+
+      // Extract and count product recommendations
+      const productCounts: { [productId: string]: { count: number; details?: any } } = {};
+
+      if (chatMessages) {
+        for (const message of chatMessages) {
+          const products = extractProductsFromMessage(message.content || '', message.metadata);
+          const productDetails = extractProductDetailsFromMessage(message.content || '', message.metadata);
+          
+          for (const productId of products) {
+            if (!productCounts[productId]) {
+              productCounts[productId] = { count: 0 };
+            }
+            productCounts[productId].count++;
+            
+            // Store product details if found
+            if (productDetails && productDetails.length > 0) {
+              const productDetail = productDetails.find((p: any) => p.id?.toString() === productId);
+              if (productDetail && !productCounts[productId].details) {
+                productCounts[productId].details = productDetail;
+              }
+            }
+          }
+        }
+      }
+
+      // Get top 10 products and enrich with database info
+      const topProductIds = Object.entries(productCounts)
+        .sort(([, a], [, b]) => b.count - a.count)
+        .slice(0, 10)
+        .map(([productId, data]) => ({ productId, ...data }));
+
+      // Create enriched products with available data
+      const enrichedProducts = topProductIds.map((item) => {
+        return {
+          productId: item.productId,
+          recommendations: item.count,
+          title: item.details?.title || `Producto ${item.productId}`,
+          handle: item.details?.handle || '',
+          image: item.details?.image || '',
+          price: item.details?.price || 0,
+          vendor: item.details?.vendor || '',
+          productType: item.details?.productType || 'Producto'
+        };
+      });
+
+      res.json({
+        success: true,
+        data: {
+          products: enrichedProducts,
+          period: `${daysCount} días`,
+          totalRecommendations: Object.values(productCounts).reduce((sum, item) => sum + item.count, 0)
+        },
+      });
+    } catch (error) {
+      logger.error('Admin bypass top recommended products error:', error);
+      next(error);
+    }
+  }
+);
+
+// Get product performance analysis (mentioned vs sold) - legacy endpoint
 router.get(
   '/analytics/products-performance',
   async (req: Request, res: Response, next: NextFunction) => {

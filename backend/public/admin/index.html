@@ -8,19 +8,26 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --p-color-bg-surface: #fff;
-            --p-color-bg-app: #f1f2f4;
+            /* Naay Simple Color Palette - Primary and Black Only */
+            --naay-primary: #a59457;      /* Primary gold color */
+            --naay-dark: #212120;         /* Black color */
+            --naay-white: #FFFFFF;        /* White */
+            --naay-light: #f8f9fa;        /* Light gray for backgrounds */
+            
+            /* Legacy Polaris compatibility */
+            --p-color-bg-surface: var(--naay-white);
+            --p-color-bg-app: var(--naay-light);
             --p-font-size-300: 13px;
             --p-font-size-400: 14px;
             --p-font-size-500: 16px;
         }
         
         body {
-            background-color: var(--p-color-bg-app);
-            font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+            background-color: var(--naay-light);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "San Francisco", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
             margin: 0;
             padding: 20px;
-            color: #202223;
+            color: var(--naay-dark);
         }
 
         .Polaris-Page {
@@ -28,12 +35,42 @@
             margin: 0 auto;
         }
 
+        /* Button Styles - Naay Theme */
+        .btn {
+            background-color: var(--naay-primary);
+            color: var(--naay-white);
+            border: 1px solid var(--naay-primary);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: inherit;
+        }
+
+        .btn:hover {
+            background-color: var(--naay-dark);
+            border-color: var(--naay-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(165, 148, 87, 0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
         .Polaris-Card {
-            background: var(--p-color-bg-surface);
+            background: var(--naay-white);
             border-radius: 8px;
-            box-shadow: 0 0 0 1px rgba(63, 63, 68, 0.05), 0 1px 3px 0 rgba(63, 63, 68, 0.15);
+            box-shadow: 0 0 0 1px rgba(33, 33, 32, 0.08), 0 2px 8px rgba(33, 33, 32, 0.12);
             margin-bottom: 20px;
             overflow: hidden;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .Polaris-Card:hover {
+            box-shadow: 0 0 0 1px rgba(33, 33, 32, 0.12), 0 4px 16px rgba(33, 33, 32, 0.16);
         }
 
         .Polaris-Card__Header {
@@ -42,6 +79,12 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            background: var(--naay-light);
+        }
+        
+        .Polaris-Card__Header h2 {
+            color: var(--naay-dark);
+            font-weight: 600;
         }
 
         .Polaris-Card__Section {
@@ -492,6 +535,130 @@
             font-size: 13px;
             color: #6d7175;
         }
+        
+        /* Product List Styles - Compacto para barra lateral */
+        .product-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 0;
+        }
+
+        .product-item {
+            background: #f8f9fa;
+            border: 1px solid #e1e3e5;
+            border-radius: 6px;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.15s ease;
+            position: relative;
+        }
+
+        .product-item:hover {
+            background: var(--naay-light);
+            border-color: var(--naay-primary);
+        }
+
+        .product-rank {
+            background: var(--naay-primary);
+            color: var(--naay-white);
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 600;
+            min-width: 20px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .product-image {
+            width: 32px;
+            height: 32px;
+            background-color: #f6f6f7;
+            background-size: cover;
+            background-position: center;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+
+        .product-image.no-image {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6d7175;
+            font-size: 8px;
+            text-align: center;
+        }
+
+        .product-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .product-title {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--naay-dark);
+            margin: 0 0 2px 0;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .product-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+
+        .product-price {
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--naay-primary);
+        }
+
+        .product-vendor {
+            font-size: 9px;
+            color: #6d7175;
+        }
+
+        .recommendation-count {
+            background: var(--naay-primary);
+            color: var(--naay-white);
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 9px;
+            font-weight: 600;
+            white-space: nowrap;
+            text-align: center;
+            min-width: 20px;
+        }
+
+        .top-products-summary {
+            text-align: center;
+            padding: 8px;
+            background: var(--naay-light);
+            border-radius: 6px;
+            margin-bottom: 12px;
+            border: 1px solid #e1e3e5;
+        }
+
+        .top-products-summary-title {
+            font-size: 10px;
+            color: var(--naay-primary);
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .top-products-summary-value {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--naay-primary);
+        }
     </style>
 </head>
 <body>
@@ -539,65 +706,54 @@
                 <div style="position: relative; height: 280px; background: #f9fafb; border-radius: 8px; padding: 20px;">
                     <canvas id="analytics-chart" style="width: 100%; height: 100%;"></canvas>
                 </div>
-                <div id="chart-summary" style="margin-top: 15px; padding: 15px; background: #f1f2f4; border-radius: 6px; display: none;">
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; text-align: center;">
-                        <div>
-                            <div style="font-size: 18px; font-weight: 600; color: #008060;" id="total-conversations">-</div>
-                            <div style="font-size: 12px; color: #6d7175;">Total Conversaciones</div>
-                        </div>
-                        <div>
-                            <div style="font-size: 18px; font-weight: 600; color: #2563eb;" id="total-sales">-</div>
-                            <div style="font-size: 12px; color: #6d7175;">Total Ventas</div>
-                        </div>
-                        <div>
-                            <div style="font-size: 18px; font-weight: 600; color: #dc2626;" id="total-orders">-</div>
-                            <div style="font-size: 12px; color: #6d7175;">Total Órdenes</div>
-                        </div>
-                        <div>
-                            <div style="font-size: 18px; font-weight: 600; color: #7c3aed;" id="avg-order">-</div>
-                            <div style="font-size: 12px; color: #6d7175;">Promedio por Orden</div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
 
-        <div class="Polaris-Card">
-            <div class="Polaris-Card__Header">
-                <h2 style="font-size: 16px; font-weight: 600; margin: 0;">Productos: Consultados vs Vendidos</h2>
-                <div style="display: flex; gap: 10px;">
-                    <select id="products-period" class="btn" style="padding: 4px 8px;">
-                        <option value="7">7 días</option>
-                        <option value="14">14 días</option>
-                        <option value="30" selected>30 días</option>
-                        <option value="60">60 días</option>
-                    </select>
-                    <button class="btn" onclick="loadProductsPerformance()">Actualizar</button>
+        <div style="display: grid; grid-template-columns: 1fr 300px; gap: 20px;">
+            <!-- Conversaciones (columna principal) -->
+            <div class="Polaris-Card">
+                <div class="Polaris-Card__Header">
+                    <h2 style="font-size: 16px; font-weight: 600; margin: 0;">Historial de Conversaciones</h2>
+                    <button class="btn" onclick="loadConversations()">Actualizar</button>
                 </div>
-            </div>
-            <div class="Polaris-Card__Section">
-                <div id="products-performance-container">
+                <div id="conversations-container">
                     <div class="loading-spinner">
                         <div class="spinner"></div>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <div class="Polaris-Card">
-            <div class="Polaris-Card__Header">
-                <h2 style="font-size: 16px; font-weight: 600; margin: 0;">Historial de Conversaciones</h2>
-                <button class="btn" onclick="loadConversations()">Actualizar</button>
-            </div>
-            <div id="conversations-container">
-                <div class="loading-spinner">
-                    <div class="spinner"></div>
+                <div class="pagination" id="pagination-controls" style="display: none;">
+                    <button class="btn" id="prev-btn" onclick="changePage(-1)">Anterior</button>
+                    <span id="page-info">Página 1</span>
+                    <button class="btn" id="next-btn" onclick="changePage(1)">Siguiente</button>
                 </div>
             </div>
-            <div class="pagination" id="pagination-controls" style="display: none;">
-                <button class="btn" id="prev-btn" onclick="changePage(-1)">Anterior</button>
-                <span id="page-info">Página 1</span>
-                <button class="btn" id="next-btn" onclick="changePage(1)">Siguiente</button>
+
+            <!-- Top Productos (barra lateral) -->
+            <div class="Polaris-Card">
+                <div class="Polaris-Card__Header">
+                    <h2 style="font-size: 14px; font-weight: 600; margin: 0;">Top Productos</h2>
+                    <div style="display: flex; gap: 6px;">
+                        <select id="products-period" class="btn" style="padding: 2px 6px; font-size: 11px;">
+                            <option value="7">7d</option>
+                            <option value="14">14d</option>
+                            <option value="30" selected>30d</option>
+                            <option value="60">60d</option>
+                        </select>
+                        <button class="btn" style="padding: 2px 6px; font-size: 11px;" onclick="loadTopRecommendedProducts()">↻</button>
+                    </div>
+                </div>
+                <div class="Polaris-Card__Section" style="padding: 12px;">
+                    <div id="top-products-container">
+                        <div class="loading-spinner">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                    <div id="expand-toggle-container" style="text-align: center; margin-top: 8px; display: none;">
+                        <button id="expand-btn" class="btn" style="padding: 4px 8px; font-size: 10px; background: #f6f6f7; border: 1px solid #e1e3e5;" onclick="toggleProductsExpansion()">
+                            Ver más ▼
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -620,6 +776,8 @@
         let currentShop = '';
         const limit = 10;
         let analyticsChart = null;
+        let isProductsExpanded = false;
+        let allProducts = [];
 
         // Get shop from URL parameters
         const urlParams = new URLSearchParams(window.location.search);
@@ -651,7 +809,7 @@
             loadConversations();
             loadChartData();
             loadConversionMetrics();
-            loadProductsPerformance();
+            loadTopRecommendedProducts();
         }
 
         async function loadStats() {
@@ -668,9 +826,9 @@
                     // Color code status
                     const statusEl = document.getElementById('stat-status');
                     if (data.data.chatStatus === 'Active') {
-                        statusEl.style.color = '#008060';
+                        statusEl.style.color = 'var(--naay-primary)';
                     } else {
-                        statusEl.style.color = '#d82c0d';
+                        statusEl.style.color = 'var(--naay-dark)';
                     }
                 }
             } catch (error) {
@@ -994,7 +1152,6 @@
 
                 if (data.success) {
                     renderAnalyticsChart(data.data);
-                    updateChartSummary(data.data.totals);
                 } else {
                     showError('Error al cargar datos del gráfico: ' + (data.error || 'Error desconocido'));
                 }
@@ -1126,15 +1283,6 @@
             });
         }
 
-        function updateChartSummary(totals) {
-            document.getElementById('total-conversations').textContent = totals.conversations || 0;
-            document.getElementById('total-sales').textContent = '$' + (totals.sales || 0).toFixed(2);
-            document.getElementById('total-orders').textContent = totals.orders || 0;
-            document.getElementById('avg-order').textContent = '$' + (totals.average_order || 0).toFixed(2);
-            
-            // Show the summary section
-            document.getElementById('chart-summary').style.display = 'block';
-        }
 
         // Chart period change handler
         document.getElementById('chart-period').addEventListener('change', function() {
@@ -1159,11 +1307,9 @@
                     // Color code conversion rate
                     const conversionEl = document.getElementById('stat-conversion-rate');
                     if (data.data.conversionRate >= 10) {
-                        conversionEl.style.color = '#008060';
-                    } else if (data.data.conversionRate >= 5) {
-                        conversionEl.style.color = '#f79009';
+                        conversionEl.style.color = 'var(--naay-primary)';
                     } else {
-                        conversionEl.style.color = '#d82c0d';
+                        conversionEl.style.color = 'var(--naay-dark)';
                     }
                 }
             } catch (error) {
@@ -1172,93 +1318,124 @@
         }
 
         // Load products performance analysis
-        async function loadProductsPerformance() {
+        async function loadTopRecommendedProducts() {
             try {
                 const period = document.getElementById('products-period').value;
-                const container = document.getElementById('products-performance-container');
+                const container = document.getElementById('top-products-container');
                 container.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
 
-                const response = await fetch(`${API_BASE_URL}/api/admin-bypass/analytics/products-performance?shop=${currentShop}&days=${period}`);
+                const response = await fetch(`${API_BASE_URL}/api/admin-bypass/analytics/top-recommended-products?shop=${currentShop}&days=${period}`);
                 const data = await response.json();
 
                 if (data.success) {
-                    renderProductsPerformance(data.data);
+                    allProducts = data.data.products; // Guardar todos los productos
+                    renderTopRecommendedProducts(data.data);
                 } else {
-                    container.innerHTML = '<div style="padding: 20px; text-align: center; color: #6d7175;">Error al cargar datos de productos</div>';
+                    container.innerHTML = '<div style="padding: 20px; text-align: center; color: #6d7175;">Error al cargar productos recomendados</div>';
                 }
             } catch (error) {
-                const container = document.getElementById('products-performance-container');
+                const container = document.getElementById('top-products-container');
                 container.innerHTML = '<div style="padding: 20px; text-align: center; color: #6d7175;">Error de conexión</div>';
             }
         }
 
-        function renderProductsPerformance(data) {
-            const container = document.getElementById('products-performance-container');
+        function renderTopRecommendedProducts(data) {
+            const container = document.getElementById('top-products-container');
+            const expandToggle = document.getElementById('expand-toggle-container');
             
             if (!data.products || data.products.length === 0) {
-                container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6d7175;">No hay datos de productos para el período seleccionado</div>';
+                container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6d7175;">No hay productos recomendados para el período seleccionado</div>';
+                expandToggle.style.display = 'none';
                 return;
             }
 
+            // Mostrar botón de expandir solo si hay más de 5 productos
+            if (data.products.length > 5) {
+                expandToggle.style.display = 'block';
+            } else {
+                expandToggle.style.display = 'none';
+            }
+
             let html = `
-                <div class="products-summary">
-                    <div class="summary-metric">
-                        <div class="summary-value">${data.summary.totalMentions}</div>
-                        <div class="summary-label">Total Menciones</div>
-                    </div>
-                    <div class="summary-metric">
-                        <div class="summary-value">${data.summary.totalSalesQuantity}</div>
-                        <div class="summary-label">Total Vendidos</div>
-                    </div>
-                    <div class="summary-metric">
-                        <div class="summary-value">$${data.summary.totalRevenue.toFixed(2)}</div>
-                        <div class="summary-label">Revenue Total</div>
-                    </div>
-                    <div class="summary-metric">
-                        <div class="summary-value">${data.summary.averageConversionRate.toFixed(1)}%</div>
-                        <div class="summary-label">Conversión Promedio</div>
-                    </div>
+                <div class="top-products-summary">
+                    <div class="top-products-summary-title">Total de Recomendaciones</div>
+                    <div class="top-products-summary-value">${data.totalRecommendations}</div>
                 </div>
                 
-                <table class="products-performance-table">
-                    <thead>
-                        <tr>
-                            <th>Producto</th>
-                            <th>Menciones</th>
-                            <th>Vendidos</th>
-                            <th>Revenue</th>
-                            <th>Gap %</th>
-                            <th>Conversión</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+                <div class="product-list">
             `;
 
-            data.products.forEach(product => {
-                const gapClass = product.gapPercentage > 0 ? 'gap-positive' : 
-                               product.gapPercentage < 0 ? 'gap-negative' : 'gap-neutral';
-                               
-                const conversionColor = product.conversionRate >= 50 ? '#008060' : 
-                                      product.conversionRate >= 25 ? '#f79009' : '#d82c0d';
+            // Mostrar solo los primeros 5 productos o todos según el estado
+            const productsToShow = isProductsExpanded ? data.products : data.products.slice(0, 5);
+
+            productsToShow.forEach((product, index) => {
+                const imageStyle = product.image 
+                    ? `background-image: url('${product.image}');`
+                    : '';
+                
+                const imageClass = product.image ? '' : 'no-image';
+                const imageContent = product.image ? '' : 'Sin imagen';
+                
+                const formattedPrice = product.price > 0 ? `$${product.price.toLocaleString()}` : '';
+
+                // Productos 6-10 tienen una clase especial para animación
+                const extraClass = index >= 5 ? ' class="extra-product"' : '';
 
                 html += `
-                    <tr>
-                        <td class="product-title-cell" title="${escapeHtml(product.title)}">${escapeHtml(product.title)}</td>
-                        <td>${product.mentions}</td>
-                        <td>${product.salesQuantity}</td>
-                        <td>$${product.salesRevenue.toFixed(2)}</td>
-                        <td class="${gapClass}">${product.gapPercentage > 0 ? '+' : ''}${product.gapPercentage}%</td>
-                        <td class="conversion-rate" style="color: ${conversionColor}">${product.conversionRate.toFixed(1)}%</td>
-                    </tr>
+                    <div class="product-item"${extraClass}>
+                        <div class="product-rank">#${index + 1}</div>
+                        <div class="product-image ${imageClass}" style="${imageStyle}">
+                            ${imageContent}
+                        </div>
+                        <div class="product-info">
+                            <h3 class="product-title">${escapeHtml(product.title)}</h3>
+                            <div class="product-meta">
+                                ${formattedPrice ? `<div class="product-price">${formattedPrice}</div>` : ''}
+                                ${product.vendor ? `<div class="product-vendor">${escapeHtml(product.vendor)}</div>` : ''}
+                            </div>
+                        </div>
+                        <div class="recommendation-count">
+                            ${product.recommendations} recomendacion${product.recommendations !== 1 ? 'es' : ''}
+                        </div>
+                    </div>
                 `;
             });
 
             html += `
-                    </tbody>
-                </table>
+                </div>
             `;
 
             container.innerHTML = html;
+
+            // Actualizar texto del botón
+            updateExpandButton();
+        }
+
+        function toggleProductsExpansion() {
+            isProductsExpanded = !isProductsExpanded;
+            
+            // Re-renderizar con los datos guardados
+            if (allProducts.length > 0) {
+                renderTopRecommendedProducts({
+                    products: allProducts,
+                    totalRecommendations: allProducts.reduce((sum, p) => sum + p.recommendations, 0)
+                });
+            }
+        }
+
+        function updateExpandButton() {
+            const expandBtn = document.getElementById('expand-btn');
+            if (expandBtn) {
+                if (isProductsExpanded) {
+                    expandBtn.innerHTML = 'Ver menos ▲';
+                    expandBtn.style.background = 'var(--naay-primary)';
+                    expandBtn.style.color = 'white';
+                } else {
+                    expandBtn.innerHTML = 'Ver más ▼';
+                    expandBtn.style.background = '#f6f6f7';
+                    expandBtn.style.color = '#202223';
+                }
+            }
         }
     </script>
 
