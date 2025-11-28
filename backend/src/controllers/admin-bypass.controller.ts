@@ -1090,7 +1090,7 @@ router.get(
   }
 );
 
-// Get analytics/top-recommended-products  
+// Get analytics/top-recommended-products
 router.get(
   '/analytics/top-recommended-products',
   async (req: Request, res: Response, next: NextFunction) => {
@@ -1123,22 +1123,32 @@ router.get(
       if (chatError) throw chatError;
 
       // Extract and count product recommendations
-      const productCounts: { [productId: string]: { count: number; details?: any } } = {};
+      const productCounts: {
+        [productId: string]: { count: number; details?: any };
+      } = {};
 
       if (chatMessages) {
         for (const message of chatMessages) {
-          const products = extractProductsFromMessage(message.content || '', message.metadata);
-          const productDetails = extractProductDetailsFromMessage(message.content || '', message.metadata);
-          
+          const products = extractProductsFromMessage(
+            message.content || '',
+            message.metadata
+          );
+          const productDetails = extractProductDetailsFromMessage(
+            message.content || '',
+            message.metadata
+          );
+
           for (const productId of products) {
             if (!productCounts[productId]) {
               productCounts[productId] = { count: 0 };
             }
             productCounts[productId].count++;
-            
+
             // Store product details if found
             if (productDetails && productDetails.length > 0) {
-              const productDetail = productDetails.find((p: any) => p.id?.toString() === productId);
+              const productDetail = productDetails.find(
+                (p: any) => p.id?.toString() === productId
+              );
               if (productDetail && !productCounts[productId].details) {
                 productCounts[productId].details = productDetail;
               }
@@ -1154,7 +1164,7 @@ router.get(
         .map(([productId, data]) => ({ productId, ...data }));
 
       // Create enriched products with available data
-      const enrichedProducts = topProductIds.map((item) => {
+      const enrichedProducts = topProductIds.map(item => {
         return {
           productId: item.productId,
           recommendations: item.count,
@@ -1163,7 +1173,7 @@ router.get(
           image: item.details?.image || '',
           price: item.details?.price || 0,
           vendor: item.details?.vendor || '',
-          productType: item.details?.productType || 'Producto'
+          productType: item.details?.productType || 'Producto',
         };
       });
 
@@ -1172,7 +1182,10 @@ router.get(
         data: {
           products: enrichedProducts,
           period: `${daysCount} días`,
-          totalRecommendations: Object.values(productCounts).reduce((sum, item) => sum + item.count, 0)
+          totalRecommendations: Object.values(productCounts).reduce(
+            (sum, item) => sum + item.count,
+            0
+          ),
         },
       });
     } catch (error) {
