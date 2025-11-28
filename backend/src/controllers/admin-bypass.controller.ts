@@ -1129,7 +1129,7 @@ router.get(
 
       if (chatMessages) {
         const productDetailsMap = new Map<string, any>();
-        
+
         for (const message of chatMessages) {
           const products = extractProductsFromMessage(
             message.content || '',
