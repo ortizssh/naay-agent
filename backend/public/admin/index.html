@@ -684,16 +684,16 @@
 
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-label">Conversiones Chat → Venta</div>
-                <div class="stat-value" id="stat-conversion-rate">-</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Revenue Atribuido</div>
-                <div class="stat-value" id="stat-attributed-revenue">-</div>
-            </div>
-            <div class="stat-card">
                 <div class="stat-label">Conversaciones</div>
                 <div class="stat-value" id="stat-conversations">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Productos Recomendados</div>
+                <div class="stat-value" id="stat-recommended">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Recomendaciones</div>
+                <div class="stat-value" id="stat-recommendations">-</div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Estado del Chat</div>
@@ -703,7 +703,7 @@
 
         <div class="Polaris-Card">
             <div class="Polaris-Card__Header">
-                <h2 style="font-size: 16px; font-weight: 600; margin: 0;">Análisis de Conversaciones y Ventas</h2>
+                <h2 style="font-size: 16px; font-weight: 600; margin: 0;">Análisis de Conversaciones</h2>
                 <div style="display: flex; gap: 10px;">
                     <select id="chart-period" class="btn" style="padding: 4px 8px;">
                         <option value="7">7 días</option>
@@ -820,8 +820,7 @@
             loadStats();
             setTimeout(() => loadConversations(), 100);
             setTimeout(() => loadChartData(), 200);
-            setTimeout(() => loadConversionMetrics(), 300);
-            setTimeout(() => loadTopRecommendedProducts(), 400);
+            setTimeout(() => loadTopRecommendedProducts(), 300);
         }
 
         async function loadStats() {
@@ -1217,20 +1216,11 @@
                         {
                             label: 'Conversaciones',
                             data: chartData.map(d => d.conversations),
-                            borderColor: '#008060',
-                            backgroundColor: 'rgba(0, 128, 96, 0.1)',
-                            fill: false,
+                            borderColor: 'var(--naay-primary)',
+                            backgroundColor: 'rgba(165, 148, 87, 0.1)',
+                            fill: true,
                             tension: 0.4,
                             yAxisID: 'y'
-                        },
-                        {
-                            label: 'Ventas ($)',
-                            data: chartData.map(d => d.sales),
-                            borderColor: '#2563eb',
-                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                            fill: false,
-                            tension: 0.4,
-                            yAxisID: 'y1'
                         }
                     ]
                 },
@@ -1251,13 +1241,8 @@
                         },
                         tooltip: {
                             callbacks: {
-                                afterLabel: function(context) {
-                                    const dataIndex = context.dataIndex;
-                                    const dayData = chartData[dataIndex];
-                                    if (context.dataset.label === 'Ventas ($)') {
-                                        return `Órdenes: ${dayData.orders_count}`;
-                                    }
-                                    return '';
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.parsed.y}`;
                                 }
                             }
                         }
@@ -1280,34 +1265,14 @@
                             title: {
                                 display: true,
                                 text: 'Conversaciones',
-                                color: '#008060'
+                                color: 'var(--naay-primary)'
                             },
                             grid: {
-                                color: 'rgba(0, 0, 0, 0.1)'
+                                color: 'rgba(165, 148, 87, 0.1)'
                             },
                             ticks: {
                                 beginAtZero: true,
-                                color: '#008060'
-                            }
-                        },
-                        y1: {
-                            type: 'linear',
-                            display: true,
-                            position: 'right',
-                            title: {
-                                display: true,
-                                text: 'Ventas ($)',
-                                color: '#2563eb'
-                            },
-                            grid: {
-                                drawOnChartArea: false,
-                            },
-                            ticks: {
-                                beginAtZero: true,
-                                color: '#2563eb',
-                                callback: function(value) {
-                                    return '$' + value.toFixed(0);
-                                }
+                                color: 'var(--naay-primary)'
                             }
                         }
                     }
@@ -1326,28 +1291,6 @@
             loadProductsPerformance();
         });
 
-        // Load conversion metrics
-        async function loadConversionMetrics() {
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/admin-bypass/analytics/conversion?shop=${currentShop}&days=30`);
-                const data = await response.json();
-
-                if (data.success) {
-                    document.getElementById('stat-conversion-rate').textContent = data.data.conversionRate + '%';
-                    document.getElementById('stat-attributed-revenue').textContent = '$' + data.data.revenueAttributed.toFixed(2);
-                    
-                    // Color code conversion rate
-                    const conversionEl = document.getElementById('stat-conversion-rate');
-                    if (data.data.conversionRate >= 10) {
-                        conversionEl.style.color = 'var(--naay-primary)';
-                    } else {
-                        conversionEl.style.color = 'var(--naay-dark)';
-                    }
-                }
-            } catch (error) {
-                // Error loading conversion metrics
-            }
-        }
 
         // Load products performance analysis
         async function loadTopRecommendedProducts() {
