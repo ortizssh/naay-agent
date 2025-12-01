@@ -96,12 +96,20 @@ jobs:
     environment:
       name: 'Production'
       url: https://naay-agent-app1763504937.azurewebsites.net
+    concurrency:
+      group: production-deployment
+      cancel-in-progress: false
 
     steps:
     - name: Download deployment artifact
       uses: actions/download-artifact@v4
       with:
         name: azure-app
+
+    - name: Wait to avoid deployment conflicts
+      run: |
+        echo "⏳ Waiting 30 seconds to avoid any deployment conflicts..."
+        sleep 30
 
     - name: Deploy to Azure Web App
       uses: azure/webapps-deploy@v3
@@ -111,10 +119,12 @@ jobs:
         publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
         package: .
         clean: true
+        restart: true
+      timeout-minutes: 10
 
     - name: Verify deployment
       run: |
         echo "🚀 Deployment completed!"
-        echo "🌐 Waiting 30 seconds for app to start..."
-        sleep 30
+        echo "🌐 Waiting 45 seconds for app to start..."
+        sleep 45
         curl -f https://naay-agent-app1763504937.azurewebsites.net/health || echo "Health check failed - app may still be starting"
