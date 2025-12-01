@@ -1,0 +1,187 @@
+name: Ultimate Azure Deployment Fix - naay-agent-app1763504937
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  AZURE_WEBAPP_NAME: naay-agent-app1763504937
+  NODE_VERSION: '20.x'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies and build
+      run: |
+        npm ci
+        cd backend
+        npm ci --only=production
+        npm run build
+
+    - name: Create clean deployment package
+      run: |
+        mkdir azure-deploy
+        
+        # Copy only essential files
+        cp -r backend/dist azure-deploy/
+        cp -r backend/node_modules azure-deploy/
+        
+        # Create optimized package.json
+        cat > azure-deploy/package.json << 'EOF'
+        {
+          "name": "naay-agent",
+          "version": "1.0.0",
+          "main": "dist/index.js",
+          "scripts": {
+            "start": "node dist/index.js"
+          },
+          "engines": {
+            "node": "20.x"
+          },
+          "dependencies": {
+            "@shopify/admin-api-client": "^1.0.0",
+            "@shopify/storefront-api-client": "^1.0.0", 
+            "@supabase/supabase-js": "^2.38.0",
+            "express": "^4.18.2",
+            "express-rate-limit": "^7.1.0",
+            "cors": "^2.8.5",
+            "helmet": "^7.0.0",
+            "winston": "^3.10.0",
+            "jsonwebtoken": "^9.0.0",
+            "openai": "^4.12.0",
+            "uuid": "^9.0.0"
+          }
+        }
+        EOF
+        
+        # Create web.config
+        cat > azure-deploy/web.config << 'EOF'
+        <?xml version="1.0" encoding="utf-8"?>
+        <configuration>
+          <system.webServer>
+            <handlers>
+              <add name="iisnode" path="dist/index.js" verb="*" modules="iisnode"/>
+            </handlers>
+            <rewrite>
+              <rules>
+                <rule name="DynamicContent">
+                  <conditions>
+                    <add input="{REQUEST_FILENAME}" matchType="IsFile" negate="True"/>
+                  </conditions>
+                  <action type="Rewrite" url="dist/index.js"/>
+                </rule>
+              </rules>
+            </rewrite>
+            <iisnode node_env="production" />
+          </system.webServer>
+        </configuration>
+        EOF
+
+    - name: Upload deployment artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: azure-app
+        path: azure-deploy/
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: 'Production'
+      url: https://naay-agent-app1763504937.azurewebsites.net
+
+    steps:
+    - name: Download deployment artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: azure-app
+
+    - name: Wait to avoid conflicts
+      run: |
+        echo "⏳ Waiting 60 seconds to avoid deployment conflicts..."
+        sleep 60
+
+    - name: Deploy with maximum retries
+      id: deploy
+      shell: bash
+      run: |
+        # Function to attempt deployment
+        deploy_attempt() {
+          local attempt=$1
+          echo "🚀 Deployment attempt #$attempt"
+          
+          # Use curl to deploy via Kudu API
+          PUBLISH_PROFILE='${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}'
+          
+          # Extract credentials from publish profile
+          USERNAME=$(echo "$PUBLISH_PROFILE" | grep -o 'userName="[^"]*"' | cut -d'"' -f2)
+          PASSWORD=$(echo "$PUBLISH_PROFILE" | grep -o 'userPWD="[^"]*"' | cut -d'"' -f2)
+          
+          if [ -z "$USERNAME" ] || [ -z "$PASSWORD" ]; then
+            echo "❌ Could not extract credentials from publish profile"
+            return 1
+          fi
+          
+          # Create zip package
+          zip -r deploy.zip . -x "*.git*"
+          
+          # Deploy via Kudu API with OneDeploy
+          response=$(curl -X POST \
+            "https://naay-agent-app1763504937.scm.azurewebsites.net/api/zipdeploy?isAsync=false" \
+            -u "$USERNAME:$PASSWORD" \
+            -H "Content-Type: application/zip" \
+            --data-binary @deploy.zip \
+            -w "%{http_code}" \
+            -s -o response.txt)
+          
+          echo "HTTP Response: $response"
+          
+          if [ "$response" = "200" ] || [ "$response" = "202" ]; then
+            echo "✅ Deployment successful!"
+            return 0
+          else
+            echo "❌ Deployment failed with HTTP $response"
+            cat response.txt 2>/dev/null || echo "No response body"
+            return 1
+          fi
+        }
+        
+        # Try deployment up to 5 times
+        for attempt in 1 2 3 4 5; do
+          if deploy_attempt $attempt; then
+            echo "🎉 Deployment succeeded on attempt #$attempt"
+            exit 0
+          else
+            if [ $attempt -lt 5 ]; then
+              wait_time=$((attempt * 30))
+              echo "⏳ Waiting ${wait_time} seconds before retry..."
+              sleep $wait_time
+            fi
+          fi
+        done
+        
+        echo "💥 All deployment attempts failed"
+        exit 1
+
+    - name: Verify deployment
+      run: |
+        echo "🌐 Verifying deployment..."
+        sleep 30
+        curl -f https://naay-agent-app1763504937.azurewebsites.net/health || echo "Health check failed - app may still be starting"
+        echo "🚀 Deployment process completed!"

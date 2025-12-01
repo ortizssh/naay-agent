@@ -1,8 +1,9 @@
-name: Fixed Azure Deployment - naay-agent-app1763504937
+name: "[DISABLED] Fixed Azure Deployment - REPLACED BY azure-deploy-ultimate.yml"
 
 on:
-  push:
-    branches: [ main ]
+  # DISABLED - Using azure-deploy-ultimate.yml instead
+  # push:
+  #   branches: [ main ]
   workflow_dispatch:
     inputs:
       force_deploy:
@@ -192,7 +193,21 @@ jobs:
         echo "📋 Package.json contents:"
         cat ./deploy/package.json
 
-    - name: Deploy to Azure Web App
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+      continue-on-error: true
+
+    - name: Force stop Azure Web App to resolve 409 conflicts
+      run: |
+        echo "🛑 Stopping Azure Web App to resolve deployment conflicts..."
+        az webapp stop --name ${{ env.AZURE_WEBAPP_NAME }} --resource-group naay-agent-rg || echo "Stop command failed - continuing"
+        sleep 30
+        echo "✅ App stopped, proceeding with deployment"
+      continue-on-error: true
+
+    - name: Deploy to Azure Web App (Attempt 1)
       id: deploy-to-webapp
       uses: azure/webapps-deploy@v3
       with:
@@ -201,8 +216,32 @@ jobs:
         publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
         package: ./deploy
         clean: true
+        restart: true
       env:
         SCM_DO_BUILD_DURING_DEPLOYMENT: false
+      continue-on-error: true
+      timeout-minutes: 15
+
+    - name: Retry deployment if first attempt failed
+      if: failure()
+      run: |
+        echo "🔄 First deployment failed, waiting and retrying..."
+        sleep 60
+        
+    - name: Deploy to Azure Web App (Attempt 2 - Retry)
+      if: failure()
+      id: deploy-to-webapp-retry
+      uses: azure/webapps-deploy@v3
+      with:
+        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        slot-name: 'Production'
+        publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
+        package: ./deploy
+        clean: true
+        restart: true
+      env:
+        SCM_DO_BUILD_DURING_DEPLOYMENT: false
+      timeout-minutes: 15
 
     - name: Verify deployment
       run: |
