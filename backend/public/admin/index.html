@@ -562,10 +562,11 @@
             border-radius: 6px;
             padding: 8px;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 8px;
             transition: all 0.15s ease;
             position: relative;
+            min-height: 50px;
         }
 
         .product-item:hover {
@@ -615,9 +616,9 @@
             color: var(--naay-dark);
             margin: 0 0 2px 0;
             line-height: 1.2;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            white-space: normal;
+            word-wrap: break-word;
+            overflow: visible;
         }
 
         .product-meta {
