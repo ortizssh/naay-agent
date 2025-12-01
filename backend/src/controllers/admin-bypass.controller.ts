@@ -3,9 +3,13 @@ import { SupabaseService } from '@/services/supabase.service';
 import { ShopifyService } from '@/services/shopify.service';
 import { QueueService } from '@/services/queue.service';
 import { logger } from '@/utils/logger';
+import { adminBypassRateLimit } from '@/middleware/rateLimiter';
 
 const router = Router();
 const supabaseService = new SupabaseService();
+
+// Apply rate limiting to all admin-bypass routes
+router.use(adminBypassRateLimit);
 
 // Admin bypass endpoints - these don't require authentication
 // Used by the admin panel when token auth is failing

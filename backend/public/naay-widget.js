@@ -5186,12 +5186,14 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       // Transform Shopify cart lines to our format
       this.cartData.items = shopifyCart.lines?.edges?.map(edge => ({
         id: edge.node.id,
+        cartItemId: `shopify_${edge.node.id}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`, // Add unique cart item ID
         title: edge.node.merchandise?.product?.title || 'Product',
         price: edge.node.merchandise?.priceV2?.amount || 0,
         quantity: edge.node.quantity,
         image: edge.node.merchandise?.image?.url || '',
         variantId: edge.node.merchandise?.id || '',
-        handle: edge.node.merchandise?.product?.handle || ''
+        handle: edge.node.merchandise?.product?.handle || '',
+        addedAt: new Date().toISOString()
       })) || [];
 
       // Update totals
@@ -5486,6 +5488,13 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
       this.cartData.items.forEach((item, index) => {
         console.log(`🎨 Rendering item ${index + 1}:`, item);
+        
+        // FIXED: Ensure every item has a cartItemId
+        if (!item.cartItemId) {
+          item.cartItemId = `fallback_${item.id}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+          console.log('⚠️ Added fallback cartItemId to item:', item.cartItemId);
+        }
+        
         const itemElement = document.createElement('div');
         itemElement.className = 'naay-cart-panel__item';
 
@@ -5546,6 +5555,16 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         if (removeBtn) {
           removeBtn.addEventListener('click', async (e) => {
             e.preventDefault();
+            console.log('🗑️ Remove button clicked for item:', item.title);
+
+            const cartItemId = removeBtn.getAttribute('data-cart-item-id');
+            console.log('🗑️ Cart Item ID from button:', cartItemId);
+            console.log('🗑️ Item data:', item);
+            
+            if (!cartItemId) {
+              console.error('❌ No cart item ID found on remove button!');
+              return;
+            }
 
             // Add immediate visual feedback with animation
             itemElement.style.transition = 'all 0.3s ease';
@@ -5554,7 +5573,6 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             itemElement.style.pointerEvents = 'none';
             removeBtn.disabled = true;
 
-            const cartItemId = removeBtn.getAttribute('data-cart-item-id');
             console.log('🗑️ Starting removal for cart item with ID:', cartItemId);
 
             try {

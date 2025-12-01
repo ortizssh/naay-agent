@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Cart Remove Functions</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #cf795e;
+            color: white;
+            border: none;
+            padding: 12px 18px;
+            margin: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #b86850;
+        }
+        .alert {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .debug-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🗑️ Test de Funciones de Eliminación del Carrito</h1>
+        
+        <div class="alert">
+            <strong>⚠️ Instrucciones:</strong><br>
+            1. Abrir consola del navegador (F12)<br>
+            2. Agregar productos al carrito<br>
+            3. Abrir el panel del carrito<br>
+            4. Probar los botones de eliminación<br>
+            5. Observar logs en consola para debug
+        </div>
+        
+        <div style="margin: 20px 0;">
+            <h3>🛍️ Agregar Productos de Prueba</h3>
+            <button onclick="addTestProduct()">Agregar Producto 1</button>
+            <button onclick="addTestProduct2()">Agregar Producto 2</button>
+            <button onclick="addTestProduct3()">Agregar Producto 3</button>
+            <button onclick="addMultipleProducts()">Agregar 5 Productos Iguales</button>
+        </div>
+        
+        <div style="margin: 20px 0;">
+            <h3>🛒 Controles del Carrito</h3>
+            <button onclick="showCart()">Mostrar Carrito</button>
+            <button onclick="hideCart()">Ocultar Carrito</button>
+            <button onclick="debugCartState()">Debug Estado Carrito</button>
+            <button onclick="clearAllItems()">Limpiar Todo</button>
+        </div>
+        
+        <div style="margin: 20px 0;">
+            <h3>🧪 Tests de Eliminación</h3>
+            <button onclick="testRemoveFirst()">Eliminar Primer Item</button>
+            <button onclick="testRemoveLast()">Eliminar Último Item</button>
+            <button onclick="testRemoveSpecific()">Eliminar Item Específico</button>
+        </div>
+        
+        <div class="debug-info" id="debugOutput">
+            <strong>Debug Output:</strong><br>
+            Los logs aparecerán aquí...
+        </div>
+    </div>
+
+    <!-- Widget Script -->
+    <script src="http://localhost:3000/backend/public/naay-widget.js"></script>
+    
+    <script>
+        let debugOutput = document.getElementById('debugOutput');
+        
+        function log(message) {
+            console.log(message);
+            debugOutput.innerHTML += '<br>' + new Date().toLocaleTimeString() + ': ' + message;
+            debugOutput.scrollTop = debugOutput.scrollHeight;
+        }
+        
+        // Initialize widget
+        window.addEventListener('DOMContentLoaded', function() {
+            log('🚀 Inicializando widget...');
+            
+            try {
+                window.naayWidget = new window.NaayWidget({
+                    shopDomain: 'test-shop.myshopify.com',
+                    apiEndpoint: 'http://localhost:3000',
+                    position: 'bottom-right',
+                    enabled: true
+                });
+                log('✅ Widget inicializado correctamente');
+            } catch (error) {
+                log('❌ Error inicializando widget: ' + error.message);
+            }
+        });
+        
+        // Test products
+        function addTestProduct() {
+            if (!window.naayWidget) {
+                log('❌ Widget no disponible');
+                return;
+            }
+            
+            const product = {
+                id: 'test-001',
+                title: 'Crema Hidratante Test',
+                price: '29.99',
+                image: 'https://via.placeholder.com/200x200?text=Crema',
+                variantId: 'var-001',
+                handle: 'crema-test'
+            };
+            
+            window.naayWidget.addToCartLocal(product);
+            log('✅ Producto 1 agregado al carrito');
+        }
+        
+        function addTestProduct2() {
+            if (!window.naayWidget) return;
+            
+            const product = {
+                id: 'test-002',
+                title: 'Sérum Vitamina C',
+                price: '39.99',
+                image: 'https://via.placeholder.com/200x200?text=Serum',
+                variantId: 'var-002',
+                handle: 'serum-test'
+            };
+            
+            window.naayWidget.addToCartLocal(product);
+            log('✅ Producto 2 agregado al carrito');
+        }
+        
+        function addTestProduct3() {
+            if (!window.naayWidget) return;
+            
+            const product = {
+                id: 'test-003',
+                title: 'Limpiador Facial',
+                price: '19.99',
+                image: 'https://via.placeholder.com/200x200?text=Limpiador',
+                variantId: 'var-003',
+                handle: 'limpiador-test'
+            };
+            
+            window.naayWidget.addToCartLocal(product);
+            log('✅ Producto 3 agregado al carrito');
+        }
+        
+        function addMultipleProducts() {
+            if (!window.naayWidget) return;
+            
+            const product = {
+                id: 'test-multiple',
+                title: 'Producto Múltiple',
+                price: '15.99',
+                image: 'https://via.placeholder.com/200x200?text=Multi',
+                variantId: 'var-multiple',
+                handle: 'multiple-test'
+            };
+            
+            for (let i = 0; i < 5; i++) {
+                window.naayWidget.addToCartLocal(product);
+            }
+            log('✅ 5 productos iguales agregados al carrito');
+        }
+        
+        // Cart controls
+        function showCart() {
+            if (!window.naayWidget) return;
+            window.naayWidget.showCart();
+            log('🛒 Carrito mostrado');
+        }
+        
+        function hideCart() {
+            if (!window.naayWidget) return;
+            window.naayWidget.hideCart();
+            log('🛒 Carrito oculto');
+        }
+        
+        function debugCartState() {
+            if (!window.naayWidget || !window.naayWidget.cartData) {
+                log('❌ No hay datos del carrito');
+                return;
+            }
+            
+            const cart = window.naayWidget.cartData;
+            log('🔍 Estado del carrito:');
+            log(`   📦 Total items: ${cart.items.length}`);
+            log(`   💰 Total: $${cart.total || 0}`);
+            
+            cart.items.forEach((item, index) => {
+                log(`   ${index + 1}. "${item.title}" (ID: ${item.cartItemId}) - Qty: ${item.quantity}`);
+            });
+        }
+        
+        function clearAllItems() {
+            if (!window.naayWidget) return;
+            window.naayWidget.cartData.items = [];
+            window.naayWidget.updateCartDisplay();
+            log('🗑️ Todos los items eliminados del carrito');
+        }
+        
+        // Remove tests
+        function testRemoveFirst() {
+            if (!window.naayWidget || !window.naayWidget.cartData.items.length) {
+                log('❌ No hay items en el carrito para eliminar');
+                return;
+            }
+            
+            const firstItem = window.naayWidget.cartData.items[0];
+            log(`🗑️ Intentando eliminar primer item: "${firstItem.title}" (ID: ${firstItem.cartItemId})`);
+            
+            if (firstItem.cartItemId) {
+                window.naayWidget.removeFromCartByItemId(firstItem.cartItemId);
+                log('✅ Comando de eliminación enviado');
+            } else {
+                log('❌ Item no tiene cartItemId');
+            }
+        }
+        
+        function testRemoveLast() {
+            if (!window.naayWidget || !window.naayWidget.cartData.items.length) {
+                log('❌ No hay items en el carrito para eliminar');
+                return;
+            }
+            
+            const items = window.naayWidget.cartData.items;
+            const lastItem = items[items.length - 1];
+            log(`🗑️ Intentando eliminar último item: "${lastItem.title}" (ID: ${lastItem.cartItemId})`);
+            
+            if (lastItem.cartItemId) {
+                window.naayWidget.removeFromCartByItemId(lastItem.cartItemId);
+                log('✅ Comando de eliminación enviado');
+            } else {
+                log('❌ Item no tiene cartItemId');
+            }
+        }
+        
+        function testRemoveSpecific() {
+            if (!window.naayWidget || !window.naayWidget.cartData.items.length) {
+                log('❌ No hay items en el carrito para eliminar');
+                return;
+            }
+            
+            // Find item with "Crema" in title
+            const items = window.naayWidget.cartData.items;
+            const cremaItem = items.find(item => item.title.includes('Crema'));
+            
+            if (cremaItem) {
+                log(`🗑️ Intentando eliminar item específico: "${cremaItem.title}" (ID: ${cremaItem.cartItemId})`);
+                
+                if (cremaItem.cartItemId) {
+                    window.naayWidget.removeFromCartByItemId(cremaItem.cartItemId);
+                    log('✅ Comando de eliminación enviado');
+                } else {
+                    log('❌ Item no tiene cartItemId');
+                }
+            } else {
+                log('❌ No se encontró item con "Crema" en el título');
+            }
+        }
+        
+        log('🧪 Test page loaded. Widget será inicializado automáticamente.');
+        
+        // Override console.log to capture widget logs
+        const originalLog = console.log;
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            // Show widget logs in our debug output
+            if (args[0] && typeof args[0] === 'string' && (
+                args[0].includes('🗑️') || 
+                args[0].includes('❌') || 
+                args[0].includes('✅') ||
+                args[0].includes('🛒'))) {
+                debugOutput.innerHTML += '<br><span style="color: #666;">' + args.join(' ') + '</span>';
+                debugOutput.scrollTop = debugOutput.scrollHeight;
+            }
+        };
+    </script>
+</body>
+</html>

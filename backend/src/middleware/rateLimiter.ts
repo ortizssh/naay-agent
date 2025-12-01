@@ -99,7 +99,8 @@ export const createShopRateLimit = (
 
 // Specialized rate limiters for different endpoints
 export const productSyncRateLimit = createShopRateLimit(10, 60 * 1000, 'sync'); // 10 requests per minute
-export const adminRateLimit = createShopRateLimit(30, 60 * 1000, 'admin'); // 30 requests per minute
+export const adminRateLimit = createShopRateLimit(100, 60 * 1000, 'admin'); // 100 requests per minute (increased for dashboard)
+export const adminBypassRateLimit = createShopRateLimit(300, 60 * 1000, 'admin-bypass'); // 300 requests per minute (very permissive for dashboard)
 export const widgetRateLimit = createShopRateLimit(200, 60 * 1000, 'widget'); // 200 requests per minute
 
 // Advanced cache-based rate limiting for complex scenarios
