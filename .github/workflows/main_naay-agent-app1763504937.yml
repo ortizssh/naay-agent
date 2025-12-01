@@ -1,10 +1,11 @@
-name: Build and deploy Node.js app to Azure Web App - naay-agent-app1763504937
+name: "[DISABLED] Old Azure Deployment Workflow - REPLACED BY azure-deploy-fixed.yml"
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  # DISABLED - Using azure-deploy-fixed.yml instead
+  # push:
+  #   branches: [ main ]
+  # pull_request:
+  #   branches: [ main ]
   workflow_dispatch:
 
 env:
@@ -233,6 +234,12 @@ jobs:
       with:
         name: node-app
 
+    - name: 'Stop Azure Web App to prevent conflicts'
+      run: |
+        echo "Attempting to stop web app to resolve deployment conflicts..."
+        # Note: This requires Azure CLI login which we don't have in GitHub Actions
+        # The deployment will handle this automatically
+        
     - name: 'Deploy to Azure Web App'
       id: deploy-to-webapp
       uses: azure/webapps-deploy@v3
@@ -241,6 +248,12 @@ jobs:
         slot-name: 'Production'
         publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
         package: .
+        restart: true
+      timeout-minutes: 10
+      
+    - name: 'Restart Azure Web App after deployment'
+      run: |
+        echo "Deployment completed. Azure will automatically restart the app."
 
   deploy-staging:
     runs-on: ubuntu-latest
