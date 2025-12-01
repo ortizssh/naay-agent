@@ -1,8 +1,9 @@
-name: Ultimate Azure Deployment Fix - naay-agent-app1763504937
+name: "[DISABLED] Ultimate Azure Deployment Fix - REPLACED BY azure-deploy-working.yml"
 
 on:
-  push:
-    branches: [ main ]
+  # DISABLED - Using azure-deploy-working.yml instead
+  # push:
+  #   branches: [ main ]
   workflow_dispatch:
 
 env:
