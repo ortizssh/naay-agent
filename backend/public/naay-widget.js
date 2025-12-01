@@ -2885,6 +2885,36 @@
             transform: translateY(0) !important;
           }
         }
+        
+        /* FIXED: Improved cart item animations */
+        .naay-cart-panel__item {
+          opacity: 1 !important;
+          transform: translateY(0) !important;
+          transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+          will-change: transform, opacity !important;
+        }
+        
+        .naay-cart-panel__item--removing {
+          opacity: 0 !important;
+          transform: translateX(-100%) scale(0.8) !important;
+          pointer-events: none !important;
+        }
+        
+        .naay-cart-panel__quantity-btn {
+          transition: all 0.2s ease !important;
+        }
+        
+        .naay-cart-panel__quantity-btn:active {
+          transform: scale(0.95) !important;
+        }
+        
+        .naay-cart-panel__quantity-value {
+          transition: transform 0.2s ease !important;
+        }
+        
+        .naay-cart-panel__quantity-value--updating {
+          transform: scale(1.1) !important;
+        }
 
         /* Cart Loading */
         .naay-cart-loading {
@@ -5060,10 +5090,9 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       // Show loading state
       this.showCartLoading();
 
-      // Find the specific cart item by unique ID
+      // Find the specific cart item by unique ID only
       const itemIndex = this.cartData.items.findIndex(item => 
-        (item.cartItemId && item.cartItemId === cartItemId) || 
-        (!item.cartItemId && item.id === cartItemId)
+        item.cartItemId === cartItemId
       );
 
       if (itemIndex === -1) {
@@ -5092,10 +5121,9 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     async updateQuantityByItemId(cartItemId, newQuantity) {
       console.log('🛒 Updating cart item quantity:', cartItemId, 'to', newQuantity);
 
-      // Find the specific cart item by unique ID
+      // Find the specific cart item by unique ID only
       const item = this.cartData.items.find(item => 
-        (item.cartItemId && item.cartItemId === cartItemId) || 
-        (!item.cartItemId && item.id === cartItemId)
+        item.cartItemId === cartItemId
       );
 
       if (!item) {
@@ -5489,19 +5517,19 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             </div>
             <div class="naay-cart-panel__item-controls">
               <div class="naay-cart-panel__item-quantity">
-                <button class="naay-cart-panel__quantity-btn naay-cart-panel__quantity-btn--decrease" data-action="decrease" data-cart-item-id="${item.cartItemId || item.id}" aria-label="Disminuir cantidad">
+                <button class="naay-cart-panel__quantity-btn naay-cart-panel__quantity-btn--decrease" data-action="decrease" data-cart-item-id="${item.cartItemId}" aria-label="Disminuir cantidad">
                   <svg viewBox="0 0 24 24" fill="none">
                     <path d="M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                   </svg>
                 </button>
                 <span class="naay-cart-panel__quantity-value">${item.quantity}</span>
-                <button class="naay-cart-panel__quantity-btn naay-cart-panel__quantity-btn--increase" data-action="increase" data-cart-item-id="${item.cartItemId || item.id}" aria-label="Aumentar cantidad">
+                <button class="naay-cart-panel__quantity-btn naay-cart-panel__quantity-btn--increase" data-action="increase" data-cart-item-id="${item.cartItemId}" aria-label="Aumentar cantidad">
                   <svg viewBox="0 0 24 24" fill="none">
                     <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                   </svg>
                 </button>
               </div>
-              <button class="naay-cart-panel__item-remove" data-cart-item-id="${item.cartItemId || item.id}" aria-label="Eliminar producto">
+              <button class="naay-cart-panel__item-remove" data-cart-item-id="${item.cartItemId}" aria-label="Eliminar producto">
                 <svg viewBox="0 0 24 24" fill="none">
                   <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
@@ -5530,14 +5558,10 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             console.log('🗑️ Starting removal for cart item with ID:', cartItemId);
 
             try {
+              // Apply removal animation class
+              itemElement.classList.add('naay-cart-panel__item--removing');
+              
               await this.removeFromCartByItemId(cartItemId);
-
-              // Add exit animation before removal
-              itemElement.style.opacity = '0';
-              itemElement.style.transform = 'scale(0.8) translateX(-20px)';
-              itemElement.style.maxHeight = '0';
-              itemElement.style.marginBottom = '0';
-              itemElement.style.padding = '0';
 
               // Remove from DOM after animation
               setTimeout(() => {
@@ -5562,6 +5586,21 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           decreaseBtn.addEventListener('click', (e) => {
             e.preventDefault();
             const cartItemId = decreaseBtn.getAttribute('data-cart-item-id');
+            const quantityValue = itemElement.querySelector('.naay-cart-panel__quantity-value');
+            
+            // Visual feedback
+            decreaseBtn.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+              decreaseBtn.style.transform = 'scale(1)';
+            }, 150);
+            
+            if (quantityValue) {
+              quantityValue.classList.add('naay-cart-panel__quantity-value--updating');
+              setTimeout(() => {
+                quantityValue.classList.remove('naay-cart-panel__quantity-value--updating');
+              }, 200);
+            }
+            
             this.updateQuantityByItemId(cartItemId, item.quantity - 1);
           });
         }
@@ -5570,6 +5609,21 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           increaseBtn.addEventListener('click', (e) => {
             e.preventDefault();
             const cartItemId = increaseBtn.getAttribute('data-cart-item-id');
+            const quantityValue = itemElement.querySelector('.naay-cart-panel__quantity-value');
+            
+            // Visual feedback
+            increaseBtn.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+              increaseBtn.style.transform = 'scale(1)';
+            }, 150);
+            
+            if (quantityValue) {
+              quantityValue.classList.add('naay-cart-panel__quantity-value--updating');
+              setTimeout(() => {
+                quantityValue.classList.remove('naay-cart-panel__quantity-value--updating');
+              }, 200);
+            }
+            
             this.updateQuantityByItemId(cartItemId, item.quantity + 1);
           });
         }
