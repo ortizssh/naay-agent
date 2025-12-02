@@ -883,13 +883,19 @@
 
         async function loadStats() {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin-bypass/stats?shop=${currentShop}`);
+                const url = `${API_BASE_URL}/api/admin-bypass/stats?shop=${currentShop}`;
+                console.log('Loading stats from:', url);
+                console.log('Current shop:', currentShop);
+                console.log('API Base URL:', API_BASE_URL);
+                
+                const response = await fetch(url);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 
                 const data = await response.json();
+                console.log('Stats response:', data);
 
                 if (data.success) {
                     document.getElementById('stat-conversations').textContent = data.data.conversations;
@@ -1386,8 +1392,14 @@
                 const container = document.getElementById('top-products-container');
                 container.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
 
-                const response = await fetch(`${API_BASE_URL}/api/admin-bypass/analytics/top-recommended-products?shop=${currentShop}&days=${period}`);
+                const url = `${API_BASE_URL}/api/admin-bypass/analytics/top-recommended-products?shop=${currentShop}&days=${period}`;
+                console.log('Loading top products from:', url);
+                
+                const response = await fetch(url);
+                console.log('Top products response status:', response.status);
+                
                 const data = await response.json();
+                console.log('Top products response data:', data);
 
                 if (data.success) {
                     allProducts = data.data.products; // Guardar todos los productos
