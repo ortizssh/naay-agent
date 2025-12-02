@@ -305,7 +305,9 @@ async function startServer() {
 
     // Serve admin panel
     app.get('/admin', (req, res) => {
-      res.sendFile(path.join(__dirname, '../public/admin/index.html'));
+      const adminPath = path.join(__dirname, 'public/admin/index.html');
+      logger.info('Serving admin panel from:', adminPath);
+      res.sendFile(adminPath);
     });
 
     // Serve admin static files

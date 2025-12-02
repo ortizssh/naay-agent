@@ -7,7 +7,8 @@
 Ve a tu repositorio en GitHub:
 1. **Settings** → **Secrets and variables** → **Actions**
 2. Click **"New repository secret"**
-3. Agrega los siguientes secretos:
+3. Agrega los siguientes secretos:sacd
+
 
 ### 📋 AZUREAPPSERVICE_PUBLISHPROFILE
 
