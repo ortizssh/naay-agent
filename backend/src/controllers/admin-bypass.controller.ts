@@ -586,7 +586,7 @@ router.get(
 
         if (!conversationsError && conversations) {
           const uniqueProducts = new Set();
-          
+
           conversations.forEach((conv: any) => {
             const metadata = conv.metadata;
 
@@ -603,7 +603,8 @@ router.get(
 
             // Also check for product mentions in AI response text
             if (conv.ai_response) {
-              const productRegex = /(?:recomiendo|sugiero|prueba|considera|producto|cosmético)\s+([^.]+)/gi;
+              const productRegex =
+                /(?:recomiendo|sugiero|prueba|considera|producto|cosmético)\s+([^.]+)/gi;
               let match;
               while ((match = productRegex.exec(conv.ai_response)) !== null) {
                 const productRef = match[1].trim();
@@ -623,10 +624,16 @@ router.get(
             conversationsAnalyzed: conversations.length,
           });
         } else if (conversationsError) {
-          logger.error('Error fetching conversations for stats:', conversationsError);
+          logger.error(
+            'Error fetching conversations for stats:',
+            conversationsError
+          );
         }
       } catch (error) {
-        logger.error('Error analyzing product recommendations from conversations:', error);
+        logger.error(
+          'Error analyzing product recommendations from conversations:',
+          error
+        );
       }
 
       const stats = {
