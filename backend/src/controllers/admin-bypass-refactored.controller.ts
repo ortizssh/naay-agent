@@ -195,6 +195,24 @@ router.get(
 );
 
 router.get(
+  '/conversations/:sessionId',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { sessionId } = req.params;
+
+      const messages = await analyticsService.getConversationDetails(sessionId);
+
+      res.json({
+        success: true,
+        data: messages,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.get(
   '/analytics/conversion',
   async (req: Request, res: Response, next: NextFunction) => {
     try {

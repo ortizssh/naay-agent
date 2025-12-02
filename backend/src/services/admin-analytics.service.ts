@@ -381,6 +381,41 @@ export class AdminAnalyticsService {
     }
   }
 
+  async getConversationDetails(sessionId: string) {
+    try {
+      logger.info('Getting conversation details', { sessionId });
+
+      const { data: messages, error } = await (this.supabaseService as any)
+        .serviceClient
+        .from('chat_messages')
+        .select('id, role, content, timestamp')
+        .eq('session_id', sessionId)
+        .order('timestamp', { ascending: true });
+
+      if (error) {
+        logger.error('Error fetching conversation details:', error);
+        throw new AppError('Failed to fetch conversation details', 500);
+      }
+
+      if (!messages || messages.length === 0) {
+        throw new AppError('Conversation not found', 404);
+      }
+
+      return messages.map((msg: any) => ({
+        id: msg.id,
+        role: msg.role,
+        content: msg.content,
+        timestamp: msg.timestamp,
+      }));
+    } catch (error) {
+      logger.error('Error getting conversation details:', error);
+      if (error instanceof AppError) {
+        throw error;
+      }
+      throw new AppError('Failed to get conversation details', 500);
+    }
+  }
+
   private groupByDay(
     data: Array<{ created_at: string }>
   ): Array<{ date: string; count: number }> {
