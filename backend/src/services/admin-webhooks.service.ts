@@ -74,21 +74,25 @@ export class AdminWebhooksService {
       );
 
       // Get recent events (last 10)
-      const recentEvents = (events || []).slice(0, 10).map((event: {
-        id: string;
-        topic: string;
-        shop_domain: string;
-        processed: boolean;
-        created_at: string;
-        error_message?: string;
-      }) => ({
-        id: event.id,
-        topic: event.topic,
-        shop: event.shop_domain,
-        processed: event.processed,
-        created_at: event.created_at,
-        error_message: event.error_message,
-      }));
+      const recentEvents = (events || [])
+        .slice(0, 10)
+        .map(
+          (event: {
+            id: string;
+            topic: string;
+            shop_domain: string;
+            processed: boolean;
+            created_at: string;
+            error_message?: string;
+          }) => ({
+            id: event.id,
+            topic: event.topic,
+            shop: event.shop_domain,
+            processed: event.processed,
+            created_at: event.created_at,
+            error_message: event.error_message,
+          })
+        );
 
       return {
         totalEvents,
