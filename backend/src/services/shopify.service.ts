@@ -1083,7 +1083,7 @@ export class ShopifyService {
     }
   }
 
-  private async createWebhook(
+  async createWebhook(
     client: any,
     topic: string,
     address: string,

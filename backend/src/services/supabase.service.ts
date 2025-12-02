@@ -13,7 +13,7 @@ import {
 } from '@/types';
 
 export class SupabaseService {
-  private client: SupabaseClient;
+  public client: SupabaseClient;
   private serviceClient: SupabaseClient;
   private embeddingService: EmbeddingService;
 

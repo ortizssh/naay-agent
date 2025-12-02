@@ -1,5 +1,5 @@
 import express from 'express';
-import cors from 'cors';
+// import cors from 'cors'; // Removed - using custom CorsMiddleware
 import path from 'path';
 import fs from 'fs';
 import helmet from 'helmet';
@@ -25,7 +25,7 @@ import healthRoutes from '@/controllers/health.controller';
 import widgetRoutes from '@/controllers/widget.controller';
 import settingsRoutes from '@/controllers/settings.controller';
 import adminRoutes from '@/controllers/admin.controller';
-import adminBypassRoutes from '@/controllers/admin-bypass.controller';
+import adminBypassRoutes from '@/controllers/admin-bypass-refactored.controller';
 import simpleChatRoutes from '@/controllers/simple-chat.controller';
 import publicCartRoutes from '@/controllers/public-cart.controller';
 import publicProductsRoutes from '@/controllers/public-products.controller';

@@ -285,7 +285,7 @@ router.post(
 );
 
 // Basic health check
-router.get('/health', async (req: Request, res: Response) => {
+router.get('/health', async (_req: Request, res: Response) => {
   res.json({
     success: true,
     message: 'Admin bypass controller is healthy',

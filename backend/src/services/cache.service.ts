@@ -7,7 +7,7 @@ interface CacheOptions {
 }
 
 export class CacheService {
-  private redis: Redis | null = null;
+  private redis: any | null = null;
   private memoryCache: Map<string, { value: unknown; expires: number }> =
     new Map();
   private useRedis: boolean = false;
@@ -69,7 +69,7 @@ export class CacheService {
         }
 
         this.hits++;
-        return item.value;
+        return item.value as T;
       }
     } catch (error) {
       logger.error(`Cache get error for key ${key}:`, error);

@@ -7,6 +7,7 @@ export interface ShopifyStore {
   installed_at: Date;
   updated_at: Date;
   widget_enabled?: boolean;
+  settings?: Record<string, unknown>;
 }
 
 export type Store = ShopifyStore;

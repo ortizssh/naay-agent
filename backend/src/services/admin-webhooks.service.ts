@@ -66,7 +66,7 @@ export class AdminWebhooksService {
 
       // Group events by type
       const eventsByType = (events || []).reduce(
-        (acc, event) => {
+        (acc: Record<string, number>, event: { topic: string }) => {
           acc[event.topic] = (acc[event.topic] || 0) + 1;
           return acc;
         },
@@ -74,7 +74,14 @@ export class AdminWebhooksService {
       );
 
       // Get recent events (last 10)
-      const recentEvents = (events || []).slice(0, 10).map(event => ({
+      const recentEvents = (events || []).slice(0, 10).map((event: {
+        id: string;
+        topic: string;
+        shop_domain: string;
+        processed: boolean;
+        created_at: string;
+        error_message?: string;
+      }) => ({
         id: event.id,
         topic: event.topic,
         shop: event.shop_domain,
