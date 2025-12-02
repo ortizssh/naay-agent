@@ -571,92 +571,62 @@ router.get(
         );
       }
 
-      // Get recommended products from chat messages
+      // Get recommended products from conversations (same source as analytics)
       let recommendedProducts = 0;
       let totalRecommendations = 0;
 
       try {
-        const { data: allMessages, error: messageAnalysisError } = await (
+        // Use the same logic as /analytics/products for consistency
+        const { data: conversations, error: conversationsError } = await (
           supabaseService as any
         ).serviceClient
-          .from('chat_messages')
-          .select('content, metadata')
-          .eq('role', 'agent')
-          .not('content', 'is', null);
+          .from('conversations')
+          .select('ai_response, metadata, created_at')
+          .eq('shop_domain', shop);
 
-        if (!messageAnalysisError && allMessages) {
+        if (!conversationsError && conversations) {
           const uniqueProducts = new Set();
+          
+          conversations.forEach((conv: any) => {
+            const metadata = conv.metadata;
 
-          allMessages.forEach((message: any) => {
-            try {
-              // Check if content contains product references in JSON format
-              const content = message.content;
-
-              // Look for product IDs or JSON objects in content
-              const productIdMatches = content.match(
-                /product[_-]?id["\s]*:?\s*["']?(\w+)["']?/gi
-              );
-              const jsonMatches = content.match(/\{[^}]*"id"[^}]*\}/g);
-
-              if (productIdMatches) {
-                productIdMatches.forEach((match: string) => {
-                  const idMatch = match.match(/["']?(\w+)["']?$/);
-                  if (idMatch && idMatch[1]) {
-                    uniqueProducts.add(idMatch[1]);
-                    totalRecommendations++;
-                  }
-                });
-              }
-
-              if (jsonMatches) {
-                jsonMatches.forEach((jsonStr: string) => {
-                  try {
-                    const obj = JSON.parse(jsonStr);
-                    if (obj.id) {
-                      uniqueProducts.add(obj.id);
-                      totalRecommendations++;
-                    }
-                  } catch (e) {
-                    // Ignore invalid JSON
-                  }
-                });
-              }
-
-              // Also check metadata if available
-              if (message.metadata && typeof message.metadata === 'object') {
-                const metadata = message.metadata;
-                if (metadata.recommended_products) {
-                  metadata.recommended_products.forEach((product: any) => {
-                    if (product.id) {
-                      uniqueProducts.add(product.id);
-                      totalRecommendations++;
-                    }
-                  });
+            // Check metadata for recommended products
+            if (metadata && metadata.recommended_products) {
+              metadata.recommended_products.forEach((product: any) => {
+                const productId = product.id || product.product_id;
+                if (productId) {
+                  uniqueProducts.add(productId);
+                  totalRecommendations++;
                 }
-                if (metadata.products) {
-                  metadata.products.forEach((product: any) => {
-                    if (product.id) {
-                      uniqueProducts.add(product.id);
-                      totalRecommendations++;
-                    }
-                  });
+              });
+            }
+
+            // Also check for product mentions in AI response text
+            if (conv.ai_response) {
+              const productRegex = /(?:recomiendo|sugiero|prueba|considera|producto|cosmético)\s+([^.]+)/gi;
+              let match;
+              while ((match = productRegex.exec(conv.ai_response)) !== null) {
+                const productRef = match[1].trim();
+                if (productRef && productRef.length > 3) {
+                  uniqueProducts.add(productRef);
+                  totalRecommendations++;
                 }
               }
-            } catch (error) {
-              // Ignore parsing errors for individual messages
             }
           });
 
           recommendedProducts = uniqueProducts.size;
 
-          logger.info('Product recommendation stats:', {
+          logger.info('Product recommendation stats from conversations:', {
             uniqueProducts: recommendedProducts,
             totalRecommendations: totalRecommendations,
-            messagesAnalyzed: allMessages.length,
+            conversationsAnalyzed: conversations.length,
           });
+        } else if (conversationsError) {
+          logger.error('Error fetching conversations for stats:', conversationsError);
         }
       } catch (error) {
-        logger.error('Error analyzing product recommendations:', error);
+        logger.error('Error analyzing product recommendations from conversations:', error);
       }
 
       const stats = {
