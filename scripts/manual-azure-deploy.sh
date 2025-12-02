@@ -22,14 +22,21 @@ mkdir manual-deploy
 cp -r backend/dist manual-deploy/
 cp -r backend/node_modules manual-deploy/
 
+# Create app.js entry point for Azure PM2
+cat > manual-deploy/app.js << 'EOF'
+// Azure App Service entry point
+// This file is required by Azure's PM2 configuration
+require('./dist/index.js');
+EOF
+
 # Create package.json for Azure
 cat > manual-deploy/package.json << 'EOF'
 {
   "name": "naay-agent",
   "version": "1.0.0",
-  "main": "dist/index.js",
+  "main": "app.js",
   "scripts": {
-    "start": "node dist/index.js"
+    "start": "node app.js"
   },
   "engines": {
     "node": "20.x"
