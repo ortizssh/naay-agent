@@ -338,7 +338,7 @@ export class AdminAnalyticsService {
       if (message.role === 'agent') {
         // Look for product patterns in agent responses
         const content = message.content;
-        
+
         // Pattern 1: **Product Title** - $price format
         const productRegex = /\*\*([^*]+)\*\*\s*-\s*\$[\d,]+(?:\.\d{2})?/g;
         let match;
@@ -358,7 +358,7 @@ export class AdminAnalyticsService {
         const existingTitles = recommendations
           .filter(r => r.sessionId === message.session_id)
           .map(r => r.productTitle);
-        
+
         while ((idMatch = productIdRegex.exec(content)) !== null) {
           const productId = idMatch[1];
           // Try to match with recently extracted titles in same message
@@ -389,8 +389,11 @@ export class AdminAnalyticsService {
 
         // Update intent for recommendations in this message
         recommendations
-          .filter(r => r.sessionId === message.session_id && r.messageId === message.id)
-          .forEach(r => r.intent = detectedIntent);
+          .filter(
+            r =>
+              r.sessionId === message.session_id && r.messageId === message.id
+          )
+          .forEach(r => (r.intent = detectedIntent));
       }
     });
 
@@ -402,18 +405,20 @@ export class AdminAnalyticsService {
    */
   private calculateResponseTimes(messages: DatabaseMessage[]): number[] {
     const responseTimes: number[] = [];
-    
+
     for (let i = 1; i < messages.length; i++) {
       const currentMsg = messages[i];
       const previousMsg = messages[i - 1];
-      
+
       // Look for agent response to client message
       if (currentMsg.role === 'agent' && previousMsg.role === 'client') {
-        const responseTime = new Date(currentMsg.timestamp).getTime() - new Date(previousMsg.timestamp).getTime();
+        const responseTime =
+          new Date(currentMsg.timestamp).getTime() -
+          new Date(previousMsg.timestamp).getTime();
         responseTimes.push(responseTime / 1000); // Convert to seconds
       }
     }
-    
+
     return responseTimes;
   }
 
@@ -427,7 +432,8 @@ export class AdminAnalyticsService {
 
         // Check cache first
         const cacheKey = `general-metrics:${shop}`;
-        const cachedMetrics = await this.cacheService.get<GeneralMetrics>(cacheKey);
+        const cachedMetrics =
+          await this.cacheService.get<GeneralMetrics>(cacheKey);
         if (cachedMetrics) {
           return cachedMetrics;
         }
@@ -446,12 +452,15 @@ export class AdminAnalyticsService {
         const totalMessages = messagesList.length;
 
         // Calculate conversation metrics
-        const sessionMap = new Map<string, {
-          messages: typeof messagesList;
-          startTime: Date;
-          endTime: Date;
-          messageCount: number;
-        }>();
+        const sessionMap = new Map<
+          string,
+          {
+            messages: typeof messagesList;
+            startTime: Date;
+            endTime: Date;
+            messageCount: number;
+          }
+        >();
 
         messagesList.forEach(msg => {
           const sessionId = msg.session_id;
@@ -469,7 +478,7 @@ export class AdminAnalyticsService {
           const session = sessionMap.get(sessionId)!;
           session.messages.push(msg);
           session.messageCount++;
-          
+
           if (timestamp < session.startTime) session.startTime = timestamp;
           if (timestamp > session.endTime) session.endTime = timestamp;
         });
@@ -478,28 +487,32 @@ export class AdminAnalyticsService {
         const uniqueSessionIds = totalConversations;
 
         // Calculate average messages per conversation
-        const averageMessagesPerConversation = totalConversations > 0 
-          ? totalMessages / totalConversations 
-          : 0;
+        const averageMessagesPerConversation =
+          totalConversations > 0 ? totalMessages / totalConversations : 0;
 
         // Calculate average session duration
         const sessionDurations = Array.from(sessionMap.values())
           .map(session => {
-            const duration = session.endTime.getTime() - session.startTime.getTime();
+            const duration =
+              session.endTime.getTime() - session.startTime.getTime();
             return duration / (1000 * 60); // Convert to minutes
           })
           .filter(duration => duration > 0);
 
-        const averageSessionDuration = sessionDurations.length > 0
-          ? sessionDurations.reduce((sum, duration) => sum + duration, 0) / sessionDurations.length
-          : 0;
+        const averageSessionDuration =
+          sessionDurations.length > 0
+            ? sessionDurations.reduce((sum, duration) => sum + duration, 0) /
+              sessionDurations.length
+            : 0;
 
         // Calculate conversation completion rate (>3 messages)
-        const completedConversations = Array.from(sessionMap.values())
-          .filter(session => session.messageCount > 3).length;
-        const conversationCompletionRate = totalConversations > 0 
-          ? (completedConversations / totalConversations) * 100 
-          : 0;
+        const completedConversations = Array.from(sessionMap.values()).filter(
+          session => session.messageCount > 3
+        ).length;
+        const conversationCompletionRate =
+          totalConversations > 0
+            ? (completedConversations / totalConversations) * 100
+            : 0;
 
         // Calculate peak hours
         const hourCounts = new Map<number, number>();
@@ -515,27 +528,34 @@ export class AdminAnalyticsService {
 
         // Calculate response time metrics
         const responseTimes = this.calculateResponseTimes(messagesList);
-        const averageResponseTime = responseTimes.length > 0
-          ? responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length
-          : 0;
+        const averageResponseTime =
+          responseTimes.length > 0
+            ? responseTimes.reduce((sum, time) => sum + time, 0) /
+              responseTimes.length
+            : 0;
 
         const sortedResponseTimes = [...responseTimes].sort((a, b) => a - b);
-        const medianResponseTime = sortedResponseTimes.length > 0
-          ? sortedResponseTimes[Math.floor(sortedResponseTimes.length / 2)]
-          : 0;
+        const medianResponseTime =
+          sortedResponseTimes.length > 0
+            ? sortedResponseTimes[Math.floor(sortedResponseTimes.length / 2)]
+            : 0;
 
         const fastResponses = responseTimes.filter(time => time < 30).length;
-        const fastResponseRate = responseTimes.length > 0 
-          ? (fastResponses / responseTimes.length) * 100 
-          : 0;
+        const fastResponseRate =
+          responseTimes.length > 0
+            ? (fastResponses / responseTimes.length) * 100
+            : 0;
 
         const metrics: GeneralMetrics = {
           totalConversations,
           totalMessages,
           uniqueSessionIds,
-          averageMessagesPerConversation: Math.round(averageMessagesPerConversation * 100) / 100,
-          averageSessionDuration: Math.round(averageSessionDuration * 100) / 100,
-          conversationCompletionRate: Math.round(conversationCompletionRate * 100) / 100,
+          averageMessagesPerConversation:
+            Math.round(averageMessagesPerConversation * 100) / 100,
+          averageSessionDuration:
+            Math.round(averageSessionDuration * 100) / 100,
+          conversationCompletionRate:
+            Math.round(conversationCompletionRate * 100) / 100,
           peakHours,
           responseTimeMetrics: {
             averageResponseTime: Math.round(averageResponseTime * 100) / 100,
@@ -561,14 +581,19 @@ export class AdminAnalyticsService {
   /**
    * Get product recommendation analytics
    */
-  async getProductRecommendationMetrics(shop: string): Promise<ProductRecommendationMetrics> {
+  async getProductRecommendationMetrics(
+    shop: string
+  ): Promise<ProductRecommendationMetrics> {
     return this.executeWithTimeout(
       async () => {
-        logger.info('Getting product recommendation metrics for shop:', { shop });
+        logger.info('Getting product recommendation metrics for shop:', {
+          shop,
+        });
 
         // Check cache first
         const cacheKey = `recommendation-metrics:${shop}`;
-        const cachedMetrics = await this.cacheService.get<ProductRecommendationMetrics>(cacheKey);
+        const cachedMetrics =
+          await this.cacheService.get<ProductRecommendationMetrics>(cacheKey);
         if (cachedMetrics) {
           return cachedMetrics;
         }
@@ -584,21 +609,27 @@ export class AdminAnalyticsService {
         }
 
         const messagesList = messages || [];
-        
+
         // Extract product recommendations from messages
-        const recommendations = this.extractProductRecommendations(messagesList);
+        const recommendations =
+          this.extractProductRecommendations(messagesList);
         const totalRecommendationsMade = recommendations.length;
 
         // Count unique products recommended
-        const uniqueProducts = new Set(recommendations.map(r => r.productTitle));
+        const uniqueProducts = new Set(
+          recommendations.map(r => r.productTitle)
+        );
         const uniqueProductsRecommended = uniqueProducts.size;
 
         // Calculate top recommended products
-        const productCounts = new Map<string, {
-          count: number;
-          sessions: Set<string>;
-          productId?: string;
-        }>();
+        const productCounts = new Map<
+          string,
+          {
+            count: number;
+            sessions: Set<string>;
+            productId?: string;
+          }
+        >();
 
         recommendations.forEach(rec => {
           const key = rec.productTitle;
@@ -621,14 +652,17 @@ export class AdminAnalyticsService {
           .slice(0, 10)
           .map(([title]) => title);
 
-        const { data: products, error: productsError } = await this.supabaseService.client
-          .from('products')
-          .select(`
+        const { data: products, error: productsError } =
+          await this.supabaseService.client
+            .from('products')
+            .select(
+              `
             id, title, handle, images, vendor,
             product_variants (price)
-          `)
-          .eq('shop_domain', shop)
-          .in('title', topProductTitles);
+          `
+            )
+            .eq('shop_domain', shop)
+            .in('title', topProductTitles);
 
         const productsMap = new Map();
         (products || []).forEach(product => {
@@ -640,9 +674,14 @@ export class AdminAnalyticsService {
           .slice(0, 10)
           .map(([title, data]) => {
             const product = productsMap.get(title);
-            const minPrice = product?.product_variants?.length > 0
-              ? Math.min(...product.product_variants.map((v: any) => parseFloat(v.price || '0')))
-              : 0;
+            const minPrice =
+              product?.product_variants?.length > 0
+                ? Math.min(
+                    ...product.product_variants.map((v: any) =>
+                      parseFloat(v.price || '0')
+                    )
+                  )
+                : 0;
 
             return {
               productId: data.productId || product?.id || '',
@@ -683,7 +722,9 @@ export class AdminAnalyticsService {
 
         const recommendationTrends = Array.from(trendMap.entries())
           .map(([date, count]) => ({ date, recommendationCount: count }))
-          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          .sort(
+            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+          );
 
         const metrics: ProductRecommendationMetrics = {
           totalRecommendationsMade,
@@ -717,7 +758,8 @@ export class AdminAnalyticsService {
 
         // Check cache first
         const cacheKey = `engagement-metrics:${shop}`;
-        const cachedMetrics = await this.cacheService.get<EngagementMetrics>(cacheKey);
+        const cachedMetrics =
+          await this.cacheService.get<EngagementMetrics>(cacheKey);
         if (cachedMetrics) {
           return cachedMetrics;
         }
@@ -735,12 +777,15 @@ export class AdminAnalyticsService {
         const messagesList = messages || [];
 
         // Group by conversation
-        const conversationMap = new Map<string, {
-          messages: typeof messagesList;
-          messageCount: number;
-          startTime: Date;
-          endTime: Date;
-        }>();
+        const conversationMap = new Map<
+          string,
+          {
+            messages: typeof messagesList;
+            messageCount: number;
+            startTime: Date;
+            endTime: Date;
+          }
+        >();
 
         messagesList.forEach(msg => {
           const sessionId = msg.session_id;
@@ -758,7 +803,7 @@ export class AdminAnalyticsService {
           const conv = conversationMap.get(sessionId)!;
           conv.messages.push(msg);
           conv.messageCount++;
-          
+
           if (timestamp < conv.startTime) conv.startTime = timestamp;
           if (timestamp > conv.endTime) conv.endTime = timestamp;
         });
@@ -773,9 +818,10 @@ export class AdminAnalyticsService {
         ];
 
         const conversationsByLength = lengthRanges.map(range => {
-          const count = Array.from(conversationMap.values())
-            .filter(conv => conv.messageCount >= range.min && conv.messageCount <= range.max)
-            .length;
+          const count = Array.from(conversationMap.values()).filter(
+            conv =>
+              conv.messageCount >= range.min && conv.messageCount <= range.max
+          ).length;
           return {
             messageRange: range.range,
             count,
@@ -783,7 +829,9 @@ export class AdminAnalyticsService {
         });
 
         // Calculate user engagement levels
-        const sessionCounts = Array.from(conversationMap.values()).map(conv => conv.messageCount);
+        const sessionCounts = Array.from(conversationMap.values()).map(
+          conv => conv.messageCount
+        );
         const userEngagementLevels = [
           {
             level: 'Low Engagement',
@@ -792,7 +840,9 @@ export class AdminAnalyticsService {
           },
           {
             level: 'Medium Engagement',
-            sessionCount: sessionCounts.filter(count => count > 3 && count <= 10).length,
+            sessionCount: sessionCounts.filter(
+              count => count > 3 && count <= 10
+            ).length,
             description: '4-10 messages per conversation',
           },
           {
@@ -803,30 +853,44 @@ export class AdminAnalyticsService {
         ];
 
         // Calculate conversation outcomes
-        const recommendations = this.extractProductRecommendations(messagesList);
-        const sessionsWithRecommendations = new Set(recommendations.map(r => r.sessionId)).size;
+        const recommendations =
+          this.extractProductRecommendations(messagesList);
+        const sessionsWithRecommendations = new Set(
+          recommendations.map(r => r.sessionId)
+        ).size;
         const totalSessions = conversationMap.size;
 
         const conversationOutcomes = [
           {
             outcome: 'Recommendations Made',
             count: sessionsWithRecommendations,
-            percentage: totalSessions > 0 ? (sessionsWithRecommendations / totalSessions) * 100 : 0,
+            percentage:
+              totalSessions > 0
+                ? (sessionsWithRecommendations / totalSessions) * 100
+                : 0,
           },
           {
             outcome: 'Information Only',
             count: totalSessions - sessionsWithRecommendations,
-            percentage: totalSessions > 0 ? ((totalSessions - sessionsWithRecommendations) / totalSessions) * 100 : 0,
+            percentage:
+              totalSessions > 0
+                ? ((totalSessions - sessionsWithRecommendations) /
+                    totalSessions) *
+                  100
+                : 0,
           },
         ];
 
         // Calculate most active time slots
-        const timeSlots = new Map<string, { conversations: Set<string>; messages: number }>();
-        
+        const timeSlots = new Map<
+          string,
+          { conversations: Set<string>; messages: number }
+        >();
+
         messagesList.forEach(msg => {
           const hour = new Date(msg.timestamp).getHours();
           let timeSlot = '';
-          
+
           if (hour >= 6 && hour < 12) timeSlot = 'Morning (6AM-12PM)';
           else if (hour >= 12 && hour < 18) timeSlot = 'Afternoon (12PM-6PM)';
           else if (hour >= 18 && hour < 24) timeSlot = 'Evening (6PM-12AM)';
@@ -965,7 +1029,10 @@ export class AdminAnalyticsService {
         const messagesByDayProcessed = this.groupByDay(recentMessages);
 
         // Calculate enhanced metrics
-        const sessionMap = new Map<string, { messageCount: number; startTime: Date; endTime: Date }>();
+        const sessionMap = new Map<
+          string,
+          { messageCount: number; startTime: Date; endTime: Date }
+        >();
         messages.forEach(msg => {
           const sessionId = msg.session_id;
           const timestamp = new Date(msg.timestamp);
@@ -980,33 +1047,38 @@ export class AdminAnalyticsService {
 
           const session = sessionMap.get(sessionId)!;
           session.messageCount++;
-          
+
           if (timestamp < session.startTime) session.startTime = timestamp;
           if (timestamp > session.endTime) session.endTime = timestamp;
         });
 
         const uniqueUsers = sessionMap.size; // Unique session IDs as proxy for unique users
-        const averageMessagesPerConversation = conversationCount > 0 
-          ? totalMessages / conversationCount 
-          : 0;
+        const averageMessagesPerConversation =
+          conversationCount > 0 ? totalMessages / conversationCount : 0;
 
         // Calculate average session duration
         const sessionDurations = Array.from(sessionMap.values())
           .map(session => {
-            const duration = session.endTime.getTime() - session.startTime.getTime();
+            const duration =
+              session.endTime.getTime() - session.startTime.getTime();
             return duration / (1000 * 60); // Convert to minutes
           })
           .filter(duration => duration > 0);
 
-        const averageSessionDuration = sessionDurations.length > 0
-          ? sessionDurations.reduce((sum, duration) => sum + duration, 0) / sessionDurations.length
-          : 0;
+        const averageSessionDuration =
+          sessionDurations.length > 0
+            ? sessionDurations.reduce((sum, duration) => sum + duration, 0) /
+              sessionDurations.length
+            : 0;
 
         // Extract product recommendations for topProducts
         const recommendations = this.extractProductRecommendations(messages);
         const productMentions = new Map<string, number>();
         recommendations.forEach(rec => {
-          productMentions.set(rec.productTitle, (productMentions.get(rec.productTitle) || 0) + 1);
+          productMentions.set(
+            rec.productTitle,
+            (productMentions.get(rec.productTitle) || 0) + 1
+          );
         });
 
         const topProducts = Array.from(productMentions.entries())
@@ -1022,8 +1094,10 @@ export class AdminAnalyticsService {
           totalConversations: conversationCount,
           totalMessages: totalMessages,
           uniqueUsers,
-          averageMessagesPerConversation: Math.round(averageMessagesPerConversation * 100) / 100,
-          averageSessionDuration: Math.round(averageSessionDuration * 100) / 100,
+          averageMessagesPerConversation:
+            Math.round(averageMessagesPerConversation * 100) / 100,
+          averageSessionDuration:
+            Math.round(averageSessionDuration * 100) / 100,
           topProducts,
           conversationsByDay: conversationsByDayProcessed,
           messagesByDay: messagesByDayProcessed,
@@ -1082,8 +1156,12 @@ export class AdminAnalyticsService {
       const totalConversations = uniqueSessionIds.size;
 
       // Extract recommendations and analyze conversion data
-      const recommendations = this.extractProductRecommendations(messages || []);
-      const sessionsWithRecommendations = new Set(recommendations.map(r => r.sessionId)).size;
+      const recommendations = this.extractProductRecommendations(
+        messages || []
+      );
+      const sessionsWithRecommendations = new Set(
+        recommendations.map(r => r.sessionId)
+      ).size;
       const conversationsWithRecommendations = sessionsWithRecommendations;
       const conversionRate = totalConversations
         ? (conversationsWithRecommendations / totalConversations) * 100
@@ -1098,7 +1176,9 @@ export class AdminAnalyticsService {
         );
       });
 
-      const recommendationsByProduct = Array.from(productRecommendationCounts.entries())
+      const recommendationsByProduct = Array.from(
+        productRecommendationCounts.entries()
+      )
         .sort(([, a], [, b]) => b - a)
         .slice(0, 10)
         .map(([product_title, recommendation_count]) => ({
@@ -1605,7 +1685,9 @@ export class AdminAnalyticsService {
           lastUpdated: string;
         }>(cacheKey);
         if (cachedDashboard) {
-          logger.info('Returning cached comprehensive dashboard for:', { shop });
+          logger.info('Returning cached comprehensive dashboard for:', {
+            shop,
+          });
           return cachedDashboard;
         }
 
@@ -1699,9 +1781,10 @@ export class AdminAnalyticsService {
           recommendationsMade: recommendations.totalRecommendationsMade,
           averageEngagement: general.averageMessagesPerConversation,
           conversionRate: conversion.conversionRate,
-          topProduct: recommendations.topRecommendedProducts.length > 0 
-            ? recommendations.topRecommendedProducts[0].productTitle 
-            : null,
+          topProduct:
+            recommendations.topRecommendedProducts.length > 0
+              ? recommendations.topRecommendedProducts[0].productTitle
+              : null,
         };
 
         // Cache summary for 5 minutes

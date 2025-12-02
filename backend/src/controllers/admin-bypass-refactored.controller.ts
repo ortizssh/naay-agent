@@ -217,7 +217,8 @@ router.get(
 
       logger.info('Getting general metrics', { shop: validatedShop });
 
-      const generalMetrics = await analyticsService.getGeneralMetrics(validatedShop);
+      const generalMetrics =
+        await analyticsService.getGeneralMetrics(validatedShop);
 
       logger.info('General metrics retrieved successfully', {
         shop: validatedShop,
@@ -247,9 +248,12 @@ router.get(
       const validatedShop = validateShopParameter(shop, res, operation);
       if (!validatedShop) return;
 
-      logger.info('Getting product recommendation metrics', { shop: validatedShop });
+      logger.info('Getting product recommendation metrics', {
+        shop: validatedShop,
+      });
 
-      const productMetrics = await analyticsService.getProductRecommendationMetrics(validatedShop);
+      const productMetrics =
+        await analyticsService.getProductRecommendationMetrics(validatedShop);
 
       logger.info('Product recommendation metrics retrieved successfully', {
         shop: validatedShop,
@@ -281,7 +285,8 @@ router.get(
 
       logger.info('Getting engagement metrics', { shop: validatedShop });
 
-      const engagementMetrics = await analyticsService.getEngagementMetrics(validatedShop);
+      const engagementMetrics =
+        await analyticsService.getEngagementMetrics(validatedShop);
 
       logger.info('Engagement metrics retrieved successfully', {
         shop: validatedShop,
@@ -313,13 +318,15 @@ router.get(
 
       logger.info('Getting comprehensive shop stats', { shop: validatedShop });
 
-      const comprehensiveStats = await analyticsService.getComprehensiveDashboard(validatedShop);
+      const comprehensiveStats =
+        await analyticsService.getComprehensiveDashboard(validatedShop);
 
       logger.info('Comprehensive shop stats retrieved successfully', {
         shop: validatedShop,
         totalConversations: comprehensiveStats.general.totalConversations,
         totalMessages: comprehensiveStats.general.totalMessages,
-        totalRecommendations: comprehensiveStats.recommendations.totalRecommendationsMade,
+        totalRecommendations:
+          comprehensiveStats.recommendations.totalRecommendationsMade,
         conversionRate: comprehensiveStats.conversion.conversionRate,
       });
 
