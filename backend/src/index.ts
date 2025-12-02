@@ -13,6 +13,7 @@ import {
   sanitizeInput,
   auditLog,
 } from '@/middleware/security';
+import { CorsMiddleware } from '@/middleware/cors.middleware';
 
 // Route imports
 import authRoutes from '@/controllers/auth.controller';
@@ -37,139 +38,14 @@ async function startServer() {
     const app = express();
 
     // Widget-specific middleware BEFORE other security middleware
-    app.use('/static', (req, res, next) => {
-      if (req.path.includes('naay-widget.js')) {
-        // Completely override all security headers for widget script
-        res.removeHeader('X-Frame-Options');
-        res.removeHeader('Content-Security-Policy');
-        res.removeHeader('Cross-Origin-Resource-Policy');
-        res.removeHeader('Cross-Origin-Opener-Policy');
+    app.use('/static', CorsMiddleware.widgetScript());
 
-        // Set permissive headers for widget script loading
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', '*');
-        res.setHeader('Access-Control-Max-Age', '86400');
-        res.setHeader('X-Frame-Options', 'ALLOWALL');
-        res.setHeader('Content-Security-Policy', '');
-        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    // Widget API CORS middleware
+    app.use('/api/widget', CorsMiddleware.widgetApi());
 
-        console.log('Widget script requested - CORS headers set');
-      }
-      next();
-    });
-
-    // Widget API CORS middleware - for widget API endpoints
-    app.use('/api/widget', (req, res, next) => {
-      // Set CORS headers for all widget API endpoints
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-      res.setHeader(
-        'Access-Control-Allow-Headers',
-        'Content-Type, Authorization, X-Requested-With'
-      );
-      res.setHeader('Access-Control-Max-Age', '86400');
-
-      // Handle OPTIONS preflight
-      if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-      }
-
-      console.log('Widget API request - CORS headers set for:', req.path);
-      next();
-    });
-
-    // Chat API CORS middleware - for main chat endpoints
-    app.use('/api/chat', (req, res, next) => {
-      const origin = req.get('Origin');
-
-      // Allow requests from Shopify domains only
-      const allowedOrigins = [
-        /^https:\/\/[a-zA-Z0-9-]+\.myshopify\.com$/,
-        /^https:\/\/[a-zA-Z0-9-]+\.shopify\.com$/,
-        /^https:\/\/admin\.shopify\.com$/,
-      ];
-
-      let allowOrigin = false;
-      if (origin) {
-        allowOrigin = allowedOrigins.some(pattern => pattern.test(origin));
-      }
-
-      if (allowOrigin) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-        res.setHeader('Vary', 'Origin');
-      } else if (!origin) {
-        res.setHeader('Access-Control-Allow-Origin', '*');
-      }
-
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-      res.setHeader(
-        'Access-Control-Allow-Headers',
-        'Content-Type, Authorization, X-Requested-With'
-      );
-      res.setHeader('Access-Control-Max-Age', '86400');
-
-      // Handle OPTIONS preflight
-      if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-      }
-
-      console.log(
-        'Chat API request - CORS headers set for:',
-        req.path,
-        'Origin:',
-        origin,
-        'Allowed:',
-        allowOrigin
-      );
-      next();
-    });
-
-    // Simple Chat API CORS middleware - for simple chat endpoints
-    app.use('/api/simple-chat', (req, res, next) => {
-      const origin = req.get('Origin');
-
-      // Allow requests from Shopify domains only
-      const allowedOrigins = [
-        /^https:\/\/[a-zA-Z0-9-]+\.myshopify\.com$/,
-        /^https:\/\/[a-zA-Z0-9-]+\.shopify\.com$/,
-        /^https:\/\/admin\.shopify\.com$/,
-      ];
-
-      let allowOrigin = false;
-      if (origin) {
-        allowOrigin = allowedOrigins.some(pattern => pattern.test(origin));
-      }
-
-      if (allowOrigin) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-        res.setHeader('Vary', 'Origin');
-      } else if (!origin) {
-        res.setHeader('Access-Control-Allow-Origin', '*');
-      }
-
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-      res.setHeader(
-        'Access-Control-Allow-Headers',
-        'Content-Type, Authorization, X-Requested-With'
-      );
-      res.setHeader('Access-Control-Max-Age', '86400');
-
-      // Handle OPTIONS preflight
-      if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-      }
-
-      console.log(
-        'Simple Chat API request - CORS headers set for:',
-        req.path,
-        'Origin:',
-        origin,
-        'Allowed:',
-        allowOrigin
-      );
-      next();
-    });
+    // Chat API CORS middleware
+    app.use('/api/chat', CorsMiddleware.chatApi());
+    app.use('/api/simple-chat', CorsMiddleware.chatApi());
 
     // Security middleware - allow iframe embedding for Shopify (but not for widget files)
     app.use((req, res, next) => {
@@ -192,82 +68,14 @@ async function startServer() {
         next();
       }
     });
-    // Public APIs CORS middleware - MOVED BEFORE GENERAL CORS
-    app.use('/api/public', (req, res, next) => {
-      const origin = req.get('Origin');
+    // Public APIs CORS middleware
+    app.use('/api/public', CorsMiddleware.publicApi());
 
-      // Allow requests from Shopify domains and custom store domains
-      const allowedOrigins = [
-        /^https:\/\/[a-zA-Z0-9-]+\.myshopify\.com$/,
-        /^https:\/\/[a-zA-Z0-9-]+\.shopify\.com$/,
-        /^https:\/\/admin\.shopify\.com$/,
-        // Allow custom store domains (most common patterns)
-        /^https:\/\/[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/,
-      ];
+    // General CORS middleware
+    app.use(CorsMiddleware.general());
 
-      let allowOrigin = false;
-      if (origin) {
-        allowOrigin = allowedOrigins.some(pattern => pattern.test(origin));
-      }
-
-      if (allowOrigin || !origin) {
-        // Allow the origin or if no origin is present
-        res.setHeader('Access-Control-Allow-Origin', origin || '*');
-        if (origin) {
-          res.setHeader('Vary', 'Origin'); // Important for caching
-        }
-      }
-
-      res.setHeader(
-        'Access-Control-Allow-Methods',
-        'GET, POST, PUT, DELETE, OPTIONS'
-      );
-      res.setHeader(
-        'Access-Control-Allow-Headers',
-        'Content-Type, Authorization, X-Requested-With'
-      );
-      res.setHeader('Access-Control-Max-Age', '86400');
-
-      // Handle OPTIONS preflight
-      if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-      }
-
-      console.log(
-        'Public API request - CORS headers set for:',
-        req.path,
-        'Origin:',
-        origin,
-        'Allowed:',
-        allowOrigin
-      );
-      next();
-    });
-
-    app.use(
-      cors({
-        origin:
-          process.env.NODE_ENV === 'production'
-            ? [
-                config.shopify.appUrl,
-                /.*\.shopify\.com$/,
-                /.*\.shop\.app$/,
-                /.*\.myshopify\.com$/,
-              ]
-            : ['http://localhost:3000', 'http://localhost:3001'],
-        credentials: true,
-      })
-    );
-
-    // Allow embedding in Shopify iframe
-    app.use((req, res, next) => {
-      res.setHeader('X-Frame-Options', 'ALLOWALL');
-      res.setHeader(
-        'Content-Security-Policy',
-        "frame-ancestors 'self' https://*.shopify.com https://*.shop.app https://admin.shopify.com https://*.myshopify.com;"
-      );
-      next();
-    });
+    // Frame options for Shopify embedding
+    app.use(CorsMiddleware.frameOptions());
 
     // Rate limiting (exclude widget routes from rate limiting)
     app.use((req, res, next) => {
@@ -484,16 +292,6 @@ async function startServer() {
     app.use('/api/webhooks-admin', webhookAdminRoutes);
     app.use('/api/chat', chatRoutes);
 
-    // CORS configuration specifically for simple-chat endpoint
-    app.use(
-      '/api/simple-chat',
-      cors({
-        origin: true, // Allow all origins for widget integration
-        methods: ['GET', 'POST', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-        credentials: false,
-      })
-    );
     app.use('/api/simple-chat', simpleChatRoutes);
 
     // Public APIs (no authentication required)

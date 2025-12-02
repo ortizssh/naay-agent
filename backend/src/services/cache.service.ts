@@ -7,8 +7,8 @@ interface CacheOptions {
 }
 
 export class CacheService {
-  private redis: any | null = null;
-  private memoryCache: Map<string, { value: any; expires: number }> = new Map();
+  private redis: Redis | null = null;
+  private memoryCache: Map<string, { value: unknown; expires: number }> = new Map();
   private useRedis: boolean = false;
   private hits: number = 0;
   private misses: number = 0;
@@ -25,7 +25,7 @@ export class CacheService {
         this.redis = new Redis(config.redis.url);
         this.useRedis = true;
 
-        this.redis.on('error', (err: any) => {
+        this.redis.on('error', (err: Error) => {
           logger.error('Redis connection error:', err);
           this.useRedis = false;
         });

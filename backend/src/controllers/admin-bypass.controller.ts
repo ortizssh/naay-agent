@@ -1146,8 +1146,15 @@ router.get(
 
         // Extract first image from images array
         let productImage = '';
-        if (dbProduct?.images && Array.isArray(dbProduct.images) && dbProduct.images.length > 0) {
-          productImage = dbProduct.images[0]?.src || dbProduct.images[0]?.url || dbProduct.images[0];
+        if (
+          dbProduct?.images &&
+          Array.isArray(dbProduct.images) &&
+          dbProduct.images.length > 0
+        ) {
+          productImage =
+            dbProduct.images[0]?.src ||
+            dbProduct.images[0]?.url ||
+            dbProduct.images[0];
         }
 
         return {

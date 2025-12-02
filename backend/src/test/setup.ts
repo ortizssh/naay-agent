@@ -1,4 +1,4 @@
-import { config } from '../utils/config';
+// Test environment setup - config imported but not used to trigger validation
 
 // Set test environment
 process.env.NODE_ENV = 'test';
@@ -11,6 +11,16 @@ process.env.SUPABASE_ANON_KEY = 'test_anon_key';
 process.env.SUPABASE_SERVICE_KEY = 'test_service_key';
 process.env.OPENAI_API_KEY = 'test_openai_key';
 process.env.JWT_SECRET = 'test_jwt_secret';
+
+// Extend global type for test utilities
+declare global {
+  // eslint-disable-next-line no-var
+  var originalConsoleLog: typeof console.log;
+  // eslint-disable-next-line no-var
+  var originalConsoleError: typeof console.error;
+  // eslint-disable-next-line no-var
+  var originalConsoleWarn: typeof console.warn;
+}
 
 // Global test setup
 beforeAll(() => {
