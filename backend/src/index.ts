@@ -189,9 +189,9 @@ async function startServer() {
 
     // Root route for Shopify app installation
     app.get('/', (req: express.Request, res: express.Response) => {
-      // Admin panel is available via static route, redirect there
-      logger.info('Redirecting root to admin panel via static route');
-      res.redirect('/static/admin/index.html');
+      // Admin panel is available via dedicated route, redirect there
+      logger.info('Redirecting root to admin panel');
+      res.redirect('/admin');
     });
 
     // Success page after Shopify app installation
