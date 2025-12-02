@@ -61,13 +61,17 @@ export class AdminWebhooksService {
 
       const totalEvents = events?.length || 0;
       const processedEvents = events?.filter(e => e.processed) || [];
-      const successRate = totalEvents > 0 ? (processedEvents.length / totalEvents) * 100 : 100;
+      const successRate =
+        totalEvents > 0 ? (processedEvents.length / totalEvents) * 100 : 100;
 
       // Group events by type
-      const eventsByType = (events || []).reduce((acc, event) => {
-        acc[event.topic] = (acc[event.topic] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
+      const eventsByType = (events || []).reduce(
+        (acc, event) => {
+          acc[event.topic] = (acc[event.topic] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      );
 
       // Get recent events (last 10)
       const recentEvents = (events || []).slice(0, 10).map(event => ({
@@ -91,7 +95,11 @@ export class AdminWebhooksService {
     }
   }
 
-  async createWebhooks(shop: string): Promise<{ success: boolean; message: string; webhooks?: Array<{ id: string; topic: string }> }> {
+  async createWebhooks(shop: string): Promise<{
+    success: boolean;
+    message: string;
+    webhooks?: Array<{ id: string; topic: string }>;
+  }> {
     try {
       logger.info('Creating webhooks for shop:', shop);
 
@@ -102,9 +110,9 @@ export class AdminWebhooksService {
 
       const webhookTopics = [
         'products/create',
-        'products/update', 
+        'products/update',
         'products/delete',
-        'app/uninstalled'
+        'app/uninstalled',
       ];
 
       const results = [];
@@ -113,7 +121,7 @@ export class AdminWebhooksService {
       for (const topic of webhookTopics) {
         try {
           const webhookEndpoint = `${process.env.SHOPIFY_APP_URL}/api/webhooks/${topic.replace('/', '/')}`;
-          
+
           // Create webhook using Shopify service
           const result = await this.shopifyService.createWebhook(
             store.access_token,
@@ -128,21 +136,29 @@ export class AdminWebhooksService {
               topic: topic,
             });
           } else {
-            errors.push(`Failed to create ${topic}: ${result.error || 'Unknown error'}`);
+            errors.push(
+              `Failed to create ${topic}: ${result.error || 'Unknown error'}`
+            );
           }
         } catch (error) {
           logger.error(`Error creating webhook ${topic}:`, error);
-          errors.push(`Failed to create ${topic}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          errors.push(
+            `Failed to create ${topic}: ${error instanceof Error ? error.message : 'Unknown error'}`
+          );
         }
       }
 
       if (results.length === 0) {
-        throw new AppError(`Failed to create any webhooks: ${errors.join(', ')}`, 500);
+        throw new AppError(
+          `Failed to create any webhooks: ${errors.join(', ')}`,
+          500
+        );
       }
 
-      const message = errors.length > 0
-        ? `Created ${results.length} webhooks with ${errors.length} errors: ${errors.join(', ')}`
-        : `Successfully created ${results.length} webhooks`;
+      const message =
+        errors.length > 0
+          ? `Created ${results.length} webhooks with ${errors.length} errors: ${errors.join(', ')}`
+          : `Successfully created ${results.length} webhooks`;
 
       return {
         success: true,

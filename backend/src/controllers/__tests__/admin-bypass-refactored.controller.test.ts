@@ -33,9 +33,12 @@ describe('Admin Bypass Controller', () => {
     // Setup mocks
     mockSupabaseService = new SupabaseService() as jest.Mocked<SupabaseService>;
     mockQueueService = new QueueService() as jest.Mocked<QueueService>;
-    mockAnalyticsService = new AdminAnalyticsService() as jest.Mocked<AdminAnalyticsService>;
-    mockSettingsService = new AdminSettingsService() as jest.Mocked<AdminSettingsService>;
-    mockWebhooksService = new AdminWebhooksService() as jest.Mocked<AdminWebhooksService>;
+    mockAnalyticsService =
+      new AdminAnalyticsService() as jest.Mocked<AdminAnalyticsService>;
+    mockSettingsService =
+      new AdminSettingsService() as jest.Mocked<AdminSettingsService>;
+    mockWebhooksService =
+      new AdminWebhooksService() as jest.Mocked<AdminWebhooksService>;
 
     jest.clearAllMocks();
   });
@@ -102,10 +105,13 @@ describe('Admin Bypass Controller', () => {
         language: 'es',
       };
 
-      mockSettingsService.getShopSettings = jest.fn().mockResolvedValue(mockSettings);
+      mockSettingsService.getShopSettings = jest
+        .fn()
+        .mockResolvedValue(mockSettings);
 
-      const response = await request(app)
-        .get('/api/admin-bypass/settings?shop=test-shop.myshopify.com');
+      const response = await request(app).get(
+        '/api/admin-bypass/settings?shop=test-shop.myshopify.com'
+      );
 
       expect(response.status).toBe(200);
       expect(response.body).toMatchObject({
@@ -115,8 +121,7 @@ describe('Admin Bypass Controller', () => {
     });
 
     it('should return 400 when shop parameter is missing', async () => {
-      const response = await request(app)
-        .get('/api/admin-bypass/settings');
+      const response = await request(app).get('/api/admin-bypass/settings');
 
       expect(response.status).toBe(400);
       expect(response.body).toMatchObject({
@@ -134,7 +139,9 @@ describe('Admin Bypass Controller', () => {
         updated_at: '2024-01-01T00:00:00.000Z',
       };
 
-      mockSettingsService.updateShopSettings = jest.fn().mockResolvedValue(mockUpdatedSettings);
+      mockSettingsService.updateShopSettings = jest
+        .fn()
+        .mockResolvedValue(mockUpdatedSettings);
 
       const response = await request(app)
         .post('/api/admin-bypass/settings/update')
@@ -165,10 +172,13 @@ describe('Admin Bypass Controller', () => {
         ],
       };
 
-      mockAnalyticsService.getShopStats = jest.fn().mockResolvedValue(mockStats);
+      mockAnalyticsService.getShopStats = jest
+        .fn()
+        .mockResolvedValue(mockStats);
 
-      const response = await request(app)
-        .get('/api/admin-bypass/stats?shop=test-shop.myshopify.com');
+      const response = await request(app).get(
+        '/api/admin-bypass/stats?shop=test-shop.myshopify.com'
+      );
 
       expect(response.status).toBe(200);
       expect(response.body).toMatchObject({
@@ -191,10 +201,13 @@ describe('Admin Bypass Controller', () => {
         recentEvents: [],
       };
 
-      mockWebhooksService.getWebhookStats = jest.fn().mockResolvedValue(mockWebhookStats);
+      mockWebhooksService.getWebhookStats = jest
+        .fn()
+        .mockResolvedValue(mockWebhookStats);
 
-      const response = await request(app)
-        .get('/api/admin-bypass/webhooks/stats?shop=test-shop.myshopify.com');
+      const response = await request(app).get(
+        '/api/admin-bypass/webhooks/stats?shop=test-shop.myshopify.com'
+      );
 
       expect(response.status).toBe(200);
       expect(response.body).toMatchObject({
@@ -215,7 +228,9 @@ describe('Admin Bypass Controller', () => {
         ],
       };
 
-      mockWebhooksService.createWebhooks = jest.fn().mockResolvedValue(mockResult);
+      mockWebhooksService.createWebhooks = jest
+        .fn()
+        .mockResolvedValue(mockResult);
 
       const response = await request(app)
         .post('/api/admin-bypass/webhooks/create')
@@ -231,10 +246,13 @@ describe('Admin Bypass Controller', () => {
       const mockTestResult = {
         success: true,
         webhook_id: 'test-123',
-        message: 'Test webhook event created successfully for topic: products/create',
+        message:
+          'Test webhook event created successfully for topic: products/create',
       };
 
-      mockWebhooksService.testWebhook = jest.fn().mockResolvedValue(mockTestResult);
+      mockWebhooksService.testWebhook = jest
+        .fn()
+        .mockResolvedValue(mockTestResult);
 
       const response = await request(app)
         .post('/api/admin-bypass/webhooks/test')
@@ -262,8 +280,7 @@ describe('Admin Bypass Controller', () => {
 
   describe('GET /health', () => {
     it('should return health status', async () => {
-      const response = await request(app)
-        .get('/api/admin-bypass/health');
+      const response = await request(app).get('/api/admin-bypass/health');
 
       expect(response.status).toBe(200);
       expect(response.body).toMatchObject({

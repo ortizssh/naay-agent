@@ -8,7 +8,8 @@ interface CacheOptions {
 
 export class CacheService {
   private redis: Redis | null = null;
-  private memoryCache: Map<string, { value: unknown; expires: number }> = new Map();
+  private memoryCache: Map<string, { value: unknown; expires: number }> =
+    new Map();
   private useRedis: boolean = false;
   private hits: number = 0;
   private misses: number = 0;

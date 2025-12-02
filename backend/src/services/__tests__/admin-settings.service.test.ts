@@ -4,7 +4,9 @@ import { AppError } from '@/types';
 
 // Mock SupabaseService
 jest.mock('../supabase.service');
-const MockedSupabaseService = SupabaseService as jest.MockedClass<typeof SupabaseService>;
+const MockedSupabaseService = SupabaseService as jest.MockedClass<
+  typeof SupabaseService
+>;
 
 describe('AdminSettingsService', () => {
   let settingsService: AdminSettingsService;
@@ -13,7 +15,8 @@ describe('AdminSettingsService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     settingsService = new AdminSettingsService();
-    mockSupabaseService = new MockedSupabaseService() as jest.Mocked<SupabaseService>;
+    mockSupabaseService =
+      new MockedSupabaseService() as jest.Mocked<SupabaseService>;
     (settingsService as any).supabaseService = mockSupabaseService;
   });
 
@@ -105,7 +108,10 @@ describe('AdminSettingsService', () => {
         widget_color: '#00ff00',
       };
 
-      const result = await settingsService.updateShopSettings(mockShop, newSettings);
+      const result = await settingsService.updateShopSettings(
+        mockShop,
+        newSettings
+      );
 
       expect(result.widget_enabled).toBe(false);
       expect(result.widget_color).toBe('#00ff00');
@@ -129,7 +135,9 @@ describe('AdminSettingsService', () => {
 
       await expect(
         settingsService.updateShopSettings(mockShop, invalidSettings)
-      ).rejects.toThrow(new AppError('Invalid widget color format (use hex color)', 400));
+      ).rejects.toThrow(
+        new AppError('Invalid widget color format (use hex color)', 400)
+      );
     });
 
     it('should validate sync frequency range', async () => {
@@ -139,7 +147,9 @@ describe('AdminSettingsService', () => {
 
       await expect(
         settingsService.updateShopSettings(mockShop, invalidSettings)
-      ).rejects.toThrow(new AppError('Sync frequency must be between 1 and 168 hours', 400));
+      ).rejects.toThrow(
+        new AppError('Sync frequency must be between 1 and 168 hours', 400)
+      );
     });
 
     it('should validate language support', async () => {
@@ -163,9 +173,13 @@ describe('AdminSettingsService', () => {
     });
 
     it('should handle database errors', async () => {
-      mockSupabaseService.client.from().update().eq().mockResolvedValue({
-        error: new Error('Database update failed'),
-      });
+      mockSupabaseService.client
+        .from()
+        .update()
+        .eq()
+        .mockResolvedValue({
+          error: new Error('Database update failed'),
+        });
 
       const newSettings: Partial<ShopSettings> = {
         widget_enabled: false,

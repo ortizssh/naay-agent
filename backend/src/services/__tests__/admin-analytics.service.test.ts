@@ -4,7 +4,9 @@ import { AppError } from '@/types';
 
 // Mock SupabaseService
 jest.mock('../supabase.service');
-const MockedSupabaseService = SupabaseService as jest.MockedClass<typeof SupabaseService>;
+const MockedSupabaseService = SupabaseService as jest.MockedClass<
+  typeof SupabaseService
+>;
 
 describe('AdminAnalyticsService', () => {
   let analyticsService: AdminAnalyticsService;
@@ -13,7 +15,8 @@ describe('AdminAnalyticsService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     analyticsService = new AdminAnalyticsService();
-    mockSupabaseService = new MockedSupabaseService() as jest.Mocked<SupabaseService>;
+    mockSupabaseService =
+      new MockedSupabaseService() as jest.Mocked<SupabaseService>;
     (analyticsService as any).supabaseService = mockSupabaseService;
   });
 
@@ -38,12 +41,18 @@ describe('AdminAnalyticsService', () => {
 
     it('should return shop statistics successfully', async () => {
       // Mock product count
-      mockSupabaseService.client.from('products').select('*', { count: 'exact', head: true })
-        .eq('shop_id', mockStore.id).mockResolvedValue({ count: 50 });
+      mockSupabaseService.client
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+        .eq('shop_id', mockStore.id)
+        .mockResolvedValue({ count: 50 });
 
       // Mock conversation count
-      mockSupabaseService.client.from('conversations').select('*', { count: 'exact', head: true })
-        .eq('shop_id', mockStore.id).mockResolvedValue({ count: 25 });
+      mockSupabaseService.client
+        .from('conversations')
+        .select('*', { count: 'exact', head: true })
+        .eq('shop_id', mockStore.id)
+        .mockResolvedValue({ count: 25 });
 
       // Mock conversation data by day
       const mockConversationData = [
@@ -51,7 +60,9 @@ describe('AdminAnalyticsService', () => {
         { created_at: '2024-01-01T12:00:00.000Z' },
         { created_at: '2024-01-02T00:00:00.000Z' },
       ];
-      mockSupabaseService.client.from('conversations').select('created_at')
+      mockSupabaseService.client
+        .from('conversations')
+        .select('created_at')
         .eq('shop_id', mockStore.id)
         .gte('created_at', expect.any(String))
         .mockResolvedValue({ data: mockConversationData });
@@ -108,8 +119,11 @@ describe('AdminAnalyticsService', () => {
     });
 
     it('should return conversion analytics successfully', async () => {
-      mockSupabaseService.client.from('conversations').select('*', { count: 'exact', head: true })
-        .eq('shop_id', mockStore.id).mockResolvedValue({ count: 100 });
+      mockSupabaseService.client
+        .from('conversations')
+        .select('*', { count: 'exact', head: true })
+        .eq('shop_id', mockStore.id)
+        .mockResolvedValue({ count: 100 });
 
       const result = await analyticsService.getConversionAnalytics(mockShop);
 
@@ -122,8 +136,11 @@ describe('AdminAnalyticsService', () => {
     });
 
     it('should calculate conversion rate correctly', async () => {
-      mockSupabaseService.client.from('conversations').select('*', { count: 'exact', head: true })
-        .eq('shop_id', mockStore.id).mockResolvedValue({ count: 0 });
+      mockSupabaseService.client
+        .from('conversations')
+        .select('*', { count: 'exact', head: true })
+        .eq('shop_id', mockStore.id)
+        .mockResolvedValue({ count: 0 });
 
       const result = await analyticsService.getConversionAnalytics(mockShop);
 
@@ -155,7 +172,10 @@ describe('AdminAnalyticsService', () => {
     });
 
     it('should respect limit parameter', async () => {
-      const result = await analyticsService.getTopRecommendedProducts(mockShop, 5);
+      const result = await analyticsService.getTopRecommendedProducts(
+        mockShop,
+        5
+      );
 
       expect(result.data).toEqual([]);
     });

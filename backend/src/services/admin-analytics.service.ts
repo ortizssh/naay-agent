@@ -72,7 +72,9 @@ export class AdminAnalyticsService {
         .gte('created_at', thirtyDaysAgo.toISOString());
 
       // Process conversation data by day
-      const conversationsByDayProcessed = this.groupByDay(conversationsByDay || []);
+      const conversationsByDayProcessed = this.groupByDay(
+        conversationsByDay || []
+      );
 
       return {
         totalProducts: productCount || 0,
@@ -105,7 +107,9 @@ export class AdminAnalyticsService {
 
       // TODO: Implement recommendation tracking
       const conversationsWithRecommendations = 0;
-      const conversionRate = totalConversations ? (conversationsWithRecommendations / totalConversations) * 100 : 0;
+      const conversionRate = totalConversations
+        ? (conversationsWithRecommendations / totalConversations) * 100
+        : 0;
 
       return {
         totalConversations: totalConversations || 0,
@@ -132,7 +136,7 @@ export class AdminAnalyticsService {
       return {
         success: true,
         data: [],
-        message: 'Recommendation tracking not yet implemented'
+        message: 'Recommendation tracking not yet implemented',
       };
     } catch (error) {
       logger.error('Error getting top recommended products:', error);
@@ -140,12 +144,17 @@ export class AdminAnalyticsService {
     }
   }
 
-  private groupByDay(data: Array<{ created_at: string }>): Array<{ date: string; count: number }> {
-    const grouped = data.reduce((acc, item) => {
-      const date = new Date(item.created_at).toISOString().split('T')[0];
-      acc[date] = (acc[date] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+  private groupByDay(
+    data: Array<{ created_at: string }>
+  ): Array<{ date: string; count: number }> {
+    const grouped = data.reduce(
+      (acc, item) => {
+        const date = new Date(item.created_at).toISOString().split('T')[0];
+        acc[date] = (acc[date] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     return Object.entries(grouped).map(([date, count]) => ({ date, count }));
   }

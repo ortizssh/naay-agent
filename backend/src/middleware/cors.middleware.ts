@@ -16,9 +16,7 @@ const SHOPIFY_ORIGINS = [
 ];
 
 // Custom store domain patterns
-const CUSTOM_STORE_ORIGINS = [
-  /^https:\/\/[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/,
-];
+const CUSTOM_STORE_ORIGINS = [/^https:\/\/[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/];
 
 // Development origins
 const DEV_ORIGINS = ['http://localhost:3000', 'http://localhost:3001'];
@@ -59,7 +57,7 @@ export class CorsMiddleware {
     return (req: Request, res: Response, next: NextFunction) => {
       if (req.path.startsWith('/api/widget')) {
         this.setApiCorsHeaders(res, '*');
-        
+
         if (req.method === 'OPTIONS') {
           return res.status(200).end();
         }
@@ -75,7 +73,10 @@ export class CorsMiddleware {
    */
   static chatApi() {
     return (req: Request, res: Response, next: NextFunction) => {
-      if (req.path.startsWith('/api/chat') || req.path.startsWith('/api/simple-chat')) {
+      if (
+        req.path.startsWith('/api/chat') ||
+        req.path.startsWith('/api/simple-chat')
+      ) {
         const origin = req.get('Origin');
         const allowedOrigin = this.validateOrigin(origin, SHOPIFY_ORIGINS);
 
@@ -119,7 +120,10 @@ export class CorsMiddleware {
           }
         }
 
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        res.setHeader(
+          'Access-Control-Allow-Methods',
+          'GET, POST, PUT, DELETE, OPTIONS'
+        );
         this.setApiCorsHeaders(res);
 
         if (req.method === 'OPTIONS') {
@@ -141,13 +145,14 @@ export class CorsMiddleware {
    */
   static general() {
     const config: CorsConfig = {
-      origins: process.env.NODE_ENV === 'production'
-        ? [
-            process.env.SHOPIFY_APP_URL || '',
-            ...SHOPIFY_ORIGINS,
-            /.*\.shop\.app$/,
-          ].filter(Boolean)
-        : DEV_ORIGINS,
+      origins:
+        process.env.NODE_ENV === 'production'
+          ? [
+              process.env.SHOPIFY_APP_URL || '',
+              ...SHOPIFY_ORIGINS,
+              /.*\.shop\.app$/,
+            ].filter(Boolean)
+          : DEV_ORIGINS,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
       maxAge: '86400',
@@ -155,7 +160,7 @@ export class CorsMiddleware {
 
     return (req: Request, res: Response, next: NextFunction) => {
       const origin = req.get('Origin');
-      
+
       if (origin) {
         const allowed = config.origins.some(allowedOrigin => {
           if (typeof allowedOrigin === 'string') {
@@ -171,7 +176,10 @@ export class CorsMiddleware {
       }
 
       res.setHeader('Access-Control-Allow-Methods', config.methods.join(', '));
-      res.setHeader('Access-Control-Allow-Headers', config.allowedHeaders.join(', '));
+      res.setHeader(
+        'Access-Control-Allow-Headers',
+        config.allowedHeaders.join(', ')
+      );
       res.setHeader('Access-Control-Max-Age', config.maxAge);
       res.setHeader('Access-Control-Allow-Credentials', 'true');
 
@@ -218,7 +226,10 @@ export class CorsMiddleware {
   /**
    * Helper method to validate origin against allowed patterns
    */
-  private static validateOrigin(origin: string | undefined, allowedOrigins: (string | RegExp)[]): boolean {
+  private static validateOrigin(
+    origin: string | undefined,
+    allowedOrigins: (string | RegExp)[]
+  ): boolean {
     if (!origin) return false;
 
     return allowedOrigins.some(pattern => {
