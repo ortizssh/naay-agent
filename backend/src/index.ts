@@ -125,7 +125,7 @@ async function startServer() {
         }
         next();
       },
-      express.static(path.join(__dirname, 'public'))
+      express.static(path.join(__dirname, '../public'))
     );
 
     // Public widget endpoint (direct route with CORS)
@@ -155,7 +155,7 @@ async function startServer() {
         );
 
         // Send file using express static file sending
-        res.sendFile(path.join(__dirname, 'public', 'naay-widget.js'));
+        res.sendFile(path.join(__dirname, '../public', 'naay-widget.js'));
       } catch (error) {
         console.error('Error serving widget:', error);
         res.status(500).json({ error: 'Failed to serve widget' });

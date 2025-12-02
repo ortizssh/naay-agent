@@ -163,6 +163,38 @@ router.get(
 );
 
 router.get(
+  '/conversations',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop, limit = 10, page = 1 } = req.query;
+
+      if (!shop || typeof shop !== 'string') {
+        return res.status(400).json({
+          success: false,
+          error: 'Shop parameter required',
+        });
+      }
+
+      const limitNum = parseInt(limit as string, 10) || 10;
+      const pageNum = parseInt(page as string, 10) || 1;
+
+      const conversations = await analyticsService.getConversations(
+        shop,
+        limitNum,
+        pageNum
+      );
+
+      res.json({
+        success: true,
+        data: conversations,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.get(
   '/analytics/conversion',
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -181,6 +213,35 @@ router.get(
       res.json({
         success: true,
         data: conversionData,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.get(
+  '/analytics/chart',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop, days = 30 } = req.query;
+
+      if (!shop || typeof shop !== 'string') {
+        return res.status(400).json({
+          success: false,
+          error: 'Shop parameter required',
+        });
+      }
+
+      const daysNum = parseInt(days as string, 10) || 30;
+      const chartData = await analyticsService.getChartAnalytics(
+        shop,
+        daysNum
+      );
+
+      res.json({
+        success: true,
+        data: chartData,
       });
     } catch (error) {
       next(error);

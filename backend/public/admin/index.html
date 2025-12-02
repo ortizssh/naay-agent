@@ -820,8 +820,10 @@
         let isLoading = false;
         let loadingTimeout;
 
-        // Initialize with protected staggered loading to prevent too many requests
-        if (currentShop) {
+        // Initialize dashboard function
+        function initializeDashboard() {
+            if (!currentShop) return;
+            
             if (isLoading) {
                 console.log('Dashboard already loading, skipping duplicate initialization');
                 return;
@@ -845,6 +847,9 @@
                 console.log('Dashboard initialization completed');
             }, 8000);
         }
+
+        // Call initialization function
+        initializeDashboard();
 
         // Safe loading functions with rate limiting protection
         let lastConversationLoad = 0;

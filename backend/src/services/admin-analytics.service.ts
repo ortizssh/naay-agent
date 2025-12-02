@@ -33,6 +33,43 @@ export interface ConversionData {
   }>;
 }
 
+export interface ConversationItem {
+  session_id: string;
+  messages: number;
+  first_message: string;
+  last_activity: string;
+  user_messages: number;
+  ai_messages: number;
+}
+
+export interface ConversationsResponse {
+  conversations: ConversationItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface ChartDataPoint {
+  date: string;
+  conversations: number;
+  sales: number;
+  orders_count: number;
+}
+
+export interface ChartAnalytics {
+  daily_data: ChartDataPoint[];
+  totals: {
+    conversations: number;
+    sales: number;
+    orders: number;
+    average_order: number;
+  };
+  period_days: number;
+}
+
 export class AdminAnalyticsService {
   private supabaseService: SupabaseService;
 
@@ -141,6 +178,185 @@ export class AdminAnalyticsService {
     } catch (error) {
       logger.error('Error getting top recommended products:', error);
       throw new AppError('Failed to get top recommended products', 500);
+    }
+  }
+
+  async getConversations(shop: string, limit: number = 10, page: number = 1): Promise<ConversationsResponse> {
+    try {
+      logger.info('Getting conversations for shop:', { shop, limit, page });
+
+      const pageNum = Math.max(1, page);
+      const limitNum = Math.max(1, Math.min(100, limit)); // Limit between 1 and 100
+      const offset = (pageNum - 1) * limitNum;
+
+      // Get all messages and group by session_id
+      const { data: allMessages, error: messagesError } = await this.supabaseService.client
+        .from('chat_messages')
+        .select('session_id, content, timestamp, role')
+        .not('session_id', 'is', null)
+        .order('timestamp', { ascending: false });
+
+      if (messagesError) {
+        logger.error('Error fetching chat messages for conversations:', messagesError);
+        throw new AppError('Failed to fetch chat messages', 500);
+      }
+
+      if (!allMessages || allMessages.length === 0) {
+        return {
+          conversations: [],
+          pagination: {
+            page: pageNum,
+            limit: limitNum,
+            total: 0,
+            totalPages: 0,
+          },
+        };
+      }
+
+      // Group messages by session_id
+      const sessionGroups: { [key: string]: any[] } = {};
+      allMessages.forEach(message => {
+        if (!sessionGroups[message.session_id]) {
+          sessionGroups[message.session_id] = [];
+        }
+        sessionGroups[message.session_id].push(message);
+      });
+
+      // Transform to conversations format
+      const allConversations: ConversationItem[] = Object.entries(sessionGroups).map(([sessionId, messages]) => {
+        const userMessages = messages.filter(m => m.role === 'user');
+        const aiMessages = messages.filter(m => m.role === 'assistant');
+        
+        const sortedMessages = messages.sort((a, b) => 
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+
+        const firstMessage = sortedMessages[0]?.content || 'Sin mensaje inicial';
+        const lastActivity = sortedMessages[sortedMessages.length - 1]?.timestamp || '';
+
+        return {
+          session_id: sessionId,
+          messages: messages.length,
+          first_message: firstMessage.substring(0, 100) + (firstMessage.length > 100 ? '...' : ''),
+          last_activity: lastActivity,
+          user_messages: userMessages.length,
+          ai_messages: aiMessages.length,
+        };
+      });
+
+      // Sort by last activity (most recent first)
+      allConversations.sort((a, b) => 
+        new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime()
+      );
+
+      const total = allConversations.length;
+      const totalPages = Math.ceil(total / limitNum);
+      
+      // Apply pagination
+      const conversations = allConversations.slice(offset, offset + limitNum);
+
+      return {
+        conversations,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages,
+        },
+      };
+    } catch (error) {
+      logger.error('Error getting conversations:', error);
+      throw new AppError('Failed to get conversations', 500);
+    }
+  }
+
+  async getChartAnalytics(shop: string, days: number = 30): Promise<ChartAnalytics> {
+    try {
+      logger.info('Getting chart analytics for shop:', { shop, days });
+
+      const daysCount = Math.max(1, Math.min(365, days)); // Limit between 1 and 365 days
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - daysCount);
+
+      // Initialize daily data map
+      const dailyDataMap = new Map<string, ChartDataPoint>();
+      for (let i = 0; i < daysCount; i++) {
+        const date = new Date(startDate);
+        date.setDate(date.getDate() + i);
+        const dateKey = date.toISOString().split('T')[0];
+        dailyDataMap.set(dateKey, {
+          date: dateKey,
+          conversations: 0,
+          sales: 0,
+          orders_count: 0,
+        });
+      }
+
+      // Get conversations data from chat_messages
+      try {
+        const { data: chatMessages, error: chatError } = await this.supabaseService.client
+          .from('chat_messages')
+          .select('session_id, timestamp')
+          .gte('timestamp', startDate.toISOString())
+          .lte('timestamp', endDate.toISOString())
+          .not('session_id', 'is', null);
+
+        if (!chatError && chatMessages) {
+          // Group by session and date to count unique conversations per day
+          const sessionsByDate = new Map<string, Set<string>>();
+
+          chatMessages.forEach((msg: any) => {
+            const dateKey = new Date(msg.timestamp).toISOString().split('T')[0];
+            if (!sessionsByDate.has(dateKey)) {
+              sessionsByDate.set(dateKey, new Set());
+            }
+            sessionsByDate.get(dateKey)!.add(msg.session_id);
+          });
+
+          // Update conversation counts
+          sessionsByDate.forEach((sessions, dateKey) => {
+            if (dailyDataMap.has(dateKey)) {
+              dailyDataMap.get(dateKey)!.conversations = sessions.size;
+            }
+          });
+        }
+      } catch (error) {
+        logger.error('Error fetching conversation data for chart:', error);
+      }
+
+      // Note: Sales data would require Shopify integration
+      // For now, we'll return conversation data only
+
+      // Convert to array and sort by date
+      const chartData = Array.from(dailyDataMap.values()).sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+
+      // Calculate totals
+      const totalConversations = chartData.reduce(
+        (sum, day) => sum + day.conversations,
+        0
+      );
+      const totalSales = chartData.reduce((sum, day) => sum + day.sales, 0);
+      const totalOrders = chartData.reduce(
+        (sum, day) => sum + day.orders_count,
+        0
+      );
+
+      return {
+        daily_data: chartData,
+        totals: {
+          conversations: totalConversations,
+          sales: totalSales,
+          orders: totalOrders,
+          average_order: totalOrders > 0 ? totalSales / totalOrders : 0,
+        },
+        period_days: daysCount,
+      };
+    } catch (error) {
+      logger.error('Error getting chart analytics:', error);
+      throw new AppError('Failed to get chart analytics', 500);
     }
   }
 
