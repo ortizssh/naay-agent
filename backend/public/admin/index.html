@@ -1178,16 +1178,28 @@
         // Analytics Chart Functions
         async function loadChartData() {
             try {
+                // Show loading indicator
+                const chartContainer = document.querySelector('#analytics-chart').parentElement;
+                const originalHTML = chartContainer.innerHTML;
+                chartContainer.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 280px;"><div class="spinner"></div><span style="margin-left: 10px;">Actualizando gráfico...</span></div>';
+                
                 const period = document.getElementById('chart-period').value;
                 const response = await fetch(`${API_BASE_URL}/api/admin-bypass/analytics/chart?shop=${currentShop}&days=${period}`);
                 const data = await response.json();
 
                 if (data.success) {
+                    // Restore original container structure
+                    chartContainer.innerHTML = '<canvas id="analytics-chart" style="max-height: 240px;"></canvas>';
                     renderAnalyticsChart(data.data);
                 } else {
+                    // Restore original container structure on error
+                    chartContainer.innerHTML = '<canvas id="analytics-chart" style="max-height: 240px;"></canvas>';
                     showError('Error al cargar datos del gráfico: ' + (data.error || 'Error desconocido'));
                 }
             } catch (error) {
+                // Restore original container structure on error
+                const chartContainer = document.querySelector('#analytics-chart').parentElement;
+                chartContainer.innerHTML = '<canvas id="analytics-chart" style="max-height: 240px;"></canvas>';
                 showError('Error de conexión al cargar datos del gráfico');
             }
         }
@@ -1282,14 +1294,31 @@
         }
 
 
-        // Chart period change handler
+        // Debouncing utilities to prevent excessive API calls
+        let chartDataTimeout;
+        let productsDataTimeout;
+
+        function debounce(func, delay) {
+            return function(...args) {
+                clearTimeout(this.timeout);
+                this.timeout = setTimeout(() => func.apply(this, args), delay);
+            };
+        }
+
+        // Chart period change handler with debouncing
         document.getElementById('chart-period').addEventListener('change', function() {
-            loadChartData();
+            clearTimeout(chartDataTimeout);
+            chartDataTimeout = setTimeout(() => {
+                loadChartData();
+            }, 300); // Wait 300ms before making API call
         });
 
-        // Products period change handler
+        // Products period change handler with debouncing
         document.getElementById('products-period').addEventListener('change', function() {
-            loadProductsPerformance();
+            clearTimeout(productsDataTimeout);
+            productsDataTimeout = setTimeout(() => {
+                loadTopRecommendedProducts();
+            }, 300); // Wait 300ms before making API call
         });
 
 
