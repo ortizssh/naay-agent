@@ -571,67 +571,49 @@ router.get(
         );
       }
 
-      // Get recommended products from conversations (same source as analytics)
+      // Get recommended products from chat messages (same source as analytics)
       let recommendedProducts = 0;
       let totalRecommendations = 0;
 
       try {
-        // Use the same logic as /analytics/products for consistency
-        const { data: conversations, error: conversationsError } = await (
+        // Use chat_messages table - same as /analytics/top-recommended-products
+        const { data: chatMessages, error: chatError } = await (
           supabaseService as any
         ).serviceClient
-          .from('conversations')
-          .select('ai_response, metadata, created_at')
-          .eq('shop_domain', shop);
+          .from('chat_messages')
+          .select('session_id, content, metadata, timestamp')
+          .not('content', 'is', null)
+          .eq('role', 'agent');
 
-        if (!conversationsError && conversations) {
-          const uniqueProducts = new Set();
+        if (!chatError && chatMessages) {
+          const uniqueProducts = new Set<string>();
 
-          conversations.forEach((conv: any) => {
-            const metadata = conv.metadata;
+          chatMessages.forEach((message: any) => {
+            // Use the same extraction logic as analytics endpoints
+            const products = extractProductsFromMessage(
+              message.content || '',
+              message.metadata
+            );
 
-            // Check metadata for recommended products
-            if (metadata && metadata.recommended_products) {
-              metadata.recommended_products.forEach((product: any) => {
-                const productId = product.id || product.product_id;
-                if (productId) {
-                  uniqueProducts.add(productId);
-                  totalRecommendations++;
-                }
-              });
-            }
-
-            // Also check for product mentions in AI response text
-            if (conv.ai_response) {
-              const productRegex =
-                /(?:recomiendo|sugiero|prueba|considera|producto|cosmético)\s+([^.]+)/gi;
-              let match;
-              while ((match = productRegex.exec(conv.ai_response)) !== null) {
-                const productRef = match[1].trim();
-                if (productRef && productRef.length > 3) {
-                  uniqueProducts.add(productRef);
-                  totalRecommendations++;
-                }
-              }
-            }
+            products.forEach(productId => {
+              uniqueProducts.add(productId);
+              totalRecommendations++;
+            });
           });
 
           recommendedProducts = uniqueProducts.size;
 
-          logger.info('Product recommendation stats from conversations:', {
+          logger.info('Product recommendation stats from chat messages:', {
             uniqueProducts: recommendedProducts,
             totalRecommendations: totalRecommendations,
-            conversationsAnalyzed: conversations.length,
+            messagesAnalyzed: chatMessages.length,
           });
-        } else if (conversationsError) {
-          logger.error(
-            'Error fetching conversations for stats:',
-            conversationsError
-          );
+        } else if (chatError) {
+          logger.error('Error fetching chat messages for stats:', chatError);
         }
       } catch (error) {
         logger.error(
-          'Error analyzing product recommendations from conversations:',
+          'Error analyzing product recommendations from chat messages:',
           error
         );
       }
@@ -1143,17 +1125,34 @@ router.get(
         .slice(0, 10)
         .map(([productId, data]) => ({ productId, ...data }));
 
-      // Create enriched products with available data
+      // Get complete product details from database
+      const productIds = topProductIds.map(item => item.productId);
+      const { data: dbProducts, error: dbError } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('products')
+        .select('id, title, handle, price, vendor, product_type, image_url')
+        .in('id', productIds);
+
+      if (dbError) {
+        logger.error('Error fetching product details from database:', dbError);
+      }
+
+      // Create enriched products with database data
       const enrichedProducts = topProductIds.map(item => {
+        const dbProduct = dbProducts?.find(
+          p => p.id.toString() === item.productId
+        );
+        
         return {
           productId: item.productId,
           recommendations: item.count,
-          title: item.details?.title || `Producto ${item.productId}`,
-          handle: item.details?.handle || '',
-          image: item.details?.image || '',
-          price: item.details?.price || 0,
-          vendor: item.details?.vendor || '',
-          productType: item.details?.productType || 'Producto',
+          title: dbProduct?.title || item.details?.title || `Producto ${item.productId}`,
+          handle: dbProduct?.handle || item.details?.handle || '',
+          image: dbProduct?.image_url || item.details?.image || '',
+          price: dbProduct?.price || item.details?.price || 0,
+          vendor: dbProduct?.vendor || item.details?.vendor || '',
+          productType: dbProduct?.product_type || item.details?.productType || 'Producto',
         };
       });
 
