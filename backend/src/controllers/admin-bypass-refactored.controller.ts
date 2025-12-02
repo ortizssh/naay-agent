@@ -234,10 +234,7 @@ router.get(
       }
 
       const daysNum = parseInt(days as string, 10) || 30;
-      const chartData = await analyticsService.getChartAnalytics(
-        shop,
-        daysNum
-      );
+      const chartData = await analyticsService.getChartAnalytics(shop, daysNum);
 
       res.json({
         success: true,
