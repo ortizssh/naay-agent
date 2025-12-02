@@ -138,11 +138,11 @@ export class AdminAnalyticsService {
       useCache = false,
       cacheTtl = 300,
     } = options;
-    
+
     const startTime = Date.now();
     let timeoutId: NodeJS.Timeout | null = null;
     let isTimeoutCleared = false;
-    
+
     try {
       const result = await Promise.race([
         queryFunction(),
@@ -268,10 +268,11 @@ export class AdminAnalyticsService {
         const store = await this.getStoreWithValidation(shop);
 
         // Get product count
-        const { count: productCount, error: productError } = await this.supabaseService.client
-          .from('products')
-          .select('*', { count: 'exact', head: true })
-          .eq('shop_domain', shop);
+        const { count: productCount, error: productError } =
+          await this.supabaseService.client
+            .from('products')
+            .select('*', { count: 'exact', head: true })
+            .eq('shop_domain', shop);
 
         if (productError) {
           throw new AppError(
@@ -283,11 +284,12 @@ export class AdminAnalyticsService {
         // Get conversation and message stats from chat_messages
         // Query all messages since we don't filter by shop_domain
         logger.info('Querying all chat messages from database');
-        
-        const { data: conversationData, error: conversationError } = await this.supabaseService.client
-          .from('chat_messages')
-          .select('id, role, content, timestamp, session_id')
-          .order('timestamp', { ascending: true });
+
+        const { data: conversationData, error: conversationError } =
+          await this.supabaseService.client
+            .from('chat_messages')
+            .select('id, role, content, timestamp, session_id')
+            .order('timestamp', { ascending: true });
 
         if (conversationError) {
           throw new AppError(
@@ -298,7 +300,7 @@ export class AdminAnalyticsService {
 
         const messages = conversationData || [];
         const totalMessages = messages.length;
-        
+
         // Get unique session_ids to count conversations
         const uniqueSessionIds = new Set(messages.map(msg => msg.session_id));
         const conversationCount = uniqueSessionIds.size;
@@ -312,9 +314,11 @@ export class AdminAnalyticsService {
         messages.forEach(msg => {
           const sessionId = msg.session_id;
           const timestamp = new Date(msg.timestamp);
-          
-          if (!sessionFirstMessages.has(sessionId) || 
-              timestamp < sessionFirstMessages.get(sessionId)) {
+
+          if (
+            !sessionFirstMessages.has(sessionId) ||
+            timestamp < sessionFirstMessages.get(sessionId)
+          ) {
             sessionFirstMessages.set(sessionId, timestamp);
           }
         });
@@ -379,7 +383,7 @@ export class AdminAnalyticsService {
       // Get total conversations from chat_messages by counting distinct session_ids
       // Query all messages since we don't filter by shop_domain
       logger.info('Querying all chat messages for conversion analytics');
-      
+
       const { data: messages, error } = await this.supabaseService.client
         .from('chat_messages')
         .select('id, role, content, timestamp, session_id')
@@ -393,7 +397,9 @@ export class AdminAnalyticsService {
       }
 
       // Count unique session_ids to get total conversations
-      const uniqueSessionIds = new Set((messages || []).map(msg => msg.session_id));
+      const uniqueSessionIds = new Set(
+        (messages || []).map(msg => msg.session_id)
+      );
       const totalConversations = uniqueSessionIds.size;
 
       // TODO: Implement recommendation tracking
@@ -574,11 +580,12 @@ export class AdminAnalyticsService {
         // Get all messages to derive conversation data
         // Query all messages since we don't filter by shop_domain
         logger.info('Querying all chat messages for conversations');
-        
-        const { data: allMessages, error: messagesError } = await this.supabaseService.client
-          .from('chat_messages')
-          .select('id, role, content, timestamp, session_id')
-          .order('timestamp', { ascending: true });
+
+        const { data: allMessages, error: messagesError } =
+          await this.supabaseService.client
+            .from('chat_messages')
+            .select('id, role, content, timestamp, session_id')
+            .order('timestamp', { ascending: true });
 
         if (messagesError) {
           logger.error('Error fetching messages:', messagesError);
@@ -588,18 +595,21 @@ export class AdminAnalyticsService {
         const messages = allMessages || [];
 
         // Group messages by session_id to build conversations
-        const conversationMap = new Map<string, {
-          session_id: string;
-          messages: typeof messages;
-          first_message?: string;
-          last_activity: string;
-          user_messages: number;
-          ai_messages: number;
-        }>();
+        const conversationMap = new Map<
+          string,
+          {
+            session_id: string;
+            messages: typeof messages;
+            first_message?: string;
+            last_activity: string;
+            user_messages: number;
+            ai_messages: number;
+          }
+        >();
 
         messages.forEach(message => {
           const sessionId = message.session_id;
-          
+
           if (!conversationMap.has(sessionId)) {
             conversationMap.set(sessionId, {
               session_id: sessionId,
@@ -612,7 +622,7 @@ export class AdminAnalyticsService {
 
           const conv = conversationMap.get(sessionId)!;
           conv.messages.push(message);
-          
+
           // Update last activity to the most recent message
           if (new Date(message.timestamp) > new Date(conv.last_activity)) {
             conv.last_activity = message.timestamp;
@@ -632,28 +642,35 @@ export class AdminAnalyticsService {
         });
 
         // Convert to array and sort by last activity
-        const allConversations = Array.from(conversationMap.values())
-          .sort((a, b) => new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime());
+        const allConversations = Array.from(conversationMap.values()).sort(
+          (a, b) =>
+            new Date(b.last_activity).getTime() -
+            new Date(a.last_activity).getTime()
+        );
 
         const total = allConversations.length;
         const totalPages = Math.ceil(total / limitNum);
 
         // Apply pagination
-        const paginatedConversations = allConversations.slice(offset, offset + limitNum);
+        const paginatedConversations = allConversations.slice(
+          offset,
+          offset + limitNum
+        );
 
         // Format the results
-        const formattedConversations: ConversationItem[] = paginatedConversations.map(conv => ({
-          session_id: conv.session_id,
-          messages: conv.messages.length,
-          first_message: conv.first_message
-            ? (conv.first_message.length > 100
+        const formattedConversations: ConversationItem[] =
+          paginatedConversations.map(conv => ({
+            session_id: conv.session_id,
+            messages: conv.messages.length,
+            first_message: conv.first_message
+              ? conv.first_message.length > 100
                 ? conv.first_message.substring(0, 100) + '...'
-                : conv.first_message)
-            : 'Sin mensaje inicial',
-          last_activity: conv.last_activity,
-          user_messages: conv.user_messages,
-          ai_messages: conv.ai_messages,
-        }));
+                : conv.first_message
+              : 'Sin mensaje inicial',
+            last_activity: conv.last_activity,
+            user_messages: conv.user_messages,
+            ai_messages: conv.ai_messages,
+          }));
 
         const queryDuration = Date.now() - startTime;
         logger.info('Conversation query performance', {
@@ -718,13 +735,14 @@ export class AdminAnalyticsService {
       // Get all messages within the date range
       // Query all messages since we don't filter by shop_domain
       logger.info('Querying all chat messages for chart analytics');
-      
-      const { data: messages, error: messagesError } = await this.supabaseService.client
-        .from('chat_messages')
-        .select('id, role, content, timestamp, session_id')
-        .gte('timestamp', startDate.toISOString())
-        .lte('timestamp', endDate.toISOString())
-        .order('timestamp', { ascending: true });
+
+      const { data: messages, error: messagesError } =
+        await this.supabaseService.client
+          .from('chat_messages')
+          .select('id, role, content, timestamp, session_id')
+          .gte('timestamp', startDate.toISOString())
+          .lte('timestamp', endDate.toISOString())
+          .order('timestamp', { ascending: true });
 
       if (messagesError) {
         logger.error('Error fetching messages for chart:', messagesError);
@@ -738,9 +756,11 @@ export class AdminAnalyticsService {
       messagesList.forEach(msg => {
         const sessionId = msg.session_id;
         const timestamp = new Date(msg.timestamp);
-        
-        if (!sessionFirstMessages.has(sessionId) || 
-            timestamp < sessionFirstMessages.get(sessionId)!) {
+
+        if (
+          !sessionFirstMessages.has(sessionId) ||
+          timestamp < sessionFirstMessages.get(sessionId)!
+        ) {
           sessionFirstMessages.set(sessionId, timestamp);
         }
       });

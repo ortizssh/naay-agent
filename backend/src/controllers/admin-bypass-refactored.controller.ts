@@ -682,10 +682,11 @@ router.post(
       logger.info('Starting migration to add shop_domain to chat_messages');
 
       // Check if column already exists
-      const { data: columnCheck, error: checkError } = await supabaseService.client
-        .from('chat_messages')
-        .select('shop_domain')
-        .limit(1);
+      const { data: columnCheck, error: checkError } =
+        await supabaseService.client
+          .from('chat_messages')
+          .select('shop_domain')
+          .limit(1);
 
       if (!checkError) {
         logger.info('shop_domain column already exists');
@@ -701,7 +702,8 @@ router.post(
 
       res.json({
         success: false,
-        message: 'Migration requires manual execution in database. Please run the SQL migration file.',
+        message:
+          'Migration requires manual execution in database. Please run the SQL migration file.',
         sql: `
 -- Add shop_domain column to chat_messages
 ALTER TABLE chat_messages 
