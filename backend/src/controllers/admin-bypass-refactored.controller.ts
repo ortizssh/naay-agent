@@ -672,6 +672,61 @@ router.post(
   }
 );
 
+// Database migration endpoint
+router.post(
+  '/migrate/add-shop-domain',
+  async (_req: Request, res: Response, next: NextFunction) => {
+    const operation = 'add shop domain to chat_messages';
+
+    try {
+      logger.info('Starting migration to add shop_domain to chat_messages');
+
+      // Check if column already exists
+      const { data: columnCheck, error: checkError } = await supabaseService.client
+        .from('chat_messages')
+        .select('shop_domain')
+        .limit(1);
+
+      if (!checkError) {
+        logger.info('shop_domain column already exists');
+        return res.json({
+          success: true,
+          message: 'shop_domain column already exists in chat_messages table',
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      // Execute migration steps manually since we can't run raw SQL
+      logger.info('Column does not exist, needs manual migration in database');
+
+      res.json({
+        success: false,
+        message: 'Migration requires manual execution in database. Please run the SQL migration file.',
+        sql: `
+-- Add shop_domain column to chat_messages
+ALTER TABLE chat_messages 
+ADD COLUMN IF NOT EXISTS shop_domain VARCHAR(255);
+
+-- Add foreign key constraint
+ALTER TABLE chat_messages 
+ADD CONSTRAINT fk_chat_messages_shop_domain 
+FOREIGN KEY (shop_domain) REFERENCES stores(shop_domain) ON DELETE CASCADE;
+
+-- Add indexes
+CREATE INDEX IF NOT EXISTS idx_chat_messages_shop_domain 
+ON chat_messages(shop_domain);
+
+CREATE INDEX IF NOT EXISTS idx_chat_messages_shop_session 
+ON chat_messages(shop_domain, session_id, timestamp);
+        `,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      handleControllerError(error, res, operation);
+    }
+  }
+);
+
 // Basic health check
 router.get('/health', async (_req: Request, res: Response) => {
   try {
