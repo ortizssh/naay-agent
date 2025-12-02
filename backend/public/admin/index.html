@@ -835,55 +835,97 @@
             // Clear any existing loading timeout
             clearTimeout(loadingTimeout);
             
-            // Stagger loads with much longer delays to prevent rate limiting
-            loadStats();
-            setTimeout(() => loadConversations(), 2000);   // Increased to 2s
-            setTimeout(() => loadChartData(), 4000);       // Increased to 4s  
-            setTimeout(() => loadTopRecommendedProducts(), 6000); // Increased to 6s
+            // Stagger loads with optimized delays and priority-based loading
+            loadStats(); // Load immediately - highest priority
+            setTimeout(() => loadConversations(), 1000);   // Reduced to 1s for user-facing data
+            setTimeout(() => loadChartData(), 3000);       // Chart data (less critical)
+            setTimeout(() => loadTopRecommendedProducts(), 5000); // Products last (least critical)
             
             // Reset loading state after all loads complete
             loadingTimeout = setTimeout(() => {
                 isLoading = false;
                 console.log('Dashboard initialization completed');
-            }, 8000);
+            }, 7000);
         }
 
         // Call initialization function
         initializeDashboard();
 
-        // Safe loading functions with rate limiting protection
+        // Enhanced rate limiting with exponential backoff and request tracking
         let lastConversationLoad = 0;
         let lastChartLoad = 0;
         let lastStatsLoad = 0;
+        let conversationLoadCount = 0;
+        let pendingRequests = new Set();
 
         function safeLoadConversations() {
             const now = Date.now();
-            if (now - lastConversationLoad < 5000) { // 5 second minimum between calls
-                console.log('Conversations load too frequent, skipping');
+            const requestId = 'conversations';
+            
+            if (pendingRequests.has(requestId)) {
+                console.log('Conversations request already pending, skipping');
                 return;
             }
+            
+            // Progressive rate limiting - increase delay with frequent requests
+            const minDelay = Math.min(30000, 3000 * Math.pow(1.5, Math.max(0, conversationLoadCount - 3)));
+            
+            if (now - lastConversationLoad < minDelay) {
+                console.log(`Conversations load too frequent (${minDelay}ms), skipping`);
+                return;
+            }
+            
             lastConversationLoad = now;
-            loadConversations();
+            conversationLoadCount++;
+            pendingRequests.add(requestId);
+            
+            loadConversations().finally(() => {
+                pendingRequests.delete(requestId);
+            });
         }
 
         function safeLoadChartData() {
             const now = Date.now();
-            if (now - lastChartLoad < 5000) { // 5 second minimum between calls
+            const requestId = 'chart';
+            
+            if (pendingRequests.has(requestId)) {
+                console.log('Chart request already pending, skipping');
+                return;
+            }
+            
+            if (now - lastChartLoad < 10000) { // 10 second minimum for charts
                 console.log('Chart load too frequent, skipping');
                 return;
             }
+            
             lastChartLoad = now;
-            loadChartData();
+            pendingRequests.add(requestId);
+            
+            loadChartData().finally(() => {
+                pendingRequests.delete(requestId);
+            });
         }
 
         function safeLoadStats() {
             const now = Date.now();
-            if (now - lastStatsLoad < 5000) { // 5 second minimum between calls
+            const requestId = 'stats';
+            
+            if (pendingRequests.has(requestId)) {
+                console.log('Stats request already pending, skipping');
+                return;
+            }
+            
+            if (now - lastStatsLoad < 15000) { // 15 second minimum for stats
                 console.log('Stats load too frequent, skipping');
                 return;
             }
+            
             lastStatsLoad = now;
-            loadStats();
+            pendingRequests.add(requestId);
+            
+            loadStats().finally(() => {
+                pendingRequests.delete(requestId);
+            });
         }
 
         async function loadStats() {
@@ -928,16 +970,42 @@
 
         async function loadConversations() {
             const container = document.getElementById('conversations-container');
+            const startTime = performance.now();
+            
             container.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
             
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin-bypass/conversations?shop=${currentShop}&page=${currentPage}&limit=${limit}`);
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+                
+                const response = await fetch(`${API_BASE_URL}/api/admin-bypass/conversations?shop=${currentShop}&page=${currentPage}&limit=${limit}`, {
+                    signal: controller.signal,
+                    headers: {
+                        'Cache-Control': 'max-age=900', // 15 minutes cache
+                    }
+                });
+                
+                clearTimeout(timeoutId);
                 
                 if (!response.ok) {
+                    if (response.status === 429) {
+                        throw new Error('Rate limit exceeded');
+                    }
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 
                 const data = await response.json();
+                const duration = performance.now() - startTime;
+                
+                console.log(`Conversations loaded in ${duration.toFixed(0)}ms`);
+                
+                if (duration > 1000) {
+                    console.warn('Slow conversation loading detected:', {
+                        duration: duration.toFixed(0) + 'ms',
+                        page: currentPage,
+                        limit
+                    });
+                }
 
                 if (data.success) {
                     renderConversations(data.data.conversations);
@@ -946,9 +1014,15 @@
                     showError('Error al cargar conversaciones: ' + (data.error || 'Error desconocido'));
                 }
             } catch (error) {
-                console.error('Error loading conversations:', error);
-                if (error.message.includes('429')) {
+                const duration = performance.now() - startTime;
+                console.error('Error loading conversations:', { error: error.message, duration });
+                
+                if (error.name === 'AbortError') {
+                    showError('Request timeout. Please try again.');
+                } else if (error.message.includes('429') || error.message.includes('Rate limit')) {
                     showError('Too many requests. Please wait and refresh.');
+                    // Increase rate limiting for this session
+                    conversationLoadCount += 3;
                 } else {
                     showError('Error de conexión al cargar conversaciones');
                 }
@@ -1192,23 +1266,32 @@
                 return '';
             }
 
+            // Filter and map products, excluding those without images
             const productsHTML = products.map(product => {
                 const price = product.price ? formatPrice(product.price) : 'Precio no disponible';
-                const image = product.image?.src || '/placeholder-product.jpg';
+                // Only use real Shopify images - no placeholders
+                if (!product.image?.src) return null; // Skip products without images
+                const image = product.image.src;
                 const title = product.title || 'Producto sin título';
                 const handle = product.handle || '';
+                const recommendations = product.recommendations || 0;
 
                 return `
                     <div class="product-recommendation">
-                        <img src="${image}" alt="${escapeHtml(title)}" class="product-image" onerror="this.src='/placeholder-product.jpg'">
+                        <img src="${image}" alt="${escapeHtml(title)}" class="product-image">
                         <div class="product-info">
                             <div class="product-title">${escapeHtml(title)}</div>
                             <div class="product-price">${price}</div>
                             ${handle ? `<div class="product-handle">/${handle}</div>` : ''}
+                            <div class="product-recommendations">${recommendations} recomendaciones</div>
                         </div>
                     </div>
                 `;
-            }).join('');
+            }).filter(html => html !== null).join('');
+
+            if (productsHTML.length === 0) {
+                return '<div style="padding: 20px; text-align: center; color: #6d7175;">No hay productos con imágenes disponibles</div>';
+            }
 
             return `
                 <div class="product-recommendations">
@@ -1362,32 +1445,40 @@
         }
 
 
-        // Debouncing utilities to prevent excessive API calls
+        // Enhanced debouncing utilities with smart delay calculation
         let chartDataTimeout;
         let productsDataTimeout;
+        let lastChangeTime = {};
 
-        function debounce(func, delay) {
+        function smartDebounce(func, baseDelay, key) {
             return function(...args) {
+                const now = Date.now();
+                const timeSinceLastChange = now - (lastChangeTime[key] || 0);
+                
+                // Use shorter delay if user is actively changing values
+                const delay = timeSinceLastChange < 5000 ? baseDelay * 2 : baseDelay;
+                
                 clearTimeout(this.timeout);
-                this.timeout = setTimeout(() => func.apply(this, args), delay);
+                this.timeout = setTimeout(() => {
+                    lastChangeTime[key] = now;
+                    func.apply(this, args);
+                }, delay);
             };
         }
 
-        // Chart period change handler with debouncing
-        document.getElementById('chart-period').addEventListener('change', function() {
-            clearTimeout(chartDataTimeout);
-            chartDataTimeout = setTimeout(() => {
-                loadChartData();
-            }, 2000); // Wait 2s before making API call
-        });
+        // Chart period change handler with smart debouncing
+        document.getElementById('chart-period').addEventListener('change', smartDebounce(function() {
+            if (!pendingRequests.has('chart')) {
+                safeLoadChartData();
+            }
+        }, 1500, 'chart')); // Reduced from 2s to 1.5s
 
-        // Products period change handler with debouncing
-        document.getElementById('products-period').addEventListener('change', function() {
-            clearTimeout(productsDataTimeout);
-            productsDataTimeout = setTimeout(() => {
+        // Products period change handler with smart debouncing
+        document.getElementById('products-period').addEventListener('change', smartDebounce(function() {
+            if (!pendingRequests.has('products')) {
                 loadTopRecommendedProducts();
-            }, 2000); // Wait 2s before making API call
-        });
+            }
+        }, 1500, 'products')); // Reduced from 2s to 1.5s
 
 
         // Load products performance analysis

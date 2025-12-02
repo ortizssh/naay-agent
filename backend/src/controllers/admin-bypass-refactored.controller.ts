@@ -5,13 +5,59 @@ import { AdminAnalyticsService } from '@/services/admin-analytics.service';
 import { AdminSettingsService } from '@/services/admin-settings.service';
 import { AdminWebhooksService } from '@/services/admin-webhooks.service';
 import { logger } from '@/utils/logger';
+import { AppError } from '@/types';
 import { adminBypassRateLimit } from '@/middleware/rateLimiter';
+import { PerformanceMonitor } from '@/utils/performance-monitor';
 
 const router = Router();
 const supabaseService = new SupabaseService();
 const analyticsService = new AdminAnalyticsService();
 const settingsService = new AdminSettingsService();
 const webhooksService = new AdminWebhooksService();
+
+// Helper function for standardized error responses
+const handleControllerError = (
+  error: any,
+  res: Response,
+  operation: string
+) => {
+  logger.error(`Error in ${operation}:`, {
+    error: error.message || error,
+    stack: error.stack,
+    operation,
+  });
+
+  if (error instanceof AppError) {
+    return res.status(error.statusCode).json({
+      success: false,
+      error: error.message,
+      code: error.statusCode,
+    });
+  }
+
+  return res.status(500).json({
+    success: false,
+    error: `Failed to ${operation}`,
+    code: 500,
+  });
+};
+
+// Helper function for parameter validation
+const validateShopParameter = (
+  shop: any,
+  res: Response,
+  operation: string
+): string | null => {
+  if (!shop || typeof shop !== 'string' || shop.trim().length === 0) {
+    res.status(400).json({
+      success: false,
+      error: 'Shop parameter is required and must be a non-empty string',
+      operation,
+    });
+    return null;
+  }
+  return shop.trim();
+};
 
 // Apply rate limiting to all admin-bypass routes
 router.use(adminBypassRateLimit);
@@ -20,37 +66,42 @@ router.use(adminBypassRateLimit);
 router.post(
   '/products/sync',
   async (req: Request, res: Response, next: NextFunction) => {
+    const operation = 'product sync';
+
     try {
       const { shop } = req.body;
+      const validatedShop = validateShopParameter(shop, res, operation);
+      if (!validatedShop) return; // Response already sent by validation
 
-      if (!shop) {
-        return res.status(400).json({
-          success: false,
-          error: 'Shop parameter required',
-        });
-      }
+      logger.info('Starting product sync for shop via bypass:', {
+        shop: validatedShop,
+      });
 
-      logger.info('Starting product sync for shop via bypass:', shop);
-
-      const store = await supabaseService.getStore(shop);
+      const store = await supabaseService.getStore(validatedShop);
       if (!store) {
         return res.status(404).json({
           success: false,
           error: 'Store not found',
+          shop: validatedShop,
         });
       }
 
       const queueService = new QueueService();
-      await queueService.addFullSyncJob(shop, store.access_token);
+      await queueService.addFullSyncJob(validatedShop, store.access_token);
+
+      logger.info('Product sync job queued successfully', {
+        shop: validatedShop,
+        storeId: store.id,
+      });
 
       res.json({
         success: true,
         message: 'Sincronización de productos iniciada correctamente',
-        shop,
+        shop: validatedShop,
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      next(error);
+      handleControllerError(error, res, operation);
     }
   }
 );
@@ -59,24 +110,28 @@ router.post(
 router.get(
   '/settings',
   async (req: Request, res: Response, next: NextFunction) => {
+    const operation = 'get shop settings';
+
     try {
       const { shop } = req.query;
+      const validatedShop = validateShopParameter(shop, res, operation);
+      if (!validatedShop) return;
 
-      if (!shop || typeof shop !== 'string') {
-        return res.status(400).json({
-          success: false,
-          error: 'Shop parameter required',
-        });
-      }
+      logger.info('Getting shop settings', { shop: validatedShop });
 
-      const settings = await settingsService.getShopSettings(shop);
+      const settings = await settingsService.getShopSettings(validatedShop);
+
+      logger.info('Shop settings retrieved successfully', {
+        shop: validatedShop,
+        hasSettings: !!settings,
+      });
 
       res.json({
         success: true,
         data: settings,
       });
     } catch (error) {
-      next(error);
+      handleControllerError(error, res, operation);
     }
   }
 );
@@ -84,20 +139,27 @@ router.get(
 router.post(
   '/settings/update',
   async (req: Request, res: Response, next: NextFunction) => {
+    const operation = 'update shop settings';
+
     try {
       const { shop, ...settings } = req.body;
+      const validatedShop = validateShopParameter(shop, res, operation);
+      if (!validatedShop) return;
 
-      if (!shop) {
-        return res.status(400).json({
-          success: false,
-          error: 'Shop parameter required',
-        });
-      }
+      logger.info('Updating shop settings', {
+        shop: validatedShop,
+        settingsKeys: Object.keys(settings),
+      });
 
       const updatedSettings = await settingsService.updateShopSettings(
-        shop,
+        validatedShop,
         settings
       );
+
+      logger.info('Shop settings updated successfully', {
+        shop: validatedShop,
+        updatedKeys: Object.keys(updatedSettings),
+      });
 
       res.json({
         success: true,
@@ -105,7 +167,7 @@ router.post(
         message: 'Configuración actualizada correctamente',
       });
     } catch (error) {
-      next(error);
+      handleControllerError(error, res, operation);
     }
   }
 );
@@ -113,17 +175,21 @@ router.post(
 router.post(
   '/settings/reset',
   async (req: Request, res: Response, next: NextFunction) => {
+    const operation = 'reset shop settings';
+
     try {
       const { shop } = req.body;
+      const validatedShop = validateShopParameter(shop, res, operation);
+      if (!validatedShop) return;
 
-      if (!shop) {
-        return res.status(400).json({
-          success: false,
-          error: 'Shop parameter required',
-        });
-      }
+      logger.info('Resetting shop settings', { shop: validatedShop });
 
-      const resetSettings = await settingsService.resetShopSettings(shop);
+      const resetSettings =
+        await settingsService.resetShopSettings(validatedShop);
+
+      logger.info('Shop settings reset successfully', {
+        shop: validatedShop,
+      });
 
       res.json({
         success: true,
@@ -131,7 +197,7 @@ router.post(
         message: 'Configuración restablecida a valores por defecto',
       });
     } catch (error) {
-      next(error);
+      handleControllerError(error, res, operation);
     }
   }
 );
@@ -140,24 +206,29 @@ router.post(
 router.get(
   '/stats',
   async (req: Request, res: Response, next: NextFunction) => {
+    const operation = 'get shop stats';
+
     try {
       const { shop } = req.query;
+      const validatedShop = validateShopParameter(shop, res, operation);
+      if (!validatedShop) return;
 
-      if (!shop || typeof shop !== 'string') {
-        return res.status(400).json({
-          success: false,
-          error: 'Shop parameter required',
-        });
-      }
+      logger.info('Getting shop stats', { shop: validatedShop });
 
-      const stats = await analyticsService.getShopStats(shop);
+      const stats = await analyticsService.getShopStats(validatedShop);
+
+      logger.info('Shop stats retrieved successfully', {
+        shop: validatedShop,
+        totalProducts: stats.totalProducts,
+        totalConversations: stats.totalConversations,
+      });
 
       res.json({
         success: true,
         data: stats,
       });
     } catch (error) {
-      next(error);
+      handleControllerError(error, res, operation);
     }
   }
 );
@@ -165,31 +236,44 @@ router.get(
 router.get(
   '/conversations',
   async (req: Request, res: Response, next: NextFunction) => {
+    const operation = 'get conversations';
+
     try {
       const { shop, limit = 10, page = 1 } = req.query;
+      const validatedShop = validateShopParameter(shop, res, operation);
+      if (!validatedShop) return;
 
-      if (!shop || typeof shop !== 'string') {
-        return res.status(400).json({
-          success: false,
-          error: 'Shop parameter required',
-        });
-      }
+      // Validate and sanitize numeric parameters
+      const limitNum = Math.max(
+        1,
+        Math.min(100, parseInt(limit as string, 10) || 10)
+      );
+      const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
 
-      const limitNum = parseInt(limit as string, 10) || 10;
-      const pageNum = parseInt(page as string, 10) || 1;
+      logger.info('Getting conversations', {
+        shop: validatedShop,
+        limit: limitNum,
+        page: pageNum,
+      });
 
       const conversations = await analyticsService.getConversations(
-        shop,
+        validatedShop,
         limitNum,
         pageNum
       );
+
+      logger.info('Conversations retrieved successfully', {
+        shop: validatedShop,
+        conversationCount: conversations.conversations.length,
+        totalPages: conversations.pagination.totalPages,
+      });
 
       res.json({
         success: true,
         data: conversations,
       });
     } catch (error) {
-      next(error);
+      handleControllerError(error, res, operation);
     }
   }
 );
@@ -197,17 +281,36 @@ router.get(
 router.get(
   '/conversations/:sessionId',
   async (req: Request, res: Response, next: NextFunction) => {
+    const operation = 'get conversation details';
+
     try {
       const { sessionId } = req.params;
 
-      const messages = await analyticsService.getConversationDetails(sessionId);
+      if (!sessionId || sessionId.trim().length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Session ID is required',
+          operation,
+        });
+      }
+
+      logger.info('Getting conversation details', { sessionId });
+
+      const messages = await analyticsService.getConversationDetails(
+        sessionId.trim()
+      );
+
+      logger.info('Conversation details retrieved successfully', {
+        sessionId,
+        messageCount: messages.length,
+      });
 
       res.json({
         success: true,
         data: messages,
       });
     } catch (error) {
-      next(error);
+      handleControllerError(error, res, operation);
     }
   }
 );
@@ -215,25 +318,30 @@ router.get(
 router.get(
   '/analytics/conversion',
   async (req: Request, res: Response, next: NextFunction) => {
+    const operation = 'get conversion analytics';
+
     try {
       const { shop } = req.query;
+      const validatedShop = validateShopParameter(shop, res, operation);
+      if (!validatedShop) return;
 
-      if (!shop || typeof shop !== 'string') {
-        return res.status(400).json({
-          success: false,
-          error: 'Shop parameter required',
-        });
-      }
+      logger.info('Getting conversion analytics', { shop: validatedShop });
 
       const conversionData =
-        await analyticsService.getConversionAnalytics(shop);
+        await analyticsService.getConversionAnalytics(validatedShop);
+
+      logger.info('Conversion analytics retrieved successfully', {
+        shop: validatedShop,
+        totalConversations: conversionData.totalConversations,
+        conversionRate: conversionData.conversionRate,
+      });
 
       res.json({
         success: true,
         data: conversionData,
       });
     } catch (error) {
-      next(error);
+      handleControllerError(error, res, operation);
     }
   }
 );
@@ -241,25 +349,42 @@ router.get(
 router.get(
   '/analytics/chart',
   async (req: Request, res: Response, next: NextFunction) => {
+    const operation = 'get chart analytics';
+
     try {
       const { shop, days = 30 } = req.query;
+      const validatedShop = validateShopParameter(shop, res, operation);
+      if (!validatedShop) return;
 
-      if (!shop || typeof shop !== 'string') {
-        return res.status(400).json({
-          success: false,
-          error: 'Shop parameter required',
-        });
-      }
+      // Validate and sanitize days parameter
+      const daysNum = Math.max(
+        1,
+        Math.min(365, parseInt(days as string, 10) || 30)
+      );
 
-      const daysNum = parseInt(days as string, 10) || 30;
-      const chartData = await analyticsService.getChartAnalytics(shop, daysNum);
+      logger.info('Getting chart analytics', {
+        shop: validatedShop,
+        days: daysNum,
+      });
+
+      const chartData = await analyticsService.getChartAnalytics(
+        validatedShop,
+        daysNum
+      );
+
+      logger.info('Chart analytics retrieved successfully', {
+        shop: validatedShop,
+        days: daysNum,
+        totalConversations: chartData.totals.conversations,
+        dataPoints: chartData.daily_data.length,
+      });
 
       res.json({
         success: true,
         data: chartData,
       });
     } catch (error) {
-      next(error);
+      handleControllerError(error, res, operation);
     }
   }
 );
@@ -267,25 +392,37 @@ router.get(
 router.get(
   '/analytics/top-recommended-products',
   async (req: Request, res: Response, next: NextFunction) => {
+    const operation = 'get top recommended products';
+
     try {
       const { shop, limit } = req.query;
+      const validatedShop = validateShopParameter(shop, res, operation);
+      if (!validatedShop) return;
 
-      if (!shop || typeof shop !== 'string') {
-        return res.status(400).json({
-          success: false,
-          error: 'Shop parameter required',
-        });
-      }
+      // Validate and sanitize limit parameter
+      const limitNum = Math.max(
+        1,
+        Math.min(50, parseInt(limit as string, 10) || 10)
+      );
 
-      const limitNum = limit ? parseInt(limit as string, 10) : 10;
+      logger.info('Getting top recommended products', {
+        shop: validatedShop,
+        limit: limitNum,
+      });
+
       const products = await analyticsService.getTopRecommendedProducts(
-        shop,
+        validatedShop,
         limitNum
       );
 
+      logger.info('Top recommended products retrieved successfully', {
+        shop: validatedShop,
+        productCount: products.data?.length || 0,
+      });
+
       res.json(products);
     } catch (error) {
-      next(error);
+      handleControllerError(error, res, operation);
     }
   }
 );
@@ -294,24 +431,27 @@ router.get(
 router.get(
   '/webhooks/stats',
   async (req: Request, res: Response, next: NextFunction) => {
+    const operation = 'get webhook stats';
+
     try {
       const { shop } = req.query;
+      const validatedShop = validateShopParameter(shop, res, operation);
+      if (!validatedShop) return;
 
-      if (!shop || typeof shop !== 'string') {
-        return res.status(400).json({
-          success: false,
-          error: 'Shop parameter required',
-        });
-      }
+      logger.info('Getting webhook stats', { shop: validatedShop });
 
-      const webhookStats = await webhooksService.getWebhookStats(shop);
+      const webhookStats = await webhooksService.getWebhookStats(validatedShop);
+
+      logger.info('Webhook stats retrieved successfully', {
+        shop: validatedShop,
+      });
 
       res.json({
         success: true,
         data: webhookStats,
       });
     } catch (error) {
-      next(error);
+      handleControllerError(error, res, operation);
     }
   }
 );
@@ -319,21 +459,25 @@ router.get(
 router.post(
   '/webhooks/create',
   async (req: Request, res: Response, next: NextFunction) => {
+    const operation = 'create webhooks';
+
     try {
       const { shop } = req.body;
+      const validatedShop = validateShopParameter(shop, res, operation);
+      if (!validatedShop) return;
 
-      if (!shop) {
-        return res.status(400).json({
-          success: false,
-          error: 'Shop parameter required',
-        });
-      }
+      logger.info('Creating webhooks', { shop: validatedShop });
 
-      const result = await webhooksService.createWebhooks(shop);
+      const result = await webhooksService.createWebhooks(validatedShop);
+
+      logger.info('Webhooks created successfully', {
+        shop: validatedShop,
+        success: result.success,
+      });
 
       res.json(result);
     } catch (error) {
-      next(error);
+      handleControllerError(error, res, operation);
     }
   }
 );
@@ -341,32 +485,218 @@ router.post(
 router.post(
   '/webhooks/test',
   async (req: Request, res: Response, next: NextFunction) => {
+    const operation = 'test webhook';
+
     try {
       const { shop, topic } = req.body;
+      const validatedShop = validateShopParameter(shop, res, operation);
+      if (!validatedShop) return;
 
-      if (!shop || !topic) {
+      if (!topic || typeof topic !== 'string' || topic.trim().length === 0) {
         return res.status(400).json({
           success: false,
-          error: 'Shop and topic parameters required',
+          error: 'Topic parameter is required and must be a non-empty string',
+          operation,
         });
       }
 
-      const testResult = await webhooksService.testWebhook(shop, topic);
+      logger.info('Testing webhook', {
+        shop: validatedShop,
+        topic: topic.trim(),
+      });
+
+      const testResult = await webhooksService.testWebhook(
+        validatedShop,
+        topic.trim()
+      );
+
+      logger.info('Webhook test completed', {
+        shop: validatedShop,
+        topic: topic.trim(),
+        success: testResult.success,
+      });
 
       res.json(testResult);
     } catch (error) {
-      next(error);
+      handleControllerError(error, res, operation);
+    }
+  }
+);
+
+// Performance monitoring endpoints
+router.get(
+  '/performance/stats',
+  async (req: Request, res: Response, next: NextFunction) => {
+    const operation = 'get performance stats';
+
+    try {
+      const { operation: operationFilter, shop } = req.query;
+
+      logger.info('Getting performance statistics', {
+        operationFilter,
+        shop,
+      });
+
+      const stats = PerformanceMonitor.getStatistics(
+        operationFilter as string,
+        shop as string
+      );
+
+      const alerts = PerformanceMonitor.getAlerts(5); // Last 5 minutes
+
+      res.json({
+        success: true,
+        data: {
+          statistics: stats,
+          alerts,
+          thresholds: {
+            conversation_list: '100ms',
+            conversation_count: '50ms',
+            conversation_details: '200ms',
+            chart_data: '300ms',
+            stats: '150ms',
+          },
+        },
+      });
+    } catch (error) {
+      handleControllerError(error, res, operation);
+    }
+  }
+);
+
+router.post(
+  '/performance/clear',
+  async (_req: Request, res: Response, next: NextFunction) => {
+    const operation = 'clear performance metrics';
+
+    try {
+      logger.info('Clearing performance metrics');
+
+      PerformanceMonitor.clearMetrics();
+
+      res.json({
+        success: true,
+        message: 'Performance metrics cleared successfully',
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      handleControllerError(error, res, operation);
+    }
+  }
+);
+
+// Performance testing endpoint
+router.post(
+  '/performance/test',
+  async (req: Request, res: Response, next: NextFunction) => {
+    const operation = 'performance test';
+
+    try {
+      const { shop, iterations = 5 } = req.body;
+      const validatedShop = validateShopParameter(shop, res, operation);
+      if (!validatedShop) return;
+
+      const iterationsNum = Math.max(1, Math.min(10, parseInt(iterations, 10)));
+
+      logger.info('Starting performance test', {
+        shop: validatedShop,
+        iterations: iterationsNum,
+      });
+
+      const results = [];
+
+      // Test conversation loading multiple times
+      for (let i = 0; i < iterationsNum; i++) {
+        const startTime = Date.now();
+        
+        try {
+          await analyticsService.getConversations(validatedShop, 10, 1);
+          const duration = Date.now() - startTime;
+          
+          results.push({
+            iteration: i + 1,
+            operation: 'getConversations',
+            duration,
+            success: true,
+          });
+        } catch (error) {
+          const duration = Date.now() - startTime;
+          
+          results.push({
+            iteration: i + 1,
+            operation: 'getConversations',
+            duration,
+            success: false,
+            error: error.message,
+          });
+        }
+
+        // Small delay between tests
+        if (i < iterationsNum - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+
+      const successfulTests = results.filter(r => r.success);
+      const averageDuration = successfulTests.length > 0 
+        ? successfulTests.reduce((sum, r) => sum + r.duration, 0) / successfulTests.length 
+        : 0;
+
+      const testSummary = {
+        totalTests: iterationsNum,
+        successfulTests: successfulTests.length,
+        failedTests: results.length - successfulTests.length,
+        averageDuration: Math.round(averageDuration),
+        minDuration: Math.min(...successfulTests.map(r => r.duration)),
+        maxDuration: Math.max(...successfulTests.map(r => r.duration)),
+        target: '< 100ms',
+        passed: averageDuration < 100,
+      };
+
+      logger.info('Performance test completed', testSummary);
+
+      res.json({
+        success: true,
+        data: {
+          summary: testSummary,
+          results,
+          shop: validatedShop,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      handleControllerError(error, res, operation);
     }
   }
 );
 
 // Basic health check
 router.get('/health', async (_req: Request, res: Response) => {
-  res.json({
-    success: true,
-    message: 'Admin bypass controller is healthy',
-    timestamp: new Date().toISOString(),
-  });
+  try {
+    logger.info('Health check requested');
+
+    const stats = PerformanceMonitor.getStatistics();
+    const alerts = PerformanceMonitor.getAlerts(1); // Last minute
+
+    res.json({
+      success: true,
+      message: 'Admin bypass controller is healthy',
+      timestamp: new Date().toISOString(),
+      version: '2.0.1', // Updated version with performance monitoring
+      performance: {
+        totalOperations: stats.totalOperations,
+        averageDuration: Math.round(stats.averageDuration),
+        recentAlerts: alerts.length,
+      },
+    });
+  } catch (error) {
+    logger.error('Health check failed:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Health check failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
 });
 
 export default router;
