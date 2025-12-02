@@ -1131,7 +1131,7 @@ router.get(
         supabaseService as any
       ).serviceClient
         .from('products')
-        .select('id, title, handle, price, vendor, product_type, image_url')
+        .select('id, title, handle, vendor, product_type, images')
         .in('id', productIds);
 
       if (dbError) {
@@ -1143,16 +1143,26 @@ router.get(
         const dbProduct = dbProducts?.find(
           p => p.id.toString() === item.productId
         );
-        
+
+        // Extract first image from images array
+        let productImage = '';
+        if (dbProduct?.images && Array.isArray(dbProduct.images) && dbProduct.images.length > 0) {
+          productImage = dbProduct.images[0]?.src || dbProduct.images[0]?.url || dbProduct.images[0];
+        }
+
         return {
           productId: item.productId,
           recommendations: item.count,
-          title: dbProduct?.title || item.details?.title || `Producto ${item.productId}`,
+          title:
+            dbProduct?.title ||
+            item.details?.title ||
+            `Producto ${item.productId}`,
           handle: dbProduct?.handle || item.details?.handle || '',
-          image: dbProduct?.image_url || item.details?.image || '',
-          price: dbProduct?.price || item.details?.price || 0,
+          image: productImage || item.details?.image || '',
+          price: item.details?.price || 0, // Remove price from DB as it's not in select
           vendor: dbProduct?.vendor || item.details?.vendor || '',
-          productType: dbProduct?.product_type || item.details?.productType || 'Producto',
+          productType:
+            dbProduct?.product_type || item.details?.productType || 'Producto',
         };
       });
 
