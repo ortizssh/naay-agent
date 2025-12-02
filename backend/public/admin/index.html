@@ -712,7 +712,7 @@
                         <option value="30" selected>30 días</option>
                         <option value="60">60 días</option>
                     </select>
-                    <button class="btn" onclick="loadChartData()">Actualizar</button>
+                    <button class="btn" onclick="safeLoadChartData()">Actualizar</button>
                 </div>
             </div>
             <div class="Polaris-Card__Section">
@@ -727,7 +727,7 @@
             <div class="Polaris-Card">
                 <div class="Polaris-Card__Header">
                     <h2 style="font-size: 16px; font-weight: 600; margin: 0;">Historial de Conversaciones</h2>
-                    <button class="btn" onclick="loadConversations()">Actualizar</button>
+                    <button class="btn" onclick="safeLoadConversations()">Actualizar</button>
                 </div>
                 <div id="conversations-container">
                     <div class="loading-spinner">
@@ -816,12 +816,69 @@
             }
         }
 
-        // Initialize with staggered loading to prevent too many requests
+        // Global loading state to prevent multiple simultaneous loads
+        let isLoading = false;
+        let loadingTimeout;
+
+        // Initialize with protected staggered loading to prevent too many requests
         if (currentShop) {
+            if (isLoading) {
+                console.log('Dashboard already loading, skipping duplicate initialization');
+                return;
+            }
+            
+            isLoading = true;
+            console.log('Starting dashboard initialization...');
+            
+            // Clear any existing loading timeout
+            clearTimeout(loadingTimeout);
+            
+            // Stagger loads with longer delays to prevent rate limiting
             loadStats();
-            setTimeout(() => loadConversations(), 100);
-            setTimeout(() => loadChartData(), 200);
-            setTimeout(() => loadTopRecommendedProducts(), 300);
+            setTimeout(() => loadConversations(), 500);  // Increased from 100ms
+            setTimeout(() => loadChartData(), 1000);      // Increased from 200ms
+            setTimeout(() => loadTopRecommendedProducts(), 1500); // Increased from 300ms
+            
+            // Reset loading state after all loads complete
+            loadingTimeout = setTimeout(() => {
+                isLoading = false;
+                console.log('Dashboard initialization completed');
+            }, 2000);
+        }
+
+        // Safe loading functions with rate limiting protection
+        let lastConversationLoad = 0;
+        let lastChartLoad = 0;
+        let lastStatsLoad = 0;
+
+        function safeLoadConversations() {
+            const now = Date.now();
+            if (now - lastConversationLoad < 3000) { // 3 second minimum between calls
+                console.log('Conversations load too frequent, skipping');
+                return;
+            }
+            lastConversationLoad = now;
+            loadConversations();
+        }
+
+        function safeLoadChartData() {
+            const now = Date.now();
+            if (now - lastChartLoad < 3000) { // 3 second minimum between calls
+                console.log('Chart load too frequent, skipping');
+                return;
+            }
+            lastChartLoad = now;
+            loadChartData();
+        }
+
+        function safeLoadStats() {
+            const now = Date.now();
+            if (now - lastStatsLoad < 3000) { // 3 second minimum between calls
+                console.log('Stats load too frequent, skipping');
+                return;
+            }
+            lastStatsLoad = now;
+            loadStats();
         }
 
         async function loadStats() {
@@ -944,7 +1001,7 @@
 
         function changePage(delta) {
             currentPage += delta;
-            loadConversations();
+            safeLoadConversations();
         }
 
         function showError(message) {
