@@ -385,8 +385,9 @@ export class AdminAnalyticsService {
     try {
       logger.info('Getting conversation details', { sessionId });
 
-      const { data: messages, error } = await (this.supabaseService as any)
-        .serviceClient
+      const { data: messages, error } = await (
+        this.supabaseService as any
+      ).serviceClient
         .from('chat_messages')
         .select('id, role, content, timestamp')
         .eq('session_id', sessionId)
