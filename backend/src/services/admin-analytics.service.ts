@@ -2,7 +2,10 @@ import { SupabaseService } from './supabase.service';
 import { CacheService } from './cache.service';
 import { logger } from '@/utils/logger';
 import { AppError, ShopifyStore } from '@/types';
-import { PerformanceMonitor, measurePerformance } from '@/utils/performance-monitor';
+import {
+  PerformanceMonitor,
+  measurePerformance,
+} from '@/utils/performance-monitor';
 
 export interface AnalyticsData {
   totalProducts: number;
@@ -523,95 +526,107 @@ export class AdminAnalyticsService {
             limit,
             page,
           });
-          
+
           // Record cache hit
           PerformanceMonitor.recordMetric({
             operation: 'getConversations (cache hit)',
             duration: 5, // Cache hits are very fast
             recordCount: cachedConversations.conversations.length,
             cacheHit: true,
-            shop
+            shop,
           });
-          
+
           return cachedConversations;
         }
 
-      // First, get the total count using optimized fast count function
-      let totalCount = 0;
-      try {
-        const { data: countData, error: fastCountError } =
-          await this.supabaseService.client.rpc('get_conversation_count_fast', {
-            shop_domain_param: shop,
-          });
-        
-        if (fastCountError) {
-          logger.warn('Fast count query failed, using fallback:', fastCountError);
-          // Fallback to exact count
-          const { count, error: countError } =
-            await this.supabaseService.client
-              .from('chat_sessions')
-              .select('id', { count: 'exact', head: true })
-              .eq('shop_domain', shop)
-              .eq('status', 'active');
-          
-          if (countError) {
-            logger.error('Error counting conversations:', countError);
-            throw new AppError('Failed to count conversations', 500);
+        // First, get the total count using optimized fast count function
+        let totalCount = 0;
+        try {
+          const { data: countData, error: fastCountError } =
+            await this.supabaseService.client.rpc(
+              'get_conversation_count_fast',
+              {
+                shop_domain_param: shop,
+              }
+            );
+
+          if (fastCountError) {
+            logger.warn(
+              'Fast count query failed, using fallback:',
+              fastCountError
+            );
+            // Fallback to exact count
+            const { count, error: countError } =
+              await this.supabaseService.client
+                .from('chat_sessions')
+                .select('id', { count: 'exact', head: true })
+                .eq('shop_domain', shop)
+                .eq('status', 'active');
+
+            if (countError) {
+              logger.error('Error counting conversations:', countError);
+              throw new AppError('Failed to count conversations', 500);
+            }
+            totalCount = count || 0;
+          } else {
+            totalCount = countData || 0;
           }
-          totalCount = count || 0;
-        } else {
-          totalCount = countData || 0;
+        } catch (error) {
+          logger.error('Error in count query:', error);
+          throw new AppError('Failed to count conversations', 500);
         }
-      } catch (error) {
-        logger.error('Error in count query:', error);
-        throw new AppError('Failed to count conversations', 500);
-      }
 
-      const total = totalCount;
-      const totalPages = Math.ceil(total / limitNum);
+        const total = totalCount;
+        const totalPages = Math.ceil(total / limitNum);
 
-      if (total === 0) {
-        return {
-          conversations: [],
-          pagination: {
-            page: pageNum,
-            limit: limitNum,
-            total: 0,
-            totalPages: 0,
-          },
-        };
-      }
+        if (total === 0) {
+          return {
+            conversations: [],
+            pagination: {
+              page: pageNum,
+              limit: limitNum,
+              total: 0,
+              totalPages: 0,
+            },
+          };
+        }
 
-      // Use the fastest available query method (tries fast method first, then optimized)
-      const startTime = Date.now();
-      let { data: conversations, error: conversationsError } =
-        await this.supabaseService.client.rpc('get_conversations_fast', {
-          shop_domain_param: shop,
-          limit_param: limitNum,
-          offset_param: offset,
-        });
-
-      // Fallback to optimized version if fast method fails
-      if (conversationsError) {
-        logger.warn('Fast conversation query failed, trying optimized version:', conversationsError);
-        ({ data: conversations, error: conversationsError } =
-          await this.supabaseService.client.rpc('get_conversations_optimized', {
+        // Use the fastest available query method (tries fast method first, then optimized)
+        const startTime = Date.now();
+        let { data: conversations, error: conversationsError } =
+          await this.supabaseService.client.rpc('get_conversations_fast', {
             shop_domain_param: shop,
             limit_param: limitNum,
             offset_param: offset,
-          }));
-      }
-      
+          });
+
+        // Fallback to optimized version if fast method fails
+        if (conversationsError) {
+          logger.warn(
+            'Fast conversation query failed, trying optimized version:',
+            conversationsError
+          );
+          ({ data: conversations, error: conversationsError } =
+            await this.supabaseService.client.rpc(
+              'get_conversations_optimized',
+              {
+                shop_domain_param: shop,
+                limit_param: limitNum,
+                offset_param: offset,
+              }
+            ));
+        }
+
         const queryDuration = Date.now() - startTime;
         const queryType = conversationsError ? 'optimized' : 'fast';
-        
+
         logger.info('Conversation query performance', {
           shop,
           queryDuration,
           limit: limitNum,
           offset,
           cacheUsed: false,
-          queryType
+          queryType,
         });
 
         if (conversationsError) {
@@ -679,13 +694,14 @@ export class AdminAnalyticsService {
     logger.info('Using optimized fallback conversation query method');
 
     const startTime = Date.now();
-    
+
     try {
       // Single optimized query with aggregation to avoid N+1 problem
       const { data: conversationData, error: queryError } =
         await this.supabaseService.client
           .from('chat_sessions')
-          .select(`
+          .select(
+            `
             id,
             last_activity,
             chat_messages(
@@ -694,7 +710,8 @@ export class AdminAnalyticsService {
               content,
               timestamp
             )
-          `)
+          `
+          )
           .eq('shop_domain', shop)
           .eq('status', 'active')
           .order('last_activity', { ascending: false })
@@ -702,14 +719,17 @@ export class AdminAnalyticsService {
 
       if (queryError) {
         logger.error('Error in optimized fallback query:', queryError);
-        throw new AppError('Failed to fetch conversations with fallback method', 500);
+        throw new AppError(
+          'Failed to fetch conversations with fallback method',
+          500
+        );
       }
 
       const queryDuration = Date.now() - startTime;
       logger.info('Fallback query performance', {
         shop,
         queryDuration,
-        recordsProcessed: conversationData?.length || 0
+        recordsProcessed: conversationData?.length || 0,
       });
 
       if (!conversationData || conversationData.length === 0) {
@@ -725,29 +745,41 @@ export class AdminAnalyticsService {
       }
 
       // Process conversation data efficiently
-      const conversations: ConversationItem[] = conversationData.map((session: any) => {
-        const messages = session.chat_messages || [];
-        const userMessages = messages.filter((m: any) => m.role === 'user').length;
-        const aiMessages = messages.filter((m: any) => m.role === 'assistant').length;
-        
-        // Get first user message for preview
-        const firstUserMessage = messages
-          .filter((m: any) => m.role === 'user')
-          .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())[0];
-        
-        const firstMessage = firstUserMessage?.content || 'Sin mensaje inicial';
+      const conversations: ConversationItem[] = conversationData.map(
+        (session: any) => {
+          const messages = session.chat_messages || [];
+          const userMessages = messages.filter(
+            (m: any) => m.role === 'user'
+          ).length;
+          const aiMessages = messages.filter(
+            (m: any) => m.role === 'assistant'
+          ).length;
 
-        return {
-          session_id: session.id,
-          messages: messages.length,
-          first_message: firstMessage.length > 100 
-            ? firstMessage.substring(0, 100) + '...' 
-            : firstMessage,
-          last_activity: session.last_activity || '',
-          user_messages: userMessages,
-          ai_messages: aiMessages,
-        };
-      });
+          // Get first user message for preview
+          const firstUserMessage = messages
+            .filter((m: any) => m.role === 'user')
+            .sort(
+              (a: any, b: any) =>
+                new Date(a.timestamp).getTime() -
+                new Date(b.timestamp).getTime()
+            )[0];
+
+          const firstMessage =
+            firstUserMessage?.content || 'Sin mensaje inicial';
+
+          return {
+            session_id: session.id,
+            messages: messages.length,
+            first_message:
+              firstMessage.length > 100
+                ? firstMessage.substring(0, 100) + '...'
+                : firstMessage,
+            last_activity: session.last_activity || '',
+            user_messages: userMessages,
+            ai_messages: aiMessages,
+          };
+        }
+      );
 
       return {
         conversations,
@@ -763,7 +795,7 @@ export class AdminAnalyticsService {
       logger.error('Fallback query failed', {
         shop,
         queryDuration,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }

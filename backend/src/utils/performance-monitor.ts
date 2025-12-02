@@ -17,14 +17,14 @@ export interface PerformanceMetrics {
 export class PerformanceMonitor {
   private static metrics: PerformanceMetrics[] = [];
   private static readonly MAX_METRICS = 1000; // Keep last 1000 operations
-  
+
   // Performance thresholds in milliseconds
   private static readonly THRESHOLDS = {
     CONVERSATION_LIST: 100,
     CONVERSATION_COUNT: 50,
     CONVERSATION_DETAILS: 200,
     CHART_DATA: 300,
-    STATS: 150
+    STATS: 150,
   };
 
   /**
@@ -33,12 +33,12 @@ export class PerformanceMonitor {
   static recordMetric(metric: Omit<PerformanceMetrics, 'timestamp'>): void {
     const fullMetric: PerformanceMetrics = {
       ...metric,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     // Add to metrics array
     this.metrics.push(fullMetric);
-    
+
     // Keep only recent metrics
     if (this.metrics.length > this.MAX_METRICS) {
       this.metrics = this.metrics.slice(-this.MAX_METRICS);
@@ -53,14 +53,14 @@ export class PerformanceMonitor {
         threshold,
         shop: metric.shop,
         recordCount: metric.recordCount,
-        queryType: metric.queryType
+        queryType: metric.queryType,
       });
     } else {
       logger.info('Performance metric recorded', {
         operation: metric.operation,
         duration: metric.duration,
         shop: metric.shop,
-        queryType: metric.queryType
+        queryType: metric.queryType,
       });
     }
   }
@@ -90,7 +90,10 @@ export class PerformanceMonitor {
   /**
    * Get performance statistics
    */
-  static getStatistics(operation?: string, shop?: string): {
+  static getStatistics(
+    operation?: string,
+    shop?: string
+  ): {
     totalOperations: number;
     averageDuration: number;
     p95Duration: number;
@@ -102,7 +105,7 @@ export class PerformanceMonitor {
     let filteredMetrics = this.metrics;
 
     if (operation) {
-      filteredMetrics = filteredMetrics.filter(m => 
+      filteredMetrics = filteredMetrics.filter(m =>
         m.operation.toLowerCase().includes(operation.toLowerCase())
       );
     }
@@ -119,15 +122,21 @@ export class PerformanceMonitor {
         slowOperations: 0,
         fastQueryUsage: 0,
         cacheHitRate: 0,
-        recentMetrics: []
+        recentMetrics: [],
       };
     }
 
-    const durations = filteredMetrics.map(m => m.duration).sort((a, b) => a - b);
+    const durations = filteredMetrics
+      .map(m => m.duration)
+      .sort((a, b) => a - b);
     const threshold = operation ? this.getThreshold(operation) : 1000;
-    
-    const slowOperations = filteredMetrics.filter(m => m.duration > threshold).length;
-    const fastQueries = filteredMetrics.filter(m => m.queryType === 'fast').length;
+
+    const slowOperations = filteredMetrics.filter(
+      m => m.duration > threshold
+    ).length;
+    const fastQueries = filteredMetrics.filter(
+      m => m.queryType === 'fast'
+    ).length;
     const cacheHits = filteredMetrics.filter(m => m.cacheHit === true).length;
 
     return {
@@ -137,7 +146,7 @@ export class PerformanceMonitor {
       slowOperations,
       fastQueryUsage: (fastQueries / filteredMetrics.length) * 100,
       cacheHitRate: (cacheHits / filteredMetrics.length) * 100,
-      recentMetrics: filteredMetrics.slice(-10) // Last 10 operations
+      recentMetrics: filteredMetrics.slice(-10), // Last 10 operations
     };
   }
 
@@ -170,13 +179,13 @@ export class PerformanceMonitor {
       .map(m => {
         const threshold = this.getThreshold(m.operation);
         const severity = m.duration > threshold * 2 ? 'critical' : 'warning';
-        
+
         return {
           severity,
           message: `${m.operation} took ${m.duration}ms (threshold: ${threshold}ms)`,
           operation: m.operation,
           duration: m.duration,
-          timestamp: m.timestamp
+          timestamp: m.timestamp,
         };
       });
   }
@@ -196,41 +205,44 @@ export class PerformanceMonitor {
     shop?: string,
     queryType?: 'fast' | 'optimized' | 'fallback'
   ) {
-    return function(
+    return function (
       target: any,
       propertyName: string,
       descriptor: TypedPropertyDescriptor<(...args: T) => Promise<R>>
     ) {
       const method = descriptor.value!;
-      
-      descriptor.value = async function(...args: T): Promise<R> {
+
+      descriptor.value = async function (...args: T): Promise<R> {
         const startTime = Date.now();
         let recordCount: number | undefined;
         let cacheHit: boolean | undefined;
-        
+
         try {
           const result = await method.apply(this, args);
-          
+
           // Try to extract record count from result
           if (result && typeof result === 'object') {
-            if ('conversations' in result && Array.isArray(result.conversations)) {
+            if (
+              'conversations' in result &&
+              Array.isArray(result.conversations)
+            ) {
               recordCount = result.conversations.length;
             } else if ('data' in result && Array.isArray(result.data)) {
               recordCount = result.data.length;
             }
           }
-          
+
           return result;
         } finally {
           const duration = Date.now() - startTime;
-          
+
           PerformanceMonitor.recordMetric({
             operation,
             duration,
             recordCount,
             cacheHit,
             queryType,
-            shop
+            shop,
           });
         }
       };
@@ -251,11 +263,11 @@ export async function measurePerformance<T>(
   }
 ): Promise<T> {
   const startTime = Date.now();
-  
+
   try {
     const result = await fn();
     const duration = Date.now() - startTime;
-    
+
     let recordCount: number | undefined;
     if (result && typeof result === 'object') {
       if ('conversations' in result && Array.isArray(result.conversations)) {
@@ -264,27 +276,27 @@ export async function measurePerformance<T>(
         recordCount = result.data.length;
       }
     }
-    
+
     PerformanceMonitor.recordMetric({
       operation,
       duration,
       recordCount,
       cacheHit: options?.cacheHit,
       queryType: options?.queryType,
-      shop: options?.shop
+      shop: options?.shop,
     });
-    
+
     return result;
   } catch (error) {
     const duration = Date.now() - startTime;
-    
+
     PerformanceMonitor.recordMetric({
       operation: `${operation} (failed)`,
       duration,
       queryType: options?.queryType,
-      shop: options?.shop
+      shop: options?.shop,
     });
-    
+
     throw error;
   }
 }

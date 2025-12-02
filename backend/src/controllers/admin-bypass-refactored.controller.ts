@@ -608,11 +608,11 @@ router.post(
       // Test conversation loading multiple times
       for (let i = 0; i < iterationsNum; i++) {
         const startTime = Date.now();
-        
+
         try {
           await analyticsService.getConversations(validatedShop, 10, 1);
           const duration = Date.now() - startTime;
-          
+
           results.push({
             iteration: i + 1,
             operation: 'getConversations',
@@ -621,7 +621,7 @@ router.post(
           });
         } catch (error) {
           const duration = Date.now() - startTime;
-          
+
           results.push({
             iteration: i + 1,
             operation: 'getConversations',
@@ -638,9 +638,11 @@ router.post(
       }
 
       const successfulTests = results.filter(r => r.success);
-      const averageDuration = successfulTests.length > 0 
-        ? successfulTests.reduce((sum, r) => sum + r.duration, 0) / successfulTests.length 
-        : 0;
+      const averageDuration =
+        successfulTests.length > 0
+          ? successfulTests.reduce((sum, r) => sum + r.duration, 0) /
+            successfulTests.length
+          : 0;
 
       const testSummary = {
         totalTests: iterationsNum,
