@@ -833,17 +833,17 @@
             // Clear any existing loading timeout
             clearTimeout(loadingTimeout);
             
-            // Stagger loads with longer delays to prevent rate limiting
+            // Stagger loads with much longer delays to prevent rate limiting
             loadStats();
-            setTimeout(() => loadConversations(), 500);  // Increased from 100ms
-            setTimeout(() => loadChartData(), 1000);      // Increased from 200ms
-            setTimeout(() => loadTopRecommendedProducts(), 1500); // Increased from 300ms
+            setTimeout(() => loadConversations(), 2000);   // Increased to 2s
+            setTimeout(() => loadChartData(), 4000);       // Increased to 4s  
+            setTimeout(() => loadTopRecommendedProducts(), 6000); // Increased to 6s
             
             // Reset loading state after all loads complete
             loadingTimeout = setTimeout(() => {
                 isLoading = false;
                 console.log('Dashboard initialization completed');
-            }, 2000);
+            }, 8000);
         }
 
         // Safe loading functions with rate limiting protection
@@ -853,7 +853,7 @@
 
         function safeLoadConversations() {
             const now = Date.now();
-            if (now - lastConversationLoad < 3000) { // 3 second minimum between calls
+            if (now - lastConversationLoad < 5000) { // 5 second minimum between calls
                 console.log('Conversations load too frequent, skipping');
                 return;
             }
@@ -863,7 +863,7 @@
 
         function safeLoadChartData() {
             const now = Date.now();
-            if (now - lastChartLoad < 3000) { // 3 second minimum between calls
+            if (now - lastChartLoad < 5000) { // 5 second minimum between calls
                 console.log('Chart load too frequent, skipping');
                 return;
             }
@@ -873,7 +873,7 @@
 
         function safeLoadStats() {
             const now = Date.now();
-            if (now - lastStatsLoad < 3000) { // 3 second minimum between calls
+            if (now - lastStatsLoad < 5000) { // 5 second minimum between calls
                 console.log('Stats load too frequent, skipping');
                 return;
             }
@@ -1367,7 +1367,7 @@
             clearTimeout(chartDataTimeout);
             chartDataTimeout = setTimeout(() => {
                 loadChartData();
-            }, 300); // Wait 300ms before making API call
+            }, 2000); // Wait 2s before making API call
         });
 
         // Products period change handler with debouncing
@@ -1375,7 +1375,7 @@
             clearTimeout(productsDataTimeout);
             productsDataTimeout = setTimeout(() => {
                 loadTopRecommendedProducts();
-            }, 300); // Wait 300ms before making API call
+            }, 2000); // Wait 2s before making API call
         });
 
 
