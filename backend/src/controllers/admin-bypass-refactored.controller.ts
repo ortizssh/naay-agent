@@ -203,29 +203,192 @@ router.post(
 );
 
 // Analytics endpoints
+
+// General metrics endpoint
 router.get(
-  '/stats',
+  '/metrics/general',
   async (req: Request, res: Response, next: NextFunction) => {
-    const operation = 'get shop stats';
+    const operation = 'get general metrics';
 
     try {
       const { shop } = req.query;
       const validatedShop = validateShopParameter(shop, res, operation);
       if (!validatedShop) return;
 
-      logger.info('Getting shop stats', { shop: validatedShop });
+      logger.info('Getting general metrics', { shop: validatedShop });
 
-      const stats = await analyticsService.getShopStats(validatedShop);
+      const generalMetrics = await analyticsService.getGeneralMetrics(validatedShop);
 
-      logger.info('Shop stats retrieved successfully', {
+      logger.info('General metrics retrieved successfully', {
         shop: validatedShop,
-        totalProducts: stats.totalProducts,
-        totalConversations: stats.totalConversations,
+        totalConversations: generalMetrics.totalConversations,
+        totalMessages: generalMetrics.totalMessages,
+        uniqueSessionIds: generalMetrics.uniqueSessionIds,
       });
 
       res.json({
         success: true,
-        data: stats,
+        data: generalMetrics,
+      });
+    } catch (error) {
+      handleControllerError(error, res, operation);
+    }
+  }
+);
+
+// Product recommendation metrics endpoint
+router.get(
+  '/metrics/products',
+  async (req: Request, res: Response, next: NextFunction) => {
+    const operation = 'get product recommendation metrics';
+
+    try {
+      const { shop } = req.query;
+      const validatedShop = validateShopParameter(shop, res, operation);
+      if (!validatedShop) return;
+
+      logger.info('Getting product recommendation metrics', { shop: validatedShop });
+
+      const productMetrics = await analyticsService.getProductRecommendationMetrics(validatedShop);
+
+      logger.info('Product recommendation metrics retrieved successfully', {
+        shop: validatedShop,
+        totalRecommendationsMade: productMetrics.totalRecommendationsMade,
+        uniqueProductsRecommended: productMetrics.uniqueProductsRecommended,
+        topProductsCount: productMetrics.topRecommendedProducts.length,
+      });
+
+      res.json({
+        success: true,
+        data: productMetrics,
+      });
+    } catch (error) {
+      handleControllerError(error, res, operation);
+    }
+  }
+);
+
+// Engagement metrics endpoint
+router.get(
+  '/metrics/engagement',
+  async (req: Request, res: Response, next: NextFunction) => {
+    const operation = 'get engagement metrics';
+
+    try {
+      const { shop } = req.query;
+      const validatedShop = validateShopParameter(shop, res, operation);
+      if (!validatedShop) return;
+
+      logger.info('Getting engagement metrics', { shop: validatedShop });
+
+      const engagementMetrics = await analyticsService.getEngagementMetrics(validatedShop);
+
+      logger.info('Engagement metrics retrieved successfully', {
+        shop: validatedShop,
+        conversationsByLength: engagementMetrics.conversationsByLength.length,
+        userEngagementLevels: engagementMetrics.userEngagementLevels.length,
+        mostActiveTimeSlots: engagementMetrics.mostActiveTimeSlots.length,
+      });
+
+      res.json({
+        success: true,
+        data: engagementMetrics,
+      });
+    } catch (error) {
+      handleControllerError(error, res, operation);
+    }
+  }
+);
+
+// Updated stats endpoint using comprehensive dashboard
+router.get(
+  '/stats',
+  async (req: Request, res: Response, next: NextFunction) => {
+    const operation = 'get comprehensive shop stats';
+
+    try {
+      const { shop } = req.query;
+      const validatedShop = validateShopParameter(shop, res, operation);
+      if (!validatedShop) return;
+
+      logger.info('Getting comprehensive shop stats', { shop: validatedShop });
+
+      const comprehensiveStats = await analyticsService.getComprehensiveDashboard(validatedShop);
+
+      logger.info('Comprehensive shop stats retrieved successfully', {
+        shop: validatedShop,
+        totalConversations: comprehensiveStats.general.totalConversations,
+        totalMessages: comprehensiveStats.general.totalMessages,
+        totalRecommendations: comprehensiveStats.recommendations.totalRecommendationsMade,
+        conversionRate: comprehensiveStats.conversion.conversionRate,
+      });
+
+      res.json({
+        success: true,
+        data: comprehensiveStats,
+      });
+    } catch (error) {
+      handleControllerError(error, res, operation);
+    }
+  }
+);
+
+// Analytics summary endpoint for quick overview
+router.get(
+  '/metrics/summary',
+  async (req: Request, res: Response, next: NextFunction) => {
+    const operation = 'get analytics summary';
+
+    try {
+      const { shop } = req.query;
+      const validatedShop = validateShopParameter(shop, res, operation);
+      if (!validatedShop) return;
+
+      logger.info('Getting analytics summary', { shop: validatedShop });
+
+      const summary = await analyticsService.getAnalyticsSummary(validatedShop);
+
+      logger.info('Analytics summary retrieved successfully', {
+        shop: validatedShop,
+        totalConversations: summary.totalConversations,
+        conversionRate: summary.conversionRate,
+        recommendationsMade: summary.recommendationsMade,
+      });
+
+      res.json({
+        success: true,
+        data: summary,
+      });
+    } catch (error) {
+      handleControllerError(error, res, operation);
+    }
+  }
+);
+
+// Cache invalidation endpoint for analytics
+router.post(
+  '/metrics/invalidate-cache',
+  async (req: Request, res: Response, next: NextFunction) => {
+    const operation = 'invalidate analytics cache';
+
+    try {
+      const { shop } = req.body;
+      const validatedShop = validateShopParameter(shop, res, operation);
+      if (!validatedShop) return;
+
+      logger.info('Invalidating analytics cache', { shop: validatedShop });
+
+      await analyticsService.invalidateAnalyticsCache(validatedShop);
+
+      logger.info('Analytics cache invalidated successfully', {
+        shop: validatedShop,
+      });
+
+      res.json({
+        success: true,
+        message: 'Analytics cache cleared successfully',
+        shop: validatedShop,
+        timestamp: new Date().toISOString(),
       });
     } catch (error) {
       handleControllerError(error, res, operation);
