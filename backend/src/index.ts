@@ -1,5 +1,5 @@
 import express from 'express';
-// import cors from 'cors'; // Removed - using custom CorsMiddleware
+import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
 import helmet from 'helmet';
@@ -13,7 +13,6 @@ import {
   sanitizeInput,
   auditLog,
 } from '@/middleware/security';
-import { CorsMiddleware } from '@/middleware/cors.middleware';
 
 // Route imports
 import authRoutes from '@/controllers/auth.controller';
@@ -25,7 +24,7 @@ import healthRoutes from '@/controllers/health.controller';
 import widgetRoutes from '@/controllers/widget.controller';
 import settingsRoutes from '@/controllers/settings.controller';
 import adminRoutes from '@/controllers/admin.controller';
-import adminBypassRoutes from '@/controllers/admin-bypass-refactored.controller';
+import adminBypassRoutes from '@/controllers/admin-bypass.controller';
 import simpleChatRoutes from '@/controllers/simple-chat.controller';
 import publicCartRoutes from '@/controllers/public-cart.controller';
 import publicProductsRoutes from '@/controllers/public-products.controller';
@@ -34,20 +33,152 @@ import adminConversionAnalyticsRoutes from '@/controllers/admin-conversion-analy
 
 async function startServer() {
   try {
+    console.log('🔄 Starting Naay Agent Backend...');
+    console.log('📍 Current working directory:', process.cwd());
+    console.log('📍 __dirname:', __dirname);
+    console.log('🌐 NODE_ENV:', process.env.NODE_ENV);
+    
     // Validate configuration
+    console.log('🔍 Validating configuration...');
     validateConfig();
+    console.log('✅ Configuration validated');
 
     const app = express();
 
     // Widget-specific middleware BEFORE other security middleware
-    app.use('/static', CorsMiddleware.widgetScript());
+    app.use('/static', (req, res, next) => {
+      if (req.path.includes('naay-widget.js')) {
+        // Completely override all security headers for widget script
+        res.removeHeader('X-Frame-Options');
+        res.removeHeader('Content-Security-Policy');
+        res.removeHeader('Cross-Origin-Resource-Policy');
+        res.removeHeader('Cross-Origin-Opener-Policy');
 
-    // Widget API CORS middleware
-    app.use('/api/widget', CorsMiddleware.widgetApi());
+        // Set permissive headers for widget script loading
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', '*');
+        res.setHeader('Access-Control-Max-Age', '86400');
+        res.setHeader('X-Frame-Options', 'ALLOWALL');
+        res.setHeader('Content-Security-Policy', '');
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
 
-    // Chat API CORS middleware
-    app.use('/api/chat', CorsMiddleware.chatApi());
-    app.use('/api/simple-chat', CorsMiddleware.chatApi());
+        console.log('Widget script requested - CORS headers set');
+      }
+      next();
+    });
+
+    // Widget API CORS middleware - for widget API endpoints
+    app.use('/api/widget', (req, res, next) => {
+      // Set CORS headers for all widget API endpoints
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization, X-Requested-With'
+      );
+      res.setHeader('Access-Control-Max-Age', '86400');
+
+      // Handle OPTIONS preflight
+      if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+      }
+
+      console.log('Widget API request - CORS headers set for:', req.path);
+      next();
+    });
+
+    // Chat API CORS middleware - for main chat endpoints
+    app.use('/api/chat', (req, res, next) => {
+      const origin = req.get('Origin');
+
+      // Allow requests from Shopify domains only
+      const allowedOrigins = [
+        /^https:\/\/[a-zA-Z0-9-]+\.myshopify\.com$/,
+        /^https:\/\/[a-zA-Z0-9-]+\.shopify\.com$/,
+        /^https:\/\/admin\.shopify\.com$/,
+      ];
+
+      let allowOrigin = false;
+      if (origin) {
+        allowOrigin = allowedOrigins.some(pattern => pattern.test(origin));
+      }
+
+      if (allowOrigin) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Vary', 'Origin');
+      } else if (!origin) {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+      }
+
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization, X-Requested-With'
+      );
+      res.setHeader('Access-Control-Max-Age', '86400');
+
+      // Handle OPTIONS preflight
+      if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+      }
+
+      console.log(
+        'Chat API request - CORS headers set for:',
+        req.path,
+        'Origin:',
+        origin,
+        'Allowed:',
+        allowOrigin
+      );
+      next();
+    });
+
+    // Simple Chat API CORS middleware - for simple chat endpoints
+    app.use('/api/simple-chat', (req, res, next) => {
+      const origin = req.get('Origin');
+
+      // Allow requests from Shopify domains only
+      const allowedOrigins = [
+        /^https:\/\/[a-zA-Z0-9-]+\.myshopify\.com$/,
+        /^https:\/\/[a-zA-Z0-9-]+\.shopify\.com$/,
+        /^https:\/\/admin\.shopify\.com$/,
+      ];
+
+      let allowOrigin = false;
+      if (origin) {
+        allowOrigin = allowedOrigins.some(pattern => pattern.test(origin));
+      }
+
+      if (allowOrigin) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Vary', 'Origin');
+      } else if (!origin) {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+      }
+
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization, X-Requested-With'
+      );
+      res.setHeader('Access-Control-Max-Age', '86400');
+
+      // Handle OPTIONS preflight
+      if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+      }
+
+      console.log(
+        'Simple Chat API request - CORS headers set for:',
+        req.path,
+        'Origin:',
+        origin,
+        'Allowed:',
+        allowOrigin
+      );
+      next();
+    });
 
     // Security middleware - allow iframe embedding for Shopify (but not for widget files)
     app.use((req, res, next) => {
@@ -67,21 +198,85 @@ async function startServer() {
           frameguard: false, // Disable frameguard to allow iframe
         })(req, res, next);
 
-        // Explicitly set frame options for Shopify embedding after helmet
-        if (req.path === '/admin' || req.path.startsWith('/admin')) {
-          res.setHeader('X-Frame-Options', 'ALLOWALL');
-        }
       } else {
         next();
       }
     });
-    // Public APIs CORS middleware
-    app.use('/api/public', CorsMiddleware.publicApi());
+    // Public APIs CORS middleware - MOVED BEFORE GENERAL CORS
+    app.use('/api/public', (req, res, next) => {
+      const origin = req.get('Origin');
 
-    // General CORS middleware
-    app.use(CorsMiddleware.general());
+      // Allow requests from Shopify domains and custom store domains
+      const allowedOrigins = [
+        /^https:\/\/[a-zA-Z0-9-]+\.myshopify\.com$/,
+        /^https:\/\/[a-zA-Z0-9-]+\.shopify\.com$/,
+        /^https:\/\/admin\.shopify\.com$/,
+        // Custom store domains pattern
+        /^https:\/\/[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/,
+      ];
 
-    // Frame options for Shopify embedding - handled in helmet middleware above
+      let allowOrigin = false;
+      if (origin) {
+        allowOrigin = allowedOrigins.some(pattern => pattern.test(origin));
+      }
+
+      if (allowOrigin || !origin) {
+        res.setHeader('Access-Control-Allow-Origin', origin || '*');
+        if (origin) {
+          res.setHeader('Vary', 'Origin');
+        }
+      }
+
+      res.setHeader(
+        'Access-Control-Allow-Methods',
+        'GET, POST, PUT, DELETE, OPTIONS'
+      );
+      res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization, X-Requested-With'
+      );
+      res.setHeader('Access-Control-Max-Age', '86400');
+
+      // Handle OPTIONS preflight
+      if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+      }
+
+      console.log(
+        'Public API request - CORS headers set for:',
+        req.path,
+        'Origin:',
+        origin,
+        'Allowed:',
+        allowOrigin
+      );
+      next();
+    });
+
+    app.use(
+      cors({
+        origin:
+          process.env.NODE_ENV === 'production'
+            ? [
+                config.shopify.appUrl,
+                /.*\.shopify\.com$/,
+                /.*\.shop\.app$/,
+                /.*\.myshopify\.com$/,
+              ]
+            : ['http://localhost:3000', 'http://localhost:3001'],
+        credentials: true,
+      })
+    );
+
+    // Allow embedding in Shopify iframe
+    app.use((req, res, next) => {
+      res.setHeader('X-Frame-Options', 'ALLOWALL');
+      res.setHeader(
+        'Content-Security-Policy',
+        "frame-ancestors 'self' https://*.shopify.com https://*.shop.app https://admin.shopify.com https://*.myshopify.com;"
+      );
+      next();
+    });
 
     // Rate limiting (exclude widget routes from rate limiting)
     app.use((req, res, next) => {
@@ -305,6 +500,16 @@ async function startServer() {
     app.use('/api/webhooks-admin', webhookAdminRoutes);
     app.use('/api/chat', chatRoutes);
 
+    // CORS configuration specifically for simple-chat endpoint
+    app.use(
+      '/api/simple-chat',
+      cors({
+        origin: true, // Allow all origins for widget integration
+        methods: ['GET', 'POST', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+        credentials: false,
+      })
+    );
     app.use('/api/simple-chat', simpleChatRoutes);
 
     // Public APIs (no authentication required)
@@ -322,13 +527,6 @@ async function startServer() {
 
     // Serve admin panel
     app.get('/admin', (req, res) => {
-      // Set headers for Shopify embedding BEFORE sending file
-      res.setHeader('X-Frame-Options', 'ALLOWALL');
-      res.setHeader(
-        'Content-Security-Policy',
-        "frame-ancestors 'self' https://*.shopify.com https://*.shop.app https://admin.shopify.com https://*.myshopify.com;"
-      );
-
       const adminPath = path.join(__dirname, '../public/admin/index.html');
       logger.info('Serving admin panel from:', adminPath);
       res.sendFile(adminPath);
@@ -353,10 +551,28 @@ async function startServer() {
 
     // Start server
     const port = config.server.port;
-    app.listen(port, () => {
+    console.log('🚀 Starting HTTP server on port:', port);
+    
+    const server = app.listen(port, () => {
+      console.log('✅ Server started successfully');
       logger.info(`🚀 Naay Agent Backend running on port ${port}`);
       logger.info(`📱 Environment: ${config.server.nodeEnv}`);
       logger.info(`🔐 Shopify App URL: ${config.shopify.appUrl}`);
+      
+      // Additional Azure debug info
+      if (process.env.NODE_ENV === 'production') {
+        console.log('🔍 Azure Production Debug:');
+        console.log('- PORT:', process.env.PORT);
+        console.log('- WEBSITES_PORT:', process.env.WEBSITES_PORT);
+        console.log('- Has Shopify API Key:', !!process.env.SHOPIFY_API_KEY);
+        console.log('- Has Supabase URL:', !!process.env.SUPABASE_URL);
+        console.log('- Has OpenAI Key:', !!process.env.OPENAI_API_KEY);
+      }
+    });
+    
+    server.on('error', (error) => {
+      console.error('❌ Server error:', error);
+      logger.error('Server error:', error);
     });
   } catch (error) {
     logger.error('Failed to start server:', error);

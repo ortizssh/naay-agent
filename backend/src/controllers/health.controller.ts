@@ -66,4 +66,52 @@ router.get('/metrics', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * Azure debug endpoint for troubleshooting production issues
+ * GET /api/health/azure-debug
+ */
+router.get('/azure-debug', async (req: Request, res: Response) => {
+  try {
+    const envVarsFiltered = Object.keys(process.env)
+      .filter(k => k.includes('SHOPIFY') || k.includes('SUPABASE') || k.includes('OPENAI') || k.includes('REDIS') || k.includes('NODE_') || k.includes('PORT'))
+      .reduce((obj, key) => {
+        // Hide sensitive values but show they exist
+        obj[key] = process.env[key] ? '***SET***' : 'NOT_SET';
+        return obj;
+      }, {} as Record<string, string>);
+
+    res.json({
+      timestamp: new Date().toISOString(),
+      environment: {
+        NODE_ENV: process.env.NODE_ENV,
+        PORT: process.env.PORT,
+        totalEnvVars: Object.keys(process.env).length,
+        filteredEnvVars: envVarsFiltered,
+      },
+      paths: {
+        __dirname: __dirname,
+        'process.cwd()': process.cwd(),
+        'require.resolve()': require.resolve('../index.js').replace('/index.js', ''),
+      },
+      azure: {
+        WEBSITES_PORT: process.env.WEBSITES_PORT || 'NOT_SET',
+        WEBSITE_NODE_DEFAULT_VERSION: process.env.WEBSITE_NODE_DEFAULT_VERSION || 'NOT_SET',
+        AZURE_STATIC_WEB_APPS_API_TOKEN: process.env.AZURE_STATIC_WEB_APPS_API_TOKEN ? 'SET' : 'NOT_SET',
+      },
+      process: {
+        nodeVersion: process.version,
+        platform: process.platform,
+        uptime: process.uptime(),
+        memoryUsage: process.memoryUsage(),
+      }
+    });
+  } catch (error) {
+    logger.error('Azure debug endpoint failed:', error);
+    res.status(500).json({
+      error: 'Failed to retrieve Azure debug info',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;

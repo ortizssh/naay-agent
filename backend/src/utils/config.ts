@@ -2,10 +2,17 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { AppConfig } from '@/types';
 
-// Configure dotenv to look for .env file in the config directory
-dotenv.config({
-  path: path.join(__dirname, '../../../config/.env'), // Load from config/.env
-});
+// Configure dotenv to look for .env file (only for development)
+// In production (Azure), environment variables are set directly in App Service
+if (process.env.NODE_ENV !== 'production') {
+  const envPath = path.join(__dirname, '../../../config/.env');
+  console.log('Loading .env file from:', envPath);
+  dotenv.config({
+    path: envPath,
+  });
+} else {
+  console.log('Production mode: Using Azure App Service environment variables');
+}
 
 export const config: AppConfig = {
   shopify: {
