@@ -140,7 +140,7 @@ router.get('/widget-debug', async (req: Request, res: Response) => {
     const fs = require('fs');
     const path = require('path');
 
-    const debugInfo = {
+    const debugInfo: any = {
       timestamp: new Date().toISOString(),
       directories: {},
       widget_paths: {},
@@ -155,7 +155,7 @@ router.get('/widget-debug', async (req: Request, res: Response) => {
     try {
       const cwdContents = fs.readdirSync(process.cwd());
       debugInfo.directories.cwd_contents = cwdContents;
-    } catch (err) {
+    } catch (err: any) {
       debugInfo.directories.cwd_error = err.message;
     }
 
@@ -163,7 +163,7 @@ router.get('/widget-debug', async (req: Request, res: Response) => {
     try {
       const dirnameContents = fs.readdirSync(__dirname);
       debugInfo.directories.dirname_contents = dirnameContents;
-    } catch (err) {
+    } catch (err: any) {
       debugInfo.directories.dirname_error = err.message;
     }
 
@@ -184,7 +184,7 @@ router.get('/widget-debug', async (req: Request, res: Response) => {
           const stats = fs.statSync(testPath);
           debugInfo[`path_${index}_size`] = stats.size;
           debugInfo[`path_${index}_modified`] = stats.mtime;
-        } catch (err) {
+        } catch (err: any) {
           debugInfo[`path_${index}_error`] = err.message;
         }
       }
@@ -202,7 +202,7 @@ router.get('/widget-debug', async (req: Request, res: Response) => {
         try {
           const contents = fs.readdirSync(pubPath);
           debugInfo[`public_${index}_contents`] = contents;
-        } catch (err) {
+        } catch (err: any) {
           debugInfo[`public_${index}_error`] = err.message;
         }
       }
