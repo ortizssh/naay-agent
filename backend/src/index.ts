@@ -37,7 +37,7 @@ async function startServer() {
     console.log('📍 Current working directory:', process.cwd());
     console.log('📍 __dirname:', __dirname);
     console.log('🌐 NODE_ENV:', process.env.NODE_ENV);
-    
+
     // Validate configuration
     console.log('🔍 Validating configuration...');
     validateConfig();
@@ -197,7 +197,6 @@ async function startServer() {
           },
           frameguard: false, // Disable frameguard to allow iframe
         })(req, res, next);
-
       } else {
         next();
       }
@@ -552,13 +551,13 @@ async function startServer() {
     // Start server
     const port = config.server.port;
     console.log('🚀 Starting HTTP server on port:', port);
-    
+
     const server = app.listen(port, () => {
       console.log('✅ Server started successfully');
       logger.info(`🚀 Naay Agent Backend running on port ${port}`);
       logger.info(`📱 Environment: ${config.server.nodeEnv}`);
       logger.info(`🔐 Shopify App URL: ${config.shopify.appUrl}`);
-      
+
       // Additional Azure debug info
       if (process.env.NODE_ENV === 'production') {
         console.log('🔍 Azure Production Debug:');
@@ -569,8 +568,8 @@ async function startServer() {
         console.log('- Has OpenAI Key:', !!process.env.OPENAI_API_KEY);
       }
     });
-    
-    server.on('error', (error) => {
+
+    server.on('error', error => {
       console.error('❌ Server error:', error);
       logger.error('Server error:', error);
     });
