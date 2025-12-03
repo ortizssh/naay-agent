@@ -131,4 +131,92 @@ router.get('/azure-debug', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * Widget file debug endpoint 
+ * GET /health/widget-debug
+ */
+router.get('/widget-debug', async (req: Request, res: Response) => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    
+    const debugInfo = {
+      timestamp: new Date().toISOString(),
+      directories: {},
+      widget_paths: {},
+      file_exists: {}
+    };
+    
+    // Check current working directory
+    debugInfo.directories.cwd = process.cwd();
+    debugInfo.directories.dirname = __dirname;
+    
+    // List contents of working directory
+    try {
+      const cwdContents = fs.readdirSync(process.cwd());
+      debugInfo.directories.cwd_contents = cwdContents;
+    } catch (err) {
+      debugInfo.directories.cwd_error = err.message;
+    }
+    
+    // List contents of __dirname
+    try {
+      const dirnameContents = fs.readdirSync(__dirname);
+      debugInfo.directories.dirname_contents = dirnameContents;
+    } catch (err) {
+      debugInfo.directories.dirname_error = err.message;
+    }
+    
+    // Test widget paths
+    const widgetPaths = [
+      path.join(__dirname, 'public', 'naay-widget.js'),
+      path.join(__dirname, '../public', 'naay-widget.js'),
+      path.join(process.cwd(), 'public', 'naay-widget.js'),
+      path.join(process.cwd(), 'dist', 'public', 'naay-widget.js')
+    ];
+    
+    widgetPaths.forEach((testPath, index) => {
+      debugInfo.widget_paths[`path_${index}`] = testPath;
+      debugInfo.file_exists[`path_${index}`] = fs.existsSync(testPath);
+      
+      if (fs.existsSync(testPath)) {
+        try {
+          const stats = fs.statSync(testPath);
+          debugInfo[`path_${index}_size`] = stats.size;
+          debugInfo[`path_${index}_modified`] = stats.mtime;
+        } catch (err) {
+          debugInfo[`path_${index}_error`] = err.message;
+        }
+      }
+    });
+    
+    // Try to list public directory if it exists
+    const publicPaths = [
+      path.join(__dirname, 'public'),
+      path.join(__dirname, '../public'),
+      path.join(process.cwd(), 'public')
+    ];
+    
+    publicPaths.forEach((pubPath, index) => {
+      if (fs.existsSync(pubPath)) {
+        try {
+          const contents = fs.readdirSync(pubPath);
+          debugInfo[`public_${index}_contents`] = contents;
+        } catch (err) {
+          debugInfo[`public_${index}_error`] = err.message;
+        }
+      }
+    });
+    
+    res.json(debugInfo);
+    
+  } catch (error) {
+    logger.error('Widget debug endpoint failed:', error);
+    res.status(500).json({
+      error: 'Failed to retrieve widget debug info',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
 export default router;
