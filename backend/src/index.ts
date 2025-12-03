@@ -66,6 +66,11 @@ async function startServer() {
           },
           frameguard: false, // Disable frameguard to allow iframe
         })(req, res, next);
+        
+        // Explicitly set frame options for Shopify embedding after helmet
+        if (req.path === '/admin' || req.path.startsWith('/admin')) {
+          res.setHeader('X-Frame-Options', 'ALLOWALL');
+        }
       } else {
         next();
       }
@@ -76,8 +81,7 @@ async function startServer() {
     // General CORS middleware
     app.use(CorsMiddleware.general());
 
-    // Frame options for Shopify embedding
-    app.use(CorsMiddleware.frameOptions());
+    // Frame options for Shopify embedding - handled in helmet middleware above
 
     // Rate limiting (exclude widget routes from rate limiting)
     app.use((req, res, next) => {
@@ -318,6 +322,13 @@ async function startServer() {
 
     // Serve admin panel
     app.get('/admin', (req, res) => {
+      // Set headers for Shopify embedding BEFORE sending file
+      res.setHeader('X-Frame-Options', 'ALLOWALL');
+      res.setHeader(
+        'Content-Security-Policy',
+        "frame-ancestors 'self' https://*.shopify.com https://*.shop.app https://admin.shopify.com https://*.myshopify.com;"
+      );
+      
       const adminPath = path.join(__dirname, '../public/admin/index.html');
       logger.info('Serving admin panel from:', adminPath);
       res.sendFile(adminPath);

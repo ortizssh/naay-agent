@@ -6,6 +6,7 @@
     <title>Naay Agent - Panel de Administración</title>
     <link rel="stylesheet" href="https://unpkg.com/@shopify/polaris@12.0.0/build/esm/styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/@shopify/app-bridge@3.7.9/umd/index.js"></script>
     <style>
         :root {
             /* Naay Simple Color Palette - Primary and Black Only */
@@ -1788,6 +1789,51 @@
     </div>
 
     <script>
+        // App Bridge initialization for embedded Shopify apps
+        let app;
+        let shopFromUrl = '';
+        
+        // Initialize App Bridge when running inside Shopify admin
+        function initializeAppBridge() {
+            try {
+                // Get shop domain from URL parameters
+                const urlParams = new URLSearchParams(window.location.search);
+                const shop = urlParams.get('shop');
+                const host = urlParams.get('host');
+                
+                if (shop && window.shopify && window.shopify.AppBridge) {
+                    shopFromUrl = shop;
+                    console.log('Initializing App Bridge for shop:', shop);
+                    
+                    // Create App Bridge instance
+                    app = window.shopify.AppBridge.createApp({
+                        apiKey: '03ba95304b12487321d6d7feaca999a3',  // From shopify.app.toml
+                        host: host,
+                        forceRedirect: true
+                    });
+                    
+                    console.log('App Bridge initialized successfully');
+                    
+                    // Optional: Set up Toast notifications
+                    if (window.shopify.AppBridge.actions) {
+                        const toast = window.shopify.AppBridge.actions.Toast;
+                        console.log('Toast actions available');
+                    }
+                    
+                    return true;
+                } else {
+                    console.log('Running outside Shopify admin or App Bridge not available');
+                    return false;
+                }
+            } catch (error) {
+                console.error('Error initializing App Bridge:', error);
+                return false;
+            }
+        }
+        
+        // Initialize on page load
+        const isEmbedded = initializeAppBridge();
+        
         // API Configuration
         const getApiBaseUrl = () => {
             // For development, use localhost
@@ -1820,26 +1866,29 @@
             conversiones: false
         };
 
-        // Get shop from URL parameters
+        // Get shop from URL parameters (prioritize App Bridge shop)
         const urlParams = new URLSearchParams(window.location.search);
-        const shopParam = urlParams.get('shop');
+        const shopParam = shopFromUrl || urlParams.get('shop'); // Prioritize App Bridge shop
         
         if (shopParam) {
             currentShop = shopParam;
             document.getElementById('shop-name').textContent = currentShop;
             // Save to local storage for persistence
             localStorage.setItem('naay_shop', currentShop);
+            console.log('Using shop from parameters:', currentShop);
         } else {
             // Try to get from local storage
             const savedShop = localStorage.getItem('naay_shop');
             if (savedShop) {
                 currentShop = savedShop;
                 document.getElementById('shop-name').textContent = currentShop;
+                console.log('Using shop from localStorage:', currentShop);
             } else {
                 // Hardcode naaycl shop as default (try custom domain first, then shopify domain)
                 currentShop = 'naaycl.myshopify.com';
                 document.getElementById('shop-name').textContent = currentShop;
                 localStorage.setItem('naay_shop', currentShop);
+                console.log('Using default shop:', currentShop);
                 // Note: Custom domain naay.cl is also available for this shop
             }
         }
