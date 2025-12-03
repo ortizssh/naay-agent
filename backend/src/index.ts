@@ -529,19 +529,22 @@ async function startServer() {
       try {
         const adminPath = path.join(__dirname, '../public/admin/index.html');
         logger.info('Attempting to serve admin panel from:', adminPath);
-        
+
         // Check if file exists
         if (fs.existsSync(adminPath)) {
           logger.info('Admin file exists, serving...');
           res.sendFile(adminPath);
         } else {
           logger.error('Admin file not found at:', adminPath);
-          logger.info('Directory contents:', fs.readdirSync(path.dirname(adminPath)).join(', '));
+          logger.info(
+            'Directory contents:',
+            fs.readdirSync(path.dirname(adminPath)).join(', ')
+          );
           res.status(404).json({
             success: false,
             error: 'Admin panel file not found',
             path: adminPath,
-            exists: false
+            exists: false,
           });
         }
       } catch (error) {
@@ -549,7 +552,7 @@ async function startServer() {
         res.status(500).json({
           success: false,
           error: 'Internal server error',
-          details: error.message
+          details: error.message,
         });
       }
     });
