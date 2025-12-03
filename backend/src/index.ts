@@ -530,11 +530,11 @@ async function startServer() {
         // Try multiple possible paths for different deployment environments
         const possiblePaths = [
           path.join(__dirname, '../public/admin/index.html'), // Local development
-          path.join(__dirname, 'public/admin/index.html'),    // Azure deployment
-          path.join(process.cwd(), 'public/admin/index.html'),  // Alternative path
-          path.join(process.cwd(), 'dist/public/admin/index.html') // Another alternative
+          path.join(__dirname, 'public/admin/index.html'), // Azure deployment
+          path.join(process.cwd(), 'public/admin/index.html'), // Alternative path
+          path.join(process.cwd(), 'dist/public/admin/index.html'), // Another alternative
         ];
-        
+
         let adminPath = null;
         for (const testPath of possiblePaths) {
           logger.info('Testing path:', testPath);
@@ -544,34 +544,38 @@ async function startServer() {
             break;
           }
         }
-        
+
         if (adminPath) {
           res.sendFile(adminPath);
         } else {
           logger.error('Admin file not found in any of the expected locations');
           logger.info('Current working directory:', process.cwd());
           logger.info('__dirname:', __dirname);
-          
+
           // Try to list what's actually available
           try {
             const cwd = process.cwd();
             const dirContents = fs.readdirSync(cwd);
             logger.info('Root directory contents:', dirContents.join(', '));
-            
+
             // Check if public directory exists anywhere
-            const publicDirs = dirContents.filter(item => item.includes('public') || item.includes('dist'));
-            logger.info('Public/dist directories found:', publicDirs.join(', '));
-            
+            const publicDirs = dirContents.filter(
+              item => item.includes('public') || item.includes('dist')
+            );
+            logger.info(
+              'Public/dist directories found:',
+              publicDirs.join(', ')
+            );
           } catch (listError) {
             logger.error('Error listing directories:', listError);
           }
-          
+
           res.status(404).json({
             success: false,
             error: 'Admin panel file not found',
             tested_paths: possiblePaths,
             working_directory: process.cwd(),
-            dirname: __dirname
+            dirname: __dirname,
           });
         }
       } catch (error) {
