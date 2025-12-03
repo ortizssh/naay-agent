@@ -354,8 +354,34 @@ async function startServer() {
           req.get('Origin') || 'no-origin'
         );
 
-        // Send file using express static file sending
-        res.sendFile(path.join(__dirname, '../public', 'naay-widget.js'));
+        // Try multiple paths until we find the file
+        const possiblePaths = [
+          path.join(__dirname, '../public', 'naay-widget.js'),
+          path.join(__dirname, 'public', 'naay-widget.js'),
+          path.join(process.cwd(), 'public', 'naay-widget.js'),
+          path.join(process.cwd(), 'dist', 'public', 'naay-widget.js')
+        ];
+
+        let foundPath = null;
+        for (const testPath of possiblePaths) {
+          if (fs.existsSync(testPath)) {
+            foundPath = testPath;
+            console.log('✅ Widget found at:', testPath);
+            break;
+          } else {
+            console.log('❌ Widget not found at:', testPath);
+          }
+        }
+
+        if (foundPath) {
+          res.sendFile(foundPath);
+        } else {
+          console.error('❌ Widget file not found in any location');
+          res.status(404).json({ 
+            error: 'Widget file not found',
+            tested_paths: possiblePaths
+          });
+        }
       } catch (error) {
         console.error('Error serving widget:', error);
         res.status(500).json({ error: 'Failed to serve widget' });
@@ -526,7 +552,42 @@ async function startServer() {
 
     // Serve admin panel
     app.get('/admin', (req, res) => {
-      res.sendFile(path.join(__dirname, '../public/admin/index.html'));
+      try {
+        // Try multiple paths until we find the file
+        const possiblePaths = [
+          path.join(__dirname, '../public/admin/index.html'),
+          path.join(__dirname, 'public/admin/index.html'),
+          path.join(process.cwd(), 'public/admin/index.html'),
+          path.join(process.cwd(), 'dist/public/admin/index.html')
+        ];
+
+        let foundPath = null;
+        for (const testPath of possiblePaths) {
+          if (fs.existsSync(testPath)) {
+            foundPath = testPath;
+            console.log('✅ Admin found at:', testPath);
+            break;
+          } else {
+            console.log('❌ Admin not found at:', testPath);
+          }
+        }
+
+        if (foundPath) {
+          res.sendFile(foundPath);
+        } else {
+          console.error('❌ Admin file not found in any location');
+          res.status(404).json({ 
+            error: 'Admin panel file not found',
+            tested_paths: possiblePaths
+          });
+        }
+      } catch (error) {
+        console.error('Error serving admin panel:', error);
+        res.status(500).json({ 
+          error: 'Failed to serve admin panel',
+          details: error.message
+        });
+      }
     });
 
     // Serve admin static files

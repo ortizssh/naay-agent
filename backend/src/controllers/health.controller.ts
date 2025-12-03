@@ -219,32 +219,32 @@ router.get('/widget-debug', async (req: Request, res: Response) => {
 });
 
 /**
- * Admin file debug endpoint 
+ * Admin file debug endpoint
  * GET /health/admin-debug
  */
 router.get('/admin-debug', async (req: Request, res: Response) => {
   try {
     const fs = require('fs');
     const path = require('path');
-    
+
     const adminPaths = [
       path.join(__dirname, '../public/admin/index.html'),
       path.join(__dirname, 'public/admin/index.html'),
       path.join(process.cwd(), 'public/admin/index.html'),
-      path.join(process.cwd(), 'dist/public/admin/index.html')
+      path.join(process.cwd(), 'dist/public/admin/index.html'),
     ];
-    
+
     const debugInfo: any = {
       timestamp: new Date().toISOString(),
       admin_paths: {},
       file_exists: {},
-      admin_directory: {}
+      admin_directory: {},
     };
-    
+
     adminPaths.forEach((testPath, index) => {
       debugInfo.admin_paths[`path_${index}`] = testPath;
       debugInfo.file_exists[`path_${index}`] = fs.existsSync(testPath);
-      
+
       if (fs.existsSync(testPath)) {
         try {
           const stats = fs.statSync(testPath);
@@ -255,14 +255,14 @@ router.get('/admin-debug', async (req: Request, res: Response) => {
         }
       }
     });
-    
+
     // Check admin directories
     const adminDirs = [
       path.join(__dirname, '../public/admin'),
       path.join(__dirname, 'public/admin'),
-      path.join(process.cwd(), 'public/admin')
+      path.join(process.cwd(), 'public/admin'),
     ];
-    
+
     adminDirs.forEach((dirPath, index) => {
       if (fs.existsSync(dirPath)) {
         try {
@@ -274,9 +274,8 @@ router.get('/admin-debug', async (req: Request, res: Response) => {
         }
       }
     });
-    
+
     res.json(debugInfo);
-    
   } catch (error) {
     logger.error('Admin debug endpoint failed:', error);
     res.status(500).json({
