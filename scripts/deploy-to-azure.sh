@@ -16,7 +16,7 @@ npm run build
 echo "📦 Creando package de deployment..."
 cd ..
 mkdir -p deploy-temp
-cp -r backend/dist deploy-temp/
+cp -r backend/dist/* deploy-temp/
 cp -r backend/node_modules deploy-temp/
 cp backend/package.json deploy-temp/
 
