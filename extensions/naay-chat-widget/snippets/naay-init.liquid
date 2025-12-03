@@ -10,10 +10,10 @@
 </div>
 
 <script>
-  // HARDCODED Naay Widget Configuration - No customization allowed
+  // Naay Widget Configuration - Production endpoint
   window.NaayConfig = {
     shopDomain: '{{ shop.permanent_domain }}',
-    apiEndpoint: 'http://localhost:3000',
+    apiEndpoint: 'https://naay-agent-app1763504937.azurewebsites.net',
     position: 'bottom-right',
     primaryColor: '#8B5A3C',
     greeting: '¡Hola! 🌿 Soy tu asistente de Naay. ¿Cómo puedo ayudarte a encontrar el cuidado perfecto para tu piel?',
@@ -52,7 +52,7 @@
     
     // Load the official Naay widget script
     var script = document.createElement('script');
-    script.src = 'http://localhost:3000/widget/naay-widget.js?v=FINAL_210_VERIFIED&id=' + (Math.random().toString(36) + Math.random().toString(36)).substr(2, 20) + '&t=' + Date.now() + '&force=true';
+    script.src = 'https://naay-agent-app1763504937.azurewebsites.net/widget/naay-widget.js?v=FINAL_210_VERIFIED&id=' + (Math.random().toString(36) + Math.random().toString(36)).substr(2, 20) + '&t=' + Date.now() + '&force=true';
     script.async = true;
     
     script.onload = function() {
