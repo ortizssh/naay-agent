@@ -18,7 +18,7 @@
   window.NaayConfig = window.NaayConfig || {};
   window.NaayConfig = {
     shopDomain: '{{ shop.permanent_domain }}',
-    apiEndpoint: 'https://naay-agent-app1763504937.azurewebsites.net',
+    apiEndpoint: 'http://localhost:3000',
     position: 'bottom-right',
     primaryColor: '#a59457',
     greeting: '¿Necesitas ayuda para tu compra? ¡Habla aquí!',
@@ -51,7 +51,7 @@
     console.log('🌿 Naay Chat: Loading widget for block {{ block.id }}');
     
     var script = document.createElement('script');
-    script.src = 'https://naay-agent-app1763504937.azurewebsites.net/widget/naay-widget.js?v=' + Date.now();
+    script.src = 'http://localhost:3000/widget/naay-widget.js?v=' + Date.now();
     script.async = true;
     script.crossOrigin = 'anonymous';
     script.onload = function() {

@@ -4,6 +4,7 @@ import { logger } from '@/utils/logger';
 import { SupabaseService } from './supabase.service';
 import { ShopifyService } from './shopify.service';
 import { EmbeddingService } from './embedding.service';
+import { ConversionTrackingService } from './conversion-tracking.service';
 import {
   AgentAction,
   AgentResponse,
@@ -24,6 +25,7 @@ export class AIAgentService {
   private supabaseService: SupabaseService;
   private shopifyService: ShopifyService;
   private embeddingService: EmbeddingService;
+  private conversionTrackingService: ConversionTrackingService;
 
   constructor() {
     this.openai = new OpenAI({
@@ -32,6 +34,7 @@ export class AIAgentService {
     this.supabaseService = new SupabaseService();
     this.shopifyService = new ShopifyService();
     this.embeddingService = new EmbeddingService();
+    this.conversionTrackingService = new ConversionTrackingService();
   }
 
   async processMessage(
@@ -106,8 +109,8 @@ export class AIAgentService {
           response = await this.handleUnknownIntent(message, shop, history);
       }
 
-      // 4. Save messages to conversation history
-      await this.saveConversationTurn(
+      // 4. Save messages to conversation history and get message ID for tracking
+      const messageId = await this.saveConversationTurn(
         sessionId,
         message,
         response.messages.join(' '),
@@ -118,7 +121,22 @@ export class AIAgentService {
         }
       );
 
-      // 5. Update session activity
+      // 5. Track AI recommendations for conversion attribution
+      try {
+        await this.conversionTrackingService.trackAIRecommendations(
+          sessionId,
+          shop,
+          response,
+          messageId,
+          context?.customerId,
+          cartId
+        );
+      } catch (trackingError) {
+        logger.error('Error tracking AI recommendations:', trackingError);
+        // Don't fail the response if tracking fails
+      }
+
+      // 6. Update session activity
       await this.supabaseService.updateSessionActivity(sessionId);
 
       return response;
@@ -901,7 +919,7 @@ ${product.vendor ? `*By ${product.vendor}*\n` : ''}${product.description ? produ
     userMessage: string,
     agentResponse: string,
     metadata: Record<string, any>
-  ): Promise<void> {
+  ): Promise<string | undefined> {
     try {
       // Save user message
       await this.supabaseService.saveChatMessage({
@@ -911,8 +929,8 @@ ${product.vendor ? `*By ${product.vendor}*\n` : ''}${product.description ? produ
         metadata: { timestamp: new Date() },
       });
 
-      // Save agent response
-      await this.supabaseService.saveChatMessage({
+      // Save agent response and return its ID for tracking
+      const assistantMessage = await this.supabaseService.saveChatMessage({
         session_id: sessionId,
         role: 'assistant',
         content: agentResponse,
@@ -921,9 +939,12 @@ ${product.vendor ? `*By ${product.vendor}*\n` : ''}${product.description ? produ
           timestamp: new Date(),
         },
       });
+
+      return assistantMessage?.id;
     } catch (error) {
       logger.error('Error saving conversation turn:', error);
       // Don't throw here - conversation should continue even if saving fails
+      return undefined;
     }
   }
 }

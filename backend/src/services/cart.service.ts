@@ -1,5 +1,6 @@
 import { ShopifyService } from './shopify.service';
 import { SupabaseService } from './supabase.service';
+import { ConversionTrackingService } from './conversion-tracking.service';
 import { logger } from '@/utils/logger';
 import { AppError, ShopifyCart } from '@/types';
 
@@ -20,10 +21,12 @@ interface CartUpdateInput {
 export class CartService {
   private shopifyService: ShopifyService;
   private supabaseService: SupabaseService;
+  private conversionTrackingService: ConversionTrackingService;
 
   constructor() {
     this.shopifyService = new ShopifyService();
     this.supabaseService = new SupabaseService();
+    this.conversionTrackingService = new ConversionTrackingService();
   }
 
   async createCart(shop: string): Promise<ShopifyCart> {
@@ -55,7 +58,10 @@ export class CartService {
   async addToCart(
     shop: string,
     cartId: string,
-    lines: CartLineInput[]
+    lines: CartLineInput[],
+    sessionId?: string,
+    customerId?: string,
+    source: 'ai_recommendation' | 'direct_add' | 'search' | 'browse' | 'unknown' = 'unknown'
   ): Promise<ShopifyCart> {
     try {
       const store = await this.supabaseService.getStore(shop);
@@ -81,12 +87,47 @@ export class CartService {
         cartId,
         itemsAdded: lines.length,
         totalQuantity: updatedCart.totalQuantity,
+        source
       });
+
+      // Track conversion events for each added line item
+      try {
+        for (const line of lines) {
+          // Extract product and variant IDs from merchandise ID
+          const variantId = line.merchandiseId.replace('gid://shopify/ProductVariant/', '');
+          
+          // Get product ID from variant (we need to query this)
+          const variant = await this.getVariantDetails(shop, variantId);
+          
+          if (variant) {
+            await this.conversionTrackingService.trackCartAddition({
+              shopDomain: shop,
+              cartId,
+              customerId,
+              productId: variant.product_id,
+              variantId,
+              quantity: line.quantity,
+              unitPrice: variant.price ? parseFloat(variant.price) : undefined,
+              source,
+              sessionId,
+              metadata: {
+                via_ai_widget: source === 'ai_recommendation',
+                cart_total_after: updatedCart.cost?.totalAmount?.amount
+              }
+            });
+          }
+        }
+      } catch (trackingError) {
+        logger.error('Error tracking cart addition:', trackingError);
+        // Don't fail cart addition if tracking fails
+      }
 
       // Log analytics event
       await this.logCartEvent(shop, cartId, 'items_added', {
         items: lines,
         cart_total: updatedCart.cost.totalAmount.amount,
+        source,
+        session_id: sessionId
       });
 
       return updatedCart;
@@ -442,6 +483,30 @@ export class CartService {
       }
     } catch (error) {
       logger.error('Failed to log cart event:', error);
+    }
+  }
+
+  private async getVariantDetails(
+    shop: string,
+    variantId: string
+  ): Promise<{ product_id: string; price: string } | null> {
+    try {
+      const { data, error } = await (this.supabaseService as any).serviceClient
+        .from('product_variants')
+        .select('product_id, price')
+        .eq('shop_domain', shop)
+        .eq('id', variantId)
+        .single();
+
+      if (error || !data) {
+        logger.warn(`Variant details not found: ${variantId}`, { shop, error });
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      logger.error('Error getting variant details:', error);
+      return null;
     }
   }
 }

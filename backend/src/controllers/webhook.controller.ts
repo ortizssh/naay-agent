@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { ShopifyService } from '@/services/shopify.service';
 import { SupabaseService } from '@/services/supabase.service';
 import { QueueService } from '@/services/queue.service';
+import { ConversionTrackingService } from '@/services/conversion-tracking.service';
 import { webhookRateLimiter } from '@/middleware/rateLimiter';
 import { logger } from '@/utils/logger';
 import { AppError } from '@/types';
@@ -10,6 +11,7 @@ const router = Router();
 const shopifyService = new ShopifyService();
 const supabaseService = new SupabaseService();
 const queueService = new QueueService();
+const conversionTrackingService = new ConversionTrackingService();
 
 // Apply rate limiting to webhooks
 router.use(webhookRateLimiter);
@@ -194,6 +196,122 @@ router.post(
   }
 );
 
+// Orders created webhook - track new orders for conversion attribution
+router.post(
+  '/orders/create',
+  verifyWebhook,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const shopDomain = (req as any).shopDomain;
+      const order = (req as any).webhookData;
+
+      logger.info(`Order created webhook received for shop: ${shopDomain}`, {
+        orderId: order.id,
+        orderNumber: order.order_number,
+        totalPrice: order.total_price
+      });
+
+      // Log webhook event
+      await logWebhookEvent(shopDomain, 'orders/create', order);
+
+      // Track order completion for conversion attribution
+      await trackOrderCompletion(shopDomain, order);
+
+      res.status(200).json({ success: true });
+    } catch (error) {
+      logger.error('Order create webhook error:', error);
+      next(error);
+    }
+  }
+);
+
+// Orders paid webhook - track when orders are actually paid
+router.post(
+  '/orders/paid',
+  verifyWebhook,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const shopDomain = (req as any).shopDomain;
+      const order = (req as any).webhookData;
+
+      logger.info(`Order paid webhook received for shop: ${shopDomain}`, {
+        orderId: order.id,
+        orderNumber: order.order_number,
+        totalPrice: order.total_price
+      });
+
+      // Log webhook event
+      await logWebhookEvent(shopDomain, 'orders/paid', order);
+
+      // Update order status and recalculate attribution if needed
+      await updateOrderStatus(shopDomain, order.id.toString(), 'paid');
+
+      res.status(200).json({ success: true });
+    } catch (error) {
+      logger.error('Order paid webhook error:', error);
+      next(error);
+    }
+  }
+);
+
+// Orders updated webhook - track order status changes
+router.post(
+  '/orders/updated',
+  verifyWebhook,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const shopDomain = (req as any).shopDomain;
+      const order = (req as any).webhookData;
+
+      logger.info(`Order updated webhook received for shop: ${shopDomain}`, {
+        orderId: order.id,
+        orderNumber: order.order_number,
+        financialStatus: order.financial_status,
+        fulfillmentStatus: order.fulfillment_status
+      });
+
+      // Log webhook event
+      await logWebhookEvent(shopDomain, 'orders/updated', order);
+
+      // Update order status
+      await updateOrderStatus(shopDomain, order.id.toString(), order.financial_status, order.fulfillment_status);
+
+      res.status(200).json({ success: true });
+    } catch (error) {
+      logger.error('Order updated webhook error:', error);
+      next(error);
+    }
+  }
+);
+
+// Carts update webhook - track cart modifications (if available)
+router.post(
+  '/carts/update',
+  verifyWebhook,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const shopDomain = (req as any).shopDomain;
+      const cart = (req as any).webhookData;
+
+      logger.info(`Cart updated webhook received for shop: ${shopDomain}`, {
+        cartId: cart.id,
+        lineItemsCount: cart.line_items?.length || 0
+      });
+
+      // Log webhook event
+      await logWebhookEvent(shopDomain, 'carts/update', cart);
+
+      // Track cart additions (this webhook might not be available in all Shopify plans)
+      await trackCartUpdates(shopDomain, cart);
+
+      res.status(200).json({ success: true });
+    } catch (error) {
+      logger.error('Cart update webhook error:', error);
+      next(error);
+    }
+  }
+);
+
 // Generic webhook handler for other events
 router.post(
   '/:topic',
@@ -213,7 +331,7 @@ router.post(
       await logWebhookEvent(shopDomain, topic, data);
 
       // Handle other webhook types here as needed
-      // Examples: orders/create, orders/updated, customers/create, etc.
+      // Examples: customers/create, checkouts/create, etc.
 
       res.status(200).json({ success: true });
     } catch (error) {
@@ -294,5 +412,114 @@ router.get(
     }
   }
 );
+
+// Helper function to track order completion for conversion attribution
+async function trackOrderCompletion(shopDomain: string, order: any): Promise<void> {
+  try {
+    const lineItems = order.line_items?.map((item: any) => ({
+      lineItemId: item.id?.toString(),
+      productId: item.product_id?.toString(),
+      variantId: item.variant_id?.toString(),
+      quantity: parseInt(item.quantity) || 1,
+      unitPrice: parseFloat(item.price) || 0,
+      totalPrice: parseFloat(item.price) * (parseInt(item.quantity) || 1),
+      productTitle: item.title,
+      variantTitle: item.variant_title
+    })) || [];
+
+    await conversionTrackingService.trackOrderCompletion({
+      shopDomain,
+      orderId: order.id.toString(),
+      orderNumber: order.order_number || order.name,
+      customerId: order.customer?.id?.toString(),
+      totalAmount: parseFloat(order.total_price) || 0,
+      subtotalAmount: parseFloat(order.subtotal_price) || 0,
+      taxAmount: parseFloat(order.total_tax) || 0,
+      currencyCode: order.currency || 'USD',
+      orderCreatedAt: new Date(order.created_at),
+      financialStatus: order.financial_status,
+      fulfillmentStatus: order.fulfillment_status,
+      lineItems
+    });
+
+    logger.info('Order completion tracked for conversion attribution', {
+      shopDomain,
+      orderId: order.id,
+      lineItemsCount: lineItems.length
+    });
+  } catch (error) {
+    logger.error('Error tracking order completion:', error);
+  }
+}
+
+// Helper function to update order status
+async function updateOrderStatus(
+  shopDomain: string,
+  orderId: string,
+  financialStatus?: string,
+  fulfillmentStatus?: string
+): Promise<void> {
+  try {
+    const updateData: any = {};
+    if (financialStatus) updateData.financial_status = financialStatus;
+    if (fulfillmentStatus) updateData.fulfillment_status = fulfillmentStatus;
+
+    const { error } = await (supabaseService as any).serviceClient
+      .from('order_completion_events')
+      .update(updateData)
+      .eq('shop_domain', shopDomain)
+      .eq('order_id', orderId);
+
+    if (error) {
+      logger.error('Error updating order status:', error);
+    } else {
+      logger.info('Order status updated', {
+        shopDomain,
+        orderId,
+        financialStatus,
+        fulfillmentStatus
+      });
+    }
+  } catch (error) {
+    logger.error('Error updating order status:', error);
+  }
+}
+
+// Helper function to track cart updates (limited webhook availability)
+async function trackCartUpdates(shopDomain: string, cart: any): Promise<void> {
+  try {
+    // This webhook might not be available in all Shopify plans
+    // We'll track what we can from the cart data
+    const lineItems = cart.line_items || [];
+    
+    for (const item of lineItems) {
+      // We don't have the session context here, so we can't easily attribute to AI recommendations
+      // This is mainly for tracking cart activity patterns
+      await conversionTrackingService.trackCartAddition({
+        shopDomain,
+        cartId: cart.id?.toString() || 'unknown',
+        productId: item.product_id?.toString(),
+        variantId: item.variant_id?.toString(),
+        quantity: parseInt(item.quantity) || 1,
+        unitPrice: parseFloat(item.price) || 0,
+        source: 'unknown', // Can't determine source from webhook alone
+        metadata: {
+          via_webhook: true,
+          cart_token: cart.token,
+          cart_created_at: cart.created_at,
+          cart_updated_at: cart.updated_at
+        }
+      });
+    }
+
+    logger.info('Cart updates tracked', {
+      shopDomain,
+      cartId: cart.id,
+      lineItemsCount: lineItems.length
+    });
+  } catch (error) {
+    logger.error('Error tracking cart updates:', error);
+  }
+}
 
 export default router;

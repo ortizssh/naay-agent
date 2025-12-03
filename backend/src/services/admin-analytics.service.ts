@@ -190,6 +190,114 @@ export class AdminAnalyticsService {
   }
 
   /**
+   * Create a date range that ensures current day data is included
+   * @param daysBack - Number of days to go back from today (inclusive)
+   * @returns Object with startDate (beginning of day X days ago) and endDate (end of today)
+   */
+  private createInclusiveDateRange(daysBack: number): { startDate: Date; endDate: Date } {
+    // Work with UTC dates to avoid timezone issues
+    const now = new Date();
+    
+    // End of today in UTC (23:59:59.999)
+    const endDate = new Date(Date.UTC(
+      now.getUTCFullYear(), 
+      now.getUTCMonth(), 
+      now.getUTCDate(), 
+      23, 59, 59, 999
+    ));
+    
+    // Beginning of day X days ago in UTC (00:00:00.000)
+    const startDate = new Date(endDate);
+    startDate.setUTCDate(startDate.getUTCDate() - (daysBack - 1)); // Include today in the count
+    startDate.setUTCHours(0, 0, 0, 0);
+    
+    logger.debug('Created inclusive date range', {
+      daysBack,
+      actualDaysIncluded: daysBack,
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      today: new Date().toISOString().split('T')[0],
+      note: 'Using UTC dates to avoid timezone offset issues'
+    });
+    
+    return { startDate, endDate };
+  }
+
+  /**
+   * Execute paginated query to retrieve ALL data beyond Supabase's 1000 row limit
+   * @param queryBuilder - The query builder function
+   * @param options - Query execution options
+   */
+  private async executeCompleteQuery<T>(
+    queryBuilder: (limit: number, offset: number) => any,
+    options: { batchSize?: number; maxRecords?: number; queryName?: string } = {}
+  ): Promise<T[]> {
+    const {
+      batchSize = 1000,
+      maxRecords = 50000, // Safety limit for very large datasets
+      queryName = 'Unknown Query'
+    } = options;
+
+    const allResults: T[] = [];
+    let offset = 0;
+    let hasMoreData = true;
+
+    logger.info(`Starting complete data retrieval for ${queryName}`, {
+      batchSize,
+      maxRecords,
+      queryName
+    });
+
+    while (hasMoreData && allResults.length < maxRecords) {
+      const currentBatchSize = Math.min(batchSize, maxRecords - allResults.length);
+      
+      logger.debug(`Fetching batch ${Math.floor(offset / batchSize) + 1} for ${queryName}`, {
+        offset,
+        batchSize: currentBatchSize,
+        totalSoFar: allResults.length
+      });
+
+      const { data, error } = await queryBuilder(currentBatchSize, offset);
+
+      if (error) {
+        logger.error(`Error in complete query batch for ${queryName}:`, {
+          error: error.message,
+          offset,
+          batchSize: currentBatchSize
+        });
+        throw new AppError(`Failed to fetch data: ${error.message}`, 500);
+      }
+
+      const results = data || [];
+      allResults.push(...results);
+
+      // Check if we got fewer results than requested (indicates end of data)
+      if (results.length < currentBatchSize) {
+        hasMoreData = false;
+        logger.info(`Reached end of data for ${queryName} - got ${results.length} in final batch`);
+      } else {
+        offset += currentBatchSize;
+      }
+    }
+
+    logger.info(`Complete data retrieval finished for ${queryName}`, {
+      totalRecords: allResults.length,
+      batchesProcessed: Math.floor(offset / batchSize) + 1,
+      hitMaxLimit: allResults.length >= maxRecords
+    });
+
+    if (allResults.length >= maxRecords) {
+      logger.warn(`Hit maximum record limit for ${queryName}`, {
+        maxRecords,
+        actualRecords: allResults.length
+      });
+    }
+
+    return allResults;
+  }
+
+  /**
    * Execute a database query with timeout handling and improved error handling
    * @param queryFunction - The database query function to execute
    * @param options - Query execution options including timeout, cache settings
@@ -438,15 +546,22 @@ export class AdminAnalyticsService {
           return cachedMetrics;
         }
 
-        // Get all messages
-        const { data: messages, error } = await this.supabaseService.client
-          .from('chat_messages')
-          .select('id, role, content, timestamp, session_id')
-          .order('timestamp', { ascending: true });
+        // Get ALL messages for complete historical analytics using pagination
+        logger.info('Fetching ALL chat messages with pagination to ensure complete data');
+        
+        const messages = await this.executeCompleteQuery<any>(
+          (limit, offset) => this.supabaseService.client
+            .from('chat_messages')
+            .select('id, role, content, timestamp, session_id')
+            .order('timestamp', { ascending: true })
+            .range(offset, offset + limit - 1),
+          {
+            queryName: 'getAllMessagesForGeneralMetrics',
+            batchSize: 1000
+          }
+        );
 
-        if (error) {
-          throw new AppError(`Failed to fetch messages: ${error.message}`, 500);
-        }
+        // Error handling is now done in executeCompleteQuery
 
         const messagesList = messages || [];
         const totalMessages = messagesList.length;
@@ -598,15 +713,22 @@ export class AdminAnalyticsService {
           return cachedMetrics;
         }
 
-        // Get all messages to extract recommendations
-        const { data: messages, error } = await this.supabaseService.client
-          .from('chat_messages')
-          .select('id, role, content, timestamp, session_id')
-          .order('timestamp', { ascending: true });
+        // Get ALL messages to extract complete recommendation history using pagination
+        logger.info('Fetching ALL chat messages with pagination for recommendation metrics');
+        
+        const messages = await this.executeCompleteQuery<any>(
+          (limit, offset) => this.supabaseService.client
+            .from('chat_messages')
+            .select('id, role, content, timestamp, session_id')
+            .order('timestamp', { ascending: true })
+            .range(offset, offset + limit - 1),
+          {
+            queryName: 'getAllMessagesForRecommendationMetrics',
+            batchSize: 1000
+          }
+        );
 
-        if (error) {
-          throw new AppError(`Failed to fetch messages: ${error.message}`, 500);
-        }
+        // Error handling is now done in executeCompleteQuery
 
         const messagesList = messages || [];
 
@@ -706,12 +828,14 @@ export class AdminAnalyticsService {
           .map(([intent, count]) => ({ intent, count }))
           .sort((a, b) => b.count - a.count);
 
-        // Calculate recommendation trends (last 30 days)
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        // Calculate recommendation trends (last 30 days including today)
+        const { startDate: thirtyDaysAgo, endDate: today } = this.createInclusiveDateRange(30);
 
         const recentRecommendations = recommendations.filter(
-          rec => new Date(rec.timestamp) >= thirtyDaysAgo
+          rec => {
+            const recDate = new Date(rec.timestamp);
+            return recDate >= thirtyDaysAgo && recDate <= today;
+          }
         );
 
         const trendMap = new Map<string, number>();
@@ -764,15 +888,22 @@ export class AdminAnalyticsService {
           return cachedMetrics;
         }
 
-        // Get all messages
-        const { data: messages, error } = await this.supabaseService.client
-          .from('chat_messages')
-          .select('id, role, content, timestamp, session_id')
-          .order('timestamp', { ascending: true });
+        // Get ALL messages for complete engagement analysis using pagination
+        logger.info('Fetching ALL chat messages with pagination for engagement metrics');
+        
+        const messages = await this.executeCompleteQuery<any>(
+          (limit, offset) => this.supabaseService.client
+            .from('chat_messages')
+            .select('id, role, content, timestamp, session_id')
+            .order('timestamp', { ascending: true })
+            .range(offset, offset + limit - 1),
+          {
+            queryName: 'getAllMessagesForEngagementMetrics',
+            batchSize: 1000
+          }
+        );
 
-        if (error) {
-          throw new AppError(`Failed to fetch messages: ${error.message}`, 500);
-        }
+        // Error handling is now done in executeCompleteQuery
 
         const messagesList = messages || [];
 
@@ -969,14 +1100,23 @@ export class AdminAnalyticsService {
         }
 
         // Get conversation and message stats from chat_messages
-        // Query all messages since we don't filter by shop_domain
-        logger.info('Querying all chat messages from database');
+        // Query ALL messages using pagination to ensure complete historical data
+        logger.info('Querying ALL chat messages from database with pagination');
 
-        const { data: conversationData, error: conversationError } =
-          await this.supabaseService.client
+        const allMessages = await this.executeCompleteQuery<any>(
+          (limit, offset) => this.supabaseService.client
             .from('chat_messages')
             .select('id, role, content, timestamp, session_id')
-            .order('timestamp', { ascending: true });
+            .order('timestamp', { ascending: true })
+            .range(offset, offset + limit - 1),
+          {
+            queryName: 'getAllMessagesForShopStats',
+            batchSize: 1000
+          }
+        );
+
+        const conversationData = allMessages;
+        const conversationError = null;
 
         if (conversationError) {
           throw new AppError(
@@ -992,9 +1132,8 @@ export class AdminAnalyticsService {
         const uniqueSessionIds = new Set(messages.map(msg => msg.session_id));
         const conversationCount = uniqueSessionIds.size;
 
-        // Get conversation data by day (last 30 days) from first message of each session
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        // Get conversation data by day (last 30 days including today) from first message of each session
+        const { startDate: thirtyDaysAgo, endDate: today } = this.createInclusiveDateRange(30);
 
         // Group messages by session and get first message timestamp for each session
         const sessionFirstMessages = new Map();
@@ -1010,23 +1149,26 @@ export class AdminAnalyticsService {
           }
         });
 
-        // Filter conversations from last 30 days and group by day
+        // Filter conversations from last 30 days including today and group by day
         const recentSessions = Array.from(sessionFirstMessages.entries())
-          .filter(([_, timestamp]) => timestamp >= thirtyDaysAgo)
+          .filter(([_, timestamp]) => timestamp >= thirtyDaysAgo && timestamp <= today)
           .map(([sessionId, timestamp]) => ({
             created_at: timestamp.toISOString(),
           }));
 
-        const conversationsByDayProcessed = this.groupByDay(recentSessions);
+        const conversationsByDayProcessed = this.groupByDay(recentSessions, 30);
 
-        // Process messages by day for the chart
+        // Process messages by day for the chart including today
         const recentMessages = messages
-          .filter(msg => new Date(msg.timestamp) >= thirtyDaysAgo)
+          .filter(msg => {
+            const msgDate = new Date(msg.timestamp);
+            return msgDate >= thirtyDaysAgo && msgDate <= today;
+          })
           .map(msg => ({
             created_at: msg.timestamp,
           }));
 
-        const messagesByDayProcessed = this.groupByDay(recentMessages);
+        const messagesByDayProcessed = this.groupByDay(recentMessages, 30);
 
         // Calculate enhanced metrics
         const sessionMap = new Map<
@@ -1134,13 +1276,22 @@ export class AdminAnalyticsService {
       }
 
       // Get total conversations from chat_messages by counting distinct session_ids
-      // Query all messages since we don't filter by shop_domain
-      logger.info('Querying all chat messages for conversion analytics');
+      // Query ALL messages using pagination to ensure complete historical data
+      logger.info('Querying ALL chat messages for conversion analytics with pagination');
 
-      const { data: messages, error } = await this.supabaseService.client
-        .from('chat_messages')
-        .select('id, role, content, timestamp, session_id')
-        .order('timestamp', { ascending: true });
+      const messages = await this.executeCompleteQuery<any>(
+        (limit, offset) => this.supabaseService.client
+          .from('chat_messages')
+          .select('id, role, content, timestamp, session_id')
+          .order('timestamp', { ascending: true })
+          .range(offset, offset + limit - 1),
+        {
+          queryName: 'getAllMessagesForConversionAnalytics',
+          batchSize: 1000
+        }
+      );
+
+      const error = null;
 
       if (error) {
         throw new AppError(
@@ -1355,15 +1506,23 @@ export class AdminAnalyticsService {
 
         const startTime = Date.now();
 
-        // Get all messages to derive conversation data
-        // Query all messages since we don't filter by shop_domain
-        logger.info('Querying all chat messages for conversations');
+        // Get ALL messages to derive conversation data using pagination
+        // Query all messages using pagination to ensure complete historical data
+        logger.info('Querying ALL chat messages for conversations with pagination');
 
-        const { data: allMessages, error: messagesError } =
-          await this.supabaseService.client
+        const allMessages = await this.executeCompleteQuery<any>(
+          (limit, offset) => this.supabaseService.client
             .from('chat_messages')
             .select('id, role, content, timestamp, session_id')
-            .order('timestamp', { ascending: true });
+            .order('timestamp', { ascending: true })
+            .range(offset, offset + limit - 1),
+          {
+            queryName: 'getAllMessagesForConversations',
+            batchSize: 1000
+          }
+        );
+
+        const messagesError = null;
 
         if (messagesError) {
           logger.error('Error fetching messages:', messagesError);
@@ -1506,21 +1665,47 @@ export class AdminAnalyticsService {
         return cachedAnalytics;
       }
 
-      const endDate = new Date();
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - daysCount);
+      // Set up date range to include the full current day
+      const { startDate, endDate } = this.createInclusiveDateRange(daysCount);
 
-      // Get all messages within the date range
-      // Query all messages since we don't filter by shop_domain
-      logger.info('Querying all chat messages for chart analytics');
+      // Get ALL messages then filter in memory to ensure no data loss
+      // Query ALL messages using pagination to ensure complete historical data
+      logger.info('Querying ALL chat messages for chart analytics with pagination', {
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        daysCount,
+        note: 'Getting ALL messages first to prevent data loss, then filtering in memory'
+      });
 
-      const { data: messages, error: messagesError } =
-        await this.supabaseService.client
+      // Get ALL messages without date filters to prevent any potential data loss
+      const allMessages = await this.executeCompleteQuery<any>(
+        (limit, offset) => this.supabaseService.client
           .from('chat_messages')
-          .select('id, role, content, timestamp, session_id')
-          .gte('timestamp', startDate.toISOString())
-          .lte('timestamp', endDate.toISOString())
-          .order('timestamp', { ascending: true });
+          .select('timestamp, session_id')
+          .order('timestamp', { ascending: true })
+          .range(offset, offset + limit - 1),
+        {
+          queryName: 'getAllMessagesForChartAnalytics',
+          batchSize: 1000
+        }
+      );
+
+      // Filter messages in memory to the requested date range
+      // This ensures we never lose data due to query limitations
+      const messages = allMessages.filter(msg => {
+        const msgDate = new Date(msg.timestamp);
+        return msgDate >= startDate && msgDate <= endDate;
+      });
+
+      const messagesError = null;
+
+      logger.info('Filtered messages for chart analytics', {
+        totalMessages: allMessages.length,
+        filteredMessages: messages.length,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        dataLossCheck: allMessages.length > 0 ? 'PASSED' : 'FAILED - No messages found'
+      });
 
       if (messagesError) {
         logger.error('Error fetching messages for chart:', messagesError);
@@ -1528,6 +1713,12 @@ export class AdminAnalyticsService {
       }
 
       const messagesList = messages || [];
+
+      logger.info('Processing messages for chart analytics', {
+        totalMessagesAfterFilter: messagesList.length,
+        dateRange: `${startDate.toISOString()} to ${endDate.toISOString()}`,
+        ensureCompleteData: 'Using in-memory filtering to prevent data loss'
+      });
 
       // Group messages by session to find when each conversation started
       const sessionFirstMessages = new Map<string, Date>();
@@ -1553,11 +1744,11 @@ export class AdminAnalyticsService {
         );
       });
 
-      // Initialize daily data map for all days in range
+      // Initialize daily data map for all days in range (inclusive of today)
       const dailyDataMap = new Map<string, ChartDataPoint>();
       for (let i = 0; i < daysCount; i++) {
         const date = new Date(startDate);
-        date.setDate(date.getDate() + i);
+        date.setDate(date.getDate() + i); // Correctly increment from startDate
         const dateKey = date.toISOString().split('T')[0];
         dailyDataMap.set(dateKey, {
           date: dateKey,
@@ -1800,6 +1991,189 @@ export class AdminAnalyticsService {
   }
 
   /**
+   * Verify data completeness for analytics queries
+   * This method helps ensure we're not losing any historical data
+   */
+  async verifyDataCompleteness(shop: string): Promise<{
+    totalMessages: number;
+    totalConversations: number;
+    dateRange: { earliest: string; latest: string };
+    potentialDataLoss: boolean;
+    verificationDetails: {
+      messagesPerDay: Record<string, number>;
+      conversationsPerDay: Record<string, number>;
+      lastUpdated: string;
+    };
+  }> {
+    try {
+      logger.info('Starting data completeness verification for shop:', { shop });
+
+      // Get ALL messages using our new complete query method
+      const allMessages = await this.executeCompleteQuery<any>(
+        (limit, offset) => this.supabaseService.client
+          .from('chat_messages')
+          .select('timestamp, session_id')
+          .order('timestamp', { ascending: true })
+          .range(offset, offset + limit - 1),
+        {
+          queryName: 'verifyDataCompleteness',
+          batchSize: 1000
+        }
+      );
+
+      const totalMessages = allMessages.length;
+      const uniqueSessionIds = new Set(allMessages.map(msg => msg.session_id));
+      const totalConversations = uniqueSessionIds.size;
+
+      let earliest = '';
+      let latest = '';
+      if (allMessages.length > 0) {
+        earliest = allMessages[0].timestamp;
+        latest = allMessages[allMessages.length - 1].timestamp;
+      }
+
+      // Group messages by day
+      const messagesPerDay: Record<string, number> = {};
+      const conversationsPerDay: Record<string, number> = {};
+
+      allMessages.forEach(msg => {
+        const date = new Date(msg.timestamp).toISOString().split('T')[0];
+        
+        // Count messages per day
+        messagesPerDay[date] = (messagesPerDay[date] || 0) + 1;
+      });
+
+      // Count conversations per day (unique sessions that started that day)
+      const sessionFirstMessages = new Map<string, string>();
+      allMessages.forEach(msg => {
+        const sessionId = msg.session_id;
+        if (!sessionFirstMessages.has(sessionId)) {
+          sessionFirstMessages.set(sessionId, new Date(msg.timestamp).toISOString().split('T')[0]);
+        }
+      });
+
+      sessionFirstMessages.forEach((date, sessionId) => {
+        conversationsPerDay[date] = (conversationsPerDay[date] || 0) + 1;
+      });
+
+      // Check for potential data loss indicators
+      const potentialDataLoss = totalMessages === 0 || 
+        (totalMessages > 0 && totalMessages % 1000 === 0 && totalMessages >= 50000);
+
+      const verification = {
+        totalMessages,
+        totalConversations,
+        dateRange: { earliest, latest },
+        potentialDataLoss,
+        verificationDetails: {
+          messagesPerDay,
+          conversationsPerDay,
+          lastUpdated: new Date().toISOString()
+        }
+      };
+
+      logger.info('Data completeness verification completed', {
+        shop,
+        totalMessages,
+        totalConversations,
+        dateRange: { earliest, latest },
+        potentialDataLoss,
+        daysWithData: Object.keys(messagesPerDay).length
+      });
+
+      return verification;
+    } catch (error) {
+      logger.error('Error verifying data completeness:', error);
+      throw new AppError('Failed to verify data completeness', 500);
+    }
+  }
+
+  /**
+   * Compare data consistency across different date ranges
+   * This helps identify if different range queries are showing consistent data
+   */
+  async compareDataConsistency(shop: string): Promise<{
+    ranges: Array<{
+      days: number;
+      totalConversations: number;
+      totalMessages: number;
+      overlappingDates: string[];
+    }>;
+    consistencyReport: {
+      overallConsistent: boolean;
+      inconsistencies: string[];
+      recommendations: string[];
+    };
+  }> {
+    try {
+      logger.info('Starting data consistency comparison for shop:', { shop });
+
+      const ranges = [3, 7, 10, 30];
+      const results = [];
+      const inconsistencies: string[] = [];
+      
+      for (const days of ranges) {
+        const analytics = await this.getChartAnalytics(shop, days);
+        const overlappingDates = analytics.daily_data.map(d => d.date);
+        
+        results.push({
+          days,
+          totalConversations: analytics.totals.conversations,
+          totalMessages: analytics.daily_data.reduce((sum, d) => sum + d.conversations, 0),
+          overlappingDates,
+        });
+      }
+
+      // Check for inconsistencies in overlapping dates
+      for (let i = 0; i < results.length - 1; i++) {
+        const current = results[i];
+        const next = results[i + 1];
+        
+        // Check for data consistency in overlapping period
+        const currentTotal = current.totalConversations;
+        const nextTotal = next.totalConversations;
+        
+        // If a shorter range has more conversations than expected, flag it
+        if (current.days < next.days && currentTotal > nextTotal) {
+          inconsistencies.push(
+            `${current.days}-day range shows ${currentTotal} conversations vs ${next.days}-day range shows ${nextTotal} - shorter range should never exceed longer range`
+          );
+        }
+      }
+
+      const overallConsistent = inconsistencies.length === 0;
+      const recommendations: string[] = [];
+      
+      if (!overallConsistent) {
+        recommendations.push('Clear analytics cache to ensure fresh data');
+        recommendations.push('Verify database query pagination is working correctly');
+        recommendations.push('Check for timezone-related date calculation issues');
+      } else {
+        recommendations.push('Data consistency looks good across all date ranges');
+      }
+
+      logger.info('Data consistency comparison completed', {
+        shop,
+        rangesChecked: ranges.length,
+        inconsistencies: inconsistencies.length,
+        overallConsistent
+      });
+
+      return {
+        ranges: results,
+        consistencyReport: {
+          overallConsistent,
+          inconsistencies,
+          recommendations
+        }
+      };
+    } catch (error) {
+      logger.error('Error comparing data consistency:', error);
+      throw new AppError('Failed to compare data consistency', 500);
+    }
+  }
+
+  /**
    * Invalidate all analytics caches for a shop
    */
   async invalidateAnalyticsCache(shop: string): Promise<void> {
@@ -1829,8 +2203,10 @@ export class AdminAnalyticsService {
   }
 
   private groupByDay(
-    data: Array<{ created_at: string }>
+    data: Array<{ created_at: string }>,
+    daysBack: number = 30
   ): Array<{ date: string; count: number }> {
+    // Group actual data by date
     const grouped = data.reduce(
       (acc, item) => {
         const date = new Date(item.created_at).toISOString().split('T')[0];
@@ -1840,6 +2216,21 @@ export class AdminAnalyticsService {
       {} as Record<string, number>
     );
 
-    return Object.entries(grouped).map(([date, count]) => ({ date, count }));
+    // Create complete date range including today
+    const { startDate } = this.createInclusiveDateRange(daysBack);
+    const result: Array<{ date: string; count: number }> = [];
+    
+    for (let i = 0; i < daysBack; i++) {
+      const date = new Date(startDate);
+      date.setDate(date.getDate() + i);
+      const dateKey = date.toISOString().split('T')[0];
+      
+      result.push({
+        date: dateKey,
+        count: grouped[dateKey] || 0,
+      });
+    }
+
+    return result.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }
 }

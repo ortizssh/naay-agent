@@ -13,7 +13,7 @@
   // HARDCODED Naay Widget Configuration - No customization allowed
   window.NaayConfig = {
     shopDomain: '{{ shop.permanent_domain }}',
-    apiEndpoint: 'https://naay-agent-app1763504937.azurewebsites.net',
+    apiEndpoint: 'http://localhost:3000',
     position: 'bottom-right',
     primaryColor: '#8B5A3C',
     greeting: '¡Hola! 🌿 Soy tu asistente de Naay. ¿Cómo puedo ayudarte a encontrar el cuidado perfecto para tu piel?',
@@ -56,7 +56,7 @@
     var timestamp = Date.now();
     
     // Primary URL
-    script.src = 'https://naay-agent-app1763504937.azurewebsites.net/static/naay-widget.js?v=FINAL_210_VERIFIED&id=' + widgetId + '&t=' + timestamp + '&force=true';
+    script.src = 'http://localhost:3000/widget/naay-widget.js?v=FINAL_210_VERIFIED&id=' + widgetId + '&t=' + timestamp + '&force=true';
     script.async = true;
     
     script.onload = function() {

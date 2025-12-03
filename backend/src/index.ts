@@ -29,6 +29,8 @@ import adminBypassRoutes from '@/controllers/admin-bypass-refactored.controller'
 import simpleChatRoutes from '@/controllers/simple-chat.controller';
 import publicCartRoutes from '@/controllers/public-cart.controller';
 import publicProductsRoutes from '@/controllers/public-products.controller';
+import conversionAnalyticsRoutes from '@/controllers/conversion-analytics.controller';
+import adminConversionAnalyticsRoutes from '@/controllers/admin-conversion-analytics.controller';
 
 async function startServer() {
   try {
@@ -164,6 +166,13 @@ async function startServer() {
 
     // Health check (before auth)
     app.use('/health', healthRoutes);
+
+    // Widget test page for development
+    app.get('/test-widget', (req: express.Request, res: express.Response) => {
+      const testWidgetPath = path.join(__dirname, '../public/test-widget.html');
+      logger.info('Serving widget test page from:', testWidgetPath);
+      res.sendFile(testWidgetPath);
+    });
 
     // Debug endpoint to check file paths in production
     app.get('/debug/files', (req: express.Request, res: express.Response) => {
@@ -302,6 +311,10 @@ async function startServer() {
     app.use('/api/settings', settingsRoutes);
     app.use('/api/admin', adminRoutes);
     app.use('/api/admin-bypass', adminBypassRoutes);
+    
+    // Conversion Analytics Routes
+    app.use('/api/analytics/conversion', conversionAnalyticsRoutes);
+    app.use('/api/admin/analytics/conversion', adminConversionAnalyticsRoutes);
 
     // Serve admin panel
     app.get('/admin', (req, res) => {

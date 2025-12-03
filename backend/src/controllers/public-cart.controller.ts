@@ -19,6 +19,9 @@ const addToCartSchema = Joi.object({
   cartId: Joi.string().optional(),
   variantId: Joi.string().required(),
   quantity: Joi.number().integer().min(1).default(1),
+  sessionId: Joi.string().optional(),
+  customerId: Joi.string().optional(),
+  source: Joi.string().valid('ai_recommendation', 'direct_add', 'search', 'browse', 'unknown').default('unknown'),
 });
 
 const updateCartSchema = Joi.object({
@@ -84,7 +87,7 @@ router.post('/add', async (req: Request, res: Response, next: NextFunction) => {
       throw new AppError(`Validation error: ${error.details[0].message}`, 400);
     }
 
-    const { shop, cartId, variantId, quantity } = value;
+    const { shop, cartId, variantId, quantity, sessionId, customerId, source } = value;
 
     // Verify shop exists
     const store = await supabaseService.getStore(shop);
@@ -105,13 +108,20 @@ router.post('/add', async (req: Request, res: Response, next: NextFunction) => {
       ? variantId
       : `gid://shopify/ProductVariant/${variantId}`;
 
-    // Add item to cart
-    const updatedCart = await cartService.addToCart(shop, currentCartId, [
-      {
-        merchandiseId: formattedVariantId,
-        quantity,
-      },
-    ]);
+    // Add item to cart with conversion tracking
+    const updatedCart = await cartService.addToCart(
+      shop, 
+      currentCartId, 
+      [
+        {
+          merchandiseId: formattedVariantId,
+          quantity,
+        },
+      ],
+      sessionId,
+      customerId,
+      source
+    );
 
     logger.info('Item added to public cart', {
       shop,

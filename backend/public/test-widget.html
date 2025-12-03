@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Naay Widget - Development</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .status {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        button {
+            background: #a59457;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #8d7f49;
+        }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+        .info { color: #60a5fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Naay Widget Development Test</h1>
+        
+        <div class="status">
+            <h3>Widget Status</h3>
+            <p>Widget Loaded: <span id="widget-status" class="info">Loading...</span></p>
+            <p>API Connection: <span id="api-status" class="info">Testing...</span></p>
+            <p>Chat Available: <span id="chat-status" class="info">Checking...</span></p>
+        </div>
+        
+        <div class="status">
+            <h3>Test Actions</h3>
+            <button onclick="testWidget()">🔍 Test Widget</button>
+            <button onclick="openChat()">💬 Open Chat</button>
+            <button onclick="testAPI()">🔌 Test API</button>
+            <button onclick="clearConsole()">🧹 Clear Console</button>
+        </div>
+        
+        <div class="status">
+            <h3>Console Output</h3>
+            <div id="console-output" style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px;">
+                Console logs will appear here...<br>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const consoleDiv = document.getElementById('console-output');
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        function logToDiv(message, type = 'log') {
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#f87171' : type === 'warn' ? '#fbbf24' : '#e5e5e5';
+            consoleDiv.innerHTML += `<span style="color: ${color}">[${timestamp}] ${message}</span><br>`;
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            logToDiv(args.join(' '), 'log');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            logToDiv(args.join(' '), 'error');
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            logToDiv(args.join(' '), 'warn');
+        };
+        
+        function updateStatus(elementId, message, className) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = className;
+        }
+        
+        function testWidget() {
+            console.log('🔍 Testing widget functionality...');
+            if (window.naayWidget) {
+                updateStatus('widget-status', 'Widget Active ✅', 'success');
+                console.log('✅ Widget is loaded and available');
+                console.log('Widget config:', window.naayWidget.config);
+            } else if (window.NaayWidget) {
+                updateStatus('widget-status', 'Class Available 🟡', 'info');
+                console.log('⚠️ NaayWidget class available but not instantiated');
+            } else {
+                updateStatus('widget-status', 'Not Loaded ❌', 'error');
+                console.log('❌ Widget not found');
+            }
+        }
+        
+        function openChat() {
+            console.log('💬 Attempting to open chat...');
+            if (window.naayWidget && window.naayWidget.openChat) {
+                window.naayWidget.openChat();
+                console.log('✅ Chat opening command sent');
+            } else if (window.naayWidget && window.naayWidget.toggleChat) {
+                window.naayWidget.toggleChat();
+                console.log('✅ Chat toggle command sent');
+            } else {
+                console.log('❌ Chat function not available');
+            }
+        }
+        
+        async function testAPI() {
+            console.log('🔌 Testing API connection...');
+            try {
+                const response = await fetch('http://localhost:3000/health');
+                const data = await response.json();
+                updateStatus('api-status', 'Connected ✅', 'success');
+                console.log('✅ API connection successful:', data);
+            } catch (error) {
+                updateStatus('api-status', 'Failed ❌', 'error');
+                console.log('❌ API connection failed:', error.message);
+            }
+        }
+        
+        function clearConsole() {
+            consoleDiv.innerHTML = 'Console cleared...<br>';
+        }
+        
+        // Initialize widget when page loads
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Page loaded, initializing widget test...');
+            
+            // Set up Naay config
+            window.NaayConfig = {
+                shopDomain: 'test-shop.myshopify.com',
+                apiEndpoint: 'http://localhost:3000',
+                position: 'bottom-right',
+                primaryColor: '#a59457',
+                greeting: '¡Hola! Soy tu asistente de Naay para testing.',
+                enabled: true
+            };
+            
+            // Load widget script
+            const script = document.createElement('script');
+            script.src = '/widget/naay-widget.js?v=' + Date.now();
+            script.async = true;
+            
+            script.onload = function() {
+                console.log('✅ Widget script loaded');
+                updateStatus('widget-status', 'Script Loaded ✅', 'success');
+                
+                // Try to initialize widget
+                if (window.NaayWidget) {
+                    try {
+                        window.naayWidget = new window.NaayWidget(window.NaayConfig);
+                        console.log('✅ Widget initialized successfully');
+                        updateStatus('chat-status', 'Ready ✅', 'success');
+                    } catch (error) {
+                        console.error('❌ Widget initialization failed:', error);
+                        updateStatus('chat-status', 'Init Failed ❌', 'error');
+                    }
+                } else {
+                    console.error('❌ NaayWidget class not available');
+                    updateStatus('chat-status', 'Class Missing ❌', 'error');
+                }
+            };
+            
+            script.onerror = function() {
+                console.error('❌ Failed to load widget script');
+                updateStatus('widget-status', 'Load Failed ❌', 'error');
+            };
+            
+            document.head.appendChild(script);
+            
+            // Test API on load
+            testAPI();
+        });
+        
+        // Auto-test widget every 5 seconds
+        setInterval(testWidget, 5000);
+        
+        console.log('🧪 Test page initialized');
+    </script>
+</body>
+</html>

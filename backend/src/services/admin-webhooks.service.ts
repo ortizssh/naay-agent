@@ -42,15 +42,20 @@ export class AdminWebhooksService {
         throw new AppError('Store not found', 404);
       }
 
-      // Get webhook events from the last 30 days
+      // Get webhook events from the last 30 days including today
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      thirtyDaysAgo.setHours(0, 0, 0, 0); // Start of day 30 days ago
+      
+      const today = new Date();
+      today.setHours(23, 59, 59, 999); // End of today
 
       const { data: events, error } = await this.supabaseService.client
         .from('webhook_events')
         .select('*')
         .eq('shop_domain', shop)
         .gte('created_at', thirtyDaysAgo.toISOString())
+        .lte('created_at', today.toISOString())
         .order('created_at', { ascending: false })
         .limit(100);
 
