@@ -66,7 +66,7 @@ async function startServer() {
           },
           frameguard: false, // Disable frameguard to allow iframe
         })(req, res, next);
-        
+
         // Explicitly set frame options for Shopify embedding after helmet
         if (req.path === '/admin' || req.path.startsWith('/admin')) {
           res.setHeader('X-Frame-Options', 'ALLOWALL');
@@ -328,7 +328,7 @@ async function startServer() {
         'Content-Security-Policy',
         "frame-ancestors 'self' https://*.shopify.com https://*.shop.app https://admin.shopify.com https://*.myshopify.com;"
       );
-      
+
       const adminPath = path.join(__dirname, '../public/admin/index.html');
       logger.info('Serving admin panel from:', adminPath);
       res.sendFile(adminPath);
