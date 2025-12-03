@@ -359,7 +359,7 @@ async function startServer() {
           path.join(__dirname, '../public', 'naay-widget.js'),
           path.join(__dirname, 'public', 'naay-widget.js'),
           path.join(process.cwd(), 'public', 'naay-widget.js'),
-          path.join(process.cwd(), 'dist', 'public', 'naay-widget.js')
+          path.join(process.cwd(), 'dist', 'public', 'naay-widget.js'),
         ];
 
         let foundPath = null;
@@ -377,9 +377,9 @@ async function startServer() {
           res.sendFile(foundPath);
         } else {
           console.error('❌ Widget file not found in any location');
-          res.status(404).json({ 
+          res.status(404).json({
             error: 'Widget file not found',
-            tested_paths: possiblePaths
+            tested_paths: possiblePaths,
           });
         }
       } catch (error) {
@@ -558,7 +558,7 @@ async function startServer() {
           path.join(__dirname, '../public/admin/index.html'),
           path.join(__dirname, 'public/admin/index.html'),
           path.join(process.cwd(), 'public/admin/index.html'),
-          path.join(process.cwd(), 'dist/public/admin/index.html')
+          path.join(process.cwd(), 'dist/public/admin/index.html'),
         ];
 
         let foundPath = null;
@@ -576,16 +576,16 @@ async function startServer() {
           res.sendFile(foundPath);
         } else {
           console.error('❌ Admin file not found in any location');
-          res.status(404).json({ 
+          res.status(404).json({
             error: 'Admin panel file not found',
-            tested_paths: possiblePaths
+            tested_paths: possiblePaths,
           });
         }
       } catch (error) {
         console.error('Error serving admin panel:', error);
-        res.status(500).json({ 
+        res.status(500).json({
           error: 'Failed to serve admin panel',
-          details: error.message
+          details: error.message,
         });
       }
     });
