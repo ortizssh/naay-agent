@@ -46,7 +46,7 @@ export class AdminWebhooksService {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       thirtyDaysAgo.setHours(0, 0, 0, 0); // Start of day 30 days ago
-      
+
       const today = new Date();
       today.setHours(23, 59, 59, 999); // End of today
 

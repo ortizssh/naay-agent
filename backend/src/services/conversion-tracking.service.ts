@@ -8,7 +8,13 @@ interface AIRecommendationEvent {
   messageId?: string;
   recommendedProductId: string;
   recommendedVariantId?: string;
-  recommendationType: 'search_result' | 'related_product' | 'complementary' | 'upsell' | 'popular' | 'semantic_match';
+  recommendationType:
+    | 'search_result'
+    | 'related_product'
+    | 'complementary'
+    | 'upsell'
+    | 'popular'
+    | 'semantic_match';
   recommendationContext: Record<string, any>;
   recommendationPosition?: number;
   recommendationScore?: number;
@@ -81,12 +87,15 @@ interface ConversionMetrics {
     revenue: number;
     conversionRate: number;
   }>;
-  recommendationTypePerformance: Record<string, {
-    recommendations: number;
-    conversions: number;
-    revenue: number;
-    conversionRate: number;
-  }>;
+  recommendationTypePerformance: Record<
+    string,
+    {
+      recommendations: number;
+      conversions: number;
+      revenue: number;
+      conversionRate: number;
+    }
+  >;
 }
 
 export class ConversionTrackingService {
@@ -109,54 +118,67 @@ export class ConversionTrackingService {
   ): Promise<string[]> {
     try {
       const recommendationEvents: AIRecommendationEvent[] = [];
-      
+
       // Extract product recommendations from metadata
       if (agentResponse.metadata?.products) {
-        agentResponse.metadata.products.forEach((product: any, index: number) => {
-          recommendationEvents.push({
-            sessionId,
-            shopDomain,
-            messageId,
-            recommendedProductId: product.id,
-            recommendedVariantId: product.variants?.[0]?.id,
-            recommendationType: this.classifyRecommendationType(agentResponse.metadata),
-            recommendationContext: {
-              intent: agentResponse.metadata?.intent,
-              searchQuery: agentResponse.metadata?.search_query,
-              searchType: agentResponse.metadata?.search_type,
-              productsFound: agentResponse.metadata?.products_found,
-              originalMessage: agentResponse.messages[0]?.substring(0, 200)
-            },
-            recommendationPosition: index + 1,
-            recommendationScore: product.score,
-            customerId,
-            cartId
-          });
-        });
+        agentResponse.metadata.products.forEach(
+          (product: any, index: number) => {
+            recommendationEvents.push({
+              sessionId,
+              shopDomain,
+              messageId,
+              recommendedProductId: product.id,
+              recommendedVariantId: product.variants?.[0]?.id,
+              recommendationType: this.classifyRecommendationType(
+                agentResponse.metadata
+              ),
+              recommendationContext: {
+                intent: agentResponse.metadata?.intent,
+                searchQuery: agentResponse.metadata?.search_query,
+                searchType: agentResponse.metadata?.search_type,
+                productsFound: agentResponse.metadata?.products_found,
+                originalMessage: agentResponse.messages[0]?.substring(0, 200),
+              },
+              recommendationPosition: index + 1,
+              recommendationScore: product.score,
+              customerId,
+              cartId,
+            });
+          }
+        );
       }
 
       // Extract recommendations from recommendation-specific responses
       if (agentResponse.metadata?.recommendations) {
-        agentResponse.metadata.recommendations.forEach((rec: any, index: number) => {
-          recommendationEvents.push({
-            sessionId,
-            shopDomain,
-            messageId,
-            recommendedProductId: rec.id,
-            recommendedVariantId: undefined, // Recommendations usually don't include variant
-            recommendationType: (agentResponse.metadata?.recommendation_type as 'complementary' | 'upsell' | 'popular' | 'search_result' | 'related_product' | 'semantic_match') || 'popular',
-            recommendationContext: {
-              baseProductId: agentResponse.metadata?.base_product_id,
-              reason: rec.reason,
-              score: rec.score,
-              recommendationType: agentResponse.metadata?.recommendation_type
-            },
-            recommendationPosition: index + 1,
-            recommendationScore: rec.score,
-            customerId,
-            cartId
-          });
-        });
+        agentResponse.metadata.recommendations.forEach(
+          (rec: any, index: number) => {
+            recommendationEvents.push({
+              sessionId,
+              shopDomain,
+              messageId,
+              recommendedProductId: rec.id,
+              recommendedVariantId: undefined, // Recommendations usually don't include variant
+              recommendationType:
+                (agentResponse.metadata?.recommendation_type as
+                  | 'complementary'
+                  | 'upsell'
+                  | 'popular'
+                  | 'search_result'
+                  | 'related_product'
+                  | 'semantic_match') || 'popular',
+              recommendationContext: {
+                baseProductId: agentResponse.metadata?.base_product_id,
+                reason: rec.reason,
+                score: rec.score,
+                recommendationType: agentResponse.metadata?.recommendation_type,
+              },
+              recommendationPosition: index + 1,
+              recommendationScore: rec.score,
+              customerId,
+              cartId,
+            });
+          }
+        );
       }
 
       // Parse recommendations from message content using regex patterns
@@ -180,7 +202,7 @@ export class ConversionTrackingService {
       logger.info(`Tracked ${eventIds.length} AI recommendations`, {
         sessionId,
         shopDomain,
-        recommendationCount: eventIds.length
+        recommendationCount: eventIds.length,
       });
 
       return eventIds;
@@ -210,7 +232,7 @@ export class ConversionTrackingService {
           source: cartEvent.source,
           session_id: cartEvent.sessionId,
           recommendation_event_id: cartEvent.recommendationEventId,
-          metadata: cartEvent.metadata || {}
+          metadata: cartEvent.metadata || {},
         })
         .select('id')
         .single();
@@ -221,13 +243,16 @@ export class ConversionTrackingService {
       }
 
       // Trigger attribution calculation for this cart addition
-      await this.calculateAttributionForCartEvent(data.id, cartEvent.shopDomain);
+      await this.calculateAttributionForCartEvent(
+        data.id,
+        cartEvent.shopDomain
+      );
 
       logger.info('Cart addition tracked', {
         eventId: data.id,
         shopDomain: cartEvent.shopDomain,
         productId: cartEvent.productId,
-        source: cartEvent.source
+        source: cartEvent.source,
       });
 
       return data.id;
@@ -245,7 +270,7 @@ export class ConversionTrackingService {
   ): Promise<string | null> {
     try {
       const client = (this.supabaseService as any).serviceClient;
-      
+
       // Insert order completion event
       const { data: orderData, error: orderError } = await client
         .from('order_completion_events')
@@ -260,7 +285,7 @@ export class ConversionTrackingService {
           currency_code: orderEvent.currencyCode || 'USD',
           order_created_at: orderEvent.orderCreatedAt,
           financial_status: orderEvent.financialStatus,
-          fulfillment_status: orderEvent.fulfillmentStatus
+          fulfillment_status: orderEvent.fulfillmentStatus,
         })
         .select('id')
         .single();
@@ -281,7 +306,7 @@ export class ConversionTrackingService {
         unit_price: item.unitPrice,
         total_price: item.totalPrice,
         product_title: item.productTitle,
-        variant_title: item.variantTitle
+        variant_title: item.variantTitle,
       }));
 
       const { error: lineItemsError } = await client
@@ -293,14 +318,17 @@ export class ConversionTrackingService {
       }
 
       // Trigger attribution calculation for this order
-      await this.calculateAttributionForOrder(orderData.id, orderEvent.shopDomain);
+      await this.calculateAttributionForOrder(
+        orderData.id,
+        orderEvent.shopDomain
+      );
 
       logger.info('Order completion tracked', {
         orderEventId: orderData.id,
         shopDomain: orderEvent.shopDomain,
         orderId: orderEvent.orderId,
         totalAmount: orderEvent.totalAmount,
-        lineItemsCount: orderEvent.lineItems.length
+        lineItemsCount: orderEvent.lineItems.length,
       });
 
       return orderData.id;
@@ -323,7 +351,12 @@ export class ConversionTrackingService {
       const client = (this.supabaseService as any).serviceClient;
 
       // Get basic metrics
-      const [recommendationsResult, cartAdditionsResult, ordersResult, attributionResult] = await Promise.all([
+      const [
+        recommendationsResult,
+        cartAdditionsResult,
+        ordersResult,
+        attributionResult,
+      ] = await Promise.all([
         // Total recommendations
         client
           .from('ai_recommendation_events')
@@ -331,7 +364,7 @@ export class ConversionTrackingService {
           .eq('shop_domain', shopDomain)
           .gte('created_at', dateFrom.toISOString())
           .lte('created_at', dateTo.toISOString()),
-        
+
         // Total cart additions
         client
           .from('cart_addition_events')
@@ -339,7 +372,7 @@ export class ConversionTrackingService {
           .eq('shop_domain', shopDomain)
           .gte('created_at', dateFrom.toISOString())
           .lte('created_at', dateTo.toISOString()),
-        
+
         // Total orders and revenue
         client
           .from('order_completion_events')
@@ -347,35 +380,46 @@ export class ConversionTrackingService {
           .eq('shop_domain', shopDomain)
           .gte('order_created_at', dateFrom.toISOString())
           .lte('order_created_at', dateTo.toISOString()),
-        
+
         // Attribution metrics
-        client
-          .rpc('get_conversion_metrics', {
-            p_shop_domain: shopDomain,
-            p_date_from: dateFrom.toISOString().split('T')[0],
-            p_date_to: dateTo.toISOString().split('T')[0]
-          })
+        client.rpc('get_conversion_metrics', {
+          p_shop_domain: shopDomain,
+          p_date_from: dateFrom.toISOString().split('T')[0],
+          p_date_to: dateTo.toISOString().split('T')[0],
+        }),
       ]);
 
       const totalRecommendations = recommendationsResult.data?.length || 0;
       const totalCartAdditions = cartAdditionsResult.data?.length || 0;
       const totalOrders = ordersResult.data?.length || 0;
-      const totalRevenue = ordersResult.data?.reduce((sum: number, order: any) => 
-        sum + parseFloat(order.total_amount || 0), 0) || 0;
+      const totalRevenue =
+        ordersResult.data?.reduce(
+          (sum: number, order: any) =>
+            sum + parseFloat(order.total_amount || 0),
+          0
+        ) || 0;
 
       const attributionData = attributionResult.data?.[0] || {};
-      const attributedCartAdditions = parseInt(attributionData.attributed_cart_additions) || 0;
+      const attributedCartAdditions =
+        parseInt(attributionData.attributed_cart_additions) || 0;
       const attributedOrders = parseInt(attributionData.attributed_orders) || 0;
-      const attributedRevenue = parseFloat(attributionData.attributed_revenue) || 0;
+      const attributedRevenue =
+        parseFloat(attributionData.attributed_revenue) || 0;
 
       // Calculate conversion rates
       const conversionRates = {
-        recommendationToCart: totalRecommendations > 0 ? 
-          attributedCartAdditions / totalRecommendations : 0,
-        recommendationToPurchase: totalRecommendations > 0 ? 
-          attributedOrders / totalRecommendations : 0,
-        cartToPurchase: attributedCartAdditions > 0 ? 
-          attributedOrders / attributedCartAdditions : 0
+        recommendationToCart:
+          totalRecommendations > 0
+            ? attributedCartAdditions / totalRecommendations
+            : 0,
+        recommendationToPurchase:
+          totalRecommendations > 0
+            ? attributedOrders / totalRecommendations
+            : 0,
+        cartToPurchase:
+          attributedCartAdditions > 0
+            ? attributedOrders / attributedCartAdditions
+            : 0,
       };
 
       let topPerformingProducts: any[] = [];
@@ -383,33 +427,40 @@ export class ConversionTrackingService {
 
       if (includeBreakdowns) {
         // Get top performing products
-        const { data: productPerformance } = await client
-          .rpc('get_top_converting_products', {
+        const { data: productPerformance } = await client.rpc(
+          'get_top_converting_products',
+          {
             p_shop_domain: shopDomain,
             p_date_from: dateFrom.toISOString().split('T')[0],
             p_date_to: dateTo.toISOString().split('T')[0],
-            p_limit: 10
-          });
+            p_limit: 10,
+          }
+        );
 
         topPerformingProducts = productPerformance || [];
 
         // Get performance by recommendation type
-        const { data: typePerformance } = await client
-          .rpc('get_recommendation_type_performance', {
+        const { data: typePerformance } = await client.rpc(
+          'get_recommendation_type_performance',
+          {
             p_shop_domain: shopDomain,
             p_date_from: dateFrom.toISOString().split('T')[0],
-            p_date_to: dateTo.toISOString().split('T')[0]
-          });
+            p_date_to: dateTo.toISOString().split('T')[0],
+          }
+        );
 
-        recommendationTypePerformance = (typePerformance || []).reduce((acc: any, item: any) => {
-          acc[item.recommendation_type] = {
-            recommendations: parseInt(item.recommendations),
-            conversions: parseInt(item.conversions),
-            revenue: parseFloat(item.revenue),
-            conversionRate: parseFloat(item.conversion_rate)
-          };
-          return acc;
-        }, {});
+        recommendationTypePerformance = (typePerformance || []).reduce(
+          (acc: any, item: any) => {
+            acc[item.recommendation_type] = {
+              recommendations: parseInt(item.recommendations),
+              conversions: parseInt(item.conversions),
+              revenue: parseFloat(item.revenue),
+              conversionRate: parseFloat(item.conversion_rate),
+            };
+            return acc;
+          },
+          {}
+        );
       }
 
       return {
@@ -423,7 +474,7 @@ export class ConversionTrackingService {
         attributedRevenue,
         conversionRates,
         topPerformingProducts,
-        recommendationTypePerformance
+        recommendationTypePerformance,
       };
     } catch (error) {
       logger.error('Error getting conversion metrics:', error);
@@ -440,12 +491,14 @@ export class ConversionTrackingService {
     lookbackDays: number = 30
   ): Promise<void> {
     try {
-      const { error } = await (this.supabaseService as any).serviceClient
-        .rpc('calculate_attribution', {
+      const { error } = await (this.supabaseService as any).serviceClient.rpc(
+        'calculate_attribution',
+        {
           p_shop_domain: shopDomain,
           p_attribution_window_hours: attributionWindowHours,
-          p_lookback_days: lookbackDays
-        });
+          p_lookback_days: lookbackDays,
+        }
+      );
 
       if (error) {
         throw error;
@@ -454,7 +507,7 @@ export class ConversionTrackingService {
       logger.info('Attribution calculation completed', {
         shopDomain,
         attributionWindowHours,
-        lookbackDays
+        lookbackDays,
       });
     } catch (error) {
       logger.error('Error calculating attribution:', error);
@@ -472,13 +525,15 @@ export class ConversionTrackingService {
     snapshotType: 'daily' | 'weekly' | 'monthly' = 'daily'
   ): Promise<void> {
     try {
-      const { error } = await (this.supabaseService as any).serviceClient
-        .rpc('generate_conversion_snapshot', {
+      const { error } = await (this.supabaseService as any).serviceClient.rpc(
+        'generate_conversion_snapshot',
+        {
           p_shop_domain: shopDomain,
           p_date_from: dateFrom.toISOString().split('T')[0],
           p_date_to: dateTo.toISOString().split('T')[0],
-          p_snapshot_type: snapshotType
-        });
+          p_snapshot_type: snapshotType,
+        }
+      );
 
       if (error) {
         throw error;
@@ -488,7 +543,7 @@ export class ConversionTrackingService {
         shopDomain,
         dateFrom,
         dateTo,
-        snapshotType
+        snapshotType,
       });
     } catch (error) {
       logger.error('Error generating analytics snapshot:', error);
@@ -523,7 +578,7 @@ export class ConversionTrackingService {
       logger.info('Old conversion tracking data cleaned up', {
         shopDomain,
         retentionDays,
-        cutoffDate
+        cutoffDate,
       });
     } catch (error) {
       logger.error('Error cleaning up old data:', error);
@@ -533,11 +588,20 @@ export class ConversionTrackingService {
 
   // Private helper methods
 
-  private classifyRecommendationType(metadata: any): 'search_result' | 'related_product' | 'complementary' | 'upsell' | 'popular' | 'semantic_match' {
+  private classifyRecommendationType(
+    metadata: any
+  ):
+    | 'search_result'
+    | 'related_product'
+    | 'complementary'
+    | 'upsell'
+    | 'popular'
+    | 'semantic_match' {
     if (metadata?.search_type === 'semantic') return 'semantic_match';
     if (metadata?.intent === 'search_products') return 'search_result';
     if (metadata?.recommendation_type === 'related') return 'related_product';
-    if (metadata?.recommendation_type === 'complementary') return 'complementary';
+    if (metadata?.recommendation_type === 'complementary')
+      return 'complementary';
     if (metadata?.recommendation_type === 'upsell') return 'upsell';
     return 'popular';
   }
@@ -551,12 +615,12 @@ export class ConversionTrackingService {
     cartId?: string
   ): AIRecommendationEvent[] {
     const recommendations: AIRecommendationEvent[] = [];
-    
+
     // Regex patterns to extract product mentions
     const patterns = [
       /\*\*([^*]+)\*\*.*?Product ID:\s*([a-zA-Z0-9_/-]+)/g,
       /(\d+)\.\s*\*\*([^*]+)\*\*.*?Product ID:\s*([a-zA-Z0-9_/-]+)/g,
-      /\*\*([^*]+)\*\*.*?\$[\d.,]+/g
+      /\*\*([^*]+)\*\*.*?\$[\d.,]+/g,
     ];
 
     let position = 1;
@@ -565,7 +629,7 @@ export class ConversionTrackingService {
       while ((match = pattern.exec(message)) !== null) {
         const productTitle = match[1] || match[2];
         const productId = match[2] || match[3];
-        
+
         if (productTitle && productId) {
           recommendations.push({
             sessionId,
@@ -576,11 +640,11 @@ export class ConversionTrackingService {
             recommendationContext: {
               extractedFrom: 'message_text',
               productTitle,
-              messageSnippet: match[0]
+              messageSnippet: match[0],
             },
             recommendationPosition: position++,
             customerId,
-            cartId
+            cartId,
           });
         }
       }
@@ -589,7 +653,9 @@ export class ConversionTrackingService {
     return recommendations;
   }
 
-  private async saveRecommendationEvent(event: AIRecommendationEvent): Promise<string | null> {
+  private async saveRecommendationEvent(
+    event: AIRecommendationEvent
+  ): Promise<string | null> {
     try {
       const { data, error } = await (this.supabaseService as any).serviceClient
         .from('ai_recommendation_events')
@@ -604,7 +670,7 @@ export class ConversionTrackingService {
           recommendation_position: event.recommendationPosition,
           recommendation_score: event.recommendationScore,
           customer_id: event.customerId,
-          cart_id: event.cartId
+          cart_id: event.cartId,
         })
         .select('id')
         .single();

@@ -61,7 +61,12 @@ export class CartService {
     lines: CartLineInput[],
     sessionId?: string,
     customerId?: string,
-    source: 'ai_recommendation' | 'direct_add' | 'search' | 'browse' | 'unknown' = 'unknown'
+    source:
+      | 'ai_recommendation'
+      | 'direct_add'
+      | 'search'
+      | 'browse'
+      | 'unknown' = 'unknown'
   ): Promise<ShopifyCart> {
     try {
       const store = await this.supabaseService.getStore(shop);
@@ -87,18 +92,21 @@ export class CartService {
         cartId,
         itemsAdded: lines.length,
         totalQuantity: updatedCart.totalQuantity,
-        source
+        source,
       });
 
       // Track conversion events for each added line item
       try {
         for (const line of lines) {
           // Extract product and variant IDs from merchandise ID
-          const variantId = line.merchandiseId.replace('gid://shopify/ProductVariant/', '');
-          
+          const variantId = line.merchandiseId.replace(
+            'gid://shopify/ProductVariant/',
+            ''
+          );
+
           // Get product ID from variant (we need to query this)
           const variant = await this.getVariantDetails(shop, variantId);
-          
+
           if (variant) {
             await this.conversionTrackingService.trackCartAddition({
               shopDomain: shop,
@@ -112,8 +120,8 @@ export class CartService {
               sessionId,
               metadata: {
                 via_ai_widget: source === 'ai_recommendation',
-                cart_total_after: updatedCart.cost?.totalAmount?.amount
-              }
+                cart_total_after: updatedCart.cost?.totalAmount?.amount,
+              },
             });
           }
         }
@@ -127,7 +135,7 @@ export class CartService {
         items: lines,
         cart_total: updatedCart.cost.totalAmount.amount,
         source,
-        session_id: sessionId
+        session_id: sessionId,
       });
 
       return updatedCart;

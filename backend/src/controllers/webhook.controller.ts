@@ -208,7 +208,7 @@ router.post(
       logger.info(`Order created webhook received for shop: ${shopDomain}`, {
         orderId: order.id,
         orderNumber: order.order_number,
-        totalPrice: order.total_price
+        totalPrice: order.total_price,
       });
 
       // Log webhook event
@@ -237,7 +237,7 @@ router.post(
       logger.info(`Order paid webhook received for shop: ${shopDomain}`, {
         orderId: order.id,
         orderNumber: order.order_number,
-        totalPrice: order.total_price
+        totalPrice: order.total_price,
       });
 
       // Log webhook event
@@ -267,14 +267,19 @@ router.post(
         orderId: order.id,
         orderNumber: order.order_number,
         financialStatus: order.financial_status,
-        fulfillmentStatus: order.fulfillment_status
+        fulfillmentStatus: order.fulfillment_status,
       });
 
       // Log webhook event
       await logWebhookEvent(shopDomain, 'orders/updated', order);
 
       // Update order status
-      await updateOrderStatus(shopDomain, order.id.toString(), order.financial_status, order.fulfillment_status);
+      await updateOrderStatus(
+        shopDomain,
+        order.id.toString(),
+        order.financial_status,
+        order.fulfillment_status
+      );
 
       res.status(200).json({ success: true });
     } catch (error) {
@@ -295,7 +300,7 @@ router.post(
 
       logger.info(`Cart updated webhook received for shop: ${shopDomain}`, {
         cartId: cart.id,
-        lineItemsCount: cart.line_items?.length || 0
+        lineItemsCount: cart.line_items?.length || 0,
       });
 
       // Log webhook event
@@ -414,18 +419,22 @@ router.get(
 );
 
 // Helper function to track order completion for conversion attribution
-async function trackOrderCompletion(shopDomain: string, order: any): Promise<void> {
+async function trackOrderCompletion(
+  shopDomain: string,
+  order: any
+): Promise<void> {
   try {
-    const lineItems = order.line_items?.map((item: any) => ({
-      lineItemId: item.id?.toString(),
-      productId: item.product_id?.toString(),
-      variantId: item.variant_id?.toString(),
-      quantity: parseInt(item.quantity) || 1,
-      unitPrice: parseFloat(item.price) || 0,
-      totalPrice: parseFloat(item.price) * (parseInt(item.quantity) || 1),
-      productTitle: item.title,
-      variantTitle: item.variant_title
-    })) || [];
+    const lineItems =
+      order.line_items?.map((item: any) => ({
+        lineItemId: item.id?.toString(),
+        productId: item.product_id?.toString(),
+        variantId: item.variant_id?.toString(),
+        quantity: parseInt(item.quantity) || 1,
+        unitPrice: parseFloat(item.price) || 0,
+        totalPrice: parseFloat(item.price) * (parseInt(item.quantity) || 1),
+        productTitle: item.title,
+        variantTitle: item.variant_title,
+      })) || [];
 
     await conversionTrackingService.trackOrderCompletion({
       shopDomain,
@@ -439,13 +448,13 @@ async function trackOrderCompletion(shopDomain: string, order: any): Promise<voi
       orderCreatedAt: new Date(order.created_at),
       financialStatus: order.financial_status,
       fulfillmentStatus: order.fulfillment_status,
-      lineItems
+      lineItems,
     });
 
     logger.info('Order completion tracked for conversion attribution', {
       shopDomain,
       orderId: order.id,
-      lineItemsCount: lineItems.length
+      lineItemsCount: lineItems.length,
     });
   } catch (error) {
     logger.error('Error tracking order completion:', error);
@@ -477,7 +486,7 @@ async function updateOrderStatus(
         shopDomain,
         orderId,
         financialStatus,
-        fulfillmentStatus
+        fulfillmentStatus,
       });
     }
   } catch (error) {
@@ -491,7 +500,7 @@ async function trackCartUpdates(shopDomain: string, cart: any): Promise<void> {
     // This webhook might not be available in all Shopify plans
     // We'll track what we can from the cart data
     const lineItems = cart.line_items || [];
-    
+
     for (const item of lineItems) {
       // We don't have the session context here, so we can't easily attribute to AI recommendations
       // This is mainly for tracking cart activity patterns
@@ -507,15 +516,15 @@ async function trackCartUpdates(shopDomain: string, cart: any): Promise<void> {
           via_webhook: true,
           cart_token: cart.token,
           cart_created_at: cart.created_at,
-          cart_updated_at: cart.updated_at
-        }
+          cart_updated_at: cart.updated_at,
+        },
       });
     }
 
     logger.info('Cart updates tracked', {
       shopDomain,
       cartId: cart.id,
-      lineItemsCount: lineItems.length
+      lineItemsCount: lineItems.length,
     });
   } catch (error) {
     logger.error('Error tracking cart updates:', error);
