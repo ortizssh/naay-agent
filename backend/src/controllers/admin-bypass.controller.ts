@@ -537,168 +537,161 @@ router.get('/logs', async (req: Request, res: Response, next: NextFunction) => {
 });
 
 // Debug endpoint to check database stats
-router.get(
-  '/debug/db-stats', 
-  async (req: Request, res: Response) => {
-    try {
-      const today = new Date();
-      const startOfDay = new Date(today);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(today);
-      endOfDay.setHours(23, 59, 59, 999);
+router.get('/debug/db-stats', async (req: Request, res: Response) => {
+  try {
+    const today = new Date();
+    const startOfDay = new Date(today);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(today);
+    endOfDay.setHours(23, 59, 59, 999);
 
-      logger.info('Debug: Checking data for today', {
-        date: today.toISOString().split('T')[0],
-        startOfDay: startOfDay.toISOString(),
-        endOfDay: endOfDay.toISOString(),
-      });
+    logger.info('Debug: Checking data for today', {
+      date: today.toISOString().split('T')[0],
+      startOfDay: startOfDay.toISOString(),
+      endOfDay: endOfDay.toISOString(),
+    });
 
-      // Get all chat messages for today
-      const { data: todayMessages, error: todayError } = await (
-        supabaseService as any
-      ).serviceClient
-        .from('chat_messages')
-        .select('id, session_id, role, timestamp, content')
-        .gte('timestamp', startOfDay.toISOString())
-        .lte('timestamp', endOfDay.toISOString())
-        .order('timestamp', { ascending: false });
+    // Get all chat messages for today
+    const { data: todayMessages, error: todayError } = await (
+      supabaseService as any
+    ).serviceClient
+      .from('chat_messages')
+      .select('id, session_id, role, timestamp, content')
+      .gte('timestamp', startOfDay.toISOString())
+      .lte('timestamp', endOfDay.toISOString())
+      .order('timestamp', { ascending: false });
 
-      if (todayError) {
-        throw todayError;
-      }
-
-      // Group by session_id for conversations
-      const sessionsToday = new Set<string>();
-      const messagesByRole: { [key: string]: number } = {
-        client: 0,
-        agent: 0,
-        system: 0,
-      };
-
-      todayMessages?.forEach((msg: any) => {
-        sessionsToday.add(msg.session_id);
-        messagesByRole[msg.role] = (messagesByRole[msg.role] || 0) + 1;
-      });
-
-      // Get all historical data
-      const { data: allMessages } = await (supabaseService as any).serviceClient
-        .from('chat_messages')
-        .select('id, session_id, timestamp')
-        .order('timestamp', { ascending: false })
-        .limit(1000);
-
-      const allSessions = new Set<string>();
-      allMessages?.forEach((msg: any) => {
-        allSessions.add(msg.session_id);
-      });
-
-      res.json({
-        success: true,
-        data: {
-          today: {
-            date: today.toISOString().split('T')[0],
-            conversations: sessionsToday.size,
-            totalMessages: todayMessages?.length || 0,
-            messagesByRole,
-            latestMessages: todayMessages?.slice(0, 5),
-          },
-          historical: {
-            totalConversations: allSessions.size,
-            totalMessages: allMessages?.length || 0,
-            oldestMessage: allMessages?.[allMessages.length - 1]?.timestamp,
-            newestMessage: allMessages?.[0]?.timestamp,
-          },
-        },
-      });
-    } catch (error) {
-      logger.error('Debug today error:', error);
-      next(error);
+    if (todayError) {
+      throw todayError;
     }
+
+    // Group by session_id for conversations
+    const sessionsToday = new Set<string>();
+    const messagesByRole: { [key: string]: number } = {
+      client: 0,
+      agent: 0,
+      system: 0,
+    };
+
+    todayMessages?.forEach((msg: any) => {
+      sessionsToday.add(msg.session_id);
+      messagesByRole[msg.role] = (messagesByRole[msg.role] || 0) + 1;
+    });
+
+    // Get all historical data
+    const { data: allMessages } = await (supabaseService as any).serviceClient
+      .from('chat_messages')
+      .select('id, session_id, timestamp')
+      .order('timestamp', { ascending: false })
+      .limit(1000);
+
+    const allSessions = new Set<string>();
+    allMessages?.forEach((msg: any) => {
+      allSessions.add(msg.session_id);
+    });
+
+    res.json({
+      success: true,
+      data: {
+        today: {
+          date: today.toISOString().split('T')[0],
+          conversations: sessionsToday.size,
+          totalMessages: todayMessages?.length || 0,
+          messagesByRole,
+          latestMessages: todayMessages?.slice(0, 5),
+        },
+        historical: {
+          totalConversations: allSessions.size,
+          totalMessages: allMessages?.length || 0,
+          oldestMessage: allMessages?.[allMessages.length - 1]?.timestamp,
+          newestMessage: allMessages?.[0]?.timestamp,
+        },
+      },
+    });
+  } catch (error) {
+    logger.error('Debug today error:', error);
+    next(error);
   }
-);
+});
 
 // Real database analysis endpoint
-router.get(
-  '/debug/real-data',
-  async (req: Request, res: Response) => {
-    try {
-      // Get exact count
-      const { count: totalCount } = await (supabaseService as any).serviceClient
+router.get('/debug/real-data', async (req: Request, res: Response) => {
+  try {
+    // Get exact count
+    const { count: totalCount } = await (supabaseService as any).serviceClient
+      .from('chat_messages')
+      .select('*', { count: 'exact', head: true });
+
+    // Get multiple batches to overcome Supabase limits
+    const batches = [];
+    const batchSize = 1000;
+    const totalBatches = Math.ceil((totalCount || 0) / batchSize);
+
+    for (let i = 0; i < Math.min(totalBatches, 3); i++) {
+      const start = i * batchSize;
+      const end = start + batchSize - 1;
+
+      const { data: batch } = await (supabaseService as any).serviceClient
         .from('chat_messages')
-        .select('*', { count: 'exact', head: true });
+        .select('session_id, timestamp, role')
+        .range(start, end)
+        .order('timestamp', { ascending: false });
 
-      // Get multiple batches to overcome Supabase limits
-      const batches = [];
-      const batchSize = 1000;
-      const totalBatches = Math.ceil((totalCount || 0) / batchSize);
-      
-      for (let i = 0; i < Math.min(totalBatches, 3); i++) {
-        const start = i * batchSize;
-        const end = start + batchSize - 1;
-        
-        const { data: batch } = await (supabaseService as any).serviceClient
-          .from('chat_messages')
-          .select('session_id, timestamp, role')
-          .range(start, end)
-          .order('timestamp', { ascending: false });
-        
-        if (batch) batches.push(...batch);
-      }
-
-      // Analyze the data
-      const uniqueSessions = new Set<string>();
-      const messagesByDate: { [key: string]: number } = {};
-      const sessionsByDate: { [key: string]: Set<string> } = {};
-      const today = new Date().toISOString().split('T')[0];
-
-      batches.forEach((msg: any) => {
-        if (msg.session_id) {
-          uniqueSessions.add(msg.session_id);
-          
-          const dateKey = new Date(msg.timestamp).toISOString().split('T')[0];
-          messagesByDate[dateKey] = (messagesByDate[dateKey] || 0) + 1;
-          
-          if (!sessionsByDate[dateKey]) {
-            sessionsByDate[dateKey] = new Set<string>();
-          }
-          sessionsByDate[dateKey].add(msg.session_id);
-        }
-      });
-
-      const last7Days = Object.entries(sessionsByDate)
-        .sort(([a], [b]) => b.localeCompare(a))
-        .slice(0, 7)
-        .map(([date, sessions]) => ({
-          date,
-          conversations: sessions.size,
-          messages: messagesByDate[date] || 0
-        }));
-
-      res.json({
-        success: true,
-        data: {
-          totalRecordsInDB: totalCount,
-          batchesFetched: Math.min(totalBatches, 3),
-          recordsAnalyzed: batches.length,
-          uniqueConversations: uniqueSessions.size,
-          todayDate: today,
-          todayConversations: sessionsByDate[today]?.size || 0,
-          todayMessages: messagesByDate[today] || 0,
-          last7Days,
-          oldestInSample: batches[batches.length - 1]?.timestamp,
-          newestInSample: batches[0]?.timestamp
-        }
-      });
-
-    } catch (error: any) {
-      res.status(500).json({ 
-        success: false, 
-        error: error.message,
-        stack: error.stack 
-      });
+      if (batch) batches.push(...batch);
     }
+
+    // Analyze the data
+    const uniqueSessions = new Set<string>();
+    const messagesByDate: { [key: string]: number } = {};
+    const sessionsByDate: { [key: string]: Set<string> } = {};
+    const today = new Date().toISOString().split('T')[0];
+
+    batches.forEach((msg: any) => {
+      if (msg.session_id) {
+        uniqueSessions.add(msg.session_id);
+
+        const dateKey = new Date(msg.timestamp).toISOString().split('T')[0];
+        messagesByDate[dateKey] = (messagesByDate[dateKey] || 0) + 1;
+
+        if (!sessionsByDate[dateKey]) {
+          sessionsByDate[dateKey] = new Set<string>();
+        }
+        sessionsByDate[dateKey].add(msg.session_id);
+      }
+    });
+
+    const last7Days = Object.entries(sessionsByDate)
+      .sort(([a], [b]) => b.localeCompare(a))
+      .slice(0, 7)
+      .map(([date, sessions]) => ({
+        date,
+        conversations: sessions.size,
+        messages: messagesByDate[date] || 0,
+      }));
+
+    res.json({
+      success: true,
+      data: {
+        totalRecordsInDB: totalCount,
+        batchesFetched: Math.min(totalBatches, 3),
+        recordsAnalyzed: batches.length,
+        uniqueConversations: uniqueSessions.size,
+        todayDate: today,
+        todayConversations: sessionsByDate[today]?.size || 0,
+        todayMessages: messagesByDate[today] || 0,
+        last7Days,
+        oldestInSample: batches[batches.length - 1]?.timestamp,
+        newestInSample: batches[0]?.timestamp,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: error.stack,
+    });
   }
-);
+});
 
 // Get dashboard stats - bypass version
 router.get(
