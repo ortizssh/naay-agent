@@ -1441,8 +1441,11 @@ router.get(
           chatMessages.forEach((msg: any) => {
             const sessionId = msg.session_id;
             const timestamp = new Date(msg.timestamp);
-            
-            if (!sessionFirstMessages.has(sessionId) || timestamp < sessionFirstMessages.get(sessionId)) {
+
+            if (
+              !sessionFirstMessages.has(sessionId) ||
+              timestamp < sessionFirstMessages.get(sessionId)
+            ) {
               sessionFirstMessages.set(sessionId, timestamp);
             }
           });
@@ -1454,7 +1457,10 @@ router.get(
             if (!conversationsByStartDate.has(dateKey)) {
               conversationsByStartDate.set(dateKey, 0);
             }
-            conversationsByStartDate.set(dateKey, conversationsByStartDate.get(dateKey) + 1);
+            conversationsByStartDate.set(
+              dateKey,
+              conversationsByStartDate.get(dateKey) + 1
+            );
           });
 
           // Update daily data map with correct conversation counts
@@ -1467,7 +1473,9 @@ router.get(
           logger.info('Analytics chart conversations calculated', {
             totalSessions: sessionFirstMessages.size,
             dateRange: `${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`,
-            conversationsByDate: Array.from(conversationsByStartDate.entries()).map(([date, count]) => ({ date, count }))
+            conversationsByDate: Array.from(
+              conversationsByStartDate.entries()
+            ).map(([date, count]) => ({ date, count })),
           });
         }
       } catch (error) {
