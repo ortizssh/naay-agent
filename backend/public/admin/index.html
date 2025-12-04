@@ -525,6 +525,244 @@
             color: #202223;
         }
 
+        /* Enhanced Products Tab Styles */
+        .enhanced-product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .enhanced-product-card {
+            border: 1px solid #e1e3e5;
+            border-radius: 8px;
+            padding: 16px;
+            background: white;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .enhanced-product-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-color: var(--naay-primary);
+            transform: translateY(-2px);
+        }
+
+        .enhanced-product-card.trending::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #ef4444, #f59e0b);
+        }
+
+        .enhanced-product-card.new-product::after {
+            content: 'NUEVO';
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #10b981;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .product-card-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .product-image-enhanced {
+            width: 60px;
+            height: 60px;
+            border-radius: 6px;
+            background-color: #f6f6f7;
+            background-size: cover;
+            background-position: center;
+            flex-shrink: 0;
+            border: 1px solid #e1e3e5;
+        }
+
+        .product-info-enhanced {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .product-title-enhanced {
+            font-size: 14px;
+            font-weight: 600;
+            color: #202223;
+            margin: 0 0 4px 0;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .product-vendor {
+            font-size: 12px;
+            color: #6d7175;
+            margin-bottom: 4px;
+        }
+
+        .product-metrics-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .metric-box {
+            background: #f6f6f7;
+            padding: 8px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--naay-primary);
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: #6d7175;
+            margin-top: 2px;
+        }
+
+        .product-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 8px;
+        }
+
+        .badge {
+            padding: 2px 6px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 500;
+        }
+
+        .badge-trending {
+            background: #fef3c7;
+            color: #f59e0b;
+        }
+
+        .badge-high-sentiment {
+            background: #d1fae5;
+            color: #10b981;
+        }
+
+        .badge-popular {
+            background: #ddd6fe;
+            color: #8b5cf6;
+        }
+
+        .sentiment-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            font-size: 12px;
+        }
+
+        .sentiment-positive {
+            background: #d1fae5;
+            color: #10b981;
+        }
+
+        .sentiment-neutral {
+            background: #fef3c7;
+            color: #f59e0b;
+        }
+
+        .sentiment-negative {
+            background: #fecaca;
+            color: #ef4444;
+        }
+
+        .sort-btn {
+            background: none;
+            border: 1px solid #e1e3e5;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .sort-btn:hover {
+            background: #f6f6f7;
+        }
+
+        .sort-btn.active {
+            background: var(--naay-primary);
+            color: white;
+            border-color: var(--naay-primary);
+        }
+
+        .trending-product-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .trending-product-item:last-child {
+            border-bottom: none;
+        }
+
+        .trending-score {
+            background: linear-gradient(135deg, #ef4444, #f59e0b);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .category-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            font-size: 12px;
+        }
+
+        .category-bar {
+            width: 60px;
+            height: 4px;
+            background: #e1e3e5;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .category-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--naay-primary), #8b5cf6);
+            transition: width 0.3s ease;
+        }
+
+        .filter-no-results {
+            text-align: center;
+            color: #6d7175;
+            padding: 40px;
+            grid-column: 1 / -1;
+        }
+
         .summary-label {
             font-size: 11px;
             color: #6d7175;
@@ -1019,16 +1257,7 @@
         }
 
         .kpi-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, var(--naay-primary), var(--naay-secondary));
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 16px;
-            color: white;
-            font-size: 18px;
+            display: none;
         }
 
         /* Section Headers */
@@ -1352,12 +1581,6 @@
                             <div class="kpi-label">Tasa de Conversión</div>
                             <div class="kpi-sublabel">Chat a compra</div>
                         </div>
-                        <div class="kpi-card">
-                            <div class="kpi-icon"></div>
-                            <div class="kpi-value" id="kpi-roi">-</div>
-                            <div class="kpi-label">ROI del Chat</div>
-                            <div class="kpi-sublabel">Retorno de inversión</div>
-                        </div>
                     </div>
 
                     <!-- Quick Charts -->
@@ -1376,9 +1599,50 @@
                             <div class="Polaris-Card__Header">
                                 <h3 style="font-size: 16px; font-weight: 600; margin: 0;">Embudo de Conversión</h3>
                             </div>
-                            <div class="Polaris-Card__Section" style="padding: 16px;">
-                                <div style="height: 200px; position: relative;">
-                                    <canvas id="funnel-chart" style="width: 100%; height: 100%;"></canvas>
+                            <div class="Polaris-Card__Section" style="padding: 20px;">
+                                <div id="modern-funnel">
+                                    <div class="funnel-step" style="background: linear-gradient(135deg, #f8fafc, #e2e8f0); border: 2px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 12px; position: relative;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <div>
+                                                <div style="font-weight: 700; font-size: 18px; color: var(--naay-dark);">1,000</div>
+                                                <div style="font-size: 14px; color: #64748b; margin-top: 2px;">Visitantes</div>
+                                            </div>
+                                            <div style="background: #e2e8f0; color: var(--naay-dark); padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">100%</div>
+                                        </div>
+                                        <div style="position: absolute; bottom: -6px; left: 50%; width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 8px solid #e2e8f0; transform: translateX(-50%);"></div>
+                                    </div>
+                                    
+                                    <div class="funnel-step" style="background: linear-gradient(135deg, #f3f0ff, #e9d5ff); border: 2px solid var(--naay-secondary); border-radius: 12px; padding: 16px; margin-bottom: 12px; position: relative;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <div>
+                                                <div style="font-weight: 700; font-size: 18px; color: var(--naay-primary);">150</div>
+                                                <div style="font-size: 14px; color: #7c3aed; margin-top: 2px;">Inician Chat</div>
+                                            </div>
+                                            <div style="background: var(--naay-secondary); color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">15%</div>
+                                        </div>
+                                        <div style="position: absolute; bottom: -6px; left: 50%; width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 8px solid var(--naay-secondary); transform: translateX(-50%);"></div>
+                                    </div>
+                                    
+                                    <div class="funnel-step" style="background: linear-gradient(135deg, #ede9fe, #ddd6fe); border: 2px solid var(--naay-primary); border-radius: 12px; padding: 16px; margin-bottom: 12px; position: relative;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <div>
+                                                <div style="font-weight: 700; font-size: 18px; color: var(--naay-primary);">120</div>
+                                                <div style="font-size: 14px; color: #7c3aed; margin-top: 2px;">Reciben Recomendación</div>
+                                            </div>
+                                            <div style="background: var(--naay-primary); color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">12%</div>
+                                        </div>
+                                        <div style="position: absolute; bottom: -6px; left: 50%; width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 8px solid var(--naay-primary); transform: translateX(-50%);"></div>
+                                    </div>
+                                    
+                                    <div class="funnel-step" style="background: linear-gradient(135deg, #f9fafb, #374151); border: 2px solid var(--naay-dark); border-radius: 12px; padding: 16px;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <div>
+                                                <div style="font-weight: 700; font-size: 18px; color: var(--naay-dark);">24</div>
+                                                <div style="font-size: 14px; color: var(--naay-dark); margin-top: 2px;">Realizan Compra</div>
+                                            </div>
+                                            <div style="background: var(--naay-dark); color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">2.4%</div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1484,65 +1748,126 @@
                 <div id="pane-productos" class="tab-pane">
                     <div class="section-header">
                         <div>
-                            <h2 class="section-title">Análisis de Productos</h2>
-                            <p class="section-subtitle">Rendimiento de recomendaciones y productos destacados</p>
+                            <h2 class="section-title">Análisis Avanzado de Productos</h2>
+                            <p class="section-subtitle">Análisis completo de rendimiento, tendencias y sentimientos</p>
                         </div>
                         <div class="section-actions">
+                            <input type="text" id="product-search" placeholder="Buscar productos..." 
+                                   style="padding: 6px 12px; margin-right: 10px; border: 1px solid #e1e3e5; border-radius: 4px; width: 200px;"
+                                   oninput="filterProducts()">
+                            <select id="category-filter" class="btn" style="padding: 4px 8px; margin-right: 10px;" onchange="filterProducts()">
+                                <option value="all">Todas las categorías</option>
+                            </select>
                             <select id="products-period-main" class="btn" style="padding: 4px 8px; margin-right: 10px;">
                                 <option value="7">7 días</option>
                                 <option value="14">14 días</option>
                                 <option value="30" selected>30 días</option>
                                 <option value="60">60 días</option>
+                                <option value="90">90 días</option>
                             </select>
-                            <button class="btn" onclick="loadTopProductsGrid()">Actualizar</button>
+                            <button class="btn" onclick="loadEnhancedProductData()">↻ Actualizar</button>
                         </div>
                     </div>
 
-                    <!-- Product Summary Cards -->
+                    <!-- Enhanced Product Summary Cards -->
                     <div class="kpi-grid" style="margin-bottom: 24px;">
                         <div class="kpi-card">
-                            <div class="kpi-icon"></div>
+                            <div class="kpi-icon" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white;">📦</div>
                             <div class="kpi-value" id="total-products-recommended">-</div>
                             <div class="kpi-label">Productos Únicos</div>
                             <div class="kpi-sublabel">Recomendados</div>
                         </div>
                         <div class="kpi-card">
-                            <div class="kpi-icon"></div>
+                            <div class="kpi-icon" style="background: linear-gradient(135deg, #10b981, #34d399); color: white;">📈</div>
                             <div class="kpi-value" id="total-recommendations-made">-</div>
                             <div class="kpi-label">Total Recomendaciones</div>
                             <div class="kpi-sublabel">En el período</div>
                         </div>
                         <div class="kpi-card">
-                            <div class="kpi-icon"></div>
+                            <div class="kpi-icon" style="background: linear-gradient(135deg, #f59e0b, #fbbf24); color: white;">⭐</div>
                             <div class="kpi-value" id="top-product-score">-</div>
                             <div class="kpi-label">Producto Top</div>
-                            <div class="kpi-sublabel">Más recomendado</div>
+                            <div class="kpi-sublabel">Score máximo</div>
                         </div>
                         <div class="kpi-card">
-                            <div class="kpi-icon"></div>
+                            <div class="kpi-icon" style="background: linear-gradient(135deg, #ef4444, #f87171); color: white;">📊</div>
                             <div class="kpi-value" id="avg-recommendations">-</div>
                             <div class="kpi-label">Promedio</div>
-                            <div class="kpi-sublabel">Rec. por producto</div>
+                            <div class="kpi-sublabel">Por producto</div>
                         </div>
                     </div>
 
-                    <!-- Product Grid -->
+                    <!-- Sentiment Analysis & Trending Products Row -->
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 24px;">
+                        <!-- Sentiment Analysis -->
+                        <div class="Polaris-Card">
+                            <div class="Polaris-Card__Header">
+                                <h3 style="font-size: 16px; font-weight: 600; margin: 0;">📊 Análisis de Sentimiento</h3>
+                                <p style="margin: 4px 0 0 0; font-size: 13px; color: #6d7175;">Sentimiento en recomendaciones de productos</p>
+                            </div>
+                            <div class="Polaris-Card__Section">
+                                <div id="sentiment-chart-container" style="height: 140px; display: flex; align-items: center; justify-content: center;">
+                                    <div style="display: flex; align-items: center; gap: 30px; width: 100%;">
+                                        <div class="sentiment-item" style="text-align: center;">
+                                            <div class="sentiment-circle" style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #34d399); display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; margin: 0 auto 8px;">😊</div>
+                                            <div style="font-size: 24px; font-weight: 600; color: #10b981;" id="sentiment-positive">-</div>
+                                            <div style="font-size: 12px; color: #6d7175;">Positivo</div>
+                                        </div>
+                                        <div class="sentiment-item" style="text-align: center;">
+                                            <div class="sentiment-circle" style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #f59e0b, #fbbf24); display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; margin: 0 auto 8px;">😐</div>
+                                            <div style="font-size: 24px; font-weight: 600; color: #f59e0b;" id="sentiment-neutral">-</div>
+                                            <div style="font-size: 12px; color: #6d7175;">Neutral</div>
+                                        </div>
+                                        <div class="sentiment-item" style="text-align: center;">
+                                            <div class="sentiment-circle" style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #ef4444, #f87171); display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; margin: 0 auto 8px;">😞</div>
+                                            <div style="font-size: 24px; font-weight: 600; color: #ef4444;" id="sentiment-negative">-</div>
+                                            <div style="font-size: 12px; color: #6d7175;">Negativo</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Trending Products -->
+                        <div class="Polaris-Card">
+                            <div class="Polaris-Card__Header">
+                                <h3 style="font-size: 16px; font-weight: 600; margin: 0;">🔥 Productos Trending</h3>
+                                <p style="margin: 4px 0 0 0; font-size: 13px; color: #6d7175;">Alta actividad reciente</p>
+                            </div>
+                            <div class="Polaris-Card__Section" style="padding: 12px;">
+                                <div id="trending-products-container" style="max-height: 140px; overflow-y: auto;">
+                                    <div class="loading-spinner"><div class="spinner"></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Enhanced Product Grid -->
                     <div class="Polaris-Card">
                         <div class="Polaris-Card__Header">
-                            <h3 style="font-size: 16px; font-weight: 600; margin: 0;">Productos Más Recomendados</h3>
+                            <h3 style="font-size: 16px; font-weight: 600; margin: 0;">🎯 Productos Más Recomendados</h3>
+                            <div style="display: flex; gap: 10px; margin-top: 8px; font-size: 12px;">
+                                <span style="color: #6d7175;">Ordenar por:</span>
+                                <button class="sort-btn active" onclick="sortProducts('recommendations')" data-sort="recommendations">Recomendaciones</button>
+                                <button class="sort-btn" onclick="sortProducts('trend')" data-sort="trend">Tendencia</button>
+                                <button class="sort-btn" onclick="sortProducts('sentiment')" data-sort="sentiment">Sentimiento</button>
+                                <button class="sort-btn" onclick="sortProducts('sessions')" data-sort="sessions">Sesiones</button>
+                            </div>
                         </div>
                         <div class="Polaris-Card__Section">
-                            <div class="product-cards-grid" id="product-cards-container">
+                            <div class="enhanced-product-grid" id="product-cards-container">
                                 <div class="loading-spinner"><div class="spinner"></div></div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Product Sidebar -->
-                    <div style="display: grid; grid-template-columns: 1fr 300px; gap: 20px; margin-top: 24px;">
+                    <!-- Product Analytics Grid -->
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-top: 24px;">
+                        <!-- Product Performance Chart -->
                         <div class="Polaris-Card">
                             <div class="Polaris-Card__Header">
-                                <h3 style="font-size: 16px; font-weight: 600; margin: 0;">Tendencias de Recomendación</h3>
+                                <h3 style="font-size: 16px; font-weight: 600; margin: 0;">📈 Tendencias de Productos</h3>
+                                <p style="margin: 4px 0 0 0; font-size: 13px; color: #6d7175;">Evolución temporal de recomendaciones</p>
                             </div>
                             <div class="Polaris-Card__Section">
                                 <div style="height: 300px; position: relative;">
@@ -1551,30 +1876,40 @@
                             </div>
                         </div>
                         
-                        <!-- Top Products Sidebar -->
-                        <div class="Polaris-Card">
-                            <div class="Polaris-Card__Header">
-                                <h3 style="font-size: 14px; font-weight: 600; margin: 0;">Top 5 Productos</h3>
-                                <div style="display: flex; gap: 6px;">
-                                    <select id="products-period" class="btn" style="padding: 2px 6px; font-size: 11px;">
-                                        <option value="7">7d</option>
-                                        <option value="14">14d</option>
-                                        <option value="30" selected>30d</option>
-                                        <option value="60">60d</option>
-                                    </select>
-                                    <button class="btn" style="padding: 2px 6px; font-size: 11px;" onclick="loadTopRecommendedProducts()">↻</button>
+                        <!-- Categories & Top Products Analysis -->
+                        <div style="display: flex; flex-direction: column; gap: 20px;">
+                            <!-- Product Categories -->
+                            <div class="Polaris-Card">
+                                <div class="Polaris-Card__Header">
+                                    <h3 style="font-size: 14px; font-weight: 600; margin: 0;">🏷️ Por Categorías</h3>
                                 </div>
-                            </div>
-                            <div class="Polaris-Card__Section" style="padding: 12px;">
-                                <div id="top-products-container">
-                                    <div class="loading-spinner">
-                                        <div class="spinner"></div>
+                                <div class="Polaris-Card__Section" style="padding: 12px;">
+                                    <div id="product-categories-container" style="max-height: 120px; overflow-y: auto;">
+                                        <div class="loading-spinner"><div class="spinner"></div></div>
                                     </div>
                                 </div>
-                                <div id="expand-toggle-container" style="text-align: center; margin-top: 8px; display: none;">
-                                    <button id="expand-btn" class="btn" style="padding: 4px 8px; font-size: 10px; background: #f6f6f7; border: 1px solid #e1e3e5;" onclick="toggleProductsExpansion()">
-                                        Ver más ▼
-                                    </button>
+                            </div>
+
+                            <!-- Quick Stats -->
+                            <div class="Polaris-Card">
+                                <div class="Polaris-Card__Header">
+                                    <h3 style="font-size: 14px; font-weight: 600; margin: 0;">⚡ Stats Rápidas</h3>
+                                </div>
+                                <div class="Polaris-Card__Section" style="padding: 12px;">
+                                    <div id="quick-stats-container">
+                                        <div style="margin-bottom: 12px; padding: 8px; background: #f6f6f7; border-radius: 4px;">
+                                            <div style="font-size: 11px; color: #6d7175; margin-bottom: 2px;">Productos nuevos (30 días)</div>
+                                            <div style="font-size: 18px; font-weight: 600; color: var(--naay-primary);" id="new-products-count">-</div>
+                                        </div>
+                                        <div style="margin-bottom: 12px; padding: 8px; background: #f6f6f7; border-radius: 4px;">
+                                            <div style="font-size: 11px; color: #6d7175; margin-bottom: 2px;">Promedio sesiones/producto</div>
+                                            <div style="font-size: 18px; font-weight: 600; color: var(--naay-primary);" id="avg-sessions-product">-</div>
+                                        </div>
+                                        <div style="padding: 8px; background: #f6f6f7; border-radius: 4px;">
+                                            <div style="font-size: 11px; color: #6d7175; margin-bottom: 2px;">Score sentiment promedio</div>
+                                            <div style="font-size: 18px; font-weight: 600; color: var(--naay-primary);" id="avg-sentiment-score">-</div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1919,10 +2254,7 @@
                     document.getElementById('kpi-revenue').textContent = formatCurrency(conversionData.data.revenueAttributed || 0);
                     document.getElementById('kpi-conversion-rate').textContent = (conversionData.data.conversionRate || 0).toFixed(1) + '%';
                     
-                    // Calculate ROI (assuming a basic cost model)
-                    const roi = conversionData.data.revenueAttributed > 0 ? 
-                        (conversionData.data.revenueAttributed / 1000) * 100 : 0; // Assuming $1000 monthly cost
-                    document.getElementById('kpi-roi').textContent = roi.toFixed(0) + '%';
+                    // ROI card removed
                 }
                 
                 // Load general stats for additional KPIs
@@ -1942,7 +2274,7 @@
                 document.getElementById('kpi-conversations').textContent = '0';
                 document.getElementById('kpi-revenue').textContent = '$0';
                 document.getElementById('kpi-conversion-rate').textContent = '0%';
-                document.getElementById('kpi-roi').textContent = '0%';
+                // ROI card removed
             }
         }
 
@@ -1966,7 +2298,7 @@
                         }))
                     };
                     renderOverviewChart(chartData);
-                    renderFunnelChart();
+                    // Modern funnel now uses static HTML
                 } else {
                     console.error('Could not load real data for overview chart');
                     throw new Error('Real data endpoint failed or no last7Days data');
@@ -3703,31 +4035,301 @@
             container.innerHTML = html;
         }
         
-        // Load top products in grid format
-        async function loadTopProductsGrid() {
+        // Global variables for enhanced products
+        let allProductsData = null;
+        let filteredProducts = [];
+        let currentSortBy = 'recommendations';
+
+        // Load enhanced product data
+        async function loadEnhancedProductData() {
             try {
                 const period = document.getElementById('products-period-main').value;
                 const container = document.getElementById('product-cards-container');
                 container.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
 
+                // Show loading in other sections
+                document.getElementById('sentiment-positive').textContent = '-';
+                document.getElementById('sentiment-neutral').textContent = '-';
+                document.getElementById('sentiment-negative').textContent = '-';
+                document.getElementById('trending-products-container').innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+                document.getElementById('product-categories-container').innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+
                 const url = `${API_BASE_URL}/api/admin-bypass/metrics/products?shop=${currentShop}&days=${period}`;
-                console.log('Loading product metrics from:', url);
+                console.log('Loading enhanced product metrics from:', url);
                 
                 const response = await fetch(url);
                 const data = await response.json();
 
-                if (data.success && data.data.topRecommendedProducts) {
-                    renderProductCards(data.data.topRecommendedProducts);
+                if (data.success) {
+                    allProductsData = data.data;
+                    filteredProducts = [...allProductsData.topRecommendedProducts];
+                    
+                    // Update all sections
+                    updateProductMetrics(allProductsData.productMetrics);
+                    updateSentimentAnalysis(allProductsData.sentimentAnalysis);
+                    updateTrendingProducts(allProductsData.trendingProducts);
+                    updateProductCategories(allProductsData.productCategories);
+                    updateQuickStats();
+                    renderEnhancedProductCards(filteredProducts);
+                    populateCategoryFilter();
                 } else {
                     container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6d7175;">No hay productos recomendados para mostrar</div>';
                 }
             } catch (error) {
                 const container = document.getElementById('product-cards-container');
                 container.innerHTML = '<div style="padding: 40px; text-align: center; color: #d32f2f;">Error al cargar productos</div>';
-                console.error('Error loading product grid:', error);
+                console.error('Error loading enhanced product data:', error);
             }
         }
+
+        // Update product metrics
+        function updateProductMetrics(metrics) {
+            document.getElementById('total-products-recommended').textContent = metrics.totalUniqueProducts || '-';
+            document.getElementById('total-recommendations-made').textContent = metrics.totalRecommendations || '-';
+            document.getElementById('top-product-score').textContent = metrics.topProductScore || '-';
+            document.getElementById('avg-recommendations').textContent = metrics.averageRecommendationsPerProduct || '-';
+        }
+
+        // Update sentiment analysis
+        function updateSentimentAnalysis(sentiment) {
+            document.getElementById('sentiment-positive').textContent = `${sentiment.positive}%`;
+            document.getElementById('sentiment-neutral').textContent = `${sentiment.neutral}%`;
+            document.getElementById('sentiment-negative').textContent = `${sentiment.negative}%`;
+        }
+
+        // Update trending products
+        function updateTrendingProducts(trendingProducts) {
+            const container = document.getElementById('trending-products-container');
+            
+            if (!trendingProducts || trendingProducts.length === 0) {
+                container.innerHTML = '<div style="padding: 20px; text-align: center; color: #6d7175; font-size: 12px;">No hay productos trending</div>';
+                return;
+            }
+
+            let html = '';
+            trendingProducts.forEach((product, index) => {
+                html += `
+                    <div class="trending-product-item">
+                        <div class="trending-score">${product.trendScore}</div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-size: 12px; font-weight: 500; color: #202223; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                ${escapeHtml(product.title)}
+                            </div>
+                            <div style="font-size: 10px; color: #6d7175;">
+                                ${product.recentActivity} rec. recientes
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // Update product categories
+        function updateProductCategories(categories) {
+            const container = document.getElementById('product-categories-container');
+            
+            if (!categories || categories.length === 0) {
+                container.innerHTML = '<div style="padding: 20px; text-align: center; color: #6d7175; font-size: 12px;">No hay categorías</div>';
+                return;
+            }
+
+            let html = '';
+            categories.forEach((category) => {
+                const percentage = Math.min(100, category.percentage);
+                html += `
+                    <div class="category-item">
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: 500; color: #202223; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                ${escapeHtml(category.category)}
+                            </div>
+                            <div style="font-size: 11px; color: #6d7175;">${category.count} productos</div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 11px; color: #6d7175;">${percentage}%</span>
+                            <div class="category-bar">
+                                <div class="category-bar-fill" style="width: ${percentage}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // Update quick stats
+        function updateQuickStats() {
+            if (!allProductsData) return;
+            
+            const newProducts = allProductsData.topRecommendedProducts.filter(p => p.isNew).length;
+            const avgSessions = allProductsData.topRecommendedProducts.reduce((sum, p) => sum + (p.uniqueSessions || 0), 0) / allProductsData.topRecommendedProducts.length;
+            const avgSentiment = allProductsData.topRecommendedProducts.reduce((sum, p) => sum + (p.sentimentScore || 0), 0) / allProductsData.topRecommendedProducts.length;
+            
+            document.getElementById('new-products-count').textContent = newProducts;
+            document.getElementById('avg-sessions-product').textContent = Math.round(avgSessions * 100) / 100;
+            document.getElementById('avg-sentiment-score').textContent = Math.round(avgSentiment * 100) / 100;
+        }
         
+        // Render enhanced product cards
+        function renderEnhancedProductCards(products) {
+            const container = document.getElementById('product-cards-container');
+            
+            if (!products || products.length === 0) {
+                container.innerHTML = '<div class="filter-no-results">No se encontraron productos que coincidan con los filtros</div>';
+                return;
+            }
+
+            let html = '';
+            products.forEach((product) => {
+                const imageStyle = product.image ? `background-image: url('${product.image}');` : '';
+                const price = product.price > 0 ? `$${product.price.toLocaleString()}` : '';
+                
+                // Determine badges
+                const badges = [];
+                if (product.trendScore > 0.5) badges.push('<span class="badge badge-trending">🔥 Trending</span>');
+                if (product.sentimentScore > 2) badges.push('<span class="badge badge-high-sentiment">😊 Positivo</span>');
+                if (product.recommendations > 50) badges.push('<span class="badge badge-popular">⭐ Popular</span>');
+                
+                // Sentiment indicator
+                let sentimentClass = 'sentiment-neutral';
+                let sentimentIcon = '😐';
+                if (product.sentimentScore > 1) {
+                    sentimentClass = 'sentiment-positive';
+                    sentimentIcon = '😊';
+                } else if (product.sentimentScore < -1) {
+                    sentimentClass = 'sentiment-negative';
+                    sentimentIcon = '😞';
+                }
+
+                const cardClasses = [];
+                if (product.trendScore > 0.5) cardClasses.push('trending');
+                if (product.isNew) cardClasses.push('new-product');
+
+                html += `
+                    <div class="enhanced-product-card ${cardClasses.join(' ')}">
+                        <div class="product-card-header">
+                            <div class="product-image-enhanced" style="${imageStyle}">
+                                ${!product.image ? '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #6d7175; font-size: 12px;">📦</div>' : ''}
+                            </div>
+                            <div class="product-info-enhanced">
+                                <h4 class="product-title-enhanced">${escapeHtml(product.title)}</h4>
+                                ${product.vendor ? `<div class="product-vendor">${escapeHtml(product.vendor)}</div>` : ''}
+                                ${price ? `<div style="font-size: 12px; color: var(--naay-primary); font-weight: 500;">${price}</div>` : ''}
+                            </div>
+                            <div class="sentiment-indicator ${sentimentClass}">${sentimentIcon}</div>
+                        </div>
+                        
+                        <div class="product-metrics-row">
+                            <div class="metric-box">
+                                <div class="metric-value">${product.recommendations}</div>
+                                <div class="metric-label">Recomendaciones</div>
+                            </div>
+                            <div class="metric-box">
+                                <div class="metric-value">${product.uniqueSessions || 0}</div>
+                                <div class="metric-label">Sesiones únicas</div>
+                            </div>
+                        </div>
+                        
+                        <div class="product-metrics-row">
+                            <div class="metric-box">
+                                <div class="metric-value">${product.averageRecommendationsPerSession || 0}</div>
+                                <div class="metric-label">Prom/sesión</div>
+                            </div>
+                            <div class="metric-box">
+                                <div class="metric-value">${product.recentActivity || 0}</div>
+                                <div class="metric-label">Act. reciente</div>
+                            </div>
+                        </div>
+                        
+                        ${badges.length > 0 ? `<div class="product-badges">${badges.join('')}</div>` : ''}
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // Filter products based on search and category
+        function filterProducts() {
+            if (!allProductsData) return;
+            
+            const searchTerm = document.getElementById('product-search').value.toLowerCase();
+            const categoryFilter = document.getElementById('category-filter').value;
+            
+            filteredProducts = allProductsData.topRecommendedProducts.filter(product => {
+                const matchesSearch = !searchTerm || 
+                    product.title.toLowerCase().includes(searchTerm) ||
+                    (product.vendor && product.vendor.toLowerCase().includes(searchTerm));
+                    
+                const matchesCategory = categoryFilter === 'all' || 
+                    product.productType === categoryFilter;
+                    
+                return matchesSearch && matchesCategory;
+            });
+            
+            sortProducts(currentSortBy, false);
+        }
+
+        // Sort products
+        function sortProducts(sortBy, updateButtons = true) {
+            if (!filteredProducts) return;
+            
+            currentSortBy = sortBy;
+            
+            if (updateButtons) {
+                document.querySelectorAll('.sort-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                document.querySelector(`[data-sort="${sortBy}"]`).classList.add('active');
+            }
+            
+            switch (sortBy) {
+                case 'recommendations':
+                    filteredProducts.sort((a, b) => b.recommendations - a.recommendations);
+                    break;
+                case 'trend':
+                    filteredProducts.sort((a, b) => b.trendScore - a.trendScore);
+                    break;
+                case 'sentiment':
+                    filteredProducts.sort((a, b) => b.sentimentScore - a.sentimentScore);
+                    break;
+                case 'sessions':
+                    filteredProducts.sort((a, b) => (b.uniqueSessions || 0) - (a.uniqueSessions || 0));
+                    break;
+            }
+            
+            renderEnhancedProductCards(filteredProducts);
+        }
+
+        // Populate category filter
+        function populateCategoryFilter() {
+            if (!allProductsData) return;
+            
+            const categories = allProductsData.productCategories || [];
+            const select = document.getElementById('category-filter');
+            
+            // Clear existing options except "all"
+            while (select.children.length > 1) {
+                select.removeChild(select.lastChild);
+            }
+            
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.category;
+                option.textContent = `${category.category} (${category.count})`;
+                select.appendChild(option);
+            });
+        }
+
+        // Update product data load function to use enhanced version
+        function loadProductData() {
+            loadEnhancedProductData();
+            setTimeout(() => loadTopRecommendedProducts(), 500);
+            setTimeout(() => loadProductTrends(), 1000);
+        }
+
         function renderProductCards(products) {
             const container = document.getElementById('product-cards-container');
             

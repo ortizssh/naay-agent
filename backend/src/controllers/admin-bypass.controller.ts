@@ -2230,4 +2230,326 @@ function extractProductDetailsFromMessage(
   }
 }
 
+// Get comprehensive product metrics for admin dashboard
+router.get(
+  '/metrics/products',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop, days = 30 } = req.query;
+
+      if (!shop) {
+        return res.status(400).json({
+          success: false,
+          error: 'Shop parameter required',
+        });
+      }
+
+      const daysCount = parseInt(days as string);
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - daysCount);
+
+      // Get all agent messages from the period
+      const { data: chatMessages, error: chatError } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('chat_messages')
+        .select('session_id, content, metadata, timestamp')
+        .gte('timestamp', startDate.toISOString())
+        .lte('timestamp', endDate.toISOString())
+        .not('content', 'is', null)
+        .eq('role', 'agent')
+        .order('timestamp', { ascending: false });
+
+      if (chatError) {
+        logger.error('Error fetching chat messages for product metrics:', chatError);
+        return res.json({
+          success: true,
+          data: {
+            topRecommendedProducts: [],
+            productMetrics: {
+              totalUniqueProducts: 0,
+              totalRecommendations: 0,
+              averageRecommendationsPerProduct: 0,
+              topProductScore: 0
+            },
+            trendingProducts: [],
+            productCategories: [],
+            sentimentAnalysis: {
+              positive: 0,
+              neutral: 0,
+              negative: 0
+            }
+          },
+        });
+      }
+
+      // Enhanced product extraction and analysis
+      const productCounts: { [productId: string]: { count: number; details?: any; sessions: Set<string>; timestamps: Date[]; sentimentScore: number } } = {};
+      const productDetailsMap = new Map<string, any>();
+      const categoryAnalysis = new Map<string, number>();
+      const sentimentStats = { positive: 0, neutral: 0, negative: 0 };
+
+      if (chatMessages) {
+        for (const message of chatMessages) {
+          // Extract products with enhanced algorithm
+          const products = extractProductsFromMessageEnhanced(
+            message.content || '',
+            message.metadata
+          );
+          
+          // Extract product details
+          extractProductDetailsFromMessage(
+            message.content || '',
+            message.metadata,
+            productDetailsMap
+          );
+
+          // Analyze sentiment of the message
+          const sentiment = analyzeMessageSentiment(message.content || '');
+          sentimentStats[sentiment]++;
+
+          // Process each product found
+          for (const productId of products) {
+            if (!productCounts[productId]) {
+              productCounts[productId] = { 
+                count: 0, 
+                sessions: new Set(), 
+                timestamps: [],
+                sentimentScore: 0
+              };
+            }
+            
+            productCounts[productId].count++;
+            productCounts[productId].sessions.add(message.session_id);
+            productCounts[productId].timestamps.push(new Date(message.timestamp));
+            productCounts[productId].sentimentScore += sentiment === 'positive' ? 1 : sentiment === 'negative' ? -1 : 0;
+
+            // Store product details if found
+            const productDetail = productDetailsMap.get(productId);
+            if (productDetail && !productCounts[productId].details) {
+              productCounts[productId].details = productDetail;
+              
+              // Analyze categories
+              const category = productDetail.productType || 'Sin categoría';
+              categoryAnalysis.set(category, (categoryAnalysis.get(category) || 0) + 1);
+            }
+          }
+        }
+      }
+
+      // Get top products with enriched database info
+      const topProductIds = Object.entries(productCounts)
+        .sort(([, a], [, b]) => b.count - a.count)
+        .slice(0, 20) // Increased from 10 to 20
+        .map(([productId, data]) => ({ productId, ...data }));
+
+      // Get complete product details from database
+      const productIds = topProductIds.map(item => item.productId);
+      const { data: dbProducts, error: dbError } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('products')
+        .select('id, title, handle, vendor, product_type, images, created_at')
+        .in('id', productIds);
+
+      if (dbError) {
+        logger.error('Error fetching product details from database:', dbError);
+      }
+
+      // Create enriched products with advanced metrics
+      const enrichedProducts = topProductIds.map(item => {
+        const dbProduct = dbProducts?.find(
+          p => p.id.toString() === item.productId
+        );
+
+        // Extract first image from images array
+        let productImage = '';
+        if (
+          dbProduct?.images &&
+          Array.isArray(dbProduct.images) &&
+          dbProduct.images.length > 0
+        ) {
+          productImage =
+            dbProduct.images[0]?.src ||
+            dbProduct.images[0]?.url ||
+            dbProduct.images[0];
+        }
+
+        // Calculate advanced metrics
+        const uniqueSessions = item.sessions.size;
+        const averageRecommendationsPerSession = item.count / uniqueSessions;
+        const recentActivity = item.timestamps.filter(
+          t => new Date().getTime() - t.getTime() < 7 * 24 * 60 * 60 * 1000
+        ).length;
+        const trendScore = recentActivity / Math.max(1, item.count - recentActivity);
+
+        return {
+          productId: item.productId,
+          recommendations: item.count,
+          uniqueSessions,
+          averageRecommendationsPerSession: Math.round(averageRecommendationsPerSession * 100) / 100,
+          recentActivity,
+          trendScore: Math.round(trendScore * 100) / 100,
+          sentimentScore: item.sentimentScore,
+          title:
+            dbProduct?.title ||
+            item.details?.title ||
+            `Producto ${item.productId}`,
+          handle: dbProduct?.handle || item.details?.handle || '',
+          image: productImage || item.details?.image || '',
+          price: item.details?.price || 0,
+          vendor: dbProduct?.vendor || item.details?.vendor || '',
+          productType:
+            dbProduct?.product_type || item.details?.productType || 'Producto',
+          createdAt: dbProduct?.created_at || null,
+          isNew: dbProduct?.created_at ? 
+            new Date().getTime() - new Date(dbProduct.created_at).getTime() < 30 * 24 * 60 * 60 * 1000 : false
+        };
+      });
+
+      // Calculate trending products (high recent activity)
+      const trendingProducts = enrichedProducts
+        .filter(p => p.recentActivity > 0)
+        .sort((a, b) => b.trendScore - a.trendScore)
+        .slice(0, 5);
+
+      // Product categories analysis
+      const productCategories = Array.from(categoryAnalysis.entries())
+        .map(([category, count]) => ({
+          category,
+          count,
+          percentage: Math.round((count / enrichedProducts.length) * 100)
+        }))
+        .sort((a, b) => b.count - a.count);
+
+      // Calculate summary metrics
+      const totalRecommendations = Object.values(productCounts).reduce(
+        (sum, item) => sum + item.count,
+        0
+      );
+      const totalUniqueProducts = Object.keys(productCounts).length;
+      const averageRecommendationsPerProduct = totalUniqueProducts > 0 ? 
+        totalRecommendations / totalUniqueProducts : 0;
+      const topProductScore = enrichedProducts.length > 0 ? enrichedProducts[0].recommendations : 0;
+
+      // Sentiment analysis percentages
+      const totalMessages = sentimentStats.positive + sentimentStats.neutral + sentimentStats.negative;
+      const sentimentPercentages = {
+        positive: totalMessages > 0 ? Math.round((sentimentStats.positive / totalMessages) * 100) : 0,
+        neutral: totalMessages > 0 ? Math.round((sentimentStats.neutral / totalMessages) * 100) : 0,
+        negative: totalMessages > 0 ? Math.round((sentimentStats.negative / totalMessages) * 100) : 0
+      };
+
+      res.json({
+        success: true,
+        data: {
+          topRecommendedProducts: enrichedProducts,
+          productMetrics: {
+            totalUniqueProducts,
+            totalRecommendations,
+            averageRecommendationsPerProduct: Math.round(averageRecommendationsPerProduct * 100) / 100,
+            topProductScore
+          },
+          trendingProducts,
+          productCategories,
+          sentimentAnalysis: sentimentPercentages,
+          period: `${daysCount} días`
+        },
+      });
+    } catch (error) {
+      logger.error('Admin bypass product metrics error:', error);
+      res.json({
+        success: true,
+        data: {
+          topRecommendedProducts: [],
+          productMetrics: {
+            totalUniqueProducts: 0,
+            totalRecommendations: 0,
+            averageRecommendationsPerProduct: 0,
+            topProductScore: 0
+          },
+          trendingProducts: [],
+          productCategories: [],
+          sentimentAnalysis: {
+            positive: 0,
+            neutral: 0,
+            negative: 0
+          }
+        },
+      });
+    }
+  }
+);
+
+// Enhanced product extraction function
+function extractProductsFromMessageEnhanced(content: string, metadata: any): string[] {
+  const productIds = new Set<string>();
+
+  try {
+    // Use existing extraction function as base
+    const basicIds = extractProductsFromMessage(content, metadata);
+    basicIds.forEach(id => productIds.add(id));
+
+    if (content) {
+      // Enhanced patterns for better product detection
+      
+      // Look for product mentions in more contexts
+      const productMentionPatterns = [
+        /(?:recomiendo|sugiero|prueba|considera|te.*gust[ae].*|ideal.*para|perfecto.*para).*?(?:producto|crema|gel|bálsamo|emulsión|espuma).*?"([^"]+)"/gi,
+        /\*\*([^*]+(?:crema|gel|bálsamo|emulsión|espuma|producto)[^*]*)\*\*/gi,
+        /(?:el|la|este|esta)\s+([^.]+(?:crema|gel|bálsamo|emulsión|espuma|producto)[^.]*)/gi
+      ];
+
+      productMentionPatterns.forEach(pattern => {
+        const matches = content.matchAll(pattern);
+        for (const match of matches) {
+          if (match[1] && match[1].length > 5 && match[1].length < 100) {
+            // Create a pseudo-ID from the product name for tracking
+            const pseudoId = `name_${match[1].toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+            productIds.add(pseudoId);
+          }
+        }
+      });
+
+      // Look for variant_id mentions
+      const variantIdRegex = /variant[_-]?id["\s]*:?\s*["']?(\d+)["']?/gi;
+      const variantMatches = content.matchAll(variantIdRegex);
+      for (const match of variantMatches) {
+        if (match[1]) {
+          productIds.add(`variant_${match[1]}`);
+        }
+      }
+
+      // Look for handle mentions
+      const handleRegex = /"handle"\s*:\s*"([^"]+)"/gi;
+      const handleMatches = content.matchAll(handleRegex);
+      for (const match of handleMatches) {
+        if (match[1]) {
+          productIds.add(`handle_${match[1]}`);
+        }
+      }
+    }
+  } catch (error) {
+    // Ignore extraction errors
+  }
+
+  return Array.from(productIds);
+}
+
+// Simple sentiment analysis function
+function analyzeMessageSentiment(content: string): 'positive' | 'neutral' | 'negative' {
+  const positiveWords = ['excelente', 'perfecto', 'genial', 'ideal', 'recomiendo', 'me gusta', 'fantástico', 'increíble', 'maravilloso'];
+  const negativeWords = ['problema', 'error', 'mal', 'terrible', 'horrible', 'no funciona', 'decepcionante', 'malo'];
+  
+  const lowerContent = content.toLowerCase();
+  
+  const positiveCount = positiveWords.filter(word => lowerContent.includes(word)).length;
+  const negativeCount = negativeWords.filter(word => lowerContent.includes(word)).length;
+  
+  if (positiveCount > negativeCount) return 'positive';
+  if (negativeCount > positiveCount) return 'negative';
+  return 'neutral';
+}
+
 export default router;
