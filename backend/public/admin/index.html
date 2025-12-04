@@ -9,11 +9,12 @@
     <script src="https://unpkg.com/@shopify/app-bridge@3.7.9/umd/index.js"></script>
     <style>
         :root {
-            /* Naay Simple Color Palette - Primary and Black Only */
-            --naay-primary: #a59457;      /* Primary gold color */
-            --naay-dark: #212120;         /* Black color */
+            /* Naay Minimalist Color Palette - Black and Purple */
+            --naay-primary: #7c3aed;      /* Primary purple color */
+            --naay-secondary: #a855f7;    /* Secondary purple color */
+            --naay-dark: #111827;         /* Deep black color */
             --naay-white: #FFFFFF;        /* White */
-            --naay-light: #f8f9fa;        /* Light gray for backgrounds */
+            --naay-light: #f9fafb;        /* Light gray for backgrounds */
             
             /* Legacy Polaris compatibility */
             --p-color-bg-surface: var(--naay-white);
@@ -66,7 +67,7 @@
             background-color: var(--naay-dark);
             border-color: var(--naay-dark);
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(165, 148, 87, 0.2);
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2);
         }
 
         .btn:active {
@@ -691,7 +692,7 @@
         }
         
         .metric-group:hover {
-            box-shadow: 0 4px 12px rgba(165, 148, 87, 0.1);
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.1);
             border-color: var(--naay-primary);
         }
         
@@ -804,7 +805,7 @@
         
         .engagement-fill {
             height: 100%;
-            background: linear-gradient(90deg, var(--naay-primary), #c4b16a);
+            background: linear-gradient(90deg, var(--naay-primary), var(--naay-secondary));
             border-radius: 10px;
             transition: width 0.6s ease;
         }
@@ -868,7 +869,7 @@
         
         .outcome-card:hover {
             border-color: var(--naay-primary);
-            box-shadow: 0 2px 8px rgba(165, 148, 87, 0.1);
+            box-shadow: 0 2px 8px rgba(124, 58, 237, 0.1);
         }
         
         .outcome-percentage {
@@ -921,19 +922,20 @@
         .tab-button {
             background: none;
             border: none;
-            padding: 16px 24px;
+            padding: 18px 28px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 600;
-            color: #6d7175;
-            transition: all 0.3s ease;
+            color: #64748b;
+            transition: all 0.2s ease;
             border-bottom: 3px solid transparent;
             white-space: nowrap;
             flex-shrink: 0;
+            letter-spacing: 0.025em;
         }
 
         .tab-button:hover {
-            background-color: rgba(165, 148, 87, 0.1);
+            background-color: rgba(124, 58, 237, 0.1);
             color: var(--naay-primary);
         }
 
@@ -941,10 +943,11 @@
             color: var(--naay-primary);
             border-bottom-color: var(--naay-primary);
             background-color: var(--naay-white);
+            font-weight: 700;
         }
 
         .tab-content {
-            padding: 24px;
+            padding: 32px;
             min-height: 600px;
         }
 
@@ -971,49 +974,54 @@
         /* KPI Cards for Overview */
         .kpi-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 32px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
         }
 
         .kpi-card {
             background: var(--naay-white);
-            border: 1px solid #e1e3e5;
-            border-radius: 8px;
-            padding: 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 24px;
             text-align: center;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
+            position: relative;
         }
 
         .kpi-card:hover {
             border-color: var(--naay-primary);
-            box-shadow: 0 4px 12px rgba(165, 148, 87, 0.1);
+            box-shadow: 0 8px 25px rgba(124, 58, 237, 0.12);
+            transform: translateY(-2px);
         }
 
         .kpi-value {
-            font-size: 32px;
-            font-weight: 700;
+            font-size: 36px;
+            font-weight: 800;
             color: var(--naay-primary);
-            margin-bottom: 8px;
+            margin-bottom: 12px;
             line-height: 1;
+            letter-spacing: -0.02em;
         }
 
         .kpi-label {
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 600;
             color: var(--naay-dark);
-            margin-bottom: 4px;
+            margin-bottom: 6px;
+            letter-spacing: 0.025em;
         }
 
         .kpi-sublabel {
-            font-size: 12px;
-            color: #6d7175;
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 500;
         }
 
         .kpi-icon {
             width: 40px;
             height: 40px;
-            background: linear-gradient(135deg, var(--naay-primary), #c4b16a);
+            background: linear-gradient(135deg, var(--naay-primary), var(--naay-secondary));
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -1219,7 +1227,7 @@
         }
         
         .product-card-recommendations {
-            background: linear-gradient(90deg, var(--naay-primary), #c4b16a);
+            background: linear-gradient(90deg, var(--naay-primary), var(--naay-secondary));
             color: var(--naay-white);
             padding: 6px 12px;
             border-radius: 16px;
@@ -1284,12 +1292,12 @@
 </head>
 <body>
     <div class="Polaris-Page">
-        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="margin-bottom: 32px; display: flex; justify-content: space-between; align-items: center;">
             <div>
-                <h1 style="font-size: 28px; font-weight: 700; margin: 0; color: var(--naay-dark);">Panel de Administración Naay</h1>
-                <div style="font-size: 14px; color: #6d7175; margin-top: 4px;">Análisis completo de conversaciones y conversiones</div>
+                <h1 style="font-size: 32px; font-weight: 800; margin: 0; color: var(--naay-dark); letter-spacing: -0.025em;">Panel de Administración Naay</h1>
+                <div style="font-size: 16px; color: #64748b; margin-top: 8px; font-weight: 500;">Análisis completo de conversaciones y conversiones</div>
             </div>
-            <div id="shop-name" style="color: #6d7175; font-weight: 600;">Cargando tienda...</div>
+            <div id="shop-name" style="color: #64748b; font-weight: 600; font-size: 15px;">Cargando tienda...</div>
         </div>
 
         <div id="error-banner" class="error-banner"></div>
@@ -1298,16 +1306,16 @@
         <div class="tabs-container">
             <div class="tabs-header">
                 <button class="tab-button active" onclick="showTab('resumen')" id="tab-resumen">
-                    <span>📊</span> Resumen
+                    Resumen
                 </button>
                 <button class="tab-button" onclick="showTab('conversaciones')" id="tab-conversaciones">
-                    <span>💬</span> Conversaciones
+                    Conversaciones
                 </button>
                 <button class="tab-button" onclick="showTab('productos')" id="tab-productos">
-                    <span>🛍️</span> Productos
+                    Productos
                 </button>
                 <button class="tab-button" onclick="showTab('conversiones')" id="tab-conversiones">
-                    <span>💰</span> Conversiones
+                    Conversiones
                 </button>
             </div>
 
@@ -1327,25 +1335,25 @@
                     <!-- KPI Cards -->
                     <div class="kpi-grid">
                         <div class="kpi-card">
-                            <div class="kpi-icon">💬</div>
+                            <div class="kpi-icon"></div>
                             <div class="kpi-value" id="kpi-conversations">-</div>
                             <div class="kpi-label">Total Conversaciones</div>
                             <div class="kpi-sublabel">Datos reales completos</div>
                         </div>
                         <div class="kpi-card">
-                            <div class="kpi-icon">💰</div>
+                            <div class="kpi-icon"></div>
                             <div class="kpi-value" id="kpi-revenue">-</div>
                             <div class="kpi-label">Ingresos Atribuidos</div>
                             <div class="kpi-sublabel">Conversiones del chat</div>
                         </div>
                         <div class="kpi-card">
-                            <div class="kpi-icon">📈</div>
+                            <div class="kpi-icon"></div>
                             <div class="kpi-value" id="kpi-conversion-rate">-</div>
                             <div class="kpi-label">Tasa de Conversión</div>
                             <div class="kpi-sublabel">Chat a compra</div>
                         </div>
                         <div class="kpi-card">
-                            <div class="kpi-icon">🎯</div>
+                            <div class="kpi-icon"></div>
                             <div class="kpi-value" id="kpi-roi">-</div>
                             <div class="kpi-label">ROI del Chat</div>
                             <div class="kpi-sublabel">Retorno de inversión</div>
@@ -1493,25 +1501,25 @@
                     <!-- Product Summary Cards -->
                     <div class="kpi-grid" style="margin-bottom: 24px;">
                         <div class="kpi-card">
-                            <div class="kpi-icon">📦</div>
+                            <div class="kpi-icon"></div>
                             <div class="kpi-value" id="total-products-recommended">-</div>
                             <div class="kpi-label">Productos Únicos</div>
                             <div class="kpi-sublabel">Recomendados</div>
                         </div>
                         <div class="kpi-card">
-                            <div class="kpi-icon">🎯</div>
+                            <div class="kpi-icon"></div>
                             <div class="kpi-value" id="total-recommendations-made">-</div>
                             <div class="kpi-label">Total Recomendaciones</div>
                             <div class="kpi-sublabel">En el período</div>
                         </div>
                         <div class="kpi-card">
-                            <div class="kpi-icon">⭐</div>
+                            <div class="kpi-icon"></div>
                             <div class="kpi-value" id="top-product-score">-</div>
                             <div class="kpi-label">Producto Top</div>
                             <div class="kpi-sublabel">Más recomendado</div>
                         </div>
                         <div class="kpi-card">
-                            <div class="kpi-icon">📊</div>
+                            <div class="kpi-icon"></div>
                             <div class="kpi-value" id="avg-recommendations">-</div>
                             <div class="kpi-label">Promedio</div>
                             <div class="kpi-sublabel">Rec. por producto</div>
@@ -1588,25 +1596,25 @@
                     <!-- Conversion KPIs -->
                     <div class="kpi-grid" style="margin-bottom: 24px;">
                         <div class="kpi-card">
-                            <div class="kpi-icon">💰</div>
+                            <div class="kpi-icon"></div>
                             <div class="kpi-value" id="conversion-revenue">-</div>
                             <div class="kpi-label">Ingresos Atribuidos</div>
                             <div class="kpi-sublabel">Conversiones del chat</div>
                         </div>
                         <div class="kpi-card">
-                            <div class="kpi-icon">📈</div>
+                            <div class="kpi-icon"></div>
                             <div class="kpi-value" id="conversion-rate-main">-</div>
                             <div class="kpi-label">Tasa de Conversión</div>
                             <div class="kpi-sublabel">Chat a compra</div>
                         </div>
                         <div class="kpi-card">
-                            <div class="kpi-icon">🕒</div>
+                            <div class="kpi-icon"></div>
                             <div class="kpi-value" id="avg-conversion-time">-</div>
                             <div class="kpi-label">Tiempo a Conversión</div>
                             <div class="kpi-sublabel">Horas promedio</div>
                         </div>
                         <div class="kpi-card">
-                            <div class="kpi-icon">💎</div>
+                            <div class="kpi-icon"></div>
                             <div class="kpi-value" id="avg-order-value">-</div>
                             <div class="kpi-label">Valor Promedio</div>
                             <div class="kpi-sublabel">Por conversión</div>
@@ -1941,16 +1949,17 @@
         // Load Overview Charts - Updated to use real data
         async function loadOverviewCharts() {
             try {
-                console.log('📊 Loading overview chart with real data...');
+                console.log('Loading overview chart with real data...');
                 
                 // Use real data endpoint for accurate chart
                 const realDataResponse = await fetch(`${API_BASE_URL}/api/admin-bypass/debug/real-data?shop=${currentShop}`);
                 const realData = await realDataResponse.json();
                 
                 if (realData.success && realData.data.last7Days) {
-                    console.log('✅ Using real daily stats for overview chart');
+                    console.log('Using real daily stats for overview chart');
+                    // Reverse the order so current day is on the right
                     const chartData = {
-                        daily_data: realData.data.last7Days.map(day => ({
+                        daily_data: realData.data.last7Days.slice().reverse().map(day => ({
                             date: day.date,
                             conversations: day.conversations,
                             messages: day.messages
@@ -1959,7 +1968,7 @@
                     renderOverviewChart(chartData);
                     renderFunnelChart();
                 } else {
-                    console.error('❌ Could not load real data for overview chart');
+                    console.error('Could not load real data for overview chart');
                     throw new Error('Real data endpoint failed or no last7Days data');
                 }
                 
@@ -1994,7 +2003,7 @@
                             label: 'Conversaciones',
                             data: chartData.map(d => d.conversations),
                             borderColor: 'var(--naay-primary)',
-                            backgroundColor: 'rgba(165, 148, 87, 0.1)',
+                            backgroundColor: 'rgba(124, 58, 237, 0.1)',
                             fill: true,
                             tension: 0.4,
                             pointRadius: 3,
@@ -2019,7 +2028,7 @@
                         y: {
                             beginAtZero: true,
                             grid: {
-                                color: 'rgba(165, 148, 87, 0.1)'
+                                color: 'rgba(124, 58, 237, 0.1)'
                             },
                             ticks: {
                                 color: '#6d7175'
@@ -2049,7 +2058,7 @@
             // Sample funnel data - in real implementation, this would come from the API
             const funnelData = [
                 { label: 'Visitantes', value: 1000, color: '#e1e3e5' },
-                { label: 'Inician Chat', value: 150, color: '#c4b16a' },
+                { label: 'Inician Chat', value: 150, color: 'var(--naay-secondary)' },
                 { label: 'Reciben Recomendación', value: 120, color: 'var(--naay-primary)' },
                 { label: 'Realizan Compra', value: 24, color: 'var(--naay-dark)' }
             ];
@@ -2088,7 +2097,7 @@
                         x: {
                             beginAtZero: true,
                             grid: {
-                                color: 'rgba(165, 148, 87, 0.1)'
+                                color: 'rgba(124, 58, 237, 0.1)'
                             },
                             ticks: {
                                 color: '#6d7175'
@@ -2109,7 +2118,7 @@
 
         // Load Conversation Data - New date-based approach
         function loadConversationData() {
-            console.log('🚀 Loading conversation tab with date-based filtering');
+            console.log('Loading conversation tab with date-based filtering');
             
             // Set today's date as default in the date input
             const dateInput = document.getElementById('conversations-date-filter');
@@ -2122,7 +2131,7 @@
             // Automatically load today's conversations
             loadConversationsByDate();
             
-            console.log('✅ Conversation tab initialized with today\'s data');
+            console.log('Conversation tab initialized with today\'s data');
         }
 
         // Load Product Data
@@ -2165,7 +2174,7 @@
                         data: topProducts.map(p => p.recommendations),
                         backgroundColor: [
                             'var(--naay-primary)',
-                            '#c4b16a',
+                            'var(--naay-secondary)',
                             '#d4c97a',
                             '#e4d78a',
                             '#f4e59a',
@@ -2310,7 +2319,7 @@
                         {
                             label: 'Ingresos Atribuidos',
                             data: chartData.map(d => d.sales * 0.3), // Estimate 30% attribution to chat
-                            backgroundColor: 'rgba(165, 148, 87, 0.8)',
+                            backgroundColor: 'rgba(124, 58, 237, 0.8)',
                             borderColor: 'var(--naay-primary)',
                             borderWidth: 1
                         }
@@ -2336,7 +2345,7 @@
                         y: {
                             beginAtZero: true,
                             grid: {
-                                color: 'rgba(165, 148, 87, 0.1)'
+                                color: 'rgba(124, 58, 237, 0.1)'
                             },
                             ticks: {
                                 color: '#6d7175',
@@ -2517,13 +2526,13 @@
                 return;
             }
             
-            console.log('✅ Loading lightweight conversation list (max 5 items)');
+            console.log('Loading lightweight conversation list (max 5 items)');
             lastConversationLoad = now;
             pendingRequests.add(requestId);
             
             loadConversations(true).finally(() => { // Pass lightweight flag
                 pendingRequests.delete(requestId);
-                console.log('✅ Lightweight conversation list loaded successfully');
+                console.log('Lightweight conversation list loaded successfully');
             });
         }
 
@@ -2617,9 +2626,9 @@
                 const statsData = await statsResponse.json();
                 const realData = realDataResponse.ok ? await realDataResponse.json() : null;
                 
-                console.log('📊 Stats data:', statsData);
+                console.log('Stats data:', statsData);
                 if (realData) {
-                    console.log('📈 Real data analysis:', realData);
+                    console.log('Real data analysis:', realData);
                 }
 
                 if (statsData.success) {
@@ -2687,7 +2696,7 @@
                         updateElementSafely('total-messages', totalRecords);
                     }
 
-                    console.log('✅ Real stats loaded:', {
+                    console.log('Real stats loaded:', {
                         totalConversations: conversationsTotal,
                         todayConversations: todayConversations,
                         totalRecords: totalRecords
@@ -2785,7 +2794,7 @@
             if (isLightweight) {
                 const notice = document.createElement('div');
                 notice.style.cssText = 'padding: 10px 15px; background: #f1f3f4; border-radius: 6px; margin-bottom: 15px; font-size: 13px; color: #5f6368;';
-                notice.innerHTML = '📊 Vista resumida - Mostrando las conversaciones más recientes. <button class="btn" onclick="safeLoadConversations()" style="margin-left: 10px; padding: 4px 8px; font-size: 12px;">Cargar todas</button>';
+                notice.innerHTML = 'Vista resumida - Mostrando las conversaciones más recientes. <button class="btn" onclick="safeLoadConversations()" style="margin-left: 10px; padding: 4px 8px; font-size: 12px;">Cargar todas</button>';
                 wrapper.appendChild(notice);
             }
 
@@ -2989,10 +2998,10 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    console.log('✅ Conversation details loaded successfully via lazy loading');
+                    console.log('Conversation details loaded successfully via lazy loading');
                     renderConversationMessages(data.data);
                 } else {
-                    console.error('❌ Failed to load conversation details:', data.error);
+                    console.error('Failed to load conversation details:', data.error);
                     chatContainer.innerHTML = `
                         <div style="padding: 40px; text-align: center; color: #d32f2f;">
                             Error al cargar la conversación: ${data.error || 'Error desconocido'}
@@ -3201,13 +3210,13 @@
                 const period = document.getElementById('chart-period').value;
                 
                 // Load real data directly from the debug endpoint
-                console.log('📊 Loading real data for analytics chart');
+                console.log('Loading real data for analytics chart');
                 const realDataResponse = await fetch(`${API_BASE_URL}/api/admin-bypass/debug/real-data?shop=${currentShop}`);
                 const realData = await realDataResponse.json();
                 
                 if (realData.success && realData.data.last7Days) {
-                    // Take only the requested number of days from the end
-                    const dailyStats = realData.data.last7Days.slice(-parseInt(period));
+                    // Take only the requested number of days from the end and reverse for chronological order
+                    const dailyStats = realData.data.last7Days.slice(-parseInt(period)).reverse();
                     
                     const chartData = {
                         success: true,
@@ -3229,7 +3238,7 @@
                     chartContainer.innerHTML = '<canvas id="analytics-chart" style="max-height: 240px;"></canvas>';
                     renderAnalyticsChart(chartData.data);
                     
-                    console.log('📈 Real chart data loaded:', {
+                    console.log('Real chart data loaded:', {
                         source: 'real-data-endpoint',
                         dataPoints: chartData.data.daily_data.length,
                         period: period + ' days'
@@ -3270,7 +3279,7 @@
             const dailyMessages = chartData.map(d => d.messages);
 
             // Log chart data for verification
-            console.log('📊 Real chart data being rendered:', {
+            console.log('Real chart data being rendered:', {
                 dailyData: chartData.map(d => ({
                     date: d.date,
                     conversations: d.conversations,
@@ -3287,7 +3296,7 @@
                             label: 'Conversaciones',
                             data: chartData.map(d => d.conversations),
                             borderColor: 'var(--naay-primary)',
-                            backgroundColor: 'rgba(165, 148, 87, 0.1)',
+                            backgroundColor: 'rgba(124, 58, 237, 0.1)',
                             fill: true,
                             tension: 0.4,
                             yAxisID: 'y',
@@ -3374,7 +3383,7 @@
                                 color: 'var(--naay-primary)'
                             },
                             grid: {
-                                color: 'rgba(165, 148, 87, 0.1)'
+                                color: 'rgba(124, 58, 237, 0.1)'
                             },
                             ticks: {
                                 beginAtZero: true,
@@ -3389,14 +3398,14 @@
                             title: {
                                 display: true,
                                 text: 'Mensajes',
-                                color: '#c4b16a'
+                                color: 'var(--naay-secondary)'
                             },
                             grid: {
                                 drawOnChartArea: false,
                             },
                             ticks: {
                                 beginAtZero: true,
-                                color: '#c4b16a'
+                                color: 'var(--naay-secondary)'
                             }
                         }
                     }
