@@ -550,7 +550,7 @@ router.get(
       logger.info('Debug: Checking data for today', {
         date: today.toISOString().split('T')[0],
         startOfDay: startOfDay.toISOString(),
-        endOfDay: endOfDay.toISOString()
+        endOfDay: endOfDay.toISOString(),
       });
 
       // Get all chat messages for today
@@ -569,17 +569,19 @@ router.get(
 
       // Group by session_id for conversations
       const sessionsToday = new Set<string>();
-      const messagesByRole: { [key: string]: number } = { client: 0, agent: 0, system: 0 };
-      
+      const messagesByRole: { [key: string]: number } = {
+        client: 0,
+        agent: 0,
+        system: 0,
+      };
+
       todayMessages?.forEach((msg: any) => {
         sessionsToday.add(msg.session_id);
         messagesByRole[msg.role] = (messagesByRole[msg.role] || 0) + 1;
       });
 
       // Get all historical data
-      const { data: allMessages } = await (
-        supabaseService as any
-      ).serviceClient
+      const { data: allMessages } = await (supabaseService as any).serviceClient
         .from('chat_messages')
         .select('id, session_id, timestamp')
         .order('timestamp', { ascending: false })
@@ -598,17 +600,16 @@ router.get(
             conversations: sessionsToday.size,
             totalMessages: todayMessages?.length || 0,
             messagesByRole,
-            latestMessages: todayMessages?.slice(0, 5)
+            latestMessages: todayMessages?.slice(0, 5),
           },
           historical: {
             totalConversations: allSessions.size,
             totalMessages: allMessages?.length || 0,
             oldestMessage: allMessages?.[allMessages.length - 1]?.timestamp,
-            newestMessage: allMessages?.[0]?.timestamp
-          }
-        }
+            newestMessage: allMessages?.[0]?.timestamp,
+          },
+        },
       });
-
     } catch (error) {
       logger.error('Debug today error:', error);
       next(error);
@@ -636,25 +637,29 @@ router.get(
       const today = new Date();
       const startOfToday = new Date(today);
       startOfToday.setHours(0, 0, 0, 0);
-      
+
       logger.info('DEBUG: Checking database content', {
         today: today.toISOString().split('T')[0],
-        startOfToday: startOfToday.toISOString()
+        startOfToday: startOfToday.toISOString(),
       });
 
       // Get ALL messages from chat_messages table - set high limit to get all records
-      const { data: allMessages, error: messagesError, count } = await (
-        supabaseService as any
-      ).serviceClient
+      const {
+        data: allMessages,
+        error: messagesError,
+        count,
+      } = await (supabaseService as any).serviceClient
         .from('chat_messages')
-        .select('session_id, timestamp, role, id, content, metadata', { count: 'exact' })
-        .limit(5000)  // Set high limit to ensure we get all records
+        .select('session_id, timestamp, role, id, content, metadata', {
+          count: 'exact',
+        })
+        .limit(5000) // Set high limit to ensure we get all records
         .order('timestamp', { ascending: false });
 
       logger.info('📊 Database query result:', {
         recordsFetched: allMessages?.length || 0,
         totalRecordsInTable: count,
-        hasError: !!messagesError
+        hasError: !!messagesError,
       });
 
       if (messagesError) {
@@ -672,11 +677,11 @@ router.get(
         allMessages.forEach((msg: any) => {
           if (msg.session_id) {
             uniqueSessionIds.add(msg.session_id);
-            
+
             // Group by date
             const dateKey = new Date(msg.timestamp).toISOString().split('T')[0];
             messagesByDate[dateKey] = (messagesByDate[dateKey] || 0) + 1;
-            
+
             if (!conversationsByDate[dateKey]) {
               conversationsByDate[dateKey] = new Set<string>();
             }
@@ -700,7 +705,11 @@ router.get(
         last5Days: Object.entries(conversationsByDate)
           .sort(([a], [b]) => b.localeCompare(a))
           .slice(0, 5)
-          .map(([date, sessions]) => ({ date, conversations: sessions.size, messages: messagesByDate[date] || 0 }))
+          .map(([date, sessions]) => ({
+            date,
+            conversations: sessions.size,
+            messages: messagesByDate[date] || 0,
+          })),
       });
 
       // Get recommended products from agent messages
@@ -709,13 +718,14 @@ router.get(
 
       try {
         // Filter agent messages from already loaded messages
-        const agentMessages = allMessages?.filter((msg: any) => 
-          msg.role === 'agent' && msg.content
-        ) || [];
+        const agentMessages =
+          allMessages?.filter(
+            (msg: any) => msg.role === 'agent' && msg.content
+          ) || [];
 
         logger.info('📊 Analyzing agent messages for products', {
           totalAgentMessages: agentMessages.length,
-          totalMessages: allMessages?.length || 0
+          totalMessages: allMessages?.length || 0,
         });
 
         if (agentMessages.length > 0) {
@@ -763,12 +773,12 @@ router.get(
           last5DaysData: Object.entries(conversationsByDate)
             .sort(([a], [b]) => b.localeCompare(a))
             .slice(0, 5)
-            .map(([date, sessions]) => ({ 
-              date, 
-              conversations: sessions.size, 
-              messages: messagesByDate[date] || 0 
-            }))
-        }
+            .map(([date, sessions]) => ({
+              date,
+              conversations: sessions.size,
+              messages: messagesByDate[date] || 0,
+            })),
+        },
       };
 
       logger.info('📈 Final stats calculated:', stats);
