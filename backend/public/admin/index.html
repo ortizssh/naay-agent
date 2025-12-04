@@ -2653,13 +2653,28 @@
                         }
                     };
 
-                    updateElementSafely('stat-conversations', data.data.conversations);
-                    updateElementSafely('stat-recommended', data.data.recommendedProducts || 0);
-                    updateElementSafely('stat-recommendations', data.data.totalRecommendations || 0);
-                    updateElementSafely('stat-status', data.data.chatStatus);
+                    updateElementSafely('kpi-conversations', data.data.conversations);
+                    updateElementSafely('total-conversations', data.data.conversations);
+                    updateElementSafely('sidebar-conversations', data.data.conversations);
+                    updateElementSafely('chat-status', data.data.chatStatus);
+                    
+                    // Update products metrics if they exist  
+                    if (data.data.recommendedProducts !== undefined) {
+                        updateElementSafely('total-products-recommended', data.data.recommendedProducts);
+                    }
+                    if (data.data.totalRecommendations !== undefined) {
+                        updateElementSafely('avg-recommendations', data.data.totalRecommendations);
+                    }
+                    
+                    console.log('📊 Updating metrics:', {
+                        conversations: data.data.conversations,
+                        uniqueProducts: data.data.recommendedProducts, 
+                        totalRecommendations: data.data.totalRecommendations,
+                        status: data.data.chatStatus
+                    });
                     
                     // Color code status safely
-                    const statusEl = document.getElementById('stat-status');
+                    const statusEl = document.getElementById('chat-status');
                     if (statusEl) {
                         if (data.data.chatStatus === 'Active') {
                             statusEl.style.color = 'var(--naay-primary)';
