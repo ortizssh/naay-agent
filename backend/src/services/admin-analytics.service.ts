@@ -1764,7 +1764,10 @@ export class AdminAnalyticsService {
       });
 
       // Group messages by session to find when each conversation started
+      // IMPORTANT: This determines conversation creation dates for historical analytics
       const sessionFirstMessages = new Map<string, Date>();
+      const conversationCreationLog: Array<{sessionId: string, creationDate: string, dateOnly: string}> = [];
+      
       messagesList.forEach(msg => {
         const sessionId = msg.session_id;
         const timestamp = new Date(msg.timestamp);
@@ -1774,6 +1777,38 @@ export class AdminAnalyticsService {
           timestamp < sessionFirstMessages.get(sessionId)!
         ) {
           sessionFirstMessages.set(sessionId, timestamp);
+          
+          // Log first few conversation creation dates for verification
+          if (conversationCreationLog.length < 5) {
+            conversationCreationLog.push({
+              sessionId: sessionId.substring(0, 20) + '...', // Truncate for privacy/readability
+              creationDate: timestamp.toISOString(),
+              dateOnly: timestamp.toISOString().split('T')[0]
+            });
+          }
+        }
+      });
+
+      // Enhanced logging for conversation date analysis
+      const sortedDates = Array.from(sessionFirstMessages.values()).sort((a, b) => a.getTime() - b.getTime());
+      logger.info('Historical conversation date analysis completed', {
+        totalConversationsProcessed: sessionFirstMessages.size,
+        totalMessagesProcessed: messagesList.length,
+        dateRangeRequested: {
+          start: startDate.toISOString(),
+          end: endDate.toISOString(),
+          daysRequested: daysCount
+        },
+        conversationDateSpread: {
+          earliest: sortedDates.length > 0 ? sortedDates[0].toISOString() : null,
+          latest: sortedDates.length > 0 ? sortedDates[sortedDates.length - 1].toISOString() : null,
+          spanDays: sortedDates.length > 0 ? 
+            Math.ceil((sortedDates[sortedDates.length - 1].getTime() - sortedDates[0].getTime()) / (1000 * 60 * 60 * 24)) : 0
+        },
+        sampleConversationDates: conversationCreationLog,
+        dataIntegrityCheck: {
+          validDates: sessionFirstMessages.size,
+          invalidDates: Array.from(sessionFirstMessages.values()).filter(date => isNaN(date.getTime())).length
         }
       });
 

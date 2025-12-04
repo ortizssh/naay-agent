@@ -285,4 +285,113 @@ router.get('/admin-debug', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * Conversation date verification endpoint 
+ * GET /health/conversation-dates?shop=domain&date=YYYY-MM-DD
+ */
+router.get('/conversation-dates', async (req: Request, res: Response) => {
+  try {
+    const { shop, date } = req.query;
+    
+    if (!shop || !date) {
+      return res.status(400).json({
+        error: 'Missing required parameters: shop and date (YYYY-MM-DD)',
+        example: '/health/conversation-dates?shop=naay.cl&date=2025-12-01'
+      });
+    }
+    
+    const targetDate = new Date(date as string);
+    if (isNaN(targetDate.getTime())) {
+      return res.status(400).json({
+        error: 'Invalid date format. Use YYYY-MM-DD',
+        provided: date
+      });
+    }
+    
+    const fs = require('fs');
+    const path = require('path');
+    const { SupabaseService } = require('../services/supabase.service');
+    
+    const supabaseService = new SupabaseService();
+    
+    // Get all messages for the specified date
+    const nextDate = new Date(targetDate);
+    nextDate.setDate(nextDate.getDate() + 1);
+    
+    const { data: messages, error } = await supabaseService.client
+      .from('chat_messages')
+      .select('id, session_id, role, timestamp')
+      .gte('timestamp', targetDate.toISOString())
+      .lt('timestamp', nextDate.toISOString())
+      .order('timestamp', { ascending: true });
+      
+    if (error) {
+      throw new Error(`Database query failed: ${error.message}`);
+    }
+    
+    // Group by session_id and find first message of each conversation
+    const sessionMap = new Map();
+    (messages || []).forEach((msg: any) => {
+      const sessionId = msg.session_id;
+      const timestamp = new Date(msg.timestamp);
+      
+      if (!sessionMap.has(sessionId) || timestamp < sessionMap.get(sessionId).firstMessage) {
+        sessionMap.set(sessionId, {
+          firstMessage: timestamp,
+          messageCount: (sessionMap.get(sessionId)?.messageCount || 0) + 1,
+          roles: [...(sessionMap.get(sessionId)?.roles || []), msg.role]
+        });
+      } else {
+        const existing = sessionMap.get(sessionId);
+        existing.messageCount++;
+        existing.roles.push(msg.role);
+      }
+    });
+    
+    // Find conversations that STARTED on this date (vs just had activity)
+    const conversationsStartedToday = Array.from(sessionMap.entries())
+      .filter(([_, data]: [string, any]) => {
+        const dateOnly = data.firstMessage.toISOString().split('T')[0];
+        return dateOnly === targetDate.toISOString().split('T')[0];
+      });
+    
+    const debugInfo = {
+      date: targetDate.toISOString().split('T')[0],
+      query: {
+        shop: shop,
+        dateRange: {
+          start: targetDate.toISOString(),
+          end: nextDate.toISOString()
+        }
+      },
+      results: {
+        totalMessagesOnDate: messages?.length || 0,
+        totalConversationsWithActivity: sessionMap.size,
+        conversationsStartedOnDate: conversationsStartedToday.length,
+        conversationSample: conversationsStartedToday.slice(0, 10).map(([sessionId, data]: [string, any]) => ({
+          sessionId: sessionId.substring(0, 20) + '...',
+          startTime: data.firstMessage.toISOString(),
+          messageCount: data.messageCount,
+          roles: [...new Set(data.roles)].sort()
+        }))
+      },
+      verification: {
+        dateCalculationMethod: 'First message timestamp per session_id',
+        consistencyCheck: conversationsStartedToday.every(([_, data]: [string, any]) => 
+          data.firstMessage.toISOString().split('T')[0] === targetDate.toISOString().split('T')[0]
+        )
+      }
+    };
+    
+    res.json(debugInfo);
+    
+  } catch (error: any) {
+    logger.error('Conversation date verification failed:', error);
+    res.status(500).json({
+      error: 'Failed to verify conversation dates',
+      message: error.message
+    });
+  }
+});
+
 export default router;
