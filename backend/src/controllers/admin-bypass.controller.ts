@@ -608,9 +608,12 @@ router.get('/debug/db-stats', async (req: Request, res: Response) => {
         },
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Debug today error:', error);
-    next(error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
   }
 });
 
@@ -840,21 +843,6 @@ router.get(
         recommendedProducts: recommendedProducts,
         totalRecommendations: totalRecommendations,
         chatStatus: 'Active',
-        // Información de debug temporal
-        debug: {
-          totalMessagesInDB: totalMessages,
-          todayConversations,
-          todayMessages,
-          todayKey,
-          last5DaysData: Object.entries(conversationsByDate)
-            .sort(([a], [b]) => b.localeCompare(a))
-            .slice(0, 5)
-            .map(([date, sessions]) => ({
-              date,
-              conversations: sessions.size,
-              messages: messagesByDate[date] || 0,
-            })),
-        },
       };
 
       logger.info('📈 Final stats calculated:', stats);
@@ -863,6 +851,7 @@ router.get(
         success: true,
         data: stats,
       });
+      return;
     } catch (error) {
       logger.error('Admin bypass stats error:', error);
       // Return demo stats on error
@@ -875,6 +864,7 @@ router.get(
           chatStatus: 'Error',
         },
       });
+      return;
     }
   }
 );
