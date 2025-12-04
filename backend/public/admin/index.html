@@ -1938,16 +1938,36 @@
             }
         }
 
-        // Load Overview Charts
+        // Load Overview Charts - Updated to use real data
         async function loadOverviewCharts() {
             try {
-                // Load chart data
-                const chartResponse = await fetch(`${API_BASE_URL}/api/admin-bypass/analytics/chart?shop=${currentShop}&days=14`);
-                const chartData = await chartResponse.json();
+                console.log('📊 Loading overview chart with real data...');
                 
-                if (chartData.success) {
-                    renderOverviewChart(chartData.data);
+                // Use real data endpoint for accurate chart
+                const realDataResponse = await fetch(`${API_BASE_URL}/api/admin-bypass/debug/real-data?shop=${currentShop}`);
+                const realData = await realDataResponse.json();
+                
+                if (realData.success && realData.data.dailyStats) {
+                    console.log('✅ Using real daily stats for overview chart');
+                    const chartData = {
+                        daily_data: realData.data.dailyStats.map(day => ({
+                            date: day.date,
+                            conversations: day.conversations,
+                            messages: day.messages
+                        }))
+                    };
+                    renderOverviewChart(chartData);
                     renderFunnelChart();
+                } else {
+                    console.warn('⚠️ Real data not available, falling back to analytics endpoint');
+                    // Fallback to original analytics endpoint
+                    const chartResponse = await fetch(`${API_BASE_URL}/api/admin-bypass/analytics/chart?shop=${currentShop}&days=14`);
+                    const chartData = await chartResponse.json();
+                    
+                    if (chartData.success) {
+                        renderOverviewChart(chartData.data);
+                        renderFunnelChart();
+                    }
                 }
                 
             } catch (error) {
