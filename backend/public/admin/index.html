@@ -2165,11 +2165,24 @@
             });
         }
 
-        // Load Conversation Data
+        // Load Conversation Data - Optimized to prevent "too many requests"
         function loadConversationData() {
-            safeLoadConversations();
-            setTimeout(() => loadEngagementMetrics(), 500);
-            setTimeout(() => safeLoadChartData(), 1000);
+            console.log('🚀 Loading conversation tab with optimized approach');
+            console.log('✅ Step 1: Loading lightweight conversation list only');
+            
+            // Only load minimal conversation list - no details until clicked
+            loadConversationListOnly();
+            
+            // Load metrics with longer delays to prevent rate limiting
+            console.log('⏳ Step 2: Scheduling engagement metrics load in 2 seconds');
+            setTimeout(() => {
+                console.log('📊 Loading engagement metrics');
+                loadEngagementMetrics();
+            }, 2000);
+            
+            // Skip auto-loading chart data - load it only when needed
+            console.log('⚠️ Step 3: Skipping automatic chart data load to prevent rate limiting');
+            // setTimeout(() => safeLoadChartData(), 1000);
         }
 
         // Load Product Data
@@ -2515,6 +2528,34 @@
         let conversationLoadCount = 0;
         let pendingRequests = new Set();
 
+        // Optimized function to load only conversation summaries (not full details)
+        function loadConversationListOnly() {
+            const now = Date.now();
+            const requestId = 'conversation-list';
+            
+            console.log('📋 loadConversationListOnly() called');
+            
+            if (pendingRequests.has(requestId)) {
+                console.log('⏸️ Conversation list request already pending, skipping');
+                return;
+            }
+            
+            // More lenient rate limiting for just the list
+            if (now - lastConversationLoad < 5000) { // 5 seconds minimum
+                console.log('⏸️ Conversation list load too frequent, skipping');
+                return;
+            }
+            
+            console.log('✅ Loading lightweight conversation list (max 5 items)');
+            lastConversationLoad = now;
+            pendingRequests.add(requestId);
+            
+            loadConversations(true).finally(() => { // Pass lightweight flag
+                pendingRequests.delete(requestId);
+                console.log('✅ Lightweight conversation list loaded successfully');
+            });
+        }
+
         function safeLoadConversations() {
             const now = Date.now();
             const requestId = 'conversations';
@@ -2625,7 +2666,7 @@
             }
         }
 
-        async function loadConversations() {
+        async function loadConversations(lightweight = false) {
             const container = document.getElementById('conversations-container');
             const startTime = performance.now();
             
@@ -2633,12 +2674,15 @@
             
             try {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout (increased)
                 
-                const response = await fetch(`${API_BASE_URL}/api/admin-bypass/conversations?shop=${currentShop}&page=${currentPage}&limit=${limit}`, {
+                // Use smaller limit for lightweight mode to reduce load
+                const requestLimit = lightweight ? Math.min(limit, 5) : limit;
+                
+                const response = await fetch(`${API_BASE_URL}/api/admin-bypass/conversations?shop=${currentShop}&page=${currentPage}&limit=${requestLimit}`, {
                     signal: controller.signal,
                     headers: {
-                        'Cache-Control': 'max-age=900', // 15 minutes cache
+                        'Cache-Control': lightweight ? 'max-age=1800' : 'max-age=900', // Longer cache for lightweight
                     }
                 });
                 
@@ -2665,8 +2709,10 @@
                 }
 
                 if (data.success) {
-                    renderConversations(data.data.conversations);
-                    updatePagination(data.data.pagination);
+                    renderConversations(data.data.conversations, lightweight);
+                    if (!lightweight) {
+                        updatePagination(data.data.pagination);
+                    }
                 } else {
                     showError('Error al cargar conversaciones: ' + (data.error || 'Error desconocido'));
                 }
@@ -2687,12 +2733,22 @@
             }
         }
 
-        function renderConversations(conversations) {
+        function renderConversations(conversations, isLightweight = false) {
             const container = document.getElementById('conversations-container');
             
             if (!conversations || conversations.length === 0) {
                 container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6d7175;">No hay conversaciones recientes</div>';
                 return;
+            }
+
+            const wrapper = document.createElement('div');
+            
+            // Add lightweight mode notice
+            if (isLightweight) {
+                const notice = document.createElement('div');
+                notice.style.cssText = 'padding: 10px 15px; background: #f1f3f4; border-radius: 6px; margin-bottom: 15px; font-size: 13px; color: #5f6368;';
+                notice.innerHTML = '📊 Vista resumida - Mostrando las conversaciones más recientes. <button class="btn" onclick="safeLoadConversations()" style="margin-left: 10px; padding: 4px 8px; font-size: 12px;">Cargar todas</button>';
+                wrapper.appendChild(notice);
             }
 
             const list = document.createElement('ul');
@@ -2724,8 +2780,9 @@
                 list.appendChild(item);
             });
 
+            wrapper.appendChild(list);
             container.innerHTML = '';
-            container.appendChild(list);
+            container.appendChild(wrapper);
         }
 
         function updatePagination(pagination) {
@@ -2757,6 +2814,8 @@
 
         // Modal functions
         async function openConversationModal(sessionId, messageCount) {
+            console.log('🔍 Opening conversation modal with lazy loading:', sessionId.substring(0, 20) + '...');
+            
             const modal = document.getElementById('conversationModal');
             const modalSessionId = document.getElementById('modalSessionId');
             const modalMessageCount = document.getElementById('modalMessageCount');
@@ -2777,14 +2836,18 @@
             // Show modal
             modal.style.display = 'block';
             
+            console.log('📡 Fetching conversation details on-demand');
+            
             try {
                 // Fetch conversation details
                 const response = await fetch(`${API_BASE_URL}/api/admin-bypass/conversations/${sessionId}`);
                 const data = await response.json();
                 
                 if (data.success) {
+                    console.log('✅ Conversation details loaded successfully via lazy loading');
                     renderConversationMessages(data.data);
                 } else {
+                    console.error('❌ Failed to load conversation details:', data.error);
                     chatContainer.innerHTML = `
                         <div style="padding: 40px; text-align: center; color: #d32f2f;">
                             Error al cargar la conversación: ${data.error || 'Error desconocido'}
