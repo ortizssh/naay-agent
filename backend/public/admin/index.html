@@ -1330,7 +1330,7 @@
                             <div class="kpi-icon">💬</div>
                             <div class="kpi-value" id="kpi-conversations">-</div>
                             <div class="kpi-label">Total Conversaciones</div>
-                            <div class="kpi-sublabel">Últimos 30 días</div>
+                            <div class="kpi-sublabel">Datos reales completos</div>
                         </div>
                         <div class="kpi-card">
                             <div class="kpi-icon">💰</div>
@@ -2628,22 +2628,31 @@
 
         async function loadStats() {
             try {
-                const url = `${API_BASE_URL}/api/admin-bypass/stats?shop=${currentShop}`;
-                console.log('Loading stats from:', url);
-                console.log('Current shop:', currentShop);
-                console.log('API Base URL:', API_BASE_URL);
+                const statsUrl = `${API_BASE_URL}/api/admin-bypass/stats?shop=${currentShop}`;
+                const realDataUrl = `${API_BASE_URL}/api/admin-bypass/debug/real-data`;
                 
-                const response = await fetch(url);
+                console.log('Loading enhanced stats from multiple endpoints...');
                 
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                // Load both endpoints in parallel for better performance
+                const [statsResponse, realDataResponse] = await Promise.all([
+                    fetch(statsUrl),
+                    fetch(realDataUrl)
+                ]);
+                
+                if (!statsResponse.ok) {
+                    throw new Error(`Stats API error: ${statsResponse.status}`);
                 }
                 
-                const data = await response.json();
-                console.log('Stats response:', data);
+                const statsData = await statsResponse.json();
+                const realData = realDataResponse.ok ? await realDataResponse.json() : null;
+                
+                console.log('📊 Stats data:', statsData);
+                if (realData) {
+                    console.log('📈 Real data analysis:', realData);
+                }
 
-                if (data.success) {
-                    // Safe DOM element updates - check if elements exist
+                if (statsData.success) {
+                    // Safe DOM element updates
                     const updateElementSafely = (id, value) => {
                         const element = document.getElementById(id);
                         if (element) {
@@ -2653,46 +2662,80 @@
                         }
                     };
 
-                    updateElementSafely('kpi-conversations', data.data.conversations);
-                    updateElementSafely('total-conversations', data.data.conversations);
-                    updateElementSafely('sidebar-conversations', data.data.conversations);
-                    updateElementSafely('chat-status', data.data.chatStatus);
+                    // Use real data numbers if available, otherwise use stats data
+                    const conversationsTotal = realData?.success ? realData.data.uniqueConversations : statsData.data.conversations;
+                    const todayConversations = realData?.success ? realData.data.todayConversations : 0;
+                    const totalRecords = realData?.success ? realData.data.totalRecordsInDB : 0;
+
+                    // Update main metrics with real data
+                    updateElementSafely('kpi-conversations', conversationsTotal);
+                    updateElementSafely('total-conversations', conversationsTotal);
+                    updateElementSafely('sidebar-conversations', conversationsTotal);
+                    updateElementSafely('chat-status', statsData.data.chatStatus);
                     
-                    // Update products metrics if they exist  
-                    if (data.data.recommendedProducts !== undefined) {
-                        updateElementSafely('total-products-recommended', data.data.recommendedProducts);
+                    // Update products metrics
+                    if (statsData.data.recommendedProducts !== undefined) {
+                        updateElementSafely('total-products-recommended', statsData.data.recommendedProducts);
                     }
-                    if (data.data.totalRecommendations !== undefined) {
-                        updateElementSafely('avg-recommendations', data.data.totalRecommendations);
+                    if (statsData.data.totalRecommendations !== undefined) {
+                        updateElementSafely('avg-recommendations', statsData.data.totalRecommendations);
+                    }
+
+                    // Add today's data as additional info
+                    if (todayConversations > 0) {
+                        const elements = ['kpi-conversations', 'total-conversations'];
+                        elements.forEach(id => {
+                            const element = document.getElementById(id);
+                            if (element && element.parentElement) {
+                                // Add today's info below the main number
+                                let todayInfo = element.parentElement.querySelector('.today-info');
+                                if (!todayInfo) {
+                                    todayInfo = document.createElement('div');
+                                    todayInfo.className = 'today-info';
+                                    todayInfo.style.fontSize = '11px';
+                                    todayInfo.style.color = 'var(--naay-primary)';
+                                    todayInfo.style.marginTop = '4px';
+                                    element.parentElement.appendChild(todayInfo);
+                                }
+                                todayInfo.textContent = `${todayConversations} hoy`;
+                            }
+                        });
+                    }
+
+                    // Add total records info if available
+                    if (totalRecords > 0) {
+                        updateElementSafely('total-messages', totalRecords);
                     }
                     
-                    console.log('📊 Updating metrics:', {
-                        conversations: data.data.conversations,
-                        uniqueProducts: data.data.recommendedProducts, 
-                        totalRecommendations: data.data.totalRecommendations,
-                        status: data.data.chatStatus
-                    });
-                    
-                    // Color code status safely
+                    // Color code status
                     const statusEl = document.getElementById('chat-status');
                     if (statusEl) {
-                        if (data.data.chatStatus === 'Active') {
+                        if (statsData.data.chatStatus === 'Active') {
                             statusEl.style.color = 'var(--naay-primary)';
                         } else {
                             statusEl.style.color = 'var(--naay-dark)';
                         }
                     }
 
-                    console.log('✅ Stats loaded successfully:', {
-                        conversations: data.data.conversations,
-                        recommendations: data.data.totalRecommendations,
-                        status: data.data.chatStatus
+                    console.log('✅ Enhanced stats loaded:', {
+                        totalConversations: conversationsTotal,
+                        todayConversations: todayConversations,
+                        totalRecords: totalRecords,
+                        uniqueProducts: statsData.data.recommendedProducts,
+                        totalRecommendations: statsData.data.totalRecommendations,
+                        status: statsData.data.chatStatus,
+                        realDataAvailable: !!realData?.success
                     });
+
+                    // Store real data for use in charts
+                    if (realData?.success) {
+                        window.lastRealData = realData.data;
+                    }
                 } else {
-                    console.warn('Stats API returned error:', data.error);
+                    console.warn('Stats API returned error:', statsData.error);
                 }
             } catch (error) {
-                console.error('Error loading stats:', error);
+                console.error('Error loading enhanced stats:', error);
                 if (error.message.includes('429')) {
                     showError('Too many requests. Please wait a moment and refresh.');
                 }
@@ -3088,22 +3131,59 @@
                 chartContainer.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 280px;"><div class="spinner"></div><span style="margin-left: 10px;">Actualizando gráfico...</span></div>';
                 
                 const period = document.getElementById('chart-period').value;
-                const response = await fetch(`${API_BASE_URL}/api/admin-bypass/analytics/chart?shop=${currentShop}&days=${period}`);
-                const data = await response.json();
+                
+                // Try to get real data first, fallback to analytics endpoint
+                let chartData = null;
+                
+                try {
+                    // Use real data if available from previous load
+                    if (window.lastRealData && window.lastRealData.last7Days) {
+                        console.log('📊 Using real data for chart');
+                        chartData = {
+                            success: true,
+                            data: {
+                                daily_data: window.lastRealData.last7Days.map(day => ({
+                                    date: day.date,
+                                    conversations: day.conversations,
+                                    messages: day.messages,
+                                    orders: 0 // Placeholder
+                                })),
+                                totals: {
+                                    conversations: window.lastRealData.uniqueConversations,
+                                    messages: window.lastRealData.recordsAnalyzed
+                                }
+                            }
+                        };
+                    }
+                } catch (realDataError) {
+                    console.log('Could not use real data, falling back to analytics API');
+                }
+                
+                // Fallback to original analytics endpoint if no real data
+                if (!chartData) {
+                    const response = await fetch(`${API_BASE_URL}/api/admin-bypass/analytics/chart?shop=${currentShop}&days=${period}`);
+                    chartData = await response.json();
+                }
 
-                if (data.success) {
+                if (chartData.success) {
                     // Restore original container structure
                     chartContainer.innerHTML = '<canvas id="analytics-chart" style="max-height: 240px;"></canvas>';
-                    renderAnalyticsChart(data.data);
+                    renderAnalyticsChart(chartData.data);
+                    
+                    console.log('📈 Chart data loaded:', {
+                        source: window.lastRealData ? 'real-data' : 'analytics-api',
+                        dataPoints: chartData.data.daily_data?.length || 0
+                    });
                 } else {
                     // Restore original container structure on error
                     chartContainer.innerHTML = '<canvas id="analytics-chart" style="max-height: 240px;"></canvas>';
-                    showError('Error al cargar datos del gráfico: ' + (data.error || 'Error desconocido'));
+                    showError('Error al cargar datos del gráfico: ' + (chartData.error || 'Error desconocido'));
                 }
             } catch (error) {
                 // Restore original container structure on error
                 const chartContainer = document.querySelector('#analytics-chart').parentElement;
                 chartContainer.innerHTML = '<canvas id="analytics-chart" style="max-height: 240px;"></canvas>';
+                console.error('Chart loading error:', error);
                 showError('Error de conexión al cargar datos del gráfico');
             }
         }
