@@ -2262,7 +2262,10 @@ router.get(
         .order('timestamp', { ascending: false });
 
       if (chatError) {
-        logger.error('Error fetching chat messages for product metrics:', chatError);
+        logger.error(
+          'Error fetching chat messages for product metrics:',
+          chatError
+        );
         return res.json({
           success: true,
           data: {
@@ -2271,21 +2274,29 @@ router.get(
               totalUniqueProducts: 0,
               totalRecommendations: 0,
               averageRecommendationsPerProduct: 0,
-              topProductScore: 0
+              topProductScore: 0,
             },
             trendingProducts: [],
             productCategories: [],
             sentimentAnalysis: {
               positive: 0,
               neutral: 0,
-              negative: 0
-            }
+              negative: 0,
+            },
           },
         });
       }
 
       // Enhanced product extraction and analysis
-      const productCounts: { [productId: string]: { count: number; details?: any; sessions: Set<string>; timestamps: Date[]; sentimentScore: number } } = {};
+      const productCounts: {
+        [productId: string]: {
+          count: number;
+          details?: any;
+          sessions: Set<string>;
+          timestamps: Date[];
+          sentimentScore: number;
+        };
+      } = {};
       const productDetailsMap = new Map<string, any>();
       const categoryAnalysis = new Map<string, number>();
       const sentimentStats = { positive: 0, neutral: 0, negative: 0 };
@@ -2297,7 +2308,7 @@ router.get(
             message.content || '',
             message.metadata
           );
-          
+
           // Extract product details
           extractProductDetailsFromMessage(
             message.content || '',
@@ -2312,27 +2323,33 @@ router.get(
           // Process each product found
           for (const productId of products) {
             if (!productCounts[productId]) {
-              productCounts[productId] = { 
-                count: 0, 
-                sessions: new Set(), 
+              productCounts[productId] = {
+                count: 0,
+                sessions: new Set(),
                 timestamps: [],
-                sentimentScore: 0
+                sentimentScore: 0,
               };
             }
-            
+
             productCounts[productId].count++;
             productCounts[productId].sessions.add(message.session_id);
-            productCounts[productId].timestamps.push(new Date(message.timestamp));
-            productCounts[productId].sentimentScore += sentiment === 'positive' ? 1 : sentiment === 'negative' ? -1 : 0;
+            productCounts[productId].timestamps.push(
+              new Date(message.timestamp)
+            );
+            productCounts[productId].sentimentScore +=
+              sentiment === 'positive' ? 1 : sentiment === 'negative' ? -1 : 0;
 
             // Store product details if found
             const productDetail = productDetailsMap.get(productId);
             if (productDetail && !productCounts[productId].details) {
               productCounts[productId].details = productDetail;
-              
+
               // Analyze categories
               const category = productDetail.productType || 'Sin categoría';
-              categoryAnalysis.set(category, (categoryAnalysis.get(category) || 0) + 1);
+              categoryAnalysis.set(
+                category,
+                (categoryAnalysis.get(category) || 0) + 1
+              );
             }
           }
         }
@@ -2382,13 +2399,15 @@ router.get(
         const recentActivity = item.timestamps.filter(
           t => new Date().getTime() - t.getTime() < 7 * 24 * 60 * 60 * 1000
         ).length;
-        const trendScore = recentActivity / Math.max(1, item.count - recentActivity);
+        const trendScore =
+          recentActivity / Math.max(1, item.count - recentActivity);
 
         return {
           productId: item.productId,
           recommendations: item.count,
           uniqueSessions,
-          averageRecommendationsPerSession: Math.round(averageRecommendationsPerSession * 100) / 100,
+          averageRecommendationsPerSession:
+            Math.round(averageRecommendationsPerSession * 100) / 100,
           recentActivity,
           trendScore: Math.round(trendScore * 100) / 100,
           sentimentScore: item.sentimentScore,
@@ -2403,8 +2422,10 @@ router.get(
           productType:
             dbProduct?.product_type || item.details?.productType || 'Producto',
           createdAt: dbProduct?.created_at || null,
-          isNew: dbProduct?.created_at ? 
-            new Date().getTime() - new Date(dbProduct.created_at).getTime() < 30 * 24 * 60 * 60 * 1000 : false
+          isNew: dbProduct?.created_at
+            ? new Date().getTime() - new Date(dbProduct.created_at).getTime() <
+              30 * 24 * 60 * 60 * 1000
+            : false,
         };
       });
 
@@ -2419,7 +2440,7 @@ router.get(
         .map(([category, count]) => ({
           category,
           count,
-          percentage: Math.round((count / enrichedProducts.length) * 100)
+          percentage: Math.round((count / enrichedProducts.length) * 100),
         }))
         .sort((a, b) => b.count - a.count);
 
@@ -2429,16 +2450,31 @@ router.get(
         0
       );
       const totalUniqueProducts = Object.keys(productCounts).length;
-      const averageRecommendationsPerProduct = totalUniqueProducts > 0 ? 
-        totalRecommendations / totalUniqueProducts : 0;
-      const topProductScore = enrichedProducts.length > 0 ? enrichedProducts[0].recommendations : 0;
+      const averageRecommendationsPerProduct =
+        totalUniqueProducts > 0
+          ? totalRecommendations / totalUniqueProducts
+          : 0;
+      const topProductScore =
+        enrichedProducts.length > 0 ? enrichedProducts[0].recommendations : 0;
 
       // Sentiment analysis percentages
-      const totalMessages = sentimentStats.positive + sentimentStats.neutral + sentimentStats.negative;
+      const totalMessages =
+        sentimentStats.positive +
+        sentimentStats.neutral +
+        sentimentStats.negative;
       const sentimentPercentages = {
-        positive: totalMessages > 0 ? Math.round((sentimentStats.positive / totalMessages) * 100) : 0,
-        neutral: totalMessages > 0 ? Math.round((sentimentStats.neutral / totalMessages) * 100) : 0,
-        negative: totalMessages > 0 ? Math.round((sentimentStats.negative / totalMessages) * 100) : 0
+        positive:
+          totalMessages > 0
+            ? Math.round((sentimentStats.positive / totalMessages) * 100)
+            : 0,
+        neutral:
+          totalMessages > 0
+            ? Math.round((sentimentStats.neutral / totalMessages) * 100)
+            : 0,
+        negative:
+          totalMessages > 0
+            ? Math.round((sentimentStats.negative / totalMessages) * 100)
+            : 0,
       };
 
       res.json({
@@ -2448,13 +2484,14 @@ router.get(
           productMetrics: {
             totalUniqueProducts,
             totalRecommendations,
-            averageRecommendationsPerProduct: Math.round(averageRecommendationsPerProduct * 100) / 100,
-            topProductScore
+            averageRecommendationsPerProduct:
+              Math.round(averageRecommendationsPerProduct * 100) / 100,
+            topProductScore,
           },
           trendingProducts,
           productCategories,
           sentimentAnalysis: sentimentPercentages,
-          period: `${daysCount} días`
+          period: `${daysCount} días`,
         },
       });
     } catch (error) {
@@ -2467,15 +2504,15 @@ router.get(
             totalUniqueProducts: 0,
             totalRecommendations: 0,
             averageRecommendationsPerProduct: 0,
-            topProductScore: 0
+            topProductScore: 0,
           },
           trendingProducts: [],
           productCategories: [],
           sentimentAnalysis: {
             positive: 0,
             neutral: 0,
-            negative: 0
-          }
+            negative: 0,
+          },
         },
       });
     }
@@ -2483,7 +2520,10 @@ router.get(
 );
 
 // Enhanced product extraction function
-function extractProductsFromMessageEnhanced(content: string, metadata: any): string[] {
+function extractProductsFromMessageEnhanced(
+  content: string,
+  metadata: any
+): string[] {
   const productIds = new Set<string>();
 
   try {
@@ -2493,12 +2533,12 @@ function extractProductsFromMessageEnhanced(content: string, metadata: any): str
 
     if (content) {
       // Enhanced patterns for better product detection
-      
+
       // Look for product mentions in more contexts
       const productMentionPatterns = [
         /(?:recomiendo|sugiero|prueba|considera|te.*gust[ae].*|ideal.*para|perfecto.*para).*?(?:producto|crema|gel|bálsamo|emulsión|espuma).*?"([^"]+)"/gi,
         /\*\*([^*]+(?:crema|gel|bálsamo|emulsión|espuma|producto)[^*]*)\*\*/gi,
-        /(?:el|la|este|esta)\s+([^.]+(?:crema|gel|bálsamo|emulsión|espuma|producto)[^.]*)/gi
+        /(?:el|la|este|esta)\s+([^.]+(?:crema|gel|bálsamo|emulsión|espuma|producto)[^.]*)/gi,
       ];
 
       productMentionPatterns.forEach(pattern => {
@@ -2538,15 +2578,40 @@ function extractProductsFromMessageEnhanced(content: string, metadata: any): str
 }
 
 // Simple sentiment analysis function
-function analyzeMessageSentiment(content: string): 'positive' | 'neutral' | 'negative' {
-  const positiveWords = ['excelente', 'perfecto', 'genial', 'ideal', 'recomiendo', 'me gusta', 'fantástico', 'increíble', 'maravilloso'];
-  const negativeWords = ['problema', 'error', 'mal', 'terrible', 'horrible', 'no funciona', 'decepcionante', 'malo'];
-  
+function analyzeMessageSentiment(
+  content: string
+): 'positive' | 'neutral' | 'negative' {
+  const positiveWords = [
+    'excelente',
+    'perfecto',
+    'genial',
+    'ideal',
+    'recomiendo',
+    'me gusta',
+    'fantástico',
+    'increíble',
+    'maravilloso',
+  ];
+  const negativeWords = [
+    'problema',
+    'error',
+    'mal',
+    'terrible',
+    'horrible',
+    'no funciona',
+    'decepcionante',
+    'malo',
+  ];
+
   const lowerContent = content.toLowerCase();
-  
-  const positiveCount = positiveWords.filter(word => lowerContent.includes(word)).length;
-  const negativeCount = negativeWords.filter(word => lowerContent.includes(word)).length;
-  
+
+  const positiveCount = positiveWords.filter(word =>
+    lowerContent.includes(word)
+  ).length;
+  const negativeCount = negativeWords.filter(word =>
+    lowerContent.includes(word)
+  ).length;
+
   if (positiveCount > negativeCount) return 'positive';
   if (negativeCount > positiveCount) return 'negative';
   return 'neutral';
