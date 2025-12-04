@@ -1947,10 +1947,10 @@
                 const realDataResponse = await fetch(`${API_BASE_URL}/api/admin-bypass/debug/real-data?shop=${currentShop}`);
                 const realData = await realDataResponse.json();
                 
-                if (realData.success && realData.data.dailyStats) {
+                if (realData.success && realData.data.last7Days) {
                     console.log('✅ Using real daily stats for overview chart');
                     const chartData = {
-                        daily_data: realData.data.dailyStats.map(day => ({
+                        daily_data: realData.data.last7Days.map(day => ({
                             date: day.date,
                             conversations: day.conversations,
                             messages: day.messages
@@ -1959,15 +1959,8 @@
                     renderOverviewChart(chartData);
                     renderFunnelChart();
                 } else {
-                    console.warn('⚠️ Real data not available, falling back to analytics endpoint');
-                    // Fallback to original analytics endpoint
-                    const chartResponse = await fetch(`${API_BASE_URL}/api/admin-bypass/analytics/chart?shop=${currentShop}&days=14`);
-                    const chartData = await chartResponse.json();
-                    
-                    if (chartData.success) {
-                        renderOverviewChart(chartData.data);
-                        renderFunnelChart();
-                    }
+                    console.error('❌ Could not load real data for overview chart');
+                    throw new Error('Real data endpoint failed or no last7Days data');
                 }
                 
             } catch (error) {
@@ -2640,23 +2633,32 @@
                         }
                     };
 
-                    // Use real data numbers if available, otherwise use stats data
-                    const conversationsTotal = realData?.success ? realData.data.uniqueConversations : statsData.data.conversations;
-                    const todayConversations = realData?.success ? realData.data.todayConversations : 0;
-                    const totalRecords = realData?.success ? realData.data.totalRecordsInDB : 0;
+                    // Use only real data numbers
+                    if (!realData?.success) {
+                        throw new Error('Real data is required but not available');
+                    }
+                    
+                    const conversationsTotal = realData.data.uniqueConversations;
+                    const todayConversations = realData.data.todayConversations;
+                    const totalRecords = realData.data.totalRecordsInDB;
 
                     // Update main metrics with real data
                     updateElementSafely('kpi-conversations', conversationsTotal);
                     updateElementSafely('total-conversations', conversationsTotal);
                     updateElementSafely('sidebar-conversations', conversationsTotal);
-                    updateElementSafely('chat-status', statsData.data.chatStatus);
-                    
-                    // Update products metrics
-                    if (statsData.data.recommendedProducts !== undefined) {
-                        updateElementSafely('total-products-recommended', statsData.data.recommendedProducts);
-                    }
-                    if (statsData.data.totalRecommendations !== undefined) {
-                        updateElementSafely('avg-recommendations', statsData.data.totalRecommendations);
+                    // Update chat status from stats data (this is not part of conversation counts)
+                    if (statsData.success && statsData.data.chatStatus) {
+                        updateElementSafely('chat-status', statsData.data.chatStatus);
+                        
+                        // Set status color
+                        const statusEl = document.getElementById('chat-status');
+                        if (statusEl) {
+                            if (statsData.data.chatStatus === 'Active') {
+                                statusEl.style.color = 'var(--naay-primary)';
+                            } else {
+                                statusEl.style.color = 'var(--naay-dark)';
+                            }
+                        }
                     }
 
                     // Add today's data as additional info
@@ -2684,34 +2686,15 @@
                     if (totalRecords > 0) {
                         updateElementSafely('total-messages', totalRecords);
                     }
-                    
-                    // Color code status
-                    const statusEl = document.getElementById('chat-status');
-                    if (statusEl) {
-                        if (statsData.data.chatStatus === 'Active') {
-                            statusEl.style.color = 'var(--naay-primary)';
-                        } else {
-                            statusEl.style.color = 'var(--naay-dark)';
-                        }
-                    }
 
-                    console.log('✅ Enhanced stats loaded:', {
+                    console.log('✅ Real stats loaded:', {
                         totalConversations: conversationsTotal,
                         todayConversations: todayConversations,
-                        totalRecords: totalRecords,
-                        uniqueProducts: statsData.data.recommendedProducts,
-                        totalRecommendations: statsData.data.totalRecommendations,
-                        status: statsData.data.chatStatus,
-                        realDataAvailable: !!realData?.success
+                        totalRecords: totalRecords
                     });
 
                     // Store real data for use in charts
-                    if (realData?.success) {
-                        window.lastRealData = realData.data;
-                    }
-                } else {
-                    console.warn('Stats API returned error:', statsData.error);
-                }
+                    window.lastRealData = realData.data;
             } catch (error) {
                 console.error('Error loading enhanced stats:', error);
                 if (error.message.includes('429')) {
@@ -3212,64 +3195,53 @@
             try {
                 // Show loading indicator
                 const chartContainer = document.querySelector('#analytics-chart').parentElement;
-                const originalHTML = chartContainer.innerHTML;
                 chartContainer.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 280px;"><div class="spinner"></div><span style="margin-left: 10px;">Actualizando gráfico...</span></div>';
                 
                 const period = document.getElementById('chart-period').value;
                 
-                // Try to get real data first, fallback to analytics endpoint
-                let chartData = null;
+                // Load real data directly from the debug endpoint
+                console.log('📊 Loading real data for analytics chart');
+                const realDataResponse = await fetch(`${API_BASE_URL}/api/admin-bypass/debug/real-data?shop=${currentShop}`);
+                const realData = await realDataResponse.json();
                 
-                try {
-                    // Use real data if available from previous load
-                    if (window.lastRealData && window.lastRealData.last7Days) {
-                        console.log('📊 Using real data for chart');
-                        chartData = {
-                            success: true,
-                            data: {
-                                daily_data: window.lastRealData.last7Days.map(day => ({
-                                    date: day.date,
-                                    conversations: day.conversations,
-                                    messages: day.messages,
-                                    orders: 0 // Placeholder
-                                })),
-                                totals: {
-                                    conversations: window.lastRealData.uniqueConversations,
-                                    messages: window.lastRealData.recordsAnalyzed
-                                }
+                if (realData.success && realData.data.last7Days) {
+                    // Take only the requested number of days from the end
+                    const dailyStats = realData.data.last7Days.slice(-parseInt(period));
+                    
+                    const chartData = {
+                        success: true,
+                        data: {
+                            daily_data: dailyStats.map(day => ({
+                                date: day.date,
+                                conversations: day.conversations,
+                                messages: day.messages,
+                                orders: 0 // Placeholder
+                            })),
+                            totals: {
+                                conversations: realData.data.uniqueConversations,
+                                messages: realData.data.recordsAnalyzed
                             }
-                        };
-                    }
-                } catch (realDataError) {
-                    console.log('Could not use real data, falling back to analytics API');
-                }
-                
-                // Fallback to original analytics endpoint if no real data
-                if (!chartData) {
-                    const response = await fetch(`${API_BASE_URL}/api/admin-bypass/analytics/chart?shop=${currentShop}&days=${period}`);
-                    chartData = await response.json();
-                }
+                        }
+                    };
 
-                if (chartData.success) {
                     // Restore original container structure
                     chartContainer.innerHTML = '<canvas id="analytics-chart" style="max-height: 240px;"></canvas>';
                     renderAnalyticsChart(chartData.data);
                     
-                    console.log('📈 Chart data loaded:', {
-                        source: window.lastRealData ? 'real-data' : 'analytics-api',
-                        dataPoints: chartData.data.daily_data?.length || 0
+                    console.log('📈 Real chart data loaded:', {
+                        source: 'real-data-endpoint',
+                        dataPoints: chartData.data.daily_data.length,
+                        period: period + ' days'
                     });
                 } else {
-                    // Restore original container structure on error
-                    chartContainer.innerHTML = '<canvas id="analytics-chart" style="max-height: 240px;"></canvas>';
-                    showError('Error al cargar datos del gráfico: ' + (chartData.error || 'Error desconocido'));
+                    throw new Error('Real data endpoint failed or no last7Days data available');
                 }
             } catch (error) {
                 // Restore original container structure on error
                 const chartContainer = document.querySelector('#analytics-chart').parentElement;
                 chartContainer.innerHTML = '<canvas id="analytics-chart" style="max-height: 240px;"></canvas>';
                 console.error('Chart loading error:', error);
-                showError('Error de conexión al cargar datos del gráfico');
+                showError('Error al cargar datos reales del gráfico: ' + error.message);
             }
         }
 
@@ -3293,24 +3265,15 @@
                 });
             });
 
-            // Use real message data if available, otherwise calculate estimates
-            const dailyMessages = chartData.map(d => {
-                // If we have real message data, use it
-                if (d.messages !== undefined && d.messages !== null && d.messages > 0) {
-                    return d.messages;
-                }
-                // Fallback to estimation for legacy data
-                return Math.round(d.conversations * 5.59);
-            });
+            // Use only real message data
+            const dailyMessages = chartData.map(d => d.messages);
 
             // Log chart data for verification
-            console.log('📊 Chart data being rendered:', {
-                hasRealData: chartData.some(d => d.messages > 0),
+            console.log('📊 Real chart data being rendered:', {
                 dailyData: chartData.map(d => ({
                     date: d.date,
                     conversations: d.conversations,
-                    messages: d.messages || 'calculated',
-                    finalMessages: d.messages || Math.round(d.conversations * 5.59)
+                    messages: d.messages
                 }))
             });
 
@@ -3331,16 +3294,15 @@
                             pointHoverRadius: 6
                         },
                         {
-                            label: chartData.some(d => d.messages > 0) ? 'Mensajes (reales)' : 'Mensajes (estimado)',
+                            label: 'Mensajes',
                             data: dailyMessages,
-                            borderColor: chartData.some(d => d.messages > 0) ? '#8bc34a' : '#c4b16a',
-                            backgroundColor: chartData.some(d => d.messages > 0) ? 'rgba(139, 195, 74, 0.1)' : 'rgba(196, 177, 106, 0.1)',
+                            borderColor: '#8bc34a',
+                            backgroundColor: 'rgba(139, 195, 74, 0.1)',
                             fill: false,
                             tension: 0.4,
                             yAxisID: 'y1',
                             pointRadius: 3,
-                            pointHoverRadius: 5,
-                            borderDash: chartData.some(d => d.messages > 0) ? [0] : [5, 5]
+                            pointHoverRadius: 5
                         }
                     ]
                 },
