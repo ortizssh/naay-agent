@@ -386,14 +386,14 @@ router.get(
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - Number(days));
 
-      // Get product mentions from conversations
+      // Get product mentions from chat messages (agent responses)
       const { data: conversations, error } = await (
         supabaseService as any
       ).serviceClient
-        .from('conversations')
-        .select('ai_response, metadata, created_at')
-        .eq('shop_domain', shop)
-        .gte('created_at', daysAgo.toISOString());
+        .from('chat_messages')
+        .select('content, metadata, timestamp')
+        .eq('role', 'agent')
+        .gte('timestamp', daysAgo.toISOString());
 
       if (error) {
         logger.error(
@@ -417,7 +417,7 @@ router.get(
 
       conversations?.forEach(conv => {
         // Extract product mentions from AI responses
-        const response = conv.ai_response;
+        const response = conv.content;
         const metadata = conv.metadata;
 
         // Look for product references in the response
