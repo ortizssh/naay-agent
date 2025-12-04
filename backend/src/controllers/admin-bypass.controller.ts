@@ -536,6 +536,86 @@ router.get('/logs', async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
+// Debug endpoint to check today's data
+router.get(
+  '/debug/today',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const today = new Date();
+      const startOfDay = new Date(today);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(today);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      logger.info('Debug: Checking data for today', {
+        date: today.toISOString().split('T')[0],
+        startOfDay: startOfDay.toISOString(),
+        endOfDay: endOfDay.toISOString()
+      });
+
+      // Get all chat messages for today
+      const { data: todayMessages, error: todayError } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('chat_messages')
+        .select('id, session_id, role, timestamp, content')
+        .gte('timestamp', startOfDay.toISOString())
+        .lte('timestamp', endOfDay.toISOString())
+        .order('timestamp', { ascending: false });
+
+      if (todayError) {
+        throw todayError;
+      }
+
+      // Group by session_id for conversations
+      const sessionsToday = new Set<string>();
+      const messagesByRole: { [key: string]: number } = { client: 0, agent: 0, system: 0 };
+      
+      todayMessages?.forEach((msg: any) => {
+        sessionsToday.add(msg.session_id);
+        messagesByRole[msg.role] = (messagesByRole[msg.role] || 0) + 1;
+      });
+
+      // Get all historical data
+      const { data: allMessages } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('chat_messages')
+        .select('id, session_id, timestamp')
+        .order('timestamp', { ascending: false })
+        .limit(1000);
+
+      const allSessions = new Set<string>();
+      allMessages?.forEach((msg: any) => {
+        allSessions.add(msg.session_id);
+      });
+
+      res.json({
+        success: true,
+        data: {
+          today: {
+            date: today.toISOString().split('T')[0],
+            conversations: sessionsToday.size,
+            totalMessages: todayMessages?.length || 0,
+            messagesByRole,
+            latestMessages: todayMessages?.slice(0, 5)
+          },
+          historical: {
+            totalConversations: allSessions.size,
+            totalMessages: allMessages?.length || 0,
+            oldestMessage: allMessages?.[allMessages.length - 1]?.timestamp,
+            newestMessage: allMessages?.[0]?.timestamp
+          }
+        }
+      });
+
+    } catch (error) {
+      logger.error('Debug today error:', error);
+      next(error);
+    }
+  }
+);
+
 // Get dashboard stats - bypass version
 router.get(
   '/stats',
@@ -552,43 +632,96 @@ router.get(
 
       logger.info('Admin bypass: Getting stats', { shop });
 
-      // Get conversations count from unique session_id in chat_messages
-      const { data: uniqueSessions, error: messagesError } = await (
+      // DEBUG: Check what's actually in the database
+      const today = new Date();
+      const startOfToday = new Date(today);
+      startOfToday.setHours(0, 0, 0, 0);
+      
+      logger.info('DEBUG: Checking database content', {
+        today: today.toISOString().split('T')[0],
+        startOfToday: startOfToday.toISOString()
+      });
+
+      // Get ALL messages from chat_messages table - set high limit to get all records
+      const { data: allMessages, error: messagesError, count } = await (
         supabaseService as any
       ).serviceClient
         .from('chat_messages')
-        .select('session_id')
-        .not('session_id', 'is', null);
+        .select('session_id, timestamp, role, id, content, metadata', { count: 'exact' })
+        .limit(5000)  // Set high limit to ensure we get all records
+        .order('timestamp', { ascending: false });
 
-      const conversationCount = uniqueSessions
-        ? new Set(uniqueSessions.map(msg => msg.session_id)).size
-        : 0;
+      logger.info('📊 Database query result:', {
+        recordsFetched: allMessages?.length || 0,
+        totalRecordsInTable: count,
+        hasError: !!messagesError
+      });
 
       if (messagesError) {
-        logger.error(
-          'Error fetching chat sessions count for stats:',
-          messagesError
-        );
+        logger.error('Error fetching chat messages:', messagesError);
+        throw messagesError;
       }
 
-      // Get recommended products from chat messages (same source as analytics)
+      // Count total messages and unique conversations
+      const totalMessages = allMessages?.length || 0;
+      const uniqueSessionIds = new Set<string>();
+      const messagesByDate: { [key: string]: number } = {};
+      const conversationsByDate: { [key: string]: Set<string> } = {};
+
+      if (allMessages) {
+        allMessages.forEach((msg: any) => {
+          if (msg.session_id) {
+            uniqueSessionIds.add(msg.session_id);
+            
+            // Group by date
+            const dateKey = new Date(msg.timestamp).toISOString().split('T')[0];
+            messagesByDate[dateKey] = (messagesByDate[dateKey] || 0) + 1;
+            
+            if (!conversationsByDate[dateKey]) {
+              conversationsByDate[dateKey] = new Set<string>();
+            }
+            conversationsByDate[dateKey].add(msg.session_id);
+          }
+        });
+      }
+
+      const conversationCount = uniqueSessionIds.size;
+      const todayKey = today.toISOString().split('T')[0];
+      const todayConversations = conversationsByDate[todayKey]?.size || 0;
+      const todayMessages = messagesByDate[todayKey] || 0;
+
+      // Log detailed analysis
+      logger.info('💾 Database Analysis Complete', {
+        totalMessages,
+        totalConversations: conversationCount,
+        todayKey,
+        todayConversations,
+        todayMessages,
+        last5Days: Object.entries(conversationsByDate)
+          .sort(([a], [b]) => b.localeCompare(a))
+          .slice(0, 5)
+          .map(([date, sessions]) => ({ date, conversations: sessions.size, messages: messagesByDate[date] || 0 }))
+      });
+
+      // Get recommended products from agent messages
       let recommendedProducts = 0;
       let totalRecommendations = 0;
 
       try {
-        // Use chat_messages table - same as /analytics/top-recommended-products
-        const { data: chatMessages, error: chatError } = await (
-          supabaseService as any
-        ).serviceClient
-          .from('chat_messages')
-          .select('session_id, content, metadata, timestamp')
-          .not('content', 'is', null)
-          .eq('role', 'agent');
+        // Filter agent messages from already loaded messages
+        const agentMessages = allMessages?.filter((msg: any) => 
+          msg.role === 'agent' && msg.content
+        ) || [];
 
-        if (!chatError && chatMessages) {
+        logger.info('📊 Analyzing agent messages for products', {
+          totalAgentMessages: agentMessages.length,
+          totalMessages: allMessages?.length || 0
+        });
+
+        if (agentMessages.length > 0) {
           const uniqueProducts = new Set<string>();
 
-          chatMessages.forEach((message: any) => {
+          agentMessages.forEach((message: any) => {
             // Use the same extraction logic as analytics endpoints
             const products = extractProductsFromMessage(
               message.content || '',
@@ -603,13 +736,11 @@ router.get(
 
           recommendedProducts = uniqueProducts.size;
 
-          logger.info('Product recommendation stats from chat messages:', {
+          logger.info('📦 Product recommendation stats calculated:', {
             uniqueProducts: recommendedProducts,
             totalRecommendations: totalRecommendations,
-            messagesAnalyzed: chatMessages.length,
+            messagesAnalyzed: agentMessages.length,
           });
-        } else if (chatError) {
-          logger.error('Error fetching chat messages for stats:', chatError);
         }
       } catch (error) {
         logger.error(
@@ -623,9 +754,24 @@ router.get(
         recommendedProducts: recommendedProducts,
         totalRecommendations: totalRecommendations,
         chatStatus: 'Active',
+        // Información de debug temporal
+        debug: {
+          totalMessagesInDB: totalMessages,
+          todayConversations,
+          todayMessages,
+          todayKey,
+          last5DaysData: Object.entries(conversationsByDate)
+            .sort(([a], [b]) => b.localeCompare(a))
+            .slice(0, 5)
+            .map(([date, sessions]) => ({ 
+              date, 
+              conversations: sessions.size, 
+              messages: messagesByDate[date] || 0 
+            }))
+        }
       };
 
-      logger.info('Stats calculated:', stats);
+      logger.info('📈 Final stats calculated:', stats);
 
       res.json({
         success: true,
