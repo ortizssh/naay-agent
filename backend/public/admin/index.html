@@ -2643,18 +2643,36 @@
                 console.log('Stats response:', data);
 
                 if (data.success) {
-                    document.getElementById('stat-conversations').textContent = data.data.conversations;
-                    document.getElementById('stat-recommended').textContent = data.data.recommendedProducts || 0;
-                    document.getElementById('stat-recommendations').textContent = data.data.totalRecommendations || 0;
-                    document.getElementById('stat-status').textContent = data.data.chatStatus;
+                    // Safe DOM element updates - check if elements exist
+                    const updateElementSafely = (id, value) => {
+                        const element = document.getElementById(id);
+                        if (element) {
+                            element.textContent = value;
+                        } else {
+                            console.warn(`Element with id '${id}' not found in DOM`);
+                        }
+                    };
+
+                    updateElementSafely('stat-conversations', data.data.conversations);
+                    updateElementSafely('stat-recommended', data.data.recommendedProducts || 0);
+                    updateElementSafely('stat-recommendations', data.data.totalRecommendations || 0);
+                    updateElementSafely('stat-status', data.data.chatStatus);
                     
-                    // Color code status
+                    // Color code status safely
                     const statusEl = document.getElementById('stat-status');
-                    if (data.data.chatStatus === 'Active') {
-                        statusEl.style.color = 'var(--naay-primary)';
-                    } else {
-                        statusEl.style.color = 'var(--naay-dark)';
+                    if (statusEl) {
+                        if (data.data.chatStatus === 'Active') {
+                            statusEl.style.color = 'var(--naay-primary)';
+                        } else {
+                            statusEl.style.color = 'var(--naay-dark)';
+                        }
                     }
+
+                    console.log('✅ Stats loaded successfully:', {
+                        conversations: data.data.conversations,
+                        recommendations: data.data.totalRecommendations,
+                        status: data.data.chatStatus
+                    });
                 } else {
                     console.warn('Stats API returned error:', data.error);
                 }
@@ -3396,6 +3414,13 @@
         
         // Load engagement metrics with visualization
         async function loadEngagementMetrics() {
+            console.log('⚠️ Engagement metrics endpoint not implemented yet - skipping for now');
+            console.log('📋 Available endpoints: /stats, /conversations, /analytics/chart');
+            
+            // TODO: Implement /api/admin-bypass/metrics/engagement endpoint
+            // For now, we'll skip this to prevent 404 errors
+            
+            /*
             try {
                 const response = await fetch(`${API_BASE_URL}/api/admin-bypass/metrics/engagement?shop=${currentShop}`);
                 const data = await response.json();
@@ -3409,6 +3434,7 @@
             } catch (error) {
                 console.error('Error loading engagement metrics:', error);
             }
+            */
         }
         
         function renderConversationLengthBars(data) {

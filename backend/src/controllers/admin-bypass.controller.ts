@@ -1433,22 +1433,41 @@ router.get(
           .not('session_id', 'is', null);
 
         if (!chatError && chatMessages) {
-          // Group by session and date to count unique conversations per day
-          const sessionsByDate = new Map();
+          // FIXED: Find the first message timestamp for each session (conversation start date)
+          // This ensures we count conversations on the date they actually started
+          const sessionFirstMessages = new Map();
 
+          // Find the earliest message for each session
           chatMessages.forEach((msg: any) => {
-            const dateKey = new Date(msg.timestamp).toISOString().split('T')[0];
-            if (!sessionsByDate.has(dateKey)) {
-              sessionsByDate.set(dateKey, new Set());
+            const sessionId = msg.session_id;
+            const timestamp = new Date(msg.timestamp);
+            
+            if (!sessionFirstMessages.has(sessionId) || timestamp < sessionFirstMessages.get(sessionId)) {
+              sessionFirstMessages.set(sessionId, timestamp);
             }
-            sessionsByDate.get(dateKey).add(msg.session_id);
           });
 
-          // Update conversation counts
-          sessionsByDate.forEach((sessions, dateKey) => {
-            if (dailyDataMap.has(dateKey)) {
-              dailyDataMap.get(dateKey).conversations = sessions.size;
+          // Count conversations by their start date
+          const conversationsByStartDate = new Map();
+          sessionFirstMessages.forEach((firstMessageDate, sessionId) => {
+            const dateKey = firstMessageDate.toISOString().split('T')[0];
+            if (!conversationsByStartDate.has(dateKey)) {
+              conversationsByStartDate.set(dateKey, 0);
             }
+            conversationsByStartDate.set(dateKey, conversationsByStartDate.get(dateKey) + 1);
+          });
+
+          // Update daily data map with correct conversation counts
+          conversationsByStartDate.forEach((count, dateKey) => {
+            if (dailyDataMap.has(dateKey)) {
+              dailyDataMap.get(dateKey).conversations = count;
+            }
+          });
+
+          logger.info('Analytics chart conversations calculated', {
+            totalSessions: sessionFirstMessages.size,
+            dateRange: `${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`,
+            conversationsByDate: Array.from(conversationsByStartDate.entries()).map(([date, count]) => ({ date, count }))
           });
         }
       } catch (error) {
