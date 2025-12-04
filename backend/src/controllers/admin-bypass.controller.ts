@@ -874,7 +874,7 @@ router.get(
   '/conversations',
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { shop, limit = 10, page = 1 } = req.query;
+      const { shop, limit = 10, page = 1, date } = req.query;
 
       if (!shop) {
         return res.status(400).json({
@@ -887,21 +887,31 @@ router.get(
       const limitNum = parseInt(limit as string);
       const offset = (pageNum - 1) * limitNum;
 
+      // Use date filter if provided, otherwise default to today
+      const filterDate = date ? new Date(date as string) : new Date();
+      const startOfDay = new Date(filterDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(filterDate);
+      endOfDay.setHours(23, 59, 59, 999);
+
       logger.info('Admin bypass: Getting conversations', {
         shop,
         limit,
         page,
         offset,
+        date: filterDate.toISOString().split('T')[0],
       });
 
-      // Get all messages and group by session_id
-      const { data: allMessages, error: messagesError } = await (
-        supabaseService as any
-      ).serviceClient
+      // Get messages for the specified date and group by session_id
+      let query = (supabaseService as any).serviceClient
         .from('chat_messages')
         .select('session_id, content, timestamp, role')
         .not('session_id', 'is', null)
+        .gte('timestamp', startOfDay.toISOString())
+        .lte('timestamp', endOfDay.toISOString())
         .order('timestamp', { ascending: false });
+
+      const { data: allMessages, error: messagesError } = await query;
 
       if (messagesError) {
         logger.error('Error fetching chat messages:', messagesError);

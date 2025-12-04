@@ -1430,113 +1430,42 @@
                 <div id="pane-conversaciones" class="tab-pane">
                     <div class="section-header">
                         <div>
-                            <h2 class="section-title">Análisis de Conversaciones</h2>
-                            <p class="section-subtitle">Historial y métricas de engagement detalladas</p>
+                            <h2 class="section-title">Conversaciones por Fecha</h2>
+                            <p class="section-subtitle">Conversaciones del día seleccionado (por defecto: hoy)</p>
                         </div>
                         <div class="section-actions">
-                            <button class="btn" onclick="loadEngagementMetrics()">Actualizar</button>
+                            <input type="date" id="conversations-date-filter" class="btn" style="margin-right: 10px;" />
+                            <button class="btn" onclick="loadConversationsByDate()">Cargar</button>
                         </div>
                     </div>
 
-                    <!-- Engagement Metrics Section -->
-                    <div class="engagement-section" style="margin-bottom: 24px;">
-                        <div class="engagement-charts">
-                            <!-- Conversation Length Distribution -->
-                            <div class="engagement-chart">
-                                <h4>Distribución por Duración de Conversación</h4>
-                                <div id="conversation-length-bars">
-                                    <div class="loading-spinner"><div class="spinner"></div></div>
-                                </div>
+                    <!-- Daily Stats Summary -->
+                    <div class="daily-stats-summary" style="margin-bottom: 24px;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                            <div class="stat-card" style="background: var(--naay-light); padding: 16px; border-radius: 8px; border: 1px solid #e1e3e5;">
+                                <div style="font-size: 24px; font-weight: 700; color: var(--naay-primary);" id="daily-conversations-count">-</div>
+                                <div style="font-size: 13px; color: #6d7175; margin-top: 4px;">Conversaciones del día</div>
                             </div>
-                            
-                            <!-- User Engagement Levels -->
-                            <div class="engagement-chart">
-                                <h4>Niveles de Engagement de Usuarios</h4>
-                                <div id="engagement-levels-bars">
-                                    <div class="loading-spinner"><div class="spinner"></div></div>
-                                </div>
+                            <div class="stat-card" style="background: var(--naay-light); padding: 16px; border-radius: 8px; border: 1px solid #e1e3e5;">
+                                <div style="font-size: 24px; font-weight: 700; color: var(--naay-primary);" id="daily-messages-count">-</div>
+                                <div style="font-size: 13px; color: #6d7175; margin-top: 4px;">Total mensajes</div>
                             </div>
-                        </div>
-                        
-                        <!-- Most Active Time Slots -->
-                        <div style="margin-top: 20px;">
-                            <h4 style="font-size: 14px; font-weight: 600; color: var(--naay-dark); margin: 0 0 12px 0;">Franjas Horarias Más Activas</h4>
-                            <div class="time-slots-grid" id="time-slots-container">
-                                <div class="loading-spinner"><div class="spinner"></div></div>
-                            </div>
-                        </div>
-                        
-                        <!-- Conversation Outcomes -->
-                        <div style="margin-top: 20px;">
-                            <h4 style="font-size: 14px; font-weight: 600; color: var(--naay-dark); margin: 0 0 12px 0;">Resultados de Conversaciones</h4>
-                            <div class="outcomes-visualization" id="conversation-outcomes">
-                                <div class="loading-spinner"><div class="spinner"></div></div>
+                            <div class="stat-card" style="background: var(--naay-light); padding: 16px; border-radius: 8px; border: 1px solid #e1e3e5;">
+                                <div style="font-size: 24px; font-weight: 700; color: var(--naay-primary);" id="daily-avg-messages">-</div>
+                                <div style="font-size: 13px; color: #6d7175; margin-top: 4px;">Mensajes por conversación</div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Conversations Chart -->
-                    <div class="Polaris-Card" style="margin-bottom: 24px;">
+                    <!-- Conversations List for Selected Date -->
+                    <div class="Polaris-Card">
                         <div class="Polaris-Card__Header">
-                            <h3 style="font-size: 16px; font-weight: 600; margin: 0;">Tendencia de Conversaciones</h3>
-                            <div style="display: flex; gap: 10px;">
-                                <select id="chart-period" class="btn" style="padding: 4px 8px;">
-                                    <option value="7">7 días</option>
-                                    <option value="14">14 días</option>
-                                    <option value="30" selected>30 días</option>
-                                    <option value="60">60 días</option>
-                                </select>
-                                <button class="btn" onclick="safeLoadChartData()">Actualizar</button>
-                            </div>
+                            <h3 style="font-size: 16px; font-weight: 600; margin: 0;">Lista de Conversaciones</h3>
                         </div>
                         <div class="Polaris-Card__Section">
-                            <div style="position: relative; height: 280px; background: #f9fafb; border-radius: 8px; padding: 20px;">
-                                <canvas id="analytics-chart" style="width: 100%; height: 100%;"></canvas>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Conversations List -->
-                    <div style="display: grid; grid-template-columns: 1fr 300px; gap: 20px;">
-                        <!-- Conversations (main column) -->
-                        <div class="Polaris-Card">
-                            <div class="Polaris-Card__Header">
-                                <h3 style="font-size: 16px; font-weight: 600; margin: 0;">Historial de Conversaciones</h3>
-                                <button class="btn" onclick="safeLoadConversations()">Actualizar</button>
-                            </div>
-                            <div id="conversations-container">
-                                <div class="loading-spinner">
-                                    <div class="spinner"></div>
-                                </div>
-                            </div>
-                            <div class="pagination" id="pagination-controls" style="display: none;">
-                                <button class="btn" id="prev-btn" onclick="changePage(-1)">Anterior</button>
-                                <span id="page-info">Página 1</span>
-                                <button class="btn" id="next-btn" onclick="changePage(1)">Siguiente</button>
-                            </div>
-                        </div>
-
-                        <!-- Quick Stats Sidebar -->
-                        <div class="Polaris-Card">
-                            <div class="Polaris-Card__Header">
-                                <h3 style="font-size: 14px; font-weight: 600; margin: 0;">Estadísticas Rápidas</h3>
-                            </div>
-                            <div class="Polaris-Card__Section" style="padding: 12px;">
-                                <div class="metric-group" style="background: none; border: none; padding: 0;">
-                                    <div class="metric-items" style="grid-template-columns: 1fr; gap: 12px;">
-                                        <div class="metric-item" style="padding: 12px;">
-                                            <div class="metric-value" id="sidebar-conversations">-</div>
-                                            <div class="metric-label">Conversaciones</div>
-                                        </div>
-                                        <div class="metric-item" style="padding: 12px;">
-                                            <div class="metric-value" id="sidebar-messages">-</div>
-                                            <div class="metric-label">Mensajes</div>
-                                        </div>
-                                        <div class="metric-item" style="padding: 12px;">
-                                            <div class="metric-value" id="sidebar-avg-duration">-</div>
-                                            <div class="metric-label">Duración Prom.</div>
-                                        </div>
-                                    </div>
+                            <div id="daily-conversations-list">
+                                <div style="text-align: center; padding: 40px; color: #6d7175;">
+                                    Selecciona una fecha y presiona "Cargar" para ver las conversaciones
                                 </div>
                             </div>
                         </div>
@@ -2165,24 +2094,22 @@
             });
         }
 
-        // Load Conversation Data - Optimized to prevent "too many requests"
+        // Load Conversation Data - New date-based approach
         function loadConversationData() {
-            console.log('🚀 Loading conversation tab with optimized approach');
-            console.log('✅ Step 1: Loading lightweight conversation list only');
+            console.log('🚀 Loading conversation tab with date-based filtering');
             
-            // Only load minimal conversation list - no details until clicked
-            loadConversationListOnly();
+            // Set today's date as default in the date input
+            const dateInput = document.getElementById('conversations-date-filter');
+            if (dateInput && !dateInput.value) {
+                const today = new Date().toISOString().split('T')[0];
+                dateInput.value = today;
+                console.log('📅 Set default date to today:', today);
+            }
             
-            // Load metrics with longer delays to prevent rate limiting
-            console.log('⏳ Step 2: Scheduling engagement metrics load in 2 seconds');
-            setTimeout(() => {
-                console.log('📊 Loading engagement metrics');
-                loadEngagementMetrics();
-            }, 2000);
+            // Automatically load today's conversations
+            loadConversationsByDate();
             
-            // Skip auto-loading chart data - load it only when needed
-            console.log('⚠️ Step 3: Skipping automatic chart data load to prevent rate limiting');
-            // setTimeout(() => safeLoadChartData(), 1000);
+            console.log('✅ Conversation tab initialized with today\'s data');
         }
 
         // Load Product Data
@@ -2495,6 +2422,37 @@
                 banner.style.display = 'none';
             }, 2000);
         }
+
+        // Debug function for testing chart data
+        window.testChartData = async function() {
+            try {
+                const realDataResponse = await fetch(`${API_BASE_URL}/api/admin-bypass/debug/real-data`);
+                const realData = await realDataResponse.json();
+                
+                console.log('🧪 Testing chart data transformation:');
+                console.log('Raw data from API:', realData.data.last7Days);
+                
+                const chartData = {
+                    daily_data: realData.data.last7Days.map(day => ({
+                        date: day.date,
+                        conversations: day.conversations,
+                        messages: day.messages,
+                        orders: 0 // Placeholder
+                    })),
+                    totals: {
+                        conversations: realData.data.uniqueConversations,
+                        messages: realData.data.recordsAnalyzed
+                    }
+                };
+                
+                console.log('Transformed for chart:', chartData);
+                console.log('Should show 3 Dec with 33 conversations, 166 messages');
+                
+                return chartData;
+            } catch (error) {
+                console.error('Error testing chart data:', error);
+            }
+        };
 
         // Initialize dashboard function - Updated for tabbed interface
         function initializeDashboard() {
@@ -2879,6 +2837,113 @@
             safeLoadConversations();
         }
 
+        // New function to load conversations by specific date
+        async function loadConversationsByDate() {
+            const dateInput = document.getElementById('conversations-date-filter');
+            const container = document.getElementById('daily-conversations-list');
+            const conversationsCountEl = document.getElementById('daily-conversations-count');
+            const messagesCountEl = document.getElementById('daily-messages-count');
+            const avgMessagesEl = document.getElementById('daily-avg-messages');
+            
+            // Default to today's date if no date selected
+            const selectedDate = dateInput.value || new Date().toISOString().split('T')[0];
+            dateInput.value = selectedDate; // Set the input to the selected date
+            
+            container.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin-bypass/conversations?shop=${currentShop}&date=${selectedDate}&limit=100`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    const conversations = data.data || [];
+                    
+                    // Update daily stats
+                    conversationsCountEl.textContent = conversations.length;
+                    let totalMessages = conversations.reduce((sum, conv) => sum + (conv.message_count || 0), 0);
+                    messagesCountEl.textContent = totalMessages;
+                    avgMessagesEl.textContent = conversations.length > 0 ? (totalMessages / conversations.length).toFixed(1) : '0';
+                    
+                    // Render conversations list
+                    if (conversations.length === 0) {
+                        container.innerHTML = '<div style="text-align: center; padding: 40px; color: #6d7175;">No hay conversaciones para esta fecha</div>';
+                    } else {
+                        renderDailyConversationsList(conversations, selectedDate);
+                    }
+                } else {
+                    throw new Error(data.error || 'Error al cargar conversaciones');
+                }
+            } catch (error) {
+                console.error('Error loading conversations by date:', error);
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #cc4125;">Error al cargar conversaciones</div>';
+                conversationsCountEl.textContent = '0';
+                messagesCountEl.textContent = '0';
+                avgMessagesEl.textContent = '0';
+            }
+        }
+        
+        // Render conversations list for a specific date
+        function renderDailyConversationsList(conversations, date) {
+            const container = document.getElementById('daily-conversations-list');
+            
+            let html = `
+                <div style="margin-bottom: 16px; padding: 12px; background: #f9fafb; border-radius: 8px; border: 1px solid #e1e3e5;">
+                    <strong>Conversaciones del ${new Date(date + 'T00:00:00').toLocaleDateString('es-ES', {
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric'
+                    })}</strong>
+                </div>
+                <div style="display: grid; gap: 8px;">
+            `;
+            
+            conversations.forEach((conv, index) => {
+                const time = new Date(conv.last_activity).toLocaleTimeString('es-ES', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                
+                html += `
+                    <div style="
+                        display: flex; 
+                        justify-content: space-between; 
+                        align-items: center; 
+                        padding: 12px; 
+                        background: white; 
+                        border: 1px solid #e1e3e5; 
+                        border-radius: 8px;
+                        cursor: pointer;
+                        transition: background-color 0.2s ease;
+                    " 
+                    onclick="openConversationModal('${conv.session_id}', ${conv.message_count})"
+                    onmouseover="this.style.backgroundColor='#f9fafb'"
+                    onmouseout="this.style.backgroundColor='white'">
+                        <div>
+                            <div style="font-weight: 600; color: var(--naay-primary); margin-bottom: 4px;">
+                                Conversación #${index + 1} - ${conv.session_id.substring(0, 8)}...
+                            </div>
+                            <div style="font-size: 13px; color: #6d7175; max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                ${escapeHtml(conv.last_message || 'Sin mensajes')}
+                            </div>
+                        </div>
+                        <div style="text-align: right; font-size: 12px; color: #6d7175;">
+                            <div>${time}</div>
+                            <div style="margin-top: 2px;">${conv.message_count} mensajes</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
         function showError(message) {
             const banner = document.getElementById('error-banner');
             banner.textContent = message;
@@ -3196,7 +3261,10 @@
                 analyticsChart.destroy();
             }
 
-            const chartData = data.daily_data;
+            // Ensure data is sorted by date (oldest first for proper chart progression)
+            const sortedData = [...data.daily_data].sort((a, b) => new Date(a.date) - new Date(b.date));
+            const chartData = sortedData;
+            
             const dates = chartData.map(d => {
                 const date = new Date(d.date);
                 return date.toLocaleDateString('es-ES', { 
@@ -3205,9 +3273,26 @@
                 });
             });
 
-            // Calculate daily message averages (conversations * avg messages per conversation)
-            const avgMessagesPerConv = data.totals?.conversations > 0 ? (data.totals.conversations * 5.59) / data.totals.conversations : 5.59;
-            const dailyMessages = chartData.map(d => Math.round(d.conversations * avgMessagesPerConv));
+            // Use real message data if available, otherwise calculate estimates
+            const dailyMessages = chartData.map(d => {
+                // If we have real message data, use it
+                if (d.messages !== undefined && d.messages !== null && d.messages > 0) {
+                    return d.messages;
+                }
+                // Fallback to estimation for legacy data
+                return Math.round(d.conversations * 5.59);
+            });
+
+            // Log chart data for verification
+            console.log('📊 Chart data being rendered:', {
+                hasRealData: chartData.some(d => d.messages > 0),
+                dailyData: chartData.map(d => ({
+                    date: d.date,
+                    conversations: d.conversations,
+                    messages: d.messages || 'calculated',
+                    finalMessages: d.messages || Math.round(d.conversations * 5.59)
+                }))
+            });
 
             analyticsChart = new Chart(ctx, {
                 type: 'line',
@@ -3226,16 +3311,16 @@
                             pointHoverRadius: 6
                         },
                         {
-                            label: 'Mensajes (estimado)',
+                            label: chartData.some(d => d.messages > 0) ? 'Mensajes (reales)' : 'Mensajes (estimado)',
                             data: dailyMessages,
-                            borderColor: '#c4b16a',
-                            backgroundColor: 'rgba(196, 177, 106, 0.1)',
+                            borderColor: chartData.some(d => d.messages > 0) ? '#8bc34a' : '#c4b16a',
+                            backgroundColor: chartData.some(d => d.messages > 0) ? 'rgba(139, 195, 74, 0.1)' : 'rgba(196, 177, 106, 0.1)',
                             fill: false,
                             tension: 0.4,
                             yAxisID: 'y1',
                             pointRadius: 3,
                             pointHoverRadius: 5,
-                            borderDash: [5, 5]
+                            borderDash: chartData.some(d => d.messages > 0) ? [0] : [5, 5]
                         }
                     ]
                 },
