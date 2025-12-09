@@ -1048,7 +1048,7 @@
                         </div>
                     </div>
                     
-                    <div class="loading-spinner">
+                    <div id="conversions-content" class="loading-spinner">
                         <div class="spinner"></div>
                         <div class="loading-text">Cargando métricas...</div>
                     </div>
@@ -1233,15 +1233,49 @@
             tabDataLoaded[tabName] = true;
         }
         
-        // Placeholder functions for data loading
+        // Load overview data from real APIs
         async function loadOverviewData() {
             try {
-                // Load KPIs with Reference Style
-                document.getElementById('kpi-conversations').textContent = '156';
-                document.getElementById('kpi-revenue').textContent = '$3.7K';
-                document.getElementById('kpi-conversion-rate').textContent = '3.2%';
+                console.log('Loading overview data...');
                 
-                // Create dummy chart
+                // Load dashboard stats
+                const statsResponse = await fetch(`${API_BASE_URL}/api/admin-bypass/stats?shop=${currentShop}`);
+                const statsData = await statsResponse.json();
+                
+                console.log('Stats data received:', statsData);
+                
+                if (statsData.success && statsData.data) {
+                    document.getElementById('kpi-conversations').textContent = statsData.data.conversations || 0;
+                    document.getElementById('conversion-count').textContent = statsData.data.conversations || 0;
+                }
+                
+                // Load conversion data for revenue and conversion rate
+                try {
+                    const conversionResponse = await fetch(`${API_BASE_URL}/api/admin-bypass/analytics/conversion-new?shop=${currentShop}&days=30`);
+                    const conversionData = await conversionResponse.json();
+                    
+                    console.log('Conversion data received for overview:', conversionData);
+                    
+                    if (conversionData.success && conversionData.data) {
+                        // Update KPIs with real conversion data
+                        const rate = conversionData.data.conversionRate || 0;
+                        document.getElementById('kpi-conversion-rate').textContent = `${rate.toFixed(1)}%`;
+                        
+                        // For revenue, we'll show order count since we're using quantities
+                        const orderCount = conversionData.data.totalOrdersCount || 0;
+                        document.getElementById('kpi-revenue').textContent = `${orderCount} pedidos`;
+                        
+                        // Update conversion trend
+                        document.getElementById('conversion-trend').textContent = `${rate.toFixed(1)}% tasa de conversión`;
+                    }
+                } catch (conversionError) {
+                    console.error('Error loading conversion data:', conversionError);
+                    // Fallback values
+                    document.getElementById('kpi-revenue').textContent = '0 pedidos';
+                    document.getElementById('kpi-conversion-rate').textContent = '0.0%';
+                }
+                
+                // Create dummy chart (we can enhance this later with real chart data)
                 setTimeout(() => {
                     if (document.getElementById('overview-chart')) {
                         createDummyChart();
@@ -1250,6 +1284,12 @@
                 
             } catch (error) {
                 console.error('Error loading overview data:', error);
+                // Fallback values
+                document.getElementById('kpi-conversations').textContent = '0';
+                document.getElementById('kpi-revenue').textContent = '0 pedidos';
+                document.getElementById('kpi-conversion-rate').textContent = '0.0%';
+                document.getElementById('conversion-count').textContent = '0';
+                document.getElementById('conversion-trend').textContent = 'Error al cargar datos';
             }
         }
         
@@ -1293,22 +1333,62 @@
             const container = document.getElementById('daily-conversations-list');
             container.innerHTML = '<div class="loading-spinner"><div class="spinner"></div><div class="loading-text">Cargando conversaciones...</div></div>';
             
-            setTimeout(() => {
-                container.innerHTML = `
-                    <div class="conversation-list">
-                        <div class="conversation-item">
-                            <div class="conversation-main">
-                                <div class="conversation-id">Conversación #001</div>
-                                <div class="conversation-preview">Cliente pregunta sobre disponibilidad de productos...</div>
+            try {
+                console.log('Loading conversations data...');
+                
+                // Get today's date for the filter
+                const today = new Date().toISOString().split('T')[0];
+                
+                const response = await fetch(`${API_BASE_URL}/api/admin-bypass/conversations?shop=${currentShop}&date=${today}&limit=10`);
+                const data = await response.json();
+                
+                console.log('Conversations data received:', data);
+                
+                if (data.success && data.data && data.data.length > 0) {
+                    const conversationList = data.data.map(conversation => {
+                        const preview = conversation.preview || conversation.lastMessage || 'Sin mensajes recientes';
+                        const timestamp = conversation.lastActivity || conversation.timestamp;
+                        const formattedTime = timestamp ? new Date(timestamp).toLocaleString('es-ES') : 'Sin fecha';
+                        
+                        return `
+                            <div class="conversation-item" onclick="showConversationDetails('${conversation.sessionId}')">
+                                <div class="conversation-main">
+                                    <div class="conversation-id">${conversation.sessionId}</div>
+                                    <div class="conversation-preview">${escapeHtml(preview)}</div>
+                                </div>
+                                <div class="conversation-meta">
+                                    <div>${formattedTime}</div>
+                                    <span class="status-badge status-active">Activa</span>
+                                </div>
                             </div>
-                            <div class="conversation-meta">
-                                <div>Hace 2 horas</div>
-                                <span class="status-badge status-active">Activa</span>
-                            </div>
+                        `;
+                    }).join('');
+                    
+                    container.innerHTML = `
+                        <div class="conversation-list">
+                            ${conversationList}
                         </div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 48px; color: #6b7280;">
+                            <div style="font-size: 24px; margin-bottom: 8px;">💬</div>
+                            <div style="font-size: 16px; font-weight: 500; margin-bottom: 4px;">No hay conversaciones hoy</div>
+                            <div style="font-size: 14px;">No se han registrado conversaciones para la fecha seleccionada</div>
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                console.error('Error loading conversation data:', error);
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 48px; color: #ef4444;">
+                        <div style="font-size: 24px; margin-bottom: 8px;">❌</div>
+                        <div style="font-size: 16px; font-weight: 500; margin-bottom: 4px;">Error al cargar conversaciones</div>
+                        <div style="font-size: 14px;">Error: ${error.message}</div>
                     </div>
                 `;
-            }, 1000);
+            }
         }
         
         async function loadProductData() {
@@ -1317,9 +1397,134 @@
             loadSimpleProductData();
         }
         
+        async function loadSimpleProductData() {
+            const container = document.getElementById('simple-products-list');
+            container.innerHTML = '<div class="loading-spinner"><div class="spinner"></div><div class="loading-text">Cargando productos...</div></div>';
+            
+            try {
+                console.log('Loading top recommended products data...');
+                
+                const response = await fetch(`${API_BASE_URL}/api/admin-bypass/analytics/top-recommended-products?shop=${currentShop}&days=30`);
+                const data = await response.json();
+                
+                console.log('Product data received:', data);
+                
+                if (data.success && data.data && data.data.length > 0) {
+                    const productList = data.data.map(product => `
+                        <div class="product-item">
+                            <div class="product-rank">#${data.data.indexOf(product) + 1}</div>
+                            <div class="product-info">
+                                <div class="product-title">${product.title || `Producto ${product.productId}`}</div>
+                                <div class="product-meta">
+                                    <span class="product-vendor">${product.vendor || 'Sin marca'}</span>
+                                    ${product.productType ? `<span class="product-vendor">•</span><span class="product-vendor">${product.productType}</span>` : ''}
+                                </div>
+                            </div>
+                            <div class="recommendation-count">
+                                ${product.recommendations} menciones
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    container.innerHTML = `
+                        <div class="product-list">
+                            ${productList}
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 48px; color: #6b7280;">
+                            <div style="font-size: 24px; margin-bottom: 8px;">📦</div>
+                            <div style="font-size: 16px; font-weight: 500; margin-bottom: 4px;">No hay productos recomendados</div>
+                            <div style="font-size: 14px;">No se han encontrado productos recomendados en el período seleccionado</div>
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                console.error('Error loading product data:', error);
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 48px; color: #ef4444;">
+                        <div style="font-size: 24px; margin-bottom: 8px;">❌</div>
+                        <div style="font-size: 16px; font-weight: 500; margin-bottom: 4px;">Error al cargar productos</div>
+                        <div style="font-size: 14px;">Error: ${error.message}</div>
+                    </div>
+                `;
+            }
+        }
+        
         async function loadConversionData() {
-            // Placeholder for conversion data loading
-            console.log('Loading conversion data...');
+            const container = document.getElementById('conversions-content');
+            container.innerHTML = '<div class="loading-spinner"><div class="spinner"></div><div class="loading-text">Cargando métricas de conversión...</div></div>';
+            
+            try {
+                const period = document.getElementById('conversion-period') ? 
+                    document.getElementById('conversion-period').value : '30';
+                
+                console.log('Loading conversion data with new endpoint');
+                
+                // Load conversion analytics using new endpoint
+                const conversionResponse = await fetch(`${API_BASE_URL}/api/admin-bypass/analytics/conversion-new?shop=${currentShop}&days=${period}`);
+                const conversionData = await conversionResponse.json();
+                
+                console.log('Conversion data received:', conversionData);
+                
+                if (conversionData.success && conversionData.data) {
+                    const data = conversionData.data;
+                    container.innerHTML = `
+                        <div class="kpi-grid">
+                            <div class="kpi-card">
+                                <div class="kpi-label">Total Conversaciones</div>
+                                <div class="kpi-value">${data.totalConversations || 0}</div>
+                                <div class="kpi-sublabel">Conversaciones analizadas</div>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="kpi-label">Conversiones</div>
+                                <div class="kpi-value">${data.totalConversions || 0}</div>
+                                <div class="kpi-sublabel">Ventas generadas por chat</div>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="kpi-label">Tasa de Conversión</div>
+                                <div class="kpi-value">${(data.conversionRate || 0).toFixed(1)}%</div>
+                                <div class="kpi-sublabel">Efectividad del chat</div>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="kpi-label">Total Pedidos</div>
+                                <div class="kpi-value">${data.totalOrdersCount || 0}</div>
+                                <div class="kpi-sublabel">Órdenes completadas</div>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="kpi-label">Items por Pedido</div>
+                                <div class="kpi-value">${(data.averageOrderQuantity || 0).toFixed(1)}</div>
+                                <div class="kpi-sublabel">Promedio de productos</div>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="kpi-label">Tiempo Promedio</div>
+                                <div class="kpi-value">${(data.averageTimeToConversion || 0).toFixed(1)}h</div>
+                                <div class="kpi-sublabel">Desde chat hasta venta</div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 48px; color: #6b7280;">
+                            <div style="font-size: 24px; margin-bottom: 8px;">📊</div>
+                            <div style="font-size: 16px; font-weight: 500; margin-bottom: 4px;">No hay datos de conversión</div>
+                            <div style="font-size: 14px;">No se han encontrado conversiones en el período seleccionado</div>
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                console.error('Error loading conversion data:', error);
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 48px; color: #ef4444;">
+                        <div style="font-size: 24px; margin-bottom: 8px;">❌</div>
+                        <div style="font-size: 16px; font-weight: 500; margin-bottom: 4px;">Error al cargar conversiones</div>
+                        <div style="font-size: 14px;">Error: ${error.message}</div>
+                    </div>
+                `;
+            }
         }
         
         function loadAllMetrics() {
@@ -1333,6 +1538,48 @@
         
         function closeConversionModal() {
             document.getElementById('conversionModal').style.display = 'none';
+        }
+        
+        async function showConversationDetails(sessionId) {
+            const modal = document.getElementById('conversionModal');
+            const content = document.getElementById('conversion-details-content');
+            
+            modal.style.display = 'block';
+            content.innerHTML = '<div class="loading-spinner"><div class="spinner"></div><div class="loading-text">Cargando detalles...</div></div>';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin-bypass/conversations/${sessionId}?shop=${currentShop}`);
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    const messages = data.data.messages || [];
+                    const messagesHtml = messages.map(msg => `
+                        <div style="margin-bottom: 16px; padding: 12px; border-radius: 8px; background: ${msg.role === 'client' ? '#f3f4f6' : '#e5f3ff'};">
+                            <div style="font-weight: 600; color: #374151; margin-bottom: 4px;">
+                                ${msg.role === 'client' ? 'Cliente' : 'Asistente'}
+                            </div>
+                            <div style="color: #1f2937;">${escapeHtml(msg.content)}</div>
+                            <div style="font-size: 12px; color: #6b7280; margin-top: 8px;">
+                                ${new Date(msg.timestamp).toLocaleString('es-ES')}
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    content.innerHTML = `
+                        <div style="margin-bottom: 24px;">
+                            <h3 style="margin-bottom: 16px; color: #1f2937;">Conversación ${sessionId}</h3>
+                            <div style="max-height: 400px; overflow-y: auto;">
+                                ${messagesHtml || '<p style="color: #6b7280; text-align: center;">No hay mensajes en esta conversación</p>'}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    content.innerHTML = '<p style="color: #ef4444; text-align: center;">Error al cargar los detalles de la conversación</p>';
+                }
+            } catch (error) {
+                console.error('Error loading conversation details:', error);
+                content.innerHTML = `<p style="color: #ef4444; text-align: center;">Error: ${error.message}</p>`;
+            }
         }
         
         // Initialize dashboard
