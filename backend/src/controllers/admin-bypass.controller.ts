@@ -2,11 +2,13 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { SupabaseService } from '@/services/supabase.service';
 import { ShopifyService } from '@/services/shopify.service';
 import { QueueService } from '@/services/queue.service';
+import { ChatConversionsService } from '@/services/chat-conversions.service';
 import { logger } from '@/utils/logger';
 import { adminBypassRateLimit } from '@/middleware/rateLimiter';
 
 const router = Router();
 const supabaseService = new SupabaseService();
+const chatConversionsService = new ChatConversionsService();
 
 // Apply rate limiting to all admin-bypass routes
 router.use(adminBypassRateLimit);
@@ -1115,7 +1117,58 @@ router.get(
   }
 );
 
-// Get conversion metrics (chat to sales)
+// Get conversion metrics (new improved version with quantities)
+router.get(
+  '/analytics/conversion-new',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop, days = 30 } = req.query;
+
+      if (!shop) {
+        return res.status(400).json({
+          success: false,
+          error: 'Shop parameter required',
+        });
+      }
+
+      const daysCount = parseInt(days as string);
+      
+      logger.info('Analyzing chat conversions with new service', {
+        shop: shop as string,
+        daysBack: daysCount,
+      });
+
+      // Use new chat conversions service
+      const metrics = await chatConversionsService.analyzeConversions(
+        shop as string,
+        daysCount
+      );
+
+      return res.json({
+        success: true,
+        data: {
+          totalConversations: metrics.totalConversations,
+          totalConversions: metrics.totalConversions,
+          conversionRate: metrics.conversionRate,
+          totalOrdersCount: metrics.totalOrdersCount,
+          averageOrderQuantity: metrics.averageOrderQuantity,
+          averageTimeToConversion: metrics.averageTimeToConversion,
+          period: `${daysCount} días`,
+        },
+      });
+
+    } catch (error) {
+      logger.error('Error analyzing chat conversions (new):', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Error analyzing conversions',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+);
+
+// Get conversion metrics (chat to sales) - Legacy endpoint
 router.get(
   '/analytics/conversion',
   async (req: Request, res: Response, next: NextFunction) => {
