@@ -1192,11 +1192,20 @@
                 
                 if (data.success && data.data && data.data.daily_data) {
                     const chartData = data.data.daily_data;
+                    
+                    // Debug: Log the raw data
+                    console.log('Raw chart data:', chartData);
+                    
                     const labels = chartData.map(item => {
                         const date = new Date(item.date);
-                        return date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
+                        const label = date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
+                        console.log(`Date processing: ${item.date} -> ${label}`);
+                        return label;
                     });
                     const conversationsData = chartData.map(item => item.conversations || 0);
+                    
+                    console.log('Chart labels:', labels);
+                    console.log('Chart data:', conversationsData);
                     
                     createRealChart(labels, conversationsData);
                 } else {

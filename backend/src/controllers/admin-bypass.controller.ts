@@ -1233,7 +1233,7 @@ router.get(
       const daysCount = parseInt(days as string);
       const endDate = new Date();
       const startDate = new Date();
-      startDate.setDate(startDate.getDate() - daysCount);
+      startDate.setDate(startDate.getDate() - daysCount + 1); // Include today
 
       // Get chat sessions from the period
       const { data: chatSessions, error: chatError } = await (
@@ -1403,7 +1403,7 @@ router.get(
       const daysCount = parseInt(days as string);
       const endDate = new Date();
       const startDate = new Date();
-      startDate.setDate(startDate.getDate() - daysCount);
+      startDate.setDate(startDate.getDate() - daysCount + 1); // Include today
 
       // Get mentioned products from chat messages
       const { data: chatMessages, error: chatError } = await (
@@ -1541,7 +1541,7 @@ router.get(
       const daysCount = parseInt(days as string);
       const endDate = new Date();
       const startDate = new Date();
-      startDate.setDate(startDate.getDate() - daysCount);
+      startDate.setDate(startDate.getDate() - daysCount + 1); // Include today
 
       // Get mentioned products from chat messages
       const { data: chatSessions, error: chatError } = await (
@@ -1737,8 +1737,10 @@ router.get(
 
       const daysCount = parseInt(days as string);
       const endDate = new Date();
+      endDate.setHours(23, 59, 59, 999); // Include all of today
       const startDate = new Date();
-      startDate.setDate(startDate.getDate() - daysCount);
+      startDate.setDate(startDate.getDate() - daysCount + 1); // Include today
+      startDate.setHours(0, 0, 0, 0); // Start from beginning of the day
 
       // Initialize daily data map
       const dailyDataMap = new Map();
@@ -1753,6 +1755,7 @@ router.get(
           orders_count: 0,
         });
       }
+
 
       // Get conversations data using pagination to get all records
       try {
@@ -2397,7 +2400,7 @@ router.get(
       const daysCount = parseInt(days as string);
       const endDate = new Date();
       const startDate = new Date();
-      startDate.setDate(startDate.getDate() - daysCount);
+      startDate.setDate(startDate.getDate() - daysCount + 1); // Include today
 
       // Get all agent messages from the period
       const { data: chatMessages, error: chatError } = await (
@@ -2784,7 +2787,7 @@ router.get(
       const daysCount = parseInt(days as string);
       const endDate = new Date();
       const startDate = new Date();
-      startDate.setDate(startDate.getDate() - daysCount);
+      startDate.setDate(startDate.getDate() - daysCount + 1); // Include today
 
       logger.info('Calculating approximate conversions', {
         shop: shop as string,
