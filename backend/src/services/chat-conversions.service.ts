@@ -108,17 +108,53 @@ export class ChatConversionsService {
     startDate: Date,
     endDate: Date
   ): Promise<Map<string, any>> {
-    const { data: messages, error } = await (
-      this.supabaseService as any
-    ).serviceClient
+    // First get count for pagination
+    const { count: totalCount } = await (this.supabaseService as any).serviceClient
       .from('chat_messages')
-      .select('session_id, timestamp, content, metadata, role')
+      .select('*', { count: 'exact', head: true })
       .gte('timestamp', startDate.toISOString())
       .lte('timestamp', endDate.toISOString())
       .not('session_id', 'is', null)
       .eq('role', 'agent');
 
-    if (error) throw error;
+    // Fetch all messages in batches if there are many
+    const allMessages = [];
+    if (totalCount && totalCount > 1000) {
+      const batchSize = 1000;
+      const totalBatches = Math.ceil(totalCount / batchSize);
+
+      for (let i = 0; i < totalBatches; i++) {
+        const start = i * batchSize;
+        const end = start + batchSize - 1;
+
+        const { data: batch, error: batchError } = await (this.supabaseService as any).serviceClient
+          .from('chat_messages')
+          .select('session_id, timestamp, content, metadata, role')
+          .gte('timestamp', startDate.toISOString())
+          .lte('timestamp', endDate.toISOString())
+          .not('session_id', 'is', null)
+          .eq('role', 'agent')
+          .range(start, end)
+          .order('timestamp', { ascending: false });
+
+        if (batchError) throw batchError;
+        if (batch) allMessages.push(...batch);
+      }
+    } else {
+      // For smaller datasets, use normal query
+      const { data: messages, error } = await (this.supabaseService as any).serviceClient
+        .from('chat_messages')
+        .select('session_id, timestamp, content, metadata, role')
+        .gte('timestamp', startDate.toISOString())
+        .lte('timestamp', endDate.toISOString())
+        .not('session_id', 'is', null)
+        .eq('role', 'agent');
+
+      if (error) throw error;
+      if (messages) allMessages.push(...messages);
+    }
+
+    const messages = allMessages;
 
     const sessions = new Map();
 

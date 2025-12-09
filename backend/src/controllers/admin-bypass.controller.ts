@@ -580,12 +580,27 @@ router.get('/debug/db-stats', async (req: Request, res: Response) => {
       messagesByRole[msg.role] = (messagesByRole[msg.role] || 0) + 1;
     });
 
-    // Get all historical data
-    const { data: allMessages } = await (supabaseService as any).serviceClient
+    // Get all historical data using pagination to overcome Supabase 1000 limit
+    const { count: totalHistoricalCount } = await (supabaseService as any).serviceClient
       .from('chat_messages')
-      .select('id, session_id, timestamp')
-      .order('timestamp', { ascending: false })
-      .limit(1000);
+      .select('*', { count: 'exact', head: true });
+
+    const allMessages = [];
+    const batchSize = 1000;
+    const totalBatches = Math.ceil((totalHistoricalCount || 0) / batchSize);
+
+    for (let i = 0; i < totalBatches; i++) {
+      const start = i * batchSize;
+      const end = start + batchSize - 1;
+
+      const { data: batch } = await (supabaseService as any).serviceClient
+        .from('chat_messages')
+        .select('id, session_id, timestamp')
+        .range(start, end)
+        .order('timestamp', { ascending: false });
+
+      if (batch) allMessages.push(...batch);
+    }
 
     const allSessions = new Set<string>();
     allMessages?.forEach((msg: any) => {
@@ -632,7 +647,7 @@ router.get('/debug/real-data', async (req: Request, res: Response) => {
     const batchSize = 1000;
     const totalBatches = Math.ceil((totalCount || 0) / batchSize);
 
-    for (let i = 0; i < Math.min(totalBatches, 3); i++) {
+    for (let i = 0; i < totalBatches; i++) {
       const start = i * batchSize;
       const end = start + batchSize - 1;
 
@@ -724,22 +739,51 @@ router.get(
         startOfToday: startOfToday.toISOString(),
       });
 
-      // Get ALL messages from chat_messages table - set high limit to get all records
-      const {
-        data: allMessages,
-        error: messagesError,
-        count,
-      } = await (supabaseService as any).serviceClient
+      // Get ALL messages from chat_messages table using pagination to overcome Supabase 1000 limit
+      // First get exact count
+      const { count: totalCount } = await (supabaseService as any).serviceClient
         .from('chat_messages')
-        .select('session_id, timestamp, role, id, content, metadata', {
-          count: 'exact',
-        })
-        .limit(5000) // Set high limit to ensure we get all records
-        .order('timestamp', { ascending: false });
+        .select('*', { count: 'exact', head: true });
+
+      logger.info('📊 Database query starting:', {
+        totalRecordsInTable: totalCount,
+      });
+
+      // Fetch all records in batches using range pagination
+      const allMessages = [];
+      const batchSize = 1000;
+      const totalBatches = Math.ceil((totalCount || 0) / batchSize);
+
+      for (let i = 0; i < totalBatches; i++) {
+        const start = i * batchSize;
+        const end = start + batchSize - 1;
+
+        const { data: batch, error: batchError } = await (supabaseService as any).serviceClient
+          .from('chat_messages')
+          .select('session_id, timestamp, role, id, content, metadata')
+          .range(start, end)
+          .order('timestamp', { ascending: false });
+
+        if (batchError) {
+          logger.error(`Error fetching batch ${i + 1}:`, batchError);
+          break;
+        }
+
+        if (batch) {
+          allMessages.push(...batch);
+        }
+
+        logger.info(`📊 Fetched batch ${i + 1}/${totalBatches}:`, {
+          batchSize: batch?.length || 0,
+          totalFetched: allMessages.length,
+        });
+      }
+
+      const messagesError = allMessages.length === 0 ? new Error('No messages fetched') : null;
 
       logger.info('📊 Database query result:', {
         recordsFetched: allMessages?.length || 0,
-        totalRecordsInTable: count,
+        totalRecordsInTable: totalCount,
         hasError: !!messagesError,
       });
 
@@ -876,7 +920,7 @@ router.get(
   '/conversations',
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { shop, limit = 10, page = 1, date } = req.query;
+      const { shop, limit = 50, page = 1, date } = req.query;
 
       if (!shop) {
         return res.status(400).json({
@@ -1705,18 +1749,60 @@ router.get(
         });
       }
 
-      // Get conversations data
+      // Get conversations data using pagination to get all records
       try {
-        const { data: chatMessages, error: chatError } = await (
-          supabaseService as any
-        ).serviceClient
+        // First get exact count for the date range
+        const { count: totalCount } = await (supabaseService as any).serviceClient
           .from('chat_messages')
-          .select('session_id, timestamp')
+          .select('*', { count: 'exact', head: true })
           .gte('timestamp', startDate.toISOString())
           .lte('timestamp', endDate.toISOString())
           .not('session_id', 'is', null);
 
-        if (!chatError && chatMessages) {
+        // Fetch all messages in batches if needed
+        const chatMessages = [];
+        if (totalCount && totalCount > 1000) {
+          const batchSize = 1000;
+          const totalBatches = Math.ceil(totalCount / batchSize);
+
+          for (let i = 0; i < totalBatches; i++) {
+            const start = i * batchSize;
+            const end = start + batchSize - 1;
+
+            const { data: batch, error: batchError } = await (supabaseService as any).serviceClient
+              .from('chat_messages')
+              .select('session_id, timestamp')
+              .gte('timestamp', startDate.toISOString())
+              .lte('timestamp', endDate.toISOString())
+              .not('session_id', 'is', null)
+              .range(start, end)
+              .order('timestamp', { ascending: false });
+
+            if (batchError) {
+              logger.error(`Error fetching chart batch ${i + 1}:`, batchError);
+              break;
+            }
+
+            if (batch) {
+              chatMessages.push(...batch);
+            }
+          }
+        } else {
+          // For smaller datasets, use normal query
+          const { data: messages, error: chatError } = await (supabaseService as any).serviceClient
+            .from('chat_messages')
+            .select('session_id, timestamp')
+            .gte('timestamp', startDate.toISOString())
+            .lte('timestamp', endDate.toISOString())
+            .not('session_id', 'is', null);
+
+          if (chatError) {
+            throw chatError;
+          }
+          if (messages) chatMessages.push(...messages);
+        }
+
+        if (chatMessages && chatMessages.length > 0) {
           // FIXED: Find the first message timestamp for each session (conversation start date)
           // This ensures we count conversations on the date they actually started
           const sessionFirstMessages = new Map();
@@ -1756,6 +1842,7 @@ router.get(
 
           logger.info('Analytics chart conversations calculated', {
             totalSessions: sessionFirstMessages.size,
+            totalMessagesAnalyzed: chatMessages.length,
             dateRange: `${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`,
             conversationsByDate: Array.from(
               conversationsByStartDate.entries()
@@ -2667,6 +2754,334 @@ function analyzeMessageSentiment(
   if (positiveCount > negativeCount) return 'positive';
   if (negativeCount > positiveCount) return 'negative';
   return 'neutral';
+}
+
+// Get approximate conversion estimation based on conversations and sales correlation
+router.get(
+  '/analytics/approximate-conversions',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop, days = 30 } = req.query;
+
+      if (!shop) {
+        return res.status(400).json({
+          success: false,
+          error: 'Shop parameter required',
+        });
+      }
+
+      const daysCount = parseInt(days as string);
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - daysCount);
+
+      logger.info('Calculating approximate conversions', {
+        shop: shop as string,
+        daysBack: daysCount,
+        dateRange: `${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`,
+      });
+
+      // Get daily conversation data using existing pagination logic
+      const { count: totalCount } = await (supabaseService as any).serviceClient
+        .from('chat_messages')
+        .select('*', { count: 'exact', head: true })
+        .gte('timestamp', startDate.toISOString())
+        .lte('timestamp', endDate.toISOString())
+        .not('session_id', 'is', null);
+
+      const chatMessages = [];
+      if (totalCount && totalCount > 1000) {
+        const batchSize = 1000;
+        const totalBatches = Math.ceil(totalCount / batchSize);
+
+        for (let i = 0; i < totalBatches; i++) {
+          const start = i * batchSize;
+          const end = start + batchSize - 1;
+
+          const { data: batch, error: batchError } = await (supabaseService as any).serviceClient
+            .from('chat_messages')
+            .select('session_id, timestamp, role')
+            .gte('timestamp', startDate.toISOString())
+            .lte('timestamp', endDate.toISOString())
+            .not('session_id', 'is', null)
+            .range(start, end)
+            .order('timestamp', { ascending: false });
+
+          if (batchError) {
+            logger.error(`Error fetching batch ${i + 1}:`, batchError);
+            break;
+          }
+
+          if (batch) {
+            chatMessages.push(...batch);
+          }
+        }
+      } else {
+        const { data: messages, error: chatError } = await (supabaseService as any).serviceClient
+          .from('chat_messages')
+          .select('session_id, timestamp, role')
+          .gte('timestamp', startDate.toISOString())
+          .lte('timestamp', endDate.toISOString())
+          .not('session_id', 'is', null);
+
+        if (chatError) throw chatError;
+        if (messages) chatMessages.push(...messages);
+      }
+
+      // Group conversations by date
+      const dailyConversations = new Map<string, Set<string>>();
+      const sessionFirstMessages = new Map<string, Date>();
+
+      chatMessages.forEach((msg: any) => {
+        const sessionId = msg.session_id;
+        const timestamp = new Date(msg.timestamp);
+
+        if (!sessionFirstMessages.has(sessionId) || timestamp < sessionFirstMessages.get(sessionId)!) {
+          sessionFirstMessages.set(sessionId, timestamp);
+        }
+      });
+
+      sessionFirstMessages.forEach((firstMessageDate, sessionId) => {
+        const dateKey = firstMessageDate.toISOString().split('T')[0];
+        if (!dailyConversations.has(dateKey)) {
+          dailyConversations.set(dateKey, new Set());
+        }
+        dailyConversations.get(dateKey)!.add(sessionId);
+      });
+
+      // Get sales data from Shopify
+      const dailySales = new Map<string, { orders: number; revenue: number }>();
+      
+      try {
+        const store = await supabaseService.getStore(shop as string);
+        if (store) {
+          const shopifyService = new ShopifyService();
+          
+          // Extend date range to capture sales that might be influenced by earlier conversations
+          const extendedEndDate = new Date(endDate);
+          extendedEndDate.setDate(extendedEndDate.getDate() + 2); // Add 2 day buffer
+          
+          const orders = await shopifyService.getOrdersByDateRange(
+            store.shop_domain,
+            store.access_token,
+            startDate.toISOString(),
+            extendedEndDate.toISOString()
+          );
+
+          orders.forEach((order: any) => {
+            const orderDate = new Date(order.created_at).toISOString().split('T')[0];
+            const orderValue = parseFloat(order.total_price || '0');
+            
+            if (!dailySales.has(orderDate)) {
+              dailySales.set(orderDate, { orders: 0, revenue: 0 });
+            }
+            
+            const dayData = dailySales.get(orderDate)!;
+            dayData.orders += 1;
+            dayData.revenue += orderValue;
+          });
+        }
+      } catch (error) {
+        logger.warn('Could not fetch Shopify sales data for approximation:', error);
+      }
+
+      // Calculate approximate conversions using multiple correlation methods
+      const approximateConversions = calculateApproximateConversions(
+        dailyConversations,
+        dailySales,
+        startDate,
+        endDate
+      );
+
+      logger.info('Approximate conversions calculated', {
+        totalConversations: Array.from(dailyConversations.values()).reduce((sum, sessions) => sum + sessions.size, 0),
+        totalOrders: Array.from(dailySales.values()).reduce((sum, day) => sum + day.orders, 0),
+        approximateConversions: approximateConversions.estimatedConversions,
+        confidence: approximateConversions.confidence,
+        method: approximateConversions.method,
+      });
+
+      res.json({
+        success: true,
+        data: {
+          ...approximateConversions,
+          period: `${daysCount} días`,
+          totalConversations: Array.from(dailyConversations.values()).reduce((sum, sessions) => sum + sessions.size, 0),
+          totalOrders: Array.from(dailySales.values()).reduce((sum, day) => sum + day.orders, 0),
+          totalRevenue: Math.round(Array.from(dailySales.values()).reduce((sum, day) => sum + day.revenue, 0) * 100) / 100,
+          dailyBreakdown: Array.from(dailyConversations.entries())
+            .map(([date, sessions]) => {
+              const salesData = dailySales.get(date) || { orders: 0, revenue: 0 };
+              return {
+                date,
+                conversations: sessions.size,
+                orders: salesData.orders,
+                revenue: Math.round(salesData.revenue * 100) / 100,
+              };
+            })
+            .sort((a, b) => a.date.localeCompare(b.date)),
+        },
+      });
+    } catch (error) {
+      logger.error('Error calculating approximate conversions:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error calculating approximate conversions',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+);
+
+/**
+ * Calculate approximate conversions using correlation analysis between conversations and sales
+ */
+function calculateApproximateConversions(
+  dailyConversations: Map<string, Set<string>>,
+  dailySales: Map<string, { orders: number; revenue: number }>,
+  startDate: Date,
+  endDate: Date
+) {
+  const results = {
+    estimatedConversions: 0,
+    confidence: 0,
+    method: 'correlation_analysis',
+    details: {
+      sameDay: 0,
+      nextDay: 0,
+      weekAverage: 0,
+      correlationScore: 0,
+    }
+  };
+
+  const allDates = [];
+  const currentDate = new Date(startDate);
+  while (currentDate <= endDate) {
+    allDates.push(currentDate.toISOString().split('T')[0]);
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  // Method 1: Same day correlation (immediate conversions)
+  let sameDayConversions = 0;
+  let sameDayValidDays = 0;
+  
+  allDates.forEach(date => {
+    const conversations = dailyConversations.get(date)?.size || 0;
+    const orders = dailySales.get(date)?.orders || 0;
+    
+    if (conversations > 0) {
+      sameDayValidDays++;
+      // Assume a percentage of orders on days with conversations are chat-influenced
+      sameDayConversions += Math.min(orders, Math.floor(conversations * 0.3)); // Conservative 30% same-day conversion
+    }
+  });
+
+  results.details.sameDay = sameDayConversions;
+
+  // Method 2: Next day correlation (delayed conversions)
+  let nextDayConversions = 0;
+  let nextDayValidDays = 0;
+
+  allDates.forEach((date, index) => {
+    if (index < allDates.length - 1) {
+      const conversations = dailyConversations.get(date)?.size || 0;
+      const nextDayOrders = dailySales.get(allDates[index + 1])?.orders || 0;
+      
+      if (conversations > 0 && nextDayOrders > 0) {
+        nextDayValidDays++;
+        // Assume a smaller percentage for next-day influence
+        nextDayConversions += Math.min(nextDayOrders, Math.floor(conversations * 0.2)); // Conservative 20% next-day conversion
+      }
+    }
+  });
+
+  results.details.nextDay = nextDayConversions;
+
+  // Method 3: Weekly average approach
+  const totalConversations = Array.from(dailyConversations.values()).reduce((sum, sessions) => sum + sessions.size, 0);
+  const totalOrders = Array.from(dailySales.values()).reduce((sum, day) => sum + day.orders, 0);
+  
+  let weeklyAverageConversions = 0;
+  if (totalConversations > 0 && totalOrders > 0) {
+    // Calculate conversation-to-order correlation
+    const averageConversionRate = Math.min(0.25, totalOrders / totalConversations); // Cap at 25% conversion rate
+    weeklyAverageConversions = Math.floor(totalConversations * averageConversionRate);
+  }
+
+  results.details.weekAverage = weeklyAverageConversions;
+
+  // Method 4: Calculate correlation coefficient
+  const correlationData = allDates.map(date => ({
+    conversations: dailyConversations.get(date)?.size || 0,
+    orders: dailySales.get(date)?.orders || 0,
+  })).filter(day => day.conversations > 0 || day.orders > 0);
+
+  let correlationScore = 0;
+  if (correlationData.length > 2) {
+    correlationScore = calculateCorrelation(
+      correlationData.map(d => d.conversations),
+      correlationData.map(d => d.orders)
+    );
+  }
+
+  results.details.correlationScore = Math.round(correlationScore * 100) / 100;
+
+  // Combine methods with weighted approach
+  const weights = {
+    sameDay: 0.4,
+    nextDay: 0.3,
+    weekAverage: 0.3,
+  };
+
+  results.estimatedConversions = Math.round(
+    (results.details.sameDay * weights.sameDay) +
+    (results.details.nextDay * weights.nextDay) +
+    (results.details.weekAverage * weights.weekAverage)
+  );
+
+  // Calculate confidence based on data quality and correlation
+  let confidence = 0;
+  
+  if (totalConversations > 10 && totalOrders > 0) {
+    confidence += 30; // Base confidence for having data
+  }
+  
+  if (correlationScore > 0.3) {
+    confidence += 40; // Higher confidence for positive correlation
+  } else if (correlationScore > 0) {
+    confidence += 20;
+  }
+  
+  if (sameDayValidDays > 3) {
+    confidence += 20; // More confidence with more data points
+  }
+  
+  if (nextDayValidDays > 2) {
+    confidence += 10; // Additional confidence for delayed pattern
+  }
+
+  results.confidence = Math.min(confidence, 85); // Cap confidence at 85%
+
+  return results;
+}
+
+/**
+ * Calculate Pearson correlation coefficient
+ */
+function calculateCorrelation(x: number[], y: number[]): number {
+  if (x.length !== y.length || x.length < 2) return 0;
+
+  const n = x.length;
+  const sumX = x.reduce((a, b) => a + b, 0);
+  const sumY = y.reduce((a, b) => a + b, 0);
+  const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
+  const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
+  const sumY2 = y.reduce((sum, yi) => sum + yi * yi, 0);
+
+  const numerator = n * sumXY - sumX * sumY;
+  const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+
+  return denominator === 0 ? 0 : numerator / denominator;
 }
 
 export default router;
