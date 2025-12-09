@@ -131,7 +131,7 @@
             padding: 40px 24px;
             min-height: 100vh;
             position: relative;
-            background: #f8fafc;
+            background: #ffffff;
         }
         
         /* Dark Mode Toggle */
@@ -466,7 +466,7 @@
         
         .tabs-header {
             display: flex;
-            background: #f8fafc;
+            background: #ffffff;
             overflow-x: auto;
             scrollbar-width: none;
             -ms-overflow-style: none;
@@ -810,7 +810,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: #f8fafc;
+            background: #ffffff;
         }
         
         .modal-title {
@@ -988,9 +988,9 @@
                             <div class="Polaris-Card__Section">
                                 <div style="height: 240px; display: flex; align-items: center; justify-content: center;">
                                     <div style="text-align: center;">
-                                        <div style="font-size: 48px; font-weight: 700; color: #84cc16; margin-bottom: 8px;">24</div>
+                                        <div style="font-size: 48px; font-weight: 700; color: #84cc16; margin-bottom: 8px;" id="conversion-count">-</div>
                                         <div style="font-size: 14px; color: #6b7280;">Conversiones totales</div>
-                                        <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">+12% vs mes anterior</div>
+                                        <div style="font-size: 12px; color: #6b7280; margin-top: 4px;" id="conversion-trend">-</div>
                                     </div>
                                 </div>
                             </div>
@@ -1173,23 +1173,11 @@
                     console.log('✅ Shop detected:', currentShop);
                     initializeDashboard();
                 } else {
-                    // Fallback for development
-                    const isDev = window.location.hostname === 'localhost' || 
-                                 window.location.hostname === '127.0.0.1' ||
-                                 window.location.port === '3000';
-                    
-                    if (isDev) {
-                        console.log('🔧 Development mode: using test shop');
-                        currentShop = 'test-shop';
-                        document.getElementById('shop-name').textContent = currentShop + ' (desarrollo)';
-                        initializeDashboard();
-                    } else {
-                        console.error('❌ No shop detected from any source');
-                        console.log('URL completa:', window.location.href);
-                        console.log('Referrer:', document.referrer);
-                        console.log('Hostname:', window.location.hostname);
-                        showError('No se pudo detectar la tienda. Por favor, accede desde tu panel de administración de Shopify.');
-                    }
+                    // Use 'naaycl' as default shop when no detection works
+                    console.log('🏪 Using default shop: naaycl');
+                    currentShop = 'naaycl';
+                    document.getElementById('shop-name').textContent = currentShop;
+                    initializeDashboard();
                 }
             } catch (error) {
                 console.error('Error initializing app:', error);
@@ -1324,26 +1312,9 @@
         }
         
         async function loadProductData() {
-            const container = document.getElementById('simple-products-list');
-            container.innerHTML = '<div class="loading-spinner"><div class="spinner"></div><div class="loading-text">Cargando productos...</div></div>';
-            
-            setTimeout(() => {
-                container.innerHTML = `
-                    <div class="product-list">
-                        <div class="product-item">
-                            <div class="product-rank">#1</div>
-                            <div class="product-info">
-                                <div class="product-title">Producto Ejemplo 1</div>
-                                <div class="product-meta">
-                                    <div class="product-price">$29.99</div>
-                                    <div class="product-vendor">Marca Ejemplo</div>
-                                </div>
-                            </div>
-                            <div class="recommendation-count">23</div>
-                        </div>
-                    </div>
-                `;
-            }, 1000);
+            // This function is replaced by loadSimpleProductData()
+            // which loads real data from the API
+            loadSimpleProductData();
         }
         
         async function loadConversionData() {
