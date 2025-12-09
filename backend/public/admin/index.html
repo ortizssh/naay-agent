@@ -89,22 +89,6 @@
             --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
         }
         
-        [data-theme="dark"] {
-            --naay-black: #ffffff;
-            --naay-white: #0f172a;
-            --naay-gray-50: #0f172a;
-            --naay-gray-100: #1e293b;
-            --naay-gray-200: #334155;
-            --naay-gray-300: #475569;
-            --naay-gray-400: #64748b;
-            --naay-gray-500: #94a3b8;
-            --naay-gray-600: #cbd5e1;
-            --naay-gray-700: #e2e8f0;
-            --naay-gray-800: #f1f5f9;
-            --naay-gray-900: #f8fafc;
-            --glass-bg: rgba(0, 0, 0, 0.25);
-            --glass-border: rgba(0, 0, 0, 0.18);
-        }
         
         /* Base Styles */
         * {
@@ -134,33 +118,6 @@
             background: #ffffff;
         }
         
-        /* Dark Mode Toggle */
-        .theme-toggle {
-            position: fixed;
-            top: var(--spacing-6);
-            right: var(--spacing-6);
-            z-index: 1000;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-full);
-            padding: var(--spacing-3);
-            backdrop-filter: var(--glass-backdrop);
-            cursor: pointer;
-            transition: var(--transition-normal);
-            box-shadow: var(--shadow-lg);
-        }
-        
-        .theme-toggle:hover {
-            background: rgba(132, 204, 22, 0.1);
-            transform: scale(1.1);
-        }
-        
-        .theme-toggle-icon {
-            width: 20px;
-            height: 20px;
-            color: var(--naay-primary);
-            transition: var(--transition-normal);
-        }
 
         /* Clean Button System */
         .btn {
@@ -847,11 +804,6 @@
                 padding: 16px;
             }
             
-            .theme-toggle {
-                top: 16px;
-                right: 16px;
-            }
-            
             .header {
                 padding: 24px;
                 text-align: left;
@@ -904,12 +856,6 @@
     </style>
 </head>
 <body>
-    <!-- Dark/Light Mode Toggle -->
-    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Cambiar tema">
-        <svg class="theme-toggle-icon" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
-        </svg>
-    </button>
 
     <div class="main-container">
         <header class="header">
@@ -946,6 +892,11 @@
                             <p class="section-subtitle">Vista rápida de los indicadores clave de rendimiento</p>
                         </div>
                         <div class="section-actions">
+                            <select id="overview-period" class="btn btn-secondary" onchange="loadOverviewData()">
+                                <option value="7">Últimos 7 días</option>
+                                <option value="14" selected>Últimos 14 días</option>
+                                <option value="30">Últimos 30 días</option>
+                            </select>
                             <button class="btn" onclick="loadAllMetrics()">Actualizar Todo</button>
                         </div>
                     </div>
@@ -1006,8 +957,14 @@
                             <p class="section-subtitle">Lista de conversaciones del chat</p>
                         </div>
                         <div class="section-actions">
+                            <select id="conversations-period" class="btn btn-secondary" onchange="loadConversationData()">
+                                <option value="today">Hoy</option>
+                                <option value="7" selected>Últimos 7 días</option>
+                                <option value="14">Últimos 14 días</option>
+                                <option value="30">Últimos 30 días</option>
+                            </select>
                             <input type="date" id="conversations-date-filter" class="btn btn-secondary" />
-                            <button class="btn" onclick="loadConversationsByDate()">Cargar</button>
+                            <button class="btn" onclick="loadConversationsByDate()">Cargar Fecha</button>
                         </div>
                     </div>
                     
@@ -1071,34 +1028,6 @@
     </div>
     
     <script>
-        // Dark Mode Toggle Function
-        function toggleTheme() {
-            const body = document.body;
-            const currentTheme = body.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            
-            body.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            
-            // Update icon
-            const icon = document.querySelector('.theme-toggle-icon path');
-            if (newTheme === 'dark') {
-                icon.setAttribute('d', 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z');
-            } else {
-                icon.setAttribute('d', 'M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z');
-            }
-        }
-        
-        // Initialize theme on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.body.setAttribute('data-theme', savedTheme);
-            
-            if (savedTheme === 'dark') {
-                const icon = document.querySelector('.theme-toggle-icon path');
-                icon.setAttribute('d', 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z');
-            }
-        });
         
         // Original JavaScript functionality from the panel
         let currentShop = null;
@@ -1238,20 +1167,35 @@
             try {
                 console.log('Loading overview data...');
                 
-                // Load dashboard stats
-                const statsResponse = await fetch(`${API_BASE_URL}/api/admin-bypass/stats?shop=${currentShop}`);
+                // Get selected period
+                const period = document.getElementById('overview-period') ? 
+                    document.getElementById('overview-period').value : '14';
+                
+                // Load dashboard stats for the selected period
+                const statsResponse = await fetch(`${API_BASE_URL}/api/admin-bypass/analytics/chart?shop=${currentShop}&days=${period}`);
                 const statsData = await statsResponse.json();
                 
                 console.log('Stats data received:', statsData);
                 
                 if (statsData.success && statsData.data) {
-                    document.getElementById('kpi-conversations').textContent = statsData.data.conversations || 0;
-                    document.getElementById('conversion-count').textContent = statsData.data.conversations || 0;
+                    // Use conversation data from chart endpoint for more accurate period-based count
+                    const totalConversationsInPeriod = statsData.data.totals ? statsData.data.totals.conversations : 0;
+                    document.getElementById('kpi-conversations').textContent = totalConversationsInPeriod || 0;
+                    document.getElementById('conversion-count').textContent = totalConversationsInPeriod || 0;
+                } else {
+                    // Fallback to basic stats endpoint
+                    const fallbackResponse = await fetch(`${API_BASE_URL}/api/admin-bypass/stats?shop=${currentShop}`);
+                    const fallbackData = await fallbackResponse.json();
+                    
+                    if (fallbackData.success && fallbackData.data) {
+                        document.getElementById('kpi-conversations').textContent = fallbackData.data.conversations || 0;
+                        document.getElementById('conversion-count').textContent = fallbackData.data.conversations || 0;
+                    }
                 }
                 
-                // Load conversion data for revenue and conversion rate
+                // Load conversion data for revenue and conversion rate with selected period
                 try {
-                    const conversionResponse = await fetch(`${API_BASE_URL}/api/admin-bypass/analytics/conversion-new?shop=${currentShop}&days=30`);
+                    const conversionResponse = await fetch(`${API_BASE_URL}/api/admin-bypass/analytics/conversion-new?shop=${currentShop}&days=${period}`);
                     const conversionData = await conversionResponse.json();
                     
                     console.log('Conversion data received for overview:', conversionData);
@@ -1275,12 +1219,8 @@
                     document.getElementById('kpi-conversion-rate').textContent = '0.0%';
                 }
                 
-                // Create dummy chart (we can enhance this later with real chart data)
-                setTimeout(() => {
-                    if (document.getElementById('overview-chart')) {
-                        createDummyChart();
-                    }
-                }, 100);
+                // Load real chart data for the selected period
+                loadOverviewChart(period);
                 
             } catch (error) {
                 console.error('Error loading overview data:', error);
@@ -1293,9 +1233,93 @@
             }
         }
         
+        async function loadOverviewChart(period = '14') {
+            try {
+                console.log(`Loading chart data for ${period} days...`);
+                
+                const response = await fetch(`${API_BASE_URL}/api/admin-bypass/analytics/chart?shop=${currentShop}&days=${period}`);
+                const data = await response.json();
+                
+                console.log('Chart data received:', data);
+                
+                if (data.success && data.data && data.data.chartData) {
+                    const chartData = data.data.chartData;
+                    const labels = chartData.map(item => {
+                        const date = new Date(item.date);
+                        return date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
+                    });
+                    const conversationsData = chartData.map(item => item.conversations || 0);
+                    
+                    createRealChart(labels, conversationsData);
+                } else {
+                    // Fallback to dummy chart
+                    createDummyChart();
+                }
+                
+            } catch (error) {
+                console.error('Error loading chart data:', error);
+                createDummyChart();
+            }
+        }
+        
+        function createRealChart(labels, data) {
+            const ctx = document.getElementById('overview-chart');
+            if (ctx) {
+                // Destroy existing chart if it exists
+                if (overviewChart) {
+                    overviewChart.destroy();
+                }
+                
+                overviewChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Conversaciones',
+                            data: data,
+                            borderColor: 'rgb(132, 204, 22)',
+                            backgroundColor: 'rgba(132, 204, 22, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(132, 204, 22, 0.1)'
+                                },
+                                ticks: {
+                                    precision: 0
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
         function createDummyChart() {
             const ctx = document.getElementById('overview-chart');
-            if (ctx && !overviewChart) {
+            if (ctx) {
+                // Destroy existing chart if it exists
+                if (overviewChart) {
+                    overviewChart.destroy();
+                }
+                
                 overviewChart = new Chart(ctx, {
                     type: 'line',
                     data: {
@@ -1336,24 +1360,53 @@
             try {
                 console.log('Loading conversations data...');
                 
-                // Get today's date for the filter
-                const today = new Date().toISOString().split('T')[0];
+                // Get selected period or use today
+                const period = document.getElementById('conversations-period') ? 
+                    document.getElementById('conversations-period').value : '7';
                 
-                const response = await fetch(`${API_BASE_URL}/api/admin-bypass/conversations?shop=${currentShop}&date=${today}&limit=10`);
+                // Start with base URL
+                let url = `${API_BASE_URL}/api/admin-bypass/conversations?shop=${currentShop}&limit=50`;
+                
+                if (period === 'today') {
+                    // Use today's date for the filter
+                    const today = new Date().toISOString().split('T')[0];
+                    url += `&date=${today}`;
+                } else {
+                    // For period filtering, we'll fetch conversations and filter on frontend
+                    // since the endpoint doesn't support days parameter
+                    // We'll fetch recent conversations and filter by date
+                }
+                
+                const response = await fetch(url);
                 const data = await response.json();
                 
                 console.log('Conversations data received:', data);
                 
-                if (data.success && data.data && data.data.length > 0) {
-                    const conversationList = data.data.map(conversation => {
+                let conversationsToShow = data.data || [];
+                
+                // Filter conversations by period if not "today"
+                if (period !== 'today' && period !== '7') {
+                    const daysBack = parseInt(period);
+                    const cutoffDate = new Date();
+                    cutoffDate.setDate(cutoffDate.getDate() - daysBack);
+                    
+                    conversationsToShow = conversationsToShow.filter(conversation => {
+                        const conversationDate = new Date(conversation.lastActivity || conversation.timestamp);
+                        return conversationDate >= cutoffDate;
+                    });
+                }
+                
+                if (data.success && conversationsToShow && conversationsToShow.length > 0) {
+                    const conversationList = conversationsToShow.map(conversation => {
+                        const sessionId = conversation.sessionId || conversation.session_id || 'sin-id';
                         const preview = conversation.preview || conversation.lastMessage || 'Sin mensajes recientes';
                         const timestamp = conversation.lastActivity || conversation.timestamp;
                         const formattedTime = timestamp ? new Date(timestamp).toLocaleString('es-ES') : 'Sin fecha';
                         
                         return `
-                            <div class="conversation-item" onclick="showConversationDetails('${conversation.sessionId}')">
+                            <div class="conversation-item" onclick="showConversationDetails('${sessionId}')">
                                 <div class="conversation-main">
-                                    <div class="conversation-id">${conversation.sessionId}</div>
+                                    <div class="conversation-id">${sessionId}</div>
                                     <div class="conversation-preview">${escapeHtml(preview)}</div>
                                 </div>
                                 <div class="conversation-meta">
