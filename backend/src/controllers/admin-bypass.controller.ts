@@ -581,7 +581,9 @@ router.get('/debug/db-stats', async (req: Request, res: Response) => {
     });
 
     // Get all historical data using pagination to overcome Supabase 1000 limit
-    const { count: totalHistoricalCount } = await (supabaseService as any).serviceClient
+    const { count: totalHistoricalCount } = await (
+      supabaseService as any
+    ).serviceClient
       .from('chat_messages')
       .select('*', { count: 'exact', head: true });
 
@@ -758,7 +760,9 @@ router.get(
         const start = i * batchSize;
         const end = start + batchSize - 1;
 
-        const { data: batch, error: batchError } = await (supabaseService as any).serviceClient
+        const { data: batch, error: batchError } = await (
+          supabaseService as any
+        ).serviceClient
           .from('chat_messages')
           .select('session_id, timestamp, role, id, content, metadata')
           .range(start, end)
@@ -779,7 +783,8 @@ router.get(
         });
       }
 
-      const messagesError = allMessages.length === 0 ? new Error('No messages fetched') : null;
+      const messagesError =
+        allMessages.length === 0 ? new Error('No messages fetched') : null;
 
       logger.info('📊 Database query result:', {
         recordsFetched: allMessages?.length || 0,
@@ -1752,7 +1757,9 @@ router.get(
       // Get conversations data using pagination to get all records
       try {
         // First get exact count for the date range
-        const { count: totalCount } = await (supabaseService as any).serviceClient
+        const { count: totalCount } = await (
+          supabaseService as any
+        ).serviceClient
           .from('chat_messages')
           .select('*', { count: 'exact', head: true })
           .gte('timestamp', startDate.toISOString())
@@ -1769,7 +1776,9 @@ router.get(
             const start = i * batchSize;
             const end = start + batchSize - 1;
 
-            const { data: batch, error: batchError } = await (supabaseService as any).serviceClient
+            const { data: batch, error: batchError } = await (
+              supabaseService as any
+            ).serviceClient
               .from('chat_messages')
               .select('session_id, timestamp')
               .gte('timestamp', startDate.toISOString())
@@ -1789,7 +1798,9 @@ router.get(
           }
         } else {
           // For smaller datasets, use normal query
-          const { data: messages, error: chatError } = await (supabaseService as any).serviceClient
+          const { data: messages, error: chatError } = await (
+            supabaseService as any
+          ).serviceClient
             .from('chat_messages')
             .select('session_id, timestamp')
             .gte('timestamp', startDate.toISOString())
@@ -2798,7 +2809,9 @@ router.get(
           const start = i * batchSize;
           const end = start + batchSize - 1;
 
-          const { data: batch, error: batchError } = await (supabaseService as any).serviceClient
+          const { data: batch, error: batchError } = await (
+            supabaseService as any
+          ).serviceClient
             .from('chat_messages')
             .select('session_id, timestamp, role')
             .gte('timestamp', startDate.toISOString())
@@ -2817,7 +2830,9 @@ router.get(
           }
         }
       } else {
-        const { data: messages, error: chatError } = await (supabaseService as any).serviceClient
+        const { data: messages, error: chatError } = await (
+          supabaseService as any
+        ).serviceClient
           .from('chat_messages')
           .select('session_id, timestamp, role')
           .gte('timestamp', startDate.toISOString())
@@ -2836,7 +2851,10 @@ router.get(
         const sessionId = msg.session_id;
         const timestamp = new Date(msg.timestamp);
 
-        if (!sessionFirstMessages.has(sessionId) || timestamp < sessionFirstMessages.get(sessionId)!) {
+        if (
+          !sessionFirstMessages.has(sessionId) ||
+          timestamp < sessionFirstMessages.get(sessionId)!
+        ) {
           sessionFirstMessages.set(sessionId, timestamp);
         }
       });
@@ -2851,16 +2869,16 @@ router.get(
 
       // Get sales data from Shopify
       const dailySales = new Map<string, { orders: number; revenue: number }>();
-      
+
       try {
         const store = await supabaseService.getStore(shop as string);
         if (store) {
           const shopifyService = new ShopifyService();
-          
+
           // Extend date range to capture sales that might be influenced by earlier conversations
           const extendedEndDate = new Date(endDate);
           extendedEndDate.setDate(extendedEndDate.getDate() + 2); // Add 2 day buffer
-          
+
           const orders = await shopifyService.getOrdersByDateRange(
             store.shop_domain,
             store.access_token,
@@ -2869,20 +2887,25 @@ router.get(
           );
 
           orders.forEach((order: any) => {
-            const orderDate = new Date(order.created_at).toISOString().split('T')[0];
+            const orderDate = new Date(order.created_at)
+              .toISOString()
+              .split('T')[0];
             const orderValue = parseFloat(order.total_price || '0');
-            
+
             if (!dailySales.has(orderDate)) {
               dailySales.set(orderDate, { orders: 0, revenue: 0 });
             }
-            
+
             const dayData = dailySales.get(orderDate)!;
             dayData.orders += 1;
             dayData.revenue += orderValue;
           });
         }
       } catch (error) {
-        logger.warn('Could not fetch Shopify sales data for approximation:', error);
+        logger.warn(
+          'Could not fetch Shopify sales data for approximation:',
+          error
+        );
       }
 
       // Calculate approximate conversions using multiple correlation methods
@@ -2894,8 +2917,14 @@ router.get(
       );
 
       logger.info('Approximate conversions calculated', {
-        totalConversations: Array.from(dailyConversations.values()).reduce((sum, sessions) => sum + sessions.size, 0),
-        totalOrders: Array.from(dailySales.values()).reduce((sum, day) => sum + day.orders, 0),
+        totalConversations: Array.from(dailyConversations.values()).reduce(
+          (sum, sessions) => sum + sessions.size,
+          0
+        ),
+        totalOrders: Array.from(dailySales.values()).reduce(
+          (sum, day) => sum + day.orders,
+          0
+        ),
         approximateConversions: approximateConversions.estimatedConversions,
         confidence: approximateConversions.confidence,
         method: approximateConversions.method,
@@ -2906,12 +2935,27 @@ router.get(
         data: {
           ...approximateConversions,
           period: `${daysCount} días`,
-          totalConversations: Array.from(dailyConversations.values()).reduce((sum, sessions) => sum + sessions.size, 0),
-          totalOrders: Array.from(dailySales.values()).reduce((sum, day) => sum + day.orders, 0),
-          totalRevenue: Math.round(Array.from(dailySales.values()).reduce((sum, day) => sum + day.revenue, 0) * 100) / 100,
+          totalConversations: Array.from(dailyConversations.values()).reduce(
+            (sum, sessions) => sum + sessions.size,
+            0
+          ),
+          totalOrders: Array.from(dailySales.values()).reduce(
+            (sum, day) => sum + day.orders,
+            0
+          ),
+          totalRevenue:
+            Math.round(
+              Array.from(dailySales.values()).reduce(
+                (sum, day) => sum + day.revenue,
+                0
+              ) * 100
+            ) / 100,
           dailyBreakdown: Array.from(dailyConversations.entries())
             .map(([date, sessions]) => {
-              const salesData = dailySales.get(date) || { orders: 0, revenue: 0 };
+              const salesData = dailySales.get(date) || {
+                orders: 0,
+                revenue: 0,
+              };
               return {
                 date,
                 conversations: sessions.size,
@@ -2951,7 +2995,7 @@ function calculateApproximateConversions(
       nextDay: 0,
       weekAverage: 0,
       correlationScore: 0,
-    }
+    },
   };
 
   const allDates = [];
@@ -2964,11 +3008,11 @@ function calculateApproximateConversions(
   // Method 1: Same day correlation (immediate conversions)
   let sameDayConversions = 0;
   let sameDayValidDays = 0;
-  
+
   allDates.forEach(date => {
     const conversations = dailyConversations.get(date)?.size || 0;
     const orders = dailySales.get(date)?.orders || 0;
-    
+
     if (conversations > 0) {
       sameDayValidDays++;
       // Assume a percentage of orders on days with conversations are chat-influenced
@@ -2986,11 +3030,14 @@ function calculateApproximateConversions(
     if (index < allDates.length - 1) {
       const conversations = dailyConversations.get(date)?.size || 0;
       const nextDayOrders = dailySales.get(allDates[index + 1])?.orders || 0;
-      
+
       if (conversations > 0 && nextDayOrders > 0) {
         nextDayValidDays++;
         // Assume a smaller percentage for next-day influence
-        nextDayConversions += Math.min(nextDayOrders, Math.floor(conversations * 0.2)); // Conservative 20% next-day conversion
+        nextDayConversions += Math.min(
+          nextDayOrders,
+          Math.floor(conversations * 0.2)
+        ); // Conservative 20% next-day conversion
       }
     }
   });
@@ -2998,23 +3045,36 @@ function calculateApproximateConversions(
   results.details.nextDay = nextDayConversions;
 
   // Method 3: Weekly average approach
-  const totalConversations = Array.from(dailyConversations.values()).reduce((sum, sessions) => sum + sessions.size, 0);
-  const totalOrders = Array.from(dailySales.values()).reduce((sum, day) => sum + day.orders, 0);
-  
+  const totalConversations = Array.from(dailyConversations.values()).reduce(
+    (sum, sessions) => sum + sessions.size,
+    0
+  );
+  const totalOrders = Array.from(dailySales.values()).reduce(
+    (sum, day) => sum + day.orders,
+    0
+  );
+
   let weeklyAverageConversions = 0;
   if (totalConversations > 0 && totalOrders > 0) {
     // Calculate conversation-to-order correlation
-    const averageConversionRate = Math.min(0.25, totalOrders / totalConversations); // Cap at 25% conversion rate
-    weeklyAverageConversions = Math.floor(totalConversations * averageConversionRate);
+    const averageConversionRate = Math.min(
+      0.25,
+      totalOrders / totalConversations
+    ); // Cap at 25% conversion rate
+    weeklyAverageConversions = Math.floor(
+      totalConversations * averageConversionRate
+    );
   }
 
   results.details.weekAverage = weeklyAverageConversions;
 
   // Method 4: Calculate correlation coefficient
-  const correlationData = allDates.map(date => ({
-    conversations: dailyConversations.get(date)?.size || 0,
-    orders: dailySales.get(date)?.orders || 0,
-  })).filter(day => day.conversations > 0 || day.orders > 0);
+  const correlationData = allDates
+    .map(date => ({
+      conversations: dailyConversations.get(date)?.size || 0,
+      orders: dailySales.get(date)?.orders || 0,
+    }))
+    .filter(day => day.conversations > 0 || day.orders > 0);
 
   let correlationScore = 0;
   if (correlationData.length > 2) {
@@ -3034,28 +3094,28 @@ function calculateApproximateConversions(
   };
 
   results.estimatedConversions = Math.round(
-    (results.details.sameDay * weights.sameDay) +
-    (results.details.nextDay * weights.nextDay) +
-    (results.details.weekAverage * weights.weekAverage)
+    results.details.sameDay * weights.sameDay +
+      results.details.nextDay * weights.nextDay +
+      results.details.weekAverage * weights.weekAverage
   );
 
   // Calculate confidence based on data quality and correlation
   let confidence = 0;
-  
+
   if (totalConversations > 10 && totalOrders > 0) {
     confidence += 30; // Base confidence for having data
   }
-  
+
   if (correlationScore > 0.3) {
     confidence += 40; // Higher confidence for positive correlation
   } else if (correlationScore > 0) {
     confidence += 20;
   }
-  
+
   if (sameDayValidDays > 3) {
     confidence += 20; // More confidence with more data points
   }
-  
+
   if (nextDayValidDays > 2) {
     confidence += 10; // Additional confidence for delayed pattern
   }
@@ -3079,7 +3139,9 @@ function calculateCorrelation(x: number[], y: number[]): number {
   const sumY2 = y.reduce((sum, yi) => sum + yi * yi, 0);
 
   const numerator = n * sumXY - sumX * sumY;
-  const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+  const denominator = Math.sqrt(
+    (n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY)
+  );
 
   return denominator === 0 ? 0 : numerator / denominator;
 }

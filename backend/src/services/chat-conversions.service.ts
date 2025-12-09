@@ -109,7 +109,9 @@ export class ChatConversionsService {
     endDate: Date
   ): Promise<Map<string, any>> {
     // First get count for pagination
-    const { count: totalCount } = await (this.supabaseService as any).serviceClient
+    const { count: totalCount } = await (
+      this.supabaseService as any
+    ).serviceClient
       .from('chat_messages')
       .select('*', { count: 'exact', head: true })
       .gte('timestamp', startDate.toISOString())
@@ -127,7 +129,9 @@ export class ChatConversionsService {
         const start = i * batchSize;
         const end = start + batchSize - 1;
 
-        const { data: batch, error: batchError } = await (this.supabaseService as any).serviceClient
+        const { data: batch, error: batchError } = await (
+          this.supabaseService as any
+        ).serviceClient
           .from('chat_messages')
           .select('session_id, timestamp, content, metadata, role')
           .gte('timestamp', startDate.toISOString())
@@ -142,7 +146,9 @@ export class ChatConversionsService {
       }
     } else {
       // For smaller datasets, use normal query
-      const { data: messages, error } = await (this.supabaseService as any).serviceClient
+      const { data: messages, error } = await (
+        this.supabaseService as any
+      ).serviceClient
         .from('chat_messages')
         .select('session_id, timestamp, content, metadata, role')
         .gte('timestamp', startDate.toISOString())
