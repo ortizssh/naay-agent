@@ -1132,7 +1132,7 @@ router.get(
       }
 
       const daysCount = parseInt(days as string);
-      
+
       logger.info('Analyzing chat conversions with new service', {
         shop: shop as string,
         daysBack: daysCount,
@@ -1156,7 +1156,6 @@ router.get(
           period: `${daysCount} días`,
         },
       });
-
     } catch (error) {
       logger.error('Error analyzing chat conversions (new):', error);
       return res.status(500).json({

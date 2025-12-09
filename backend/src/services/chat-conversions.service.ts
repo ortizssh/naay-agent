@@ -108,8 +108,9 @@ export class ChatConversionsService {
     startDate: Date,
     endDate: Date
   ): Promise<Map<string, any>> {
-    const { data: messages, error } = await (this.supabaseService as any)
-      .serviceClient
+    const { data: messages, error } = await (
+      this.supabaseService as any
+    ).serviceClient
       .from('chat_messages')
       .select('session_id, timestamp, content, metadata, role')
       .gte('timestamp', startDate.toISOString())
@@ -124,7 +125,7 @@ export class ChatConversionsService {
     if (messages) {
       for (const message of messages) {
         const sessionId = message.session_id;
-        
+
         if (!sessions.has(sessionId)) {
           sessions.set(sessionId, {
             sessionId,
@@ -137,7 +138,7 @@ export class ChatConversionsService {
 
         const session = sessions.get(sessionId);
         const messageTime = new Date(message.timestamp);
-        
+
         if (messageTime < session.startTime) {
           session.startTime = messageTime;
         }
@@ -150,7 +151,7 @@ export class ChatConversionsService {
           message.content,
           message.metadata
         );
-        
+
         for (const productId of products) {
           session.productsMentioned.add(productId);
           session.mentionDetails.push({
@@ -285,20 +286,26 @@ export class ChatConversionsService {
   ): ConversionMetrics {
     const totalConversations = chatSessions.size;
     const totalConversions = conversions.length;
-    const conversionRate = totalConversations > 0 ? 
-      (totalConversions / totalConversations) * 100 : 0;
+    const conversionRate =
+      totalConversations > 0
+        ? (totalConversions / totalConversations) * 100
+        : 0;
 
     const totalOrdersCount = conversions.reduce(
       (sum, conv) => sum + conv.totalOrderQuantity,
       0
     );
 
-    const averageOrderQuantity = conversions.length > 0 ? 
-      totalOrdersCount / conversions.length : 0;
+    const averageOrderQuantity =
+      conversions.length > 0 ? totalOrdersCount / conversions.length : 0;
 
-    const averageTimeToConversion = conversions.length > 0 ? 
-      conversions.reduce((sum, conv) => sum + conv.timeToConversionMinutes, 0) / 
-      conversions.length : 0;
+    const averageTimeToConversion =
+      conversions.length > 0
+        ? conversions.reduce(
+            (sum, conv) => sum + conv.timeToConversionMinutes,
+            0
+          ) / conversions.length
+        : 0;
 
     return {
       totalConversations,
@@ -332,7 +339,7 @@ export class ChatConversionsService {
     mentionedProducts: string[],
     orderProducts: any[]
   ): any[] {
-    return orderProducts.filter(orderProduct => 
+    return orderProducts.filter(orderProduct =>
       mentionedProducts.includes(orderProduct.productId)
     );
   }
