@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { ShopifyService } from '@/services/shopify.service';
 import { SupabaseService } from '@/services/supabase.service';
 import { QueueService } from '@/services/queue.service';
-import { ConversionTrackingService } from '@/services/conversion-tracking.service';
+import { SimpleConversionTracker } from '@/services/simple-conversion-tracker.service';
 import { webhookRateLimiter } from '@/middleware/rateLimiter';
 import { logger } from '@/utils/logger';
 import { AppError } from '@/types';
@@ -11,7 +11,7 @@ const router = Router();
 const shopifyService = new ShopifyService();
 const supabaseService = new SupabaseService();
 const queueService = new QueueService();
-const conversionTrackingService = new ConversionTrackingService();
+const simpleConversionTracker = new SimpleConversionTracker();
 
 // Apply rate limiting to webhooks
 router.use(webhookRateLimiter);
@@ -214,8 +214,9 @@ router.post(
       // Log webhook event
       await logWebhookEvent(shopDomain, 'orders/create', order);
 
-      // Track order completion for conversion attribution
+      // Track order completion for conversion attribution (both systems)
       await trackOrderCompletion(shopDomain, order);
+      await trackSimpleOrderCompletion(shopDomain, order);
 
       res.status(200).json({ success: true });
     } catch (error) {
@@ -436,20 +437,7 @@ async function trackOrderCompletion(
         variantTitle: item.variant_title,
       })) || [];
 
-    await conversionTrackingService.trackOrderCompletion({
-      shopDomain,
-      orderId: order.id.toString(),
-      orderNumber: order.order_number || order.name,
-      customerId: order.customer?.id?.toString(),
-      totalAmount: parseFloat(order.total_price) || 0,
-      subtotalAmount: parseFloat(order.subtotal_price) || 0,
-      taxAmount: parseFloat(order.total_tax) || 0,
-      currencyCode: order.currency || 'USD',
-      orderCreatedAt: new Date(order.created_at),
-      financialStatus: order.financial_status,
-      fulfillmentStatus: order.fulfillment_status,
-      lineItems,
-    });
+    // Order tracking now handled by trackSimpleOrderCompletion above
 
     logger.info('Order completion tracked for conversion attribution', {
       shopDomain,
@@ -504,21 +492,7 @@ async function trackCartUpdates(shopDomain: string, cart: any): Promise<void> {
     for (const item of lineItems) {
       // We don't have the session context here, so we can't easily attribute to AI recommendations
       // This is mainly for tracking cart activity patterns
-      await conversionTrackingService.trackCartAddition({
-        shopDomain,
-        cartId: cart.id?.toString() || 'unknown',
-        productId: item.product_id?.toString(),
-        variantId: item.variant_id?.toString(),
-        quantity: parseInt(item.quantity) || 1,
-        unitPrice: parseFloat(item.price) || 0,
-        source: 'unknown', // Can't determine source from webhook alone
-        metadata: {
-          via_webhook: true,
-          cart_token: cart.token,
-          cart_created_at: cart.created_at,
-          cart_updated_at: cart.updated_at,
-        },
-      });
+      // Cart tracking handled by simplified conversion system
     }
 
     logger.info('Cart updates tracked', {
@@ -528,6 +502,61 @@ async function trackCartUpdates(shopDomain: string, cart: any): Promise<void> {
     });
   } catch (error) {
     logger.error('Error tracking cart updates:', error);
+  }
+}
+
+// Helper function to track order completion in simplified system
+async function trackSimpleOrderCompletion(
+  shopDomain: string,
+  order: any
+): Promise<void> {
+  try {
+    const orderEvent = {
+      orderId: order.id.toString(),
+      shopDomain,
+      customerId: order.customer?.id?.toString(),
+      products: (order.line_items || []).map((item: any) => ({
+        productId: (item.product_id || item.variant?.product_id)?.toString(),
+        quantity: parseInt(item.quantity) || 1,
+        price: parseFloat(item.price) || 0
+      })).filter((p: any) => p.productId), // Only include items with product IDs
+      totalAmount: parseFloat(order.total_price) || 0,
+      createdAt: new Date(order.created_at)
+    };
+
+    logger.info('Processing order for simple conversions', {
+      shopDomain,
+      orderId: order.id,
+      productsCount: orderEvent.products.length,
+      totalAmount: orderEvent.totalAmount
+    });
+
+    const conversions = await simpleConversionTracker.processOrderForConversions(orderEvent);
+    
+    if (conversions.length > 0) {
+      logger.info('Simple conversions detected!', {
+        shopDomain,
+        orderId: order.id,
+        conversionsCount: conversions.length,
+        conversions: conversions.map(c => ({
+          sessionId: c.sessionId,
+          productId: c.productId,
+          minutesToConversion: c.minutesToConversion,
+          confidence: c.confidence
+        }))
+      });
+    } else {
+      logger.info('No conversions found for order', {
+        shopDomain,
+        orderId: order.id
+      });
+    }
+
+    // Clean up expired recommendations
+    await simpleConversionTracker.cleanupExpiredRecommendations(shopDomain);
+
+  } catch (error) {
+    logger.error('Error tracking simple order completion:', error);
   }
 }
 

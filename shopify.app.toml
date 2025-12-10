@@ -42,5 +42,14 @@ api_version = "2025-10"
   topics = ["app/uninstalled"]
   uri = "https://naay-agent-app1763504937.azurewebsites.net/api/webhooks/app/uninstalled"
 
+  # Order webhooks for conversion tracking
+  [[webhooks.subscriptions]]
+  topics = ["orders/create"]
+  uri = "https://naay-agent-app1763504937.azurewebsites.net/api/webhooks/orders/create"
+
+  [[webhooks.subscriptions]]
+  topics = ["orders/paid"]
+  uri = "https://naay-agent-app1763504937.azurewebsites.net/api/webhooks/orders/paid"
+
 [pos]
 embedded = false

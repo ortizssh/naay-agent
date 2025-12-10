@@ -28,6 +28,8 @@ import adminBypassRoutes from '@/controllers/admin-bypass.controller';
 import simpleChatRoutes from '@/controllers/simple-chat.controller';
 import publicCartRoutes from '@/controllers/public-cart.controller';
 import publicProductsRoutes from '@/controllers/public-products.controller';
+import conversionAnalyticsRoutes from '@/controllers/conversion-analytics.controller';
+import adminConversionAnalyticsRoutes from '@/controllers/admin-conversion-analytics.controller';
 import simpleConversionAnalyticsRoutes from '@/controllers/simple-conversion-analytics.controller';
 import historicalConversionMigratorRoutes from '@/controllers/historical-conversion-migrator.controller';
 import realConversionAnalyzerRoutes from '@/controllers/real-conversion-analyzer.controller';
@@ -548,6 +550,8 @@ async function startServer() {
     app.use('/api/admin-bypass', adminBypassRoutes);
 
     // Conversion Analytics Routes
+    app.use('/api/analytics/conversion', conversionAnalyticsRoutes);
+    app.use('/api/admin/analytics/conversion', adminConversionAnalyticsRoutes);
     app.use('/api/simple-conversions', simpleConversionAnalyticsRoutes);
     app.use('/api/migration', historicalConversionMigratorRoutes);
     app.use('/api/real-conversions', realConversionAnalyzerRoutes);

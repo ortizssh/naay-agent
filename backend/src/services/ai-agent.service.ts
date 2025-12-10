@@ -4,7 +4,7 @@ import { logger } from '@/utils/logger';
 import { SupabaseService } from './supabase.service';
 import { ShopifyService } from './shopify.service';
 import { EmbeddingService } from './embedding.service';
-import { ConversionTrackingService } from './conversion-tracking.service';
+import { SimpleConversionTracker } from './simple-conversion-tracker.service';
 import {
   AgentAction,
   AgentResponse,
@@ -25,7 +25,7 @@ export class AIAgentService {
   private supabaseService: SupabaseService;
   private shopifyService: ShopifyService;
   private embeddingService: EmbeddingService;
-  private conversionTrackingService: ConversionTrackingService;
+  private simpleConversionTracker: SimpleConversionTracker;
 
   constructor() {
     this.openai = new OpenAI({
@@ -34,7 +34,7 @@ export class AIAgentService {
     this.supabaseService = new SupabaseService();
     this.shopifyService = new ShopifyService();
     this.embeddingService = new EmbeddingService();
-    this.conversionTrackingService = new ConversionTrackingService();
+    this.simpleConversionTracker = new SimpleConversionTracker();
   }
 
   async processMessage(
@@ -121,16 +121,10 @@ export class AIAgentService {
         }
       );
 
-      // 5. Track AI recommendations for conversion attribution
+      // 5. Track AI recommendations for conversion attribution (both systems)
       try {
-        await this.conversionTrackingService.trackAIRecommendations(
-          sessionId,
-          shop,
-          response,
-          messageId,
-          context?.customerId,
-          cartId
-        );
+        // Simplified conversion tracking system
+        await this.trackSimpleRecommendations(sessionId, shop, response, messageId);
       } catch (trackingError) {
         logger.error('Error tracking AI recommendations:', trackingError);
         // Don't fail the response if tracking fails
@@ -945,6 +939,60 @@ ${product.vendor ? `*By ${product.vendor}*\n` : ''}${product.description ? produ
       logger.error('Error saving conversation turn:', error);
       // Don't throw here - conversation should continue even if saving fails
       return undefined;
+    }
+  }
+
+  /**
+   * Track recommendations in simplified system
+   */
+  private async trackSimpleRecommendations(
+    sessionId: string, 
+    shop: string, 
+    response: AgentResponse, 
+    messageId?: string
+  ): Promise<void> {
+    try {
+      const now = new Date();
+      
+      // Extract products from metadata
+      const products = response.metadata?.products || [];
+      const recommendations = response.metadata?.recommendations || [];
+      
+      // Track products from search results
+      for (const product of products) {
+        if (product.id) {
+          await this.simpleConversionTracker.trackRecommendation({
+            sessionId,
+            shopDomain: shop,
+            productId: product.id.toString(),
+            productTitle: product.title || 'Unknown Product',
+            recommendedAt: now,
+            messageId
+          });
+        }
+      }
+      
+      // Track products from recommendations
+      for (const rec of recommendations) {
+        if (rec.id) {
+          await this.simpleConversionTracker.trackRecommendation({
+            sessionId,
+            shopDomain: shop,
+            productId: rec.id.toString(),
+            productTitle: rec.title || 'Unknown Product',
+            recommendedAt: now,
+            messageId
+          });
+        }
+      }
+
+      logger.info('Simple recommendations tracked', {
+        sessionId,
+        shop,
+        productsTracked: products.length + recommendations.length
+      });
+    } catch (error) {
+      logger.error('Error tracking simple recommendations:', error);
     }
   }
 }

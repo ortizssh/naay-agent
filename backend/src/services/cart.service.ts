@@ -1,6 +1,5 @@
 import { ShopifyService } from './shopify.service';
 import { SupabaseService } from './supabase.service';
-import { ConversionTrackingService } from './conversion-tracking.service';
 import { logger } from '@/utils/logger';
 import { AppError, ShopifyCart } from '@/types';
 
@@ -21,12 +20,10 @@ interface CartUpdateInput {
 export class CartService {
   private shopifyService: ShopifyService;
   private supabaseService: SupabaseService;
-  private conversionTrackingService: ConversionTrackingService;
 
   constructor() {
     this.shopifyService = new ShopifyService();
     this.supabaseService = new SupabaseService();
-    this.conversionTrackingService = new ConversionTrackingService();
   }
 
   async createCart(shop: string): Promise<ShopifyCart> {
@@ -107,23 +104,7 @@ export class CartService {
           // Get product ID from variant (we need to query this)
           const variant = await this.getVariantDetails(shop, variantId);
 
-          if (variant) {
-            await this.conversionTrackingService.trackCartAddition({
-              shopDomain: shop,
-              cartId,
-              customerId,
-              productId: variant.product_id,
-              variantId,
-              quantity: line.quantity,
-              unitPrice: variant.price ? parseFloat(variant.price) : undefined,
-              source,
-              sessionId,
-              metadata: {
-                via_ai_widget: source === 'ai_recommendation',
-                cart_total_after: updatedCart.cost?.totalAmount?.amount,
-              },
-            });
-          }
+          // Cart tracking handled by simplified conversion system
         }
       } catch (trackingError) {
         logger.error('Error tracking cart addition:', trackingError);

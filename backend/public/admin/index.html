@@ -798,6 +798,149 @@
             color: #1f2937;
         }
 
+        /* Modern Analytics Table */
+        .analytics-table {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+        
+        .analytics-table table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+        }
+        
+        .analytics-table thead {
+            background: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .analytics-table th {
+            padding: 16px;
+            text-align: left;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            white-space: nowrap;
+        }
+        
+        .analytics-table th:first-child {
+            border-top-left-radius: 12px;
+        }
+        
+        .analytics-table th:last-child {
+            border-top-right-radius: 12px;
+        }
+        
+        .analytics-table td {
+            padding: 16px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 14px;
+            color: #1f2937;
+            vertical-align: middle;
+        }
+        
+        .analytics-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .analytics-table tr:hover {
+            background: #f9fafb;
+        }
+        
+        .product-title-cell {
+            font-weight: 600;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .performance-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            color: #ffffff;
+        }
+        
+        .performance-excellent {
+            background: #10b981;
+        }
+        
+        .performance-good {
+            background: #3b82f6;
+        }
+        
+        .performance-fair {
+            background: #f59e0b;
+        }
+        
+        .performance-poor {
+            background: #ef4444;
+        }
+        
+        .metric-number {
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        .metric-percentage {
+            font-weight: 600;
+            color: #059669;
+        }
+        
+        .metric-currency {
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        .metric-time {
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
+        .no-data-row {
+            text-align: center;
+            padding: 48px;
+            color: #6b7280;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        /* Performance indicators */
+        .conversion-rate-cell {
+            position: relative;
+        }
+        
+        .conversion-rate-bar {
+            position: absolute;
+            bottom: 2px;
+            left: 16px;
+            right: 16px;
+            height: 2px;
+            background: #f3f4f6;
+            border-radius: 1px;
+        }
+        
+        .conversion-rate-progress {
+            height: 100%;
+            background: var(--naay-primary);
+            border-radius: 1px;
+            transition: width 0.3s ease;
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .main-container {
@@ -961,14 +1104,40 @@
                 <div id="pane-productos" class="tab-pane">
                     <div class="section-header">
                         <div>
-                            <h2 class="section-title">Productos</h2>
-                            <p class="section-subtitle">Productos más recomendados</p>
+                            <h2 class="section-title">Análisis de Productos Recomendados</h2>
+                            <p class="section-subtitle">Productos recomendados vs ventas reales</p>
+                        </div>
+                        <div class="section-actions">
+                            <select id="products-period" class="btn btn-secondary" onchange="loadProductAnalytics()">
+                                <option value="7">Últimos 7 días</option>
+                                <option value="14" selected>Últimos 14 días</option>
+                                <option value="30">Últimos 30 días</option>
+                            </select>
+                            <button class="btn" onclick="loadProductAnalytics()">Actualizar</button>
                         </div>
                     </div>
                     
-                    <div id="simple-products-list" class="loading-spinner">
+                    <div id="products-analytics-summary" class="kpi-grid" style="margin-bottom: 32px; display: none;">
+                        <div class="kpi-card">
+                            <div class="kpi-label">Total Productos</div>
+                            <div class="kpi-value" id="summary-total-products">-</div>
+                            <div class="kpi-sublabel">Productos analizados</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Tasa Conversión Global</div>
+                            <div class="kpi-value" id="summary-conversion-rate">-</div>
+                            <div class="kpi-sublabel">Recomendaciones → Ventas</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Revenue Generado</div>
+                            <div class="kpi-value" id="summary-total-revenue">-</div>
+                            <div class="kpi-sublabel">Por recomendaciones AI</div>
+                        </div>
+                    </div>
+                    
+                    <div id="products-analytics-table" class="loading-spinner">
                         <div class="spinner"></div>
-                        <div class="loading-text">Cargando productos...</div>
+                        <div class="loading-text">Cargando análisis de productos...</div>
                     </div>
                 </div>
 
@@ -1361,64 +1530,189 @@
         }
         
         async function loadProductData() {
-            // This function is replaced by loadSimpleProductData()
-            // which loads real data from the API
-            loadSimpleProductData();
+            // Load product analytics instead of simple products list
+            loadProductAnalytics();
         }
         
-        async function loadSimpleProductData() {
-            const container = document.getElementById('simple-products-list');
-            container.innerHTML = '<div class="loading-spinner"><div class="spinner"></div><div class="loading-text">Cargando productos...</div></div>';
+        async function loadProductAnalytics() {
+            const container = document.getElementById('products-analytics-table');
+            const summaryContainer = document.getElementById('products-analytics-summary');
+            
+            container.innerHTML = '<div class="loading-spinner"><div class="spinner"></div><div class="loading-text">Cargando análisis de productos...</div></div>';
+            summaryContainer.style.display = 'none';
             
             try {
-                console.log('Loading top recommended products data...');
+                console.log('Loading product analytics data...');
+                
+                // Get selected period
+                const period = document.getElementById('products-period') ? 
+                    document.getElementById('products-period').value : '14';
+                
+                const response = await fetch(`${API_BASE_URL}/api/admin-bypass/products/recommended-analytics?shop=${currentShop}&days=${period}&limit=50`);
+                const data = await response.json();
+                
+                console.log('Product analytics data received:', data);
+                
+                if (data.success && data.data) {
+                    const { products, summary } = data.data;
+                    
+                    // Update summary KPIs
+                    document.getElementById('summary-total-products').textContent = summary.totalProducts || '0';
+                    document.getElementById('summary-conversion-rate').textContent = `${summary.overallConversionRate || 0}%`;
+                    document.getElementById('summary-total-revenue').textContent = formatCurrency(summary.totalRevenue || 0);
+                    summaryContainer.style.display = 'grid';
+                    
+                    if (products && products.length > 0) {
+                        // Generate table rows
+                        const tableRows = products.map((product, index) => {
+                            const conversionRateWidth = Math.min(product.conversionRate || 0, 100);
+                            
+                            return `
+                                <tr onclick="showProductDetails('${product.productId}')">
+                                    <td>
+                                        <div class="metric-number">#${index + 1}</div>
+                                    </td>
+                                    <td>
+                                        <div class="product-title-cell" title="${escapeHtml(product.productTitle)}">
+                                            ${escapeHtml(product.productTitle || `Producto ${product.productId}`)}
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="metric-number">${product.recommendations || 0}</div>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="metric-number">${product.conversions || 0}</div>
+                                    </td>
+                                    <td class="conversion-rate-cell text-center">
+                                        <div class="metric-percentage">${product.conversionRate || 0}%</div>
+                                        <div class="conversion-rate-bar">
+                                            <div class="conversion-rate-progress" style="width: ${conversionRateWidth}%"></div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="metric-currency">${formatCurrency(product.totalRevenue || 0)}</div>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="metric-currency">${formatCurrency(product.avgOrderValue || 0)}</div>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="metric-time">${formatMinutes(product.avgConversionTime || 0)}</div>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="performance-badge performance-${product.performance || 'poor'}">
+                                            ${getPerformanceLabel(product.performance || 'poor')}
+                                        </span>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('');
+                        
+                        container.innerHTML = `
+                            <div class="table-container">
+                                <div class="analytics-table">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Ranking</th>
+                                                <th>Producto</th>
+                                                <th style="text-align: center;">Recomendaciones</th>
+                                                <th style="text-align: center;">Conversiones</th>
+                                                <th style="text-align: center;">Tasa Conversión</th>
+                                                <th style="text-align: center;">Revenue Total</th>
+                                                <th style="text-align: center;">Valor Promedio</th>
+                                                <th style="text-align: center;">Tiempo Conversión</th>
+                                                <th style="text-align: center;">Performance</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${tableRows}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        container.innerHTML = `
+                            <div class="no-data-row">
+                                <div style="font-size: 24px; margin-bottom: 8px;">📊</div>
+                                <div style="font-size: 16px; font-weight: 500; margin-bottom: 4px;">No hay datos de análisis</div>
+                                <div style="font-size: 14px;">No se han encontrado productos con recomendaciones en el período seleccionado</div>
+                            </div>
+                        `;
+                    }
+                } else {
+                    // Fallback to legacy endpoint
+                    await loadSimpleProductDataFallback(container);
+                }
+                
+            } catch (error) {
+                console.error('Error loading product analytics:', error);
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 48px; color: #ef4444;">
+                        <div style="font-size: 24px; margin-bottom: 8px;">❌</div>
+                        <div style="font-size: 16px; font-weight: 500; margin-bottom: 4px;">Error al cargar análisis</div>
+                        <div style="font-size: 14px;">Error: ${error.message}</div>
+                    </div>
+                `;
+            }
+        }
+        
+        async function loadSimpleProductDataFallback(container) {
+            try {
+                console.log('Loading fallback product data...');
                 
                 const response = await fetch(`${API_BASE_URL}/api/admin-bypass/analytics/top-recommended-products?shop=${currentShop}&days=30`);
                 const data = await response.json();
                 
-                console.log('Product data received:', data);
-                
                 if (data.success && data.data && data.data.products && data.data.products.length > 0) {
-                    const productList = data.data.products.map(product => `
-                        <div class="product-item">
-                            <div class="product-rank">#${data.data.products.indexOf(product) + 1}</div>
-                            <div class="product-info">
-                                <div class="product-title">${product.title || `Producto ${product.productId}`}</div>
-                                <div class="product-meta">
-                                    <span class="product-vendor">${product.vendor || 'Sin marca'}</span>
-                                    ${product.productType ? `<span class="product-vendor">•</span><span class="product-vendor">${product.productType}</span>` : ''}
+                    const tableRows = data.data.products.map((product, index) => `
+                        <tr>
+                            <td><div class="metric-number">#${index + 1}</div></td>
+                            <td>
+                                <div class="product-title-cell" title="${escapeHtml(product.title)}">
+                                    ${escapeHtml(product.title || `Producto ${product.productId}`)}
                                 </div>
-                            </div>
-                            <div class="recommendation-count">
-                                ${product.recommendations} menciones
-                            </div>
-                        </div>
+                            </td>
+                            <td class="text-center"><div class="metric-number">${product.recommendations || 0}</div></td>
+                            <td class="text-center"><div class="metric-number">-</div></td>
+                            <td class="text-center"><div class="metric-percentage">-</div></td>
+                            <td class="text-center"><div class="metric-currency">-</div></td>
+                            <td class="text-center"><div class="metric-currency">-</div></td>
+                            <td class="text-center"><div class="metric-time">-</div></td>
+                            <td class="text-center">
+                                <span class="performance-badge performance-fair">Datos limitados</span>
+                            </td>
+                        </tr>
                     `).join('');
                     
                     container.innerHTML = `
-                        <div class="product-list">
-                            ${productList}
-                        </div>
-                    `;
-                } else {
-                    container.innerHTML = `
-                        <div style="text-align: center; padding: 48px; color: #6b7280;">
-                            <div style="font-size: 24px; margin-bottom: 8px;">📦</div>
-                            <div style="font-size: 16px; font-weight: 500; margin-bottom: 4px;">No hay productos recomendados</div>
-                            <div style="font-size: 14px;">No se han encontrado productos recomendados en el período seleccionado</div>
+                        <div class="table-container">
+                            <div class="analytics-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Ranking</th>
+                                            <th>Producto</th>
+                                            <th style="text-align: center;">Recomendaciones</th>
+                                            <th style="text-align: center;">Conversiones</th>
+                                            <th style="text-align: center;">Tasa Conversión</th>
+                                            <th style="text-align: center;">Revenue Total</th>
+                                            <th style="text-align: center;">Valor Promedio</th>
+                                            <th style="text-align: center;">Tiempo Conversión</th>
+                                            <th style="text-align: center;">Performance</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${tableRows}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     `;
                 }
-                
-            } catch (error) {
-                console.error('Error loading product data:', error);
-                container.innerHTML = `
-                    <div style="text-align: center; padding: 48px; color: #ef4444;">
-                        <div style="font-size: 24px; margin-bottom: 8px;">❌</div>
-                        <div style="font-size: 16px; font-weight: 500; margin-bottom: 4px;">Error al cargar productos</div>
-                        <div style="font-size: 14px;">Error: ${error.message}</div>
-                    </div>
-                `;
+            } catch (fallbackError) {
+                console.error('Fallback also failed:', fallbackError);
+                throw fallbackError;
             }
         }
         
@@ -1664,6 +1958,136 @@
                 currency: 'CLP',
                 minimumFractionDigits: 0
             }).format(priceInPesos);
+        }
+
+        // Helper functions for product analytics
+        function formatCurrency(amount) {
+            if (!amount || amount === 0) return '$0';
+            return new Intl.NumberFormat('es-CL', {
+                style: 'currency',
+                currency: 'CLP',
+                minimumFractionDigits: 0
+            }).format(amount);
+        }
+        
+        function formatMinutes(minutes) {
+            if (!minutes || minutes === 0) return '-';
+            if (minutes < 1) return '< 1 min';
+            if (minutes < 60) return `${Math.round(minutes)} min`;
+            
+            const hours = Math.floor(minutes / 60);
+            const remainingMinutes = Math.round(minutes % 60);
+            
+            if (hours === 1 && remainingMinutes === 0) return '1 hora';
+            if (remainingMinutes === 0) return `${hours} horas`;
+            return `${hours}h ${remainingMinutes}min`;
+        }
+        
+        function getPerformanceLabel(performance) {
+            const labels = {
+                excellent: 'Excelente',
+                good: 'Bueno', 
+                fair: 'Regular',
+                poor: 'Bajo'
+            };
+            return labels[performance] || 'Sin datos';
+        }
+        
+        async function showProductDetails(productId) {
+            const modal = document.getElementById('conversionModal');
+            const content = document.getElementById('conversion-details-content');
+            
+            modal.style.display = 'block';
+            content.innerHTML = '<div class="loading-spinner"><div class="spinner"></div><div class="loading-text">Cargando detalles del producto...</div></div>';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin-bypass/products/${productId}/analytics?shop=${currentShop}&days=30`);
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    const { product, summary, timeline, recentRecommendations, recentConversions } = data.data;
+                    
+                    // Create timeline chart
+                    const timelineHtml = timeline.slice(-14).map(day => {
+                        const barHeight = Math.max((day.conversions / Math.max(...timeline.map(d => d.conversions)) || 1) * 100, 2);
+                        return `
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                                <div style="font-size: 10px; color: #6b7280;">${day.conversions}</div>
+                                <div style="width: 20px; height: 60px; background: #f3f4f6; border-radius: 2px; display: flex; align-items: end;">
+                                    <div style="width: 100%; height: ${barHeight}%; background: var(--naay-primary); border-radius: 2px;"></div>
+                                </div>
+                                <div style="font-size: 10px; color: #6b7280;">${day.date.split('-')[2]}</div>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    content.innerHTML = `
+                        <div>
+                            <h3 style="margin-bottom: 20px; color: #1f2937;">${escapeHtml(product.title)}</h3>
+                            
+                            <!-- Summary metrics -->
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                                <div style="background: #f9fafb; padding: 16px; border-radius: 8px;">
+                                    <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Recomendaciones</div>
+                                    <div style="font-size: 24px; font-weight: 600; color: #1f2937;">${summary.totalRecommendations}</div>
+                                </div>
+                                <div style="background: #f9fafb; padding: 16px; border-radius: 8px;">
+                                    <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Conversiones</div>
+                                    <div style="font-size: 24px; font-weight: 600; color: #059669;">${summary.totalConversions}</div>
+                                </div>
+                                <div style="background: #f9fafb; padding: 16px; border-radius: 8px;">
+                                    <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Tasa Conversión</div>
+                                    <div style="font-size: 24px; font-weight: 600; color: #059669;">${summary.conversionRate}%</div>
+                                </div>
+                                <div style="background: #f9fafb; padding: 16px; border-radius: 8px;">
+                                    <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Revenue Total</div>
+                                    <div style="font-size: 20px; font-weight: 600; color: #1f2937;">${formatCurrency(summary.totalRevenue)}</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Timeline -->
+                            <div style="margin-bottom: 24px;">
+                                <h4 style="margin-bottom: 12px; color: #374151;">Conversiones por día (últimos 14 días)</h4>
+                                <div style="display: flex; gap: 8px; justify-content: center; padding: 16px; background: #f9fafb; border-radius: 8px;">
+                                    ${timelineHtml}
+                                </div>
+                            </div>
+                            
+                            <!-- Recent activity -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                                <div>
+                                    <h4 style="margin-bottom: 12px; color: #374151;">Recomendaciones Recientes</h4>
+                                    <div style="max-height: 200px; overflow-y: auto;">
+                                        ${recentRecommendations.map(rec => `
+                                            <div style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-size: 12px;">
+                                                <div style="color: #1f2937;">Sesión: ${rec.session_id}</div>
+                                                <div style="color: #6b7280;">${new Date(rec.recommended_at).toLocaleString('es-ES')}</div>
+                                            </div>
+                                        `).join('') || '<div style="color: #6b7280; padding: 16px; text-align: center;">No hay recomendaciones recientes</div>'}
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 style="margin-bottom: 12px; color: #374151;">Conversiones Recientes</h4>
+                                    <div style="max-height: 200px; overflow-y: auto;">
+                                        ${recentConversions.map(conv => `
+                                            <div style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-size: 12px;">
+                                                <div style="color: #059669; font-weight: 600;">${formatCurrency(conv.total_amount)}</div>
+                                                <div style="color: #6b7280;">${new Date(conv.purchased_at).toLocaleString('es-ES')}</div>
+                                                <div style="color: #6b7280;">En ${conv.minutes_to_conversion} min</div>
+                                            </div>
+                                        `).join('') || '<div style="color: #6b7280; padding: 16px; text-align: center;">No hay conversiones recientes</div>'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    content.innerHTML = '<p style="color: #ef4444; text-align: center;">Error al cargar los detalles del producto</p>';
+                }
+            } catch (error) {
+                console.error('Error loading product details:', error);
+                content.innerHTML = `<p style="color: #ef4444; text-align: center;">Error: ${error.message}</p>`;
+            }
         }
 
         function generateConversationName(preview, timestamp, index) {
