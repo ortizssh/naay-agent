@@ -33,7 +33,7 @@ interface ConversionResult {
 
 export class SimpleConversionTracker {
   private supabaseService: SupabaseService;
-  
+
   // Simplified: 10 minutes attribution window
   private static readonly ATTRIBUTION_WINDOW_MINUTES = 10;
 
@@ -56,9 +56,9 @@ export class SimpleConversionTracker {
           recommended_at: event.recommendedAt.toISOString(),
           message_id: event.messageId,
           expires_at: new Date(
-            event.recommendedAt.getTime() + 
-            SimpleConversionTracker.ATTRIBUTION_WINDOW_MINUTES * 60 * 1000
-          ).toISOString()
+            event.recommendedAt.getTime() +
+              SimpleConversionTracker.ATTRIBUTION_WINDOW_MINUTES * 60 * 1000
+          ).toISOString(),
         });
 
       if (error) {
@@ -68,7 +68,7 @@ export class SimpleConversionTracker {
           sessionId: event.sessionId,
           productId: event.productId,
           shopDomain: event.shopDomain,
-          expiresIn: `${SimpleConversionTracker.ATTRIBUTION_WINDOW_MINUTES} minutes`
+          expiresIn: `${SimpleConversionTracker.ATTRIBUTION_WINDOW_MINUTES} minutes`,
         });
       }
     } catch (error) {
@@ -79,24 +79,31 @@ export class SimpleConversionTracker {
   /**
    * Process order and find conversions - simplified version
    */
-  async processOrderForConversions(order: OrderEvent): Promise<ConversionResult[]> {
+  async processOrderForConversions(
+    order: OrderEvent
+  ): Promise<ConversionResult[]> {
     try {
       const conversions: ConversionResult[] = [];
       const orderTime = order.createdAt;
-      
+
       // Look for recommendations in the last 10 minutes
-      const windowStart = new Date(orderTime.getTime() - SimpleConversionTracker.ATTRIBUTION_WINDOW_MINUTES * 60 * 1000);
-      
+      const windowStart = new Date(
+        orderTime.getTime() -
+          SimpleConversionTracker.ATTRIBUTION_WINDOW_MINUTES * 60 * 1000
+      );
+
       logger.info('Processing order for conversions', {
         orderId: order.orderId,
         shopDomain: order.shopDomain,
         orderTime: orderTime.toISOString(),
         windowStart: windowStart.toISOString(),
-        productsInOrder: order.products.length
+        productsInOrder: order.products.length,
       });
 
       // Get recent recommendations that haven't expired
-      const { data: recommendations, error } = await (this.supabaseService as any).serviceClient
+      const { data: recommendations, error } = await (
+        this.supabaseService as any
+      ).serviceClient
         .from('simple_recommendations')
         .select('*')
         .eq('shop_domain', order.shopDomain)
@@ -113,7 +120,7 @@ export class SimpleConversionTracker {
         logger.info('No recent recommendations found for order', {
           orderId: order.orderId,
           windowStart: windowStart.toISOString(),
-          orderTime: orderTime.toISOString()
+          orderTime: orderTime.toISOString(),
         });
         return conversions;
       }
@@ -124,8 +131,8 @@ export class SimpleConversionTracker {
         recommendations: recommendations.map(r => ({
           sessionId: r.session_id,
           productId: r.product_id,
-          recommendedAt: r.recommended_at
-        }))
+          recommendedAt: r.recommended_at,
+        })),
       });
 
       // Check each product in the order against recommendations
@@ -138,14 +145,19 @@ export class SimpleConversionTracker {
             );
 
             // Simple confidence: closer to recommendation = higher confidence
-            const confidence = Math.max(0.1, 1 - (minutesToConversion / SimpleConversionTracker.ATTRIBUTION_WINDOW_MINUTES));
+            const confidence = Math.max(
+              0.1,
+              1 -
+                minutesToConversion /
+                  SimpleConversionTracker.ATTRIBUTION_WINDOW_MINUTES
+            );
 
             conversions.push({
               sessionId: rec.session_id,
               orderId: order.orderId,
               productId: orderProduct.productId,
               minutesToConversion,
-              confidence: Math.round(confidence * 100) / 100
+              confidence: Math.round(confidence * 100) / 100,
             });
 
             // Save the conversion
@@ -160,7 +172,7 @@ export class SimpleConversionTracker {
               confidence: confidence,
               order_quantity: orderProduct.quantity,
               order_amount: orderProduct.price * orderProduct.quantity,
-              total_order_amount: order.totalAmount
+              total_order_amount: order.totalAmount,
             });
 
             logger.info('Conversion detected and saved', {
@@ -168,7 +180,7 @@ export class SimpleConversionTracker {
               orderId: order.orderId,
               productId: orderProduct.productId,
               minutesToConversion,
-              confidence
+              confidence,
             });
           }
         }
@@ -201,7 +213,10 @@ export class SimpleConversionTracker {
   /**
    * Get conversion stats for a shop
    */
-  async getConversionStats(shopDomain: string, daysBack: number = 7): Promise<{
+  async getConversionStats(
+    shopDomain: string,
+    daysBack: number = 7
+  ): Promise<{
     totalRecommendations: number;
     totalConversions: number;
     conversionRate: number;
@@ -216,17 +231,23 @@ export class SimpleConversionTracker {
   }> {
     try {
       const endDate = new Date();
-      const startDate = new Date(endDate.getTime() - daysBack * 24 * 60 * 60 * 1000);
+      const startDate = new Date(
+        endDate.getTime() - daysBack * 24 * 60 * 60 * 1000
+      );
 
       // Get total recommendations
-      const { data: recommendations, error: recError } = await (this.supabaseService as any).serviceClient
+      const { data: recommendations, error: recError } = await (
+        this.supabaseService as any
+      ).serviceClient
         .from('simple_recommendations')
         .select('id')
         .eq('shop_domain', shopDomain)
         .gte('recommended_at', startDate.toISOString());
 
       // Get conversions with details
-      const { data: conversions, error: convError } = await (this.supabaseService as any).serviceClient
+      const { data: conversions, error: convError } = await (
+        this.supabaseService as any
+      ).serviceClient
         .from('simple_conversions')
         .select('*')
         .eq('shop_domain', shopDomain)
@@ -234,13 +255,19 @@ export class SimpleConversionTracker {
 
       const totalRecommendations = recommendations?.length || 0;
       const totalConversions = conversions?.length || 0;
-      const conversionRate = totalRecommendations > 0 ? (totalConversions / totalRecommendations) * 100 : 0;
-      
-      const averageMinutesToConversion = conversions && conversions.length > 0 
-        ? conversions.reduce((sum, c) => sum + c.minutes_to_conversion, 0) / conversions.length 
-        : 0;
+      const conversionRate =
+        totalRecommendations > 0
+          ? (totalConversions / totalRecommendations) * 100
+          : 0;
 
-      const totalRevenue = conversions?.reduce((sum, c) => sum + (c.order_amount || 0), 0) || 0;
+      const averageMinutesToConversion =
+        conversions && conversions.length > 0
+          ? conversions.reduce((sum, c) => sum + c.minutes_to_conversion, 0) /
+            conversions.length
+          : 0;
+
+      const totalRevenue =
+        conversions?.reduce((sum, c) => sum + (c.order_amount || 0), 0) || 0;
 
       // Group by product for top converting products
       const productStats = new Map();
@@ -251,7 +278,7 @@ export class SimpleConversionTracker {
             productId: c.product_id,
             productTitle: 'Product', // We'll need to fetch this separately if needed
             conversions: 0,
-            revenue: 0
+            revenue: 0,
           });
         }
         const stats = productStats.get(key);
@@ -268,16 +295,17 @@ export class SimpleConversionTracker {
         daysBack,
         totalRecommendations,
         totalConversions,
-        conversionRate: Math.round(conversionRate * 100) / 100
+        conversionRate: Math.round(conversionRate * 100) / 100,
       });
 
       return {
         totalRecommendations,
         totalConversions,
         conversionRate: Math.round(conversionRate * 100) / 100,
-        averageMinutesToConversion: Math.round(averageMinutesToConversion * 100) / 100,
+        averageMinutesToConversion:
+          Math.round(averageMinutesToConversion * 100) / 100,
         totalRevenue: Math.round(totalRevenue * 100) / 100,
-        topConvertingProducts
+        topConvertingProducts,
       };
     } catch (error) {
       logger.error('Error getting conversion stats:', error);
@@ -287,7 +315,7 @@ export class SimpleConversionTracker {
         conversionRate: 0,
         averageMinutesToConversion: 0,
         totalRevenue: 0,
-        topConvertingProducts: []
+        topConvertingProducts: [],
       };
     }
   }

@@ -48,7 +48,7 @@ interface ConversionMatch {
 export class HistoricalConversionMigrator {
   private supabaseService: SupabaseService;
   private shopifyService: ShopifyService;
-  
+
   // 10-minute attribution window (same as new system)
   private static readonly ATTRIBUTION_WINDOW_MINUTES = 10;
 
@@ -81,51 +81,66 @@ export class HistoricalConversionMigrator {
       shopDomain,
       daysBack,
       dryRun,
-      attributionWindowMinutes: HistoricalConversionMigrator.ATTRIBUTION_WINDOW_MINUTES
+      attributionWindowMinutes:
+        HistoricalConversionMigrator.ATTRIBUTION_WINDOW_MINUTES,
     });
 
     try {
       // 1. Get historical recommendations
-      const recommendations = await this.getHistoricalRecommendations(shopDomain, daysBack);
-      logger.info('Retrieved historical recommendations', { count: recommendations.length });
+      const recommendations = await this.getHistoricalRecommendations(
+        shopDomain,
+        daysBack
+      );
+      logger.info('Retrieved historical recommendations', {
+        count: recommendations.length,
+      });
 
-      // 2. Get historical orders 
+      // 2. Get historical orders
       const orders = await this.getHistoricalOrders(shopDomain, daysBack);
       logger.info('Retrieved historical orders', { count: orders.length });
 
       // 3. Find conversions
-      const conversions = await this.findHistoricalConversions(recommendations, orders);
-      logger.info('Found historical conversions', { count: conversions.length });
+      const conversions = await this.findHistoricalConversions(
+        recommendations,
+        orders
+      );
+      logger.info('Found historical conversions', {
+        count: conversions.length,
+      });
 
       // 4. Save conversions (if not dry run)
       if (!dryRun) {
         await this.saveHistoricalConversions(conversions);
         logger.info('Saved historical conversions to database');
       } else {
-        logger.info('DRY RUN: Conversions would be saved', { count: conversions.length });
+        logger.info('DRY RUN: Conversions would be saved', {
+          count: conversions.length,
+        });
       }
 
       // 5. Calculate summary stats
-      const summary = this.calculateSummaryStats(conversions, recommendations.length);
+      const summary = this.calculateSummaryStats(
+        conversions,
+        recommendations.length
+      );
 
       const result = {
         processed: {
           recommendations: recommendations.length,
           orders: orders.length,
-          conversions: conversions.length
+          conversions: conversions.length,
         },
         conversions,
-        summary
+        summary,
       };
 
       logger.info('Historical conversion migration completed', {
         ...result.processed,
         summary,
-        dryRun
+        dryRun,
       });
 
       return result;
-
     } catch (error) {
       logger.error('Error in historical conversion migration:', error);
       throw error;
@@ -145,7 +160,8 @@ export class HistoricalConversionMigrator {
 
       let query = (this.supabaseService as any).serviceClient
         .from('ai_recommendation_events')
-        .select(`
+        .select(
+          `
           id,
           session_id,
           shop_domain,
@@ -156,7 +172,8 @@ export class HistoricalConversionMigrator {
           created_at,
           customer_id,
           cart_id
-        `)
+        `
+        )
         .gte('created_at', cutoffDate.toISOString())
         .order('created_at', { ascending: true });
 
@@ -191,14 +208,16 @@ export class HistoricalConversionMigrator {
 
       let orderQuery = (this.supabaseService as any).serviceClient
         .from('order_completion_events')
-        .select(`
+        .select(
+          `
           id,
           order_id,
           shop_domain,
           customer_id,
           total_amount,
           order_created_at
-        `)
+        `
+        )
         .gte('order_created_at', cutoffDate.toISOString())
         .order('order_created_at', { ascending: true });
 
@@ -219,31 +238,40 @@ export class HistoricalConversionMigrator {
 
       // Get line items for each order
       const enrichedOrders: HistoricalOrder[] = [];
-      
+
       for (const order of orders) {
-        const { data: lineItems, error: lineError } = await (this.supabaseService as any).serviceClient
+        const { data: lineItems, error: lineError } = await (
+          this.supabaseService as any
+        ).serviceClient
           .from('order_line_items')
-          .select(`
+          .select(
+            `
             product_id,
             quantity,
             unit_price,
             total_price
-          `)
+          `
+          )
           .eq('order_event_id', order.id);
 
         if (lineError) {
-          logger.warn('Error fetching line items for order:', { orderId: order.order_id, error: lineError });
+          logger.warn('Error fetching line items for order:', {
+            orderId: order.order_id,
+            error: lineError,
+          });
           continue;
         }
 
         enrichedOrders.push({
           ...order,
-          line_items: (lineItems || []).map(item => ({
-            product_id: item.product_id?.toString(),
-            quantity: parseInt(item.quantity) || 1,
-            unit_price: parseFloat(item.unit_price) || 0,
-            total_price: parseFloat(item.total_price) || 0
-          })).filter(item => item.product_id) // Only items with valid product IDs
+          line_items: (lineItems || [])
+            .map(item => ({
+              product_id: item.product_id?.toString(),
+              quantity: parseInt(item.quantity) || 1,
+              unit_price: parseFloat(item.unit_price) || 0,
+              total_price: parseFloat(item.total_price) || 0,
+            }))
+            .filter(item => item.product_id), // Only items with valid product IDs
         });
       }
 
@@ -266,18 +294,21 @@ export class HistoricalConversionMigrator {
 
     logger.info('Processing conversion matches', {
       recommendations: recommendations.length,
-      orders: orders.length
+      orders: orders.length,
     });
 
     // Group recommendations by shop and session for faster lookup
-    const recsByShopAndSession = new Map<string, Map<string, HistoricalRecommendation[]>>();
-    
+    const recsByShopAndSession = new Map<
+      string,
+      Map<string, HistoricalRecommendation[]>
+    >();
+
     recommendations.forEach(rec => {
       if (!recsByShopAndSession.has(rec.shop_domain)) {
         recsByShopAndSession.set(rec.shop_domain, new Map());
       }
       const shopMap = recsByShopAndSession.get(rec.shop_domain)!;
-      
+
       if (!shopMap.has(rec.session_id)) {
         shopMap.set(rec.session_id, []);
       }
@@ -287,7 +318,7 @@ export class HistoricalConversionMigrator {
     for (const order of orders) {
       const orderTime = new Date(order.order_created_at);
       const shopRecommendations = recsByShopAndSession.get(order.shop_domain);
-      
+
       if (!shopRecommendations) {
         continue;
       }
@@ -305,9 +336,18 @@ export class HistoricalConversionMigrator {
               const minutesToConversion = Math.round(timeDiffMs / (1000 * 60));
 
               // Check if within attribution window (10 minutes)
-              if (minutesToConversion >= 0 && minutesToConversion <= HistoricalConversionMigrator.ATTRIBUTION_WINDOW_MINUTES) {
+              if (
+                minutesToConversion >= 0 &&
+                minutesToConversion <=
+                  HistoricalConversionMigrator.ATTRIBUTION_WINDOW_MINUTES
+              ) {
                 // Calculate confidence based on time proximity
-                const confidence = Math.max(0.1, 1 - (minutesToConversion / HistoricalConversionMigrator.ATTRIBUTION_WINDOW_MINUTES));
+                const confidence = Math.max(
+                  0.1,
+                  1 -
+                    minutesToConversion /
+                      HistoricalConversionMigrator.ATTRIBUTION_WINDOW_MINUTES
+                );
 
                 conversions.push({
                   recommendationId: rec.id,
@@ -321,11 +361,11 @@ export class HistoricalConversionMigrator {
                   confidence: Math.round(confidence * 100) / 100,
                   orderQuantity: lineItem.quantity,
                   orderAmount: lineItem.total_price,
-                  totalOrderAmount: order.total_amount
+                  totalOrderAmount: order.total_amount,
                 });
 
                 matchesFound++;
-                
+
                 if (matchesFound % 10 === 0) {
                   logger.info('Conversion matches progress', { matchesFound });
                 }
@@ -339,7 +379,7 @@ export class HistoricalConversionMigrator {
     logger.info('Conversion matching completed', {
       totalMatches: conversions.length,
       uniqueSessions: new Set(conversions.map(c => c.sessionId)).size,
-      uniqueOrders: new Set(conversions.map(c => c.orderId)).size
+      uniqueOrders: new Set(conversions.map(c => c.orderId)).size,
     });
 
     return conversions;
@@ -348,7 +388,9 @@ export class HistoricalConversionMigrator {
   /**
    * Save historical conversions to the new simple_conversions table
    */
-  private async saveHistoricalConversions(conversions: ConversionMatch[]): Promise<void> {
+  private async saveHistoricalConversions(
+    conversions: ConversionMatch[]
+  ): Promise<void> {
     if (conversions.length === 0) {
       return;
     }
@@ -359,7 +401,7 @@ export class HistoricalConversionMigrator {
 
     for (let i = 0; i < conversions.length; i += batchSize) {
       const batch = conversions.slice(i, i + batchSize);
-      
+
       const insertData = batch.map(conv => ({
         session_id: conv.sessionId,
         order_id: conv.orderId,
@@ -371,35 +413,35 @@ export class HistoricalConversionMigrator {
         confidence: conv.confidence,
         order_quantity: conv.orderQuantity,
         order_amount: conv.orderAmount,
-        total_order_amount: conv.totalOrderAmount
+        total_order_amount: conv.totalOrderAmount,
       }));
 
       const { error } = await (this.supabaseService as any).serviceClient
         .from('simple_conversions')
-        .upsert(insertData, { 
+        .upsert(insertData, {
           onConflict: 'session_id,order_id,product_id',
-          ignoreDuplicates: true 
+          ignoreDuplicates: true,
         });
 
       if (error) {
-        logger.error('Error inserting conversion batch:', { 
-          batchStart: i, 
-          batchSize: batch.length, 
-          error 
+        logger.error('Error inserting conversion batch:', {
+          batchStart: i,
+          batchSize: batch.length,
+          error,
         });
       } else {
         inserted += batch.length;
-        logger.info('Inserted conversion batch', { 
-          batchStart: i, 
+        logger.info('Inserted conversion batch', {
+          batchStart: i,
           batchSize: batch.length,
-          totalInserted: inserted 
+          totalInserted: inserted,
         });
       }
     }
 
-    logger.info('Historical conversions save completed', { 
+    logger.info('Historical conversions save completed', {
       totalConversions: conversions.length,
-      inserted 
+      inserted,
     });
   }
 
@@ -414,18 +456,25 @@ export class HistoricalConversionMigrator {
     averageMinutesToConversion: number;
     conversionRate: number;
   } {
-    const totalRevenue = conversions.reduce((sum, conv) => sum + conv.orderAmount, 0);
-    const averageMinutesToConversion = conversions.length > 0 
-      ? conversions.reduce((sum, conv) => sum + conv.minutesToConversion, 0) / conversions.length
-      : 0;
-    const conversionRate = totalRecommendations > 0 
-      ? (conversions.length / totalRecommendations) * 100 
-      : 0;
+    const totalRevenue = conversions.reduce(
+      (sum, conv) => sum + conv.orderAmount,
+      0
+    );
+    const averageMinutesToConversion =
+      conversions.length > 0
+        ? conversions.reduce((sum, conv) => sum + conv.minutesToConversion, 0) /
+          conversions.length
+        : 0;
+    const conversionRate =
+      totalRecommendations > 0
+        ? (conversions.length / totalRecommendations) * 100
+        : 0;
 
     return {
       totalRevenue: Math.round(totalRevenue * 100) / 100,
-      averageMinutesToConversion: Math.round(averageMinutesToConversion * 100) / 100,
-      conversionRate: Math.round(conversionRate * 100) / 100
+      averageMinutesToConversion:
+        Math.round(averageMinutesToConversion * 100) / 100,
+      conversionRate: Math.round(conversionRate * 100) / 100,
     };
   }
 
@@ -452,18 +501,18 @@ export class HistoricalConversionMigrator {
           .from('ai_recommendation_events')
           .select('*', { count: 'exact', head: true })
           .eq('shop_domain', shopDomain),
-        
+
         // Count historical orders
         (this.supabaseService as any).serviceClient
           .from('order_completion_events')
           .select('*', { count: 'exact', head: true })
           .eq('shop_domain', shopDomain),
-        
+
         // Count simple conversions
         (this.supabaseService as any).serviceClient
           .from('simple_conversions')
           .select('*', { count: 'exact', head: true })
-          .eq('shop_domain', shopDomain)
+          .eq('shop_domain', shopDomain),
       ]);
 
       // Get latest timestamps
@@ -475,7 +524,7 @@ export class HistoricalConversionMigrator {
           .order('created_at', { ascending: false })
           .limit(1)
           .single(),
-        
+
         (this.supabaseService as any).serviceClient
           .from('order_completion_events')
           .select('order_created_at')
@@ -483,14 +532,14 @@ export class HistoricalConversionMigrator {
           .order('order_created_at', { ascending: false })
           .limit(1)
           .single(),
-        
+
         (this.supabaseService as any).serviceClient
           .from('simple_conversions')
           .select('purchased_at')
           .eq('shop_domain', shopDomain)
           .order('purchased_at', { ascending: false })
           .limit(1)
-          .single()
+          .single(),
       ]);
 
       return {
@@ -500,11 +549,11 @@ export class HistoricalConversionMigrator {
         counts: {
           recommendations: recCount.count || 0,
           orders: orderCount.count || 0,
-          simpleConversions: conversionCount.count || 0
+          simpleConversions: conversionCount.count || 0,
         },
         lastRecommendation: lastRec.data?.created_at,
         lastOrder: lastOrder.data?.order_created_at,
-        lastConversion: lastConv.data?.purchased_at
+        lastConversion: lastConv.data?.purchased_at,
       };
     } catch (error) {
       logger.error('Error getting migration status:', error);

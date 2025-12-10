@@ -3166,21 +3166,32 @@ router.get(
       const daysBack = parseInt(days as string) || 14;
       const limitNum = Math.min(parseInt(limit as string) || 50, 200);
 
-      logger.info('Loading product analytics via bypass', { shop, daysBack, limitNum });
+      logger.info('Loading product analytics via bypass', {
+        shop,
+        daysBack,
+        limitNum,
+      });
 
       // Get products that have been recommended by AI in the specified period
-      const { data: recommendedProducts, error: recError } = await (supabaseService as any).serviceClient
+      const { data: recommendedProducts, error: recError } = await (
+        supabaseService as any
+      ).serviceClient
         .from('simple_recommendations')
-        .select(`
+        .select(
+          `
           product_id,
           product_title,
           shop_domain,
           COUNT(*) as recommendation_count,
           MIN(recommended_at) as first_recommended,
           MAX(recommended_at) as last_recommended
-        `)
+        `
+        )
         .eq('shop_domain', shop)
-        .gte('recommended_at', new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString())
+        .gte(
+          'recommended_at',
+          new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString()
+        )
         .groupBy('product_id, product_title, shop_domain')
         .order('recommendation_count', { ascending: false })
         .limit(limitNum);
@@ -3195,21 +3206,28 @@ router.get(
 
       // Get conversion data for these products
       const productIds = (recommendedProducts || []).map(p => p.product_id);
-      
+
       let conversionsData = [];
       if (productIds.length > 0) {
-        const { data: conversions, error: convError } = await (supabaseService as any).serviceClient
+        const { data: conversions, error: convError } = await (
+          supabaseService as any
+        ).serviceClient
           .from('simple_conversions')
-          .select(`
+          .select(
+            `
             product_id,
             COUNT(*) as conversion_count,
             SUM(CAST(total_amount AS DECIMAL)) as total_revenue,
             AVG(CAST(total_amount AS DECIMAL)) as avg_order_value,
             AVG(minutes_to_conversion) as avg_conversion_time
-          `)
+          `
+          )
           .eq('shop_domain', shop)
           .in('product_id', productIds)
-          .gte('purchased_at', new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString())
+          .gte(
+            'purchased_at',
+            new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString()
+          )
           .groupBy('product_id');
 
         if (convError) {
@@ -3220,42 +3238,69 @@ router.get(
       }
 
       // Combine recommendation and conversion data
-      const analytics = (recommendedProducts || []).map(product => {
-        const conversionData = conversionsData.find(c => c.product_id === product.product_id) || {};
-        
-        const conversionCount = parseInt(conversionData.conversion_count) || 0;
-        const recommendationCount = parseInt(product.recommendation_count) || 0;
-        const conversionRate = recommendationCount > 0 ? (conversionCount / recommendationCount * 100) : 0;
+      const analytics = (recommendedProducts || [])
+        .map(product => {
+          const conversionData =
+            conversionsData.find(c => c.product_id === product.product_id) ||
+            {};
 
-        return {
-          productId: product.product_id,
-          productTitle: product.product_title,
-          recommendations: recommendationCount,
-          conversions: conversionCount,
-          conversionRate: Math.round(conversionRate * 100) / 100,
-          totalRevenue: parseFloat(conversionData.total_revenue) || 0,
-          avgOrderValue: parseFloat(conversionData.avg_order_value) || 0,
-          avgConversionTime: parseFloat(conversionData.avg_conversion_time) || 0,
-          firstRecommended: product.first_recommended,
-          lastRecommended: product.last_recommended,
-          performance: conversionRate >= 15 ? 'excellent' : 
-                      conversionRate >= 8 ? 'good' : 
-                      conversionRate >= 3 ? 'fair' : 'poor'
-        };
-      }).sort((a, b) => b.conversionRate - a.conversionRate);
+          const conversionCount =
+            parseInt(conversionData.conversion_count) || 0;
+          const recommendationCount =
+            parseInt(product.recommendation_count) || 0;
+          const conversionRate =
+            recommendationCount > 0
+              ? (conversionCount / recommendationCount) * 100
+              : 0;
+
+          return {
+            productId: product.product_id,
+            productTitle: product.product_title,
+            recommendations: recommendationCount,
+            conversions: conversionCount,
+            conversionRate: Math.round(conversionRate * 100) / 100,
+            totalRevenue: parseFloat(conversionData.total_revenue) || 0,
+            avgOrderValue: parseFloat(conversionData.avg_order_value) || 0,
+            avgConversionTime:
+              parseFloat(conversionData.avg_conversion_time) || 0,
+            firstRecommended: product.first_recommended,
+            lastRecommended: product.last_recommended,
+            performance:
+              conversionRate >= 15
+                ? 'excellent'
+                : conversionRate >= 8
+                  ? 'good'
+                  : conversionRate >= 3
+                    ? 'fair'
+                    : 'poor',
+          };
+        })
+        .sort((a, b) => b.conversionRate - a.conversionRate);
 
       // Calculate summary stats
-      const totalRecommendations = analytics.reduce((sum, p) => sum + p.recommendations, 0);
-      const totalConversions = analytics.reduce((sum, p) => sum + p.conversions, 0);
-      const totalRevenue = analytics.reduce((sum, p) => sum + p.totalRevenue, 0);
-      const overallConversionRate = totalRecommendations > 0 ? (totalConversions / totalRecommendations * 100) : 0;
+      const totalRecommendations = analytics.reduce(
+        (sum, p) => sum + p.recommendations,
+        0
+      );
+      const totalConversions = analytics.reduce(
+        (sum, p) => sum + p.conversions,
+        0
+      );
+      const totalRevenue = analytics.reduce(
+        (sum, p) => sum + p.totalRevenue,
+        0
+      );
+      const overallConversionRate =
+        totalRecommendations > 0
+          ? (totalConversions / totalRecommendations) * 100
+          : 0;
 
       logger.info(`Product analytics loaded for shop: ${shop}`, {
         daysBack,
         productsAnalyzed: analytics.length,
         totalRecommendations,
         totalConversions,
-        overallConversionRate: Math.round(overallConversionRate * 100) / 100
+        overallConversionRate: Math.round(overallConversionRate * 100) / 100,
       });
 
       res.json({
@@ -3267,15 +3312,21 @@ router.get(
             totalRecommendations,
             totalConversions,
             totalRevenue: Math.round(totalRevenue * 100) / 100,
-            overallConversionRate: Math.round(overallConversionRate * 100) / 100,
-            avgOrderValue: totalConversions > 0 ? Math.round((totalRevenue / totalConversions) * 100) / 100 : 0
+            overallConversionRate:
+              Math.round(overallConversionRate * 100) / 100,
+            avgOrderValue:
+              totalConversions > 0
+                ? Math.round((totalRevenue / totalConversions) * 100) / 100
+                : 0,
           },
           period: {
             days: daysBack,
-            startDate: new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString(),
-            endDate: new Date().toISOString()
-          }
-        }
+            startDate: new Date(
+              Date.now() - daysBack * 24 * 60 * 60 * 1000
+            ).toISOString(),
+            endDate: new Date().toISOString(),
+          },
+        },
       });
     } catch (error: any) {
       logger.error('Error loading product analytics:', error);
@@ -3305,7 +3356,9 @@ router.get(
       const daysBack = parseInt(days as string) || 30;
 
       // Get basic product info from products table
-      const { data: product, error: productError } = await (supabaseService as any).serviceClient
+      const { data: product, error: productError } = await (
+        supabaseService as any
+      ).serviceClient
         .from('products')
         .select('id, title, description, handle, vendor, product_type')
         .eq('shop_domain', shop)
@@ -3320,9 +3373,12 @@ router.get(
           description: null,
           handle: null,
           vendor: null,
-          product_type: null
+          product_type: null,
         };
-        logger.info('Product not found in products table, using minimal info', { productId, shop });
+        logger.info('Product not found in products table, using minimal info', {
+          productId,
+          shop,
+        });
       } else if (productError) {
         logger.error('Error fetching product info:', productError);
         return res.status(500).json({
@@ -3337,7 +3393,10 @@ router.get(
         .select('*')
         .eq('shop_domain', shop)
         .eq('product_id', productId)
-        .gte('recommended_at', new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString())
+        .gte(
+          'recommended_at',
+          new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString()
+        )
         .order('recommended_at', { ascending: false });
 
       // Get conversion statistics
@@ -3346,41 +3405,64 @@ router.get(
         .select('*')
         .eq('shop_domain', shop)
         .eq('product_id', productId)
-        .gte('purchased_at', new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString())
+        .gte(
+          'purchased_at',
+          new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString()
+        )
         .order('purchased_at', { ascending: false });
 
       // Calculate metrics
       const totalRecommendations = recStats?.length || 0;
       const totalConversions = convStats?.length || 0;
-      const conversionRate = totalRecommendations > 0 ? (totalConversions / totalRecommendations * 100) : 0;
-      const totalRevenue = convStats?.reduce((sum, conv) => sum + (parseFloat(conv.total_amount) || 0), 0) || 0;
-      const avgConversionTime = convStats?.length > 0 ? 
-        convStats.reduce((sum, conv) => sum + (conv.minutes_to_conversion || 0), 0) / convStats.length : 0;
+      const conversionRate =
+        totalRecommendations > 0
+          ? (totalConversions / totalRecommendations) * 100
+          : 0;
+      const totalRevenue =
+        convStats?.reduce(
+          (sum, conv) => sum + (parseFloat(conv.total_amount) || 0),
+          0
+        ) || 0;
+      const avgConversionTime =
+        convStats?.length > 0
+          ? convStats.reduce(
+              (sum, conv) => sum + (conv.minutes_to_conversion || 0),
+              0
+            ) / convStats.length
+          : 0;
 
       // Get timeline data (daily breakdown)
       const timelineData = [];
       for (let i = daysBack - 1; i >= 0; i--) {
         const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
         const dateStr = date.toISOString().split('T')[0];
-        
-        const dayRecommendations = recStats?.filter(rec => 
-          rec.recommended_at.startsWith(dateStr)
-        ).length || 0;
-        
-        const dayConversions = convStats?.filter(conv => 
-          conv.purchased_at.startsWith(dateStr)
-        ).length || 0;
 
-        const dayRevenue = convStats?.filter(conv => 
-          conv.purchased_at.startsWith(dateStr)
-        ).reduce((sum, conv) => sum + (parseFloat(conv.total_amount) || 0), 0) || 0;
+        const dayRecommendations =
+          recStats?.filter(rec => rec.recommended_at.startsWith(dateStr))
+            .length || 0;
+
+        const dayConversions =
+          convStats?.filter(conv => conv.purchased_at.startsWith(dateStr))
+            .length || 0;
+
+        const dayRevenue =
+          convStats
+            ?.filter(conv => conv.purchased_at.startsWith(dateStr))
+            .reduce(
+              (sum, conv) => sum + (parseFloat(conv.total_amount) || 0),
+              0
+            ) || 0;
 
         timelineData.push({
           date: dateStr,
           recommendations: dayRecommendations,
           conversions: dayConversions,
           revenue: Math.round(dayRevenue * 100) / 100,
-          conversionRate: dayRecommendations > 0 ? Math.round((dayConversions / dayRecommendations * 100) * 100) / 100 : 0
+          conversionRate:
+            dayRecommendations > 0
+              ? Math.round((dayConversions / dayRecommendations) * 100 * 100) /
+                100
+              : 0,
         });
       }
 
@@ -3389,7 +3471,7 @@ router.get(
         title: `Producto ${productId}`,
         handle: null,
         vendor: null,
-        product_type: null
+        product_type: null,
       };
 
       const analytics = {
@@ -3398,27 +3480,37 @@ router.get(
           title: productResult.title,
           handle: productResult.handle,
           vendor: productResult.vendor,
-          productType: productResult.product_type
+          productType: productResult.product_type,
         },
         summary: {
           totalRecommendations,
           totalConversions,
           conversionRate: Math.round(conversionRate * 100) / 100,
           totalRevenue: Math.round(totalRevenue * 100) / 100,
-          avgOrderValue: totalConversions > 0 ? Math.round((totalRevenue / totalConversions) * 100) / 100 : 0,
+          avgOrderValue:
+            totalConversions > 0
+              ? Math.round((totalRevenue / totalConversions) * 100) / 100
+              : 0,
           avgConversionTime: Math.round(avgConversionTime * 10) / 10,
-          performance: conversionRate >= 15 ? 'excellent' : 
-                      conversionRate >= 8 ? 'good' : 
-                      conversionRate >= 3 ? 'fair' : 'poor'
+          performance:
+            conversionRate >= 15
+              ? 'excellent'
+              : conversionRate >= 8
+                ? 'good'
+                : conversionRate >= 3
+                  ? 'fair'
+                  : 'poor',
         },
         timeline: timelineData,
         recentRecommendations: recStats?.slice(0, 10) || [],
         recentConversions: convStats?.slice(0, 10) || [],
         period: {
           days: daysBack,
-          startDate: new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString(),
-          endDate: new Date().toISOString()
-        }
+          startDate: new Date(
+            Date.now() - daysBack * 24 * 60 * 60 * 1000
+          ).toISOString(),
+          endDate: new Date().toISOString(),
+        },
       };
 
       logger.info(`Individual product analytics retrieved for ${productId}`, {
@@ -3426,12 +3518,12 @@ router.get(
         productId,
         recommendations: totalRecommendations,
         conversions: totalConversions,
-        conversionRate: Math.round(conversionRate * 100) / 100
+        conversionRate: Math.round(conversionRate * 100) / 100,
       });
 
       res.json({
         success: true,
-        data: analytics
+        data: analytics,
       });
     } catch (error: any) {
       logger.error('Error loading individual product analytics:', error);

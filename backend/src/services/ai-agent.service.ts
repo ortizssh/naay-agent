@@ -124,7 +124,12 @@ export class AIAgentService {
       // 5. Track AI recommendations for conversion attribution (both systems)
       try {
         // Simplified conversion tracking system
-        await this.trackSimpleRecommendations(sessionId, shop, response, messageId);
+        await this.trackSimpleRecommendations(
+          sessionId,
+          shop,
+          response,
+          messageId
+        );
       } catch (trackingError) {
         logger.error('Error tracking AI recommendations:', trackingError);
         // Don't fail the response if tracking fails
@@ -946,18 +951,18 @@ ${product.vendor ? `*By ${product.vendor}*\n` : ''}${product.description ? produ
    * Track recommendations in simplified system
    */
   private async trackSimpleRecommendations(
-    sessionId: string, 
-    shop: string, 
-    response: AgentResponse, 
+    sessionId: string,
+    shop: string,
+    response: AgentResponse,
     messageId?: string
   ): Promise<void> {
     try {
       const now = new Date();
-      
+
       // Extract products from metadata
       const products = response.metadata?.products || [];
       const recommendations = response.metadata?.recommendations || [];
-      
+
       // Track products from search results
       for (const product of products) {
         if (product.id) {
@@ -967,11 +972,11 @@ ${product.vendor ? `*By ${product.vendor}*\n` : ''}${product.description ? produ
             productId: product.id.toString(),
             productTitle: product.title || 'Unknown Product',
             recommendedAt: now,
-            messageId
+            messageId,
           });
         }
       }
-      
+
       // Track products from recommendations
       for (const rec of recommendations) {
         if (rec.id) {
@@ -981,7 +986,7 @@ ${product.vendor ? `*By ${product.vendor}*\n` : ''}${product.description ? produ
             productId: rec.id.toString(),
             productTitle: rec.title || 'Unknown Product',
             recommendedAt: now,
-            messageId
+            messageId,
           });
         }
       }
@@ -989,7 +994,7 @@ ${product.vendor ? `*By ${product.vendor}*\n` : ''}${product.description ? produ
       logger.info('Simple recommendations tracked', {
         sessionId,
         shop,
-        productsTracked: products.length + recommendations.length
+        productsTracked: products.length + recommendations.length,
       });
     } catch (error) {
       logger.error('Error tracking simple recommendations:', error);

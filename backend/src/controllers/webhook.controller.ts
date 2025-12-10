@@ -515,24 +515,27 @@ async function trackSimpleOrderCompletion(
       orderId: order.id.toString(),
       shopDomain,
       customerId: order.customer?.id?.toString(),
-      products: (order.line_items || []).map((item: any) => ({
-        productId: (item.product_id || item.variant?.product_id)?.toString(),
-        quantity: parseInt(item.quantity) || 1,
-        price: parseFloat(item.price) || 0
-      })).filter((p: any) => p.productId), // Only include items with product IDs
+      products: (order.line_items || [])
+        .map((item: any) => ({
+          productId: (item.product_id || item.variant?.product_id)?.toString(),
+          quantity: parseInt(item.quantity) || 1,
+          price: parseFloat(item.price) || 0,
+        }))
+        .filter((p: any) => p.productId), // Only include items with product IDs
       totalAmount: parseFloat(order.total_price) || 0,
-      createdAt: new Date(order.created_at)
+      createdAt: new Date(order.created_at),
     };
 
     logger.info('Processing order for simple conversions', {
       shopDomain,
       orderId: order.id,
       productsCount: orderEvent.products.length,
-      totalAmount: orderEvent.totalAmount
+      totalAmount: orderEvent.totalAmount,
     });
 
-    const conversions = await simpleConversionTracker.processOrderForConversions(orderEvent);
-    
+    const conversions =
+      await simpleConversionTracker.processOrderForConversions(orderEvent);
+
     if (conversions.length > 0) {
       logger.info('Simple conversions detected!', {
         shopDomain,
@@ -542,19 +545,18 @@ async function trackSimpleOrderCompletion(
           sessionId: c.sessionId,
           productId: c.productId,
           minutesToConversion: c.minutesToConversion,
-          confidence: c.confidence
-        }))
+          confidence: c.confidence,
+        })),
       });
     } else {
       logger.info('No conversions found for order', {
         shopDomain,
-        orderId: order.id
+        orderId: order.id,
       });
     }
 
     // Clean up expired recommendations
     await simpleConversionTracker.cleanupExpiredRecommendations(shopDomain);
-
   } catch (error) {
     logger.error('Error tracking simple order completion:', error);
   }

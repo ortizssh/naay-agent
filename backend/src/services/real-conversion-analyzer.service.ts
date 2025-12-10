@@ -44,7 +44,7 @@ interface RecommendationMatch {
 export class RealConversionAnalyzer {
   private supabaseService: SupabaseService;
   private shopifyService: ShopifyService;
-  
+
   private static readonly ATTRIBUTION_WINDOW_MINUTES = 10;
 
   constructor() {
@@ -80,7 +80,7 @@ export class RealConversionAnalyzer {
       shopDomain,
       daysBack,
       saveResults,
-      attributionWindow: RealConversionAnalyzer.ATTRIBUTION_WINDOW_MINUTES
+      attributionWindow: RealConversionAnalyzer.ATTRIBUTION_WINDOW_MINUTES,
     });
 
     try {
@@ -91,10 +91,13 @@ export class RealConversionAnalyzer {
       }
 
       // 2. Get recent recommendations from our system
-      const recommendations = await this.getRecentRecommendations(shopDomain, daysBack);
-      logger.info('Retrieved recommendations', { 
+      const recommendations = await this.getRecentRecommendations(
+        shopDomain,
+        daysBack
+      );
+      logger.info('Retrieved recommendations', {
         count: recommendations.length,
-        shopDomain 
+        shopDomain,
       });
 
       if (recommendations.length === 0) {
@@ -108,8 +111,8 @@ export class RealConversionAnalyzer {
             conversionRate: 0,
             averageMinutesToConversion: 0,
             averageOrderValue: 0,
-            topProducts: []
-          }
+            topProducts: [],
+          },
         };
       }
 
@@ -125,18 +128,22 @@ export class RealConversionAnalyzer {
         endDate
       );
 
-      logger.info('Retrieved real orders from Shopify', { 
+      logger.info('Retrieved real orders from Shopify', {
         count: realOrders.length,
-        dateRange: `${startDate.toISOString()} to ${endDate.toISOString()}`
+        dateRange: `${startDate.toISOString()} to ${endDate.toISOString()}`,
       });
 
       // 4. Find matches between recommendations and real orders
-      const conversions = this.findRealConversions(recommendations, realOrders, shopDomain);
-      
-      logger.info('Found real conversions', { 
+      const conversions = this.findRealConversions(
+        recommendations,
+        realOrders,
+        shopDomain
+      );
+
+      logger.info('Found real conversions', {
         conversions: conversions.length,
         uniqueSessions: new Set(conversions.map(c => c.sessionId)).size,
-        uniqueOrders: new Set(conversions.map(c => c.orderId)).size
+        uniqueOrders: new Set(conversions.map(c => c.orderId)).size,
       });
 
       // 5. Save results if requested
@@ -160,18 +167,17 @@ export class RealConversionAnalyzer {
           conversionRate: summary.conversionRate,
           averageMinutesToConversion: summary.averageMinutesToConversion,
           averageOrderValue: summary.averageOrderValue,
-          topProducts: summary.topProducts
-        }
+          topProducts: summary.topProducts,
+        },
       };
 
       logger.info('Real conversion analysis completed', {
         shopDomain,
         ...result,
-        summary: result.summary
+        summary: result.summary,
       });
 
       return result;
-
     } catch (error) {
       logger.error('Error in real conversion analysis:', error);
       throw error;
@@ -184,18 +190,22 @@ export class RealConversionAnalyzer {
   private async getRecentRecommendations(
     shopDomain: string,
     daysBack: number
-  ): Promise<Array<{
-    id: string;
-    session_id: string;
-    product_id: string;
-    product_title: string;
-    recommended_at: string;
-    message_id?: string;
-  }>> {
+  ): Promise<
+    Array<{
+      id: string;
+      session_id: string;
+      product_id: string;
+      product_title: string;
+      recommended_at: string;
+      message_id?: string;
+    }>
+  > {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysBack);
 
-    const { data: recommendations, error } = await (this.supabaseService as any).serviceClient
+    const { data: recommendations, error } = await (
+      this.supabaseService as any
+    ).serviceClient
       .from('simple_recommendations')
       .select('*')
       .eq('shop_domain', shopDomain)
@@ -241,12 +251,14 @@ export class RealConversionAnalyzer {
           variant_id: item.variant?.id || '',
           title: item.title,
           quantity: item.quantity,
-          price: item.variant?.price || '0'
+          price: item.variant?.price || '0',
         })),
-        customer: order.customer ? {
-          id: order.customer.id,
-          email: order.customer.email
-        } : undefined
+        customer: order.customer
+          ? {
+              id: order.customer.id,
+              email: order.customer.email,
+            }
+          : undefined,
       }));
 
       return transformedOrders;
@@ -274,7 +286,7 @@ export class RealConversionAnalyzer {
 
     logger.info('Processing real conversion matches', {
       recommendations: recommendations.length,
-      orders: realOrders.length
+      orders: realOrders.length,
     });
 
     // Create a map for faster lookups
@@ -304,9 +316,19 @@ export class RealConversionAnalyzer {
               const minutesToConversion = Math.round(timeDiffMs / (1000 * 60));
 
               // Check if within attribution window
-              if (minutesToConversion >= 0 && minutesToConversion <= RealConversionAnalyzer.ATTRIBUTION_WINDOW_MINUTES) {
-                const confidence = Math.max(0.1, 1 - (minutesToConversion / RealConversionAnalyzer.ATTRIBUTION_WINDOW_MINUTES));
-                const orderAmount = parseFloat(lineItem.price) * lineItem.quantity;
+              if (
+                minutesToConversion >= 0 &&
+                minutesToConversion <=
+                  RealConversionAnalyzer.ATTRIBUTION_WINDOW_MINUTES
+              ) {
+                const confidence = Math.max(
+                  0.1,
+                  1 -
+                    minutesToConversion /
+                      RealConversionAnalyzer.ATTRIBUTION_WINDOW_MINUTES
+                );
+                const orderAmount =
+                  parseFloat(lineItem.price) * lineItem.quantity;
 
                 conversions.push({
                   recommendationId: rec.id,
@@ -324,7 +346,7 @@ export class RealConversionAnalyzer {
                   orderQuantity: lineItem.quantity,
                   totalOrderAmount: parseFloat(order.total_price),
                   customerId: order.customer?.id,
-                  customerEmail: order.customer?.email
+                  customerEmail: order.customer?.email,
                 });
 
                 logger.info('Real conversion match found', {
@@ -333,7 +355,7 @@ export class RealConversionAnalyzer {
                   productId: lineItem.product_id,
                   minutesToConversion,
                   confidence,
-                  orderAmount
+                  orderAmount,
                 });
               }
             }
@@ -365,21 +387,21 @@ export class RealConversionAnalyzer {
     const recWords = recTitle.split(/\s+/).filter(w => w.length > 3);
     const itemWords = itemTitle.split(/\s+/).filter(w => w.length > 3);
 
-    const matchingWords = recWords.filter(word => 
-      itemWords.some(itemWord => 
-        itemWord.includes(word) || word.includes(itemWord)
+    const matchingWords = recWords.filter(word =>
+      itemWords.some(
+        itemWord => itemWord.includes(word) || word.includes(itemWord)
       )
     );
 
     // If at least 60% of significant words match, consider it a match
     const matchRatio = matchingWords.length / Math.max(recWords.length, 1);
-    
+
     if (matchRatio >= 0.6) {
       logger.debug('Fuzzy product match found', {
         recTitle,
         itemTitle,
         matchRatio,
-        matchingWords
+        matchingWords,
       });
       return true;
     }
@@ -390,7 +412,9 @@ export class RealConversionAnalyzer {
   /**
    * Save real conversions to database
    */
-  private async saveRealConversions(conversions: RecommendationMatch[]): Promise<void> {
+  private async saveRealConversions(
+    conversions: RecommendationMatch[]
+  ): Promise<void> {
     if (conversions.length === 0) return;
 
     const insertData = conversions.map(conv => ({
@@ -407,29 +431,29 @@ export class RealConversionAnalyzer {
       total_order_amount: conv.totalOrderAmount,
       customer_id: conv.customerId,
       customer_email: conv.customerEmail,
-      is_real_conversion: true // Flag to distinguish from simulated
+      is_real_conversion: true, // Flag to distinguish from simulated
     }));
 
     const batchSize = 50;
     for (let i = 0; i < insertData.length; i += batchSize) {
       const batch = insertData.slice(i, i + batchSize);
-      
+
       const { error } = await (this.supabaseService as any).serviceClient
         .from('simple_conversions')
         .upsert(batch, {
           onConflict: 'session_id,order_id,product_id',
-          ignoreDuplicates: true
+          ignoreDuplicates: true,
         });
 
       if (error) {
-        logger.error('Error saving real conversion batch:', { 
+        logger.error('Error saving real conversion batch:', {
           error: error.message,
-          batchIndex: Math.floor(i / batchSize) + 1
+          batchIndex: Math.floor(i / batchSize) + 1,
         });
       } else {
-        logger.info('Saved real conversion batch', { 
+        logger.info('Saved real conversion batch', {
           batchIndex: Math.floor(i / batchSize) + 1,
-          batchSize: batch.length
+          batchSize: batch.length,
         });
       }
     }
@@ -443,23 +467,40 @@ export class RealConversionAnalyzer {
     totalRecommendations: number,
     realOrders: RealOrder[]
   ) {
-    const totalRevenue = conversions.reduce((sum, conv) => sum + conv.orderAmount, 0);
-    const averageMinutesToConversion = conversions.length > 0 
-      ? conversions.reduce((sum, conv) => sum + conv.minutesToConversion, 0) / conversions.length
-      : 0;
-    const conversionRate = totalRecommendations > 0 
-      ? (conversions.length / totalRecommendations) * 100 
-      : 0;
-    const averageOrderValue = realOrders.length > 0
-      ? realOrders.reduce((sum, order) => sum + parseFloat(order.total_price), 0) / realOrders.length
-      : 0;
+    const totalRevenue = conversions.reduce(
+      (sum, conv) => sum + conv.orderAmount,
+      0
+    );
+    const averageMinutesToConversion =
+      conversions.length > 0
+        ? conversions.reduce((sum, conv) => sum + conv.minutesToConversion, 0) /
+          conversions.length
+        : 0;
+    const conversionRate =
+      totalRecommendations > 0
+        ? (conversions.length / totalRecommendations) * 100
+        : 0;
+    const averageOrderValue =
+      realOrders.length > 0
+        ? realOrders.reduce(
+            (sum, order) => sum + parseFloat(order.total_price),
+            0
+          ) / realOrders.length
+        : 0;
 
     // Calculate top converting products
-    const productStats = new Map<string, { conversions: number; revenue: number; title: string }>();
+    const productStats = new Map<
+      string,
+      { conversions: number; revenue: number; title: string }
+    >();
     conversions.forEach(conv => {
       const key = conv.productId;
       if (!productStats.has(key)) {
-        productStats.set(key, { conversions: 0, revenue: 0, title: conv.productTitle });
+        productStats.set(key, {
+          conversions: 0,
+          revenue: 0,
+          title: conv.productTitle,
+        });
       }
       const stats = productStats.get(key)!;
       stats.conversions++;
@@ -471,17 +512,18 @@ export class RealConversionAnalyzer {
         productId,
         productTitle: stats.title,
         conversions: stats.conversions,
-        revenue: Math.round(stats.revenue * 100) / 100
+        revenue: Math.round(stats.revenue * 100) / 100,
       }))
       .sort((a, b) => b.conversions - a.conversions)
       .slice(0, 5);
 
     return {
       totalRevenue: Math.round(totalRevenue * 100) / 100,
-      averageMinutesToConversion: Math.round(averageMinutesToConversion * 100) / 100,
+      averageMinutesToConversion:
+        Math.round(averageMinutesToConversion * 100) / 100,
       conversionRate: Math.round(conversionRate * 100) / 100,
       averageOrderValue: Math.round(averageOrderValue * 100) / 100,
-      topProducts
+      topProducts,
     };
   }
 
@@ -501,7 +543,9 @@ export class RealConversionAnalyzer {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysBack);
 
-    const { data: conversions, error } = await (this.supabaseService as any).serviceClient
+    const { data: conversions, error } = await (
+      this.supabaseService as any
+    ).serviceClient
       .from('simple_conversions')
       .select('*')
       .eq('shop_domain', shopDomain)
@@ -512,25 +556,32 @@ export class RealConversionAnalyzer {
       throw error;
     }
 
-    const realConversions = (conversions || []).filter(c => c.is_real_conversion).length;
-    const simulatedConversions = (conversions || []).filter(c => !c.is_real_conversion).length;
-    const totalRevenue = (conversions || []).reduce((sum, c) => sum + (c.order_amount || 0), 0);
-    
-    const realVsSimulatedRatio = simulatedConversions > 0 
-      ? realConversions / simulatedConversions 
-      : 0;
+    const realConversions = (conversions || []).filter(
+      c => c.is_real_conversion
+    ).length;
+    const simulatedConversions = (conversions || []).filter(
+      c => !c.is_real_conversion
+    ).length;
+    const totalRevenue = (conversions || []).reduce(
+      (sum, c) => sum + (c.order_amount || 0),
+      0
+    );
+
+    const realVsSimulatedRatio =
+      simulatedConversions > 0 ? realConversions / simulatedConversions : 0;
 
     // Simple accuracy measure: how close real conversions are to simulated predictions
-    const accuracy = simulatedConversions > 0 
-      ? Math.min(100, (realConversions / simulatedConversions) * 100)
-      : 0;
+    const accuracy =
+      simulatedConversions > 0
+        ? Math.min(100, (realConversions / simulatedConversions) * 100)
+        : 0;
 
     return {
       realConversions,
       simulatedConversions,
       totalRevenue: Math.round(totalRevenue * 100) / 100,
       realVsSimulatedRatio: Math.round(realVsSimulatedRatio * 100) / 100,
-      accuracy: Math.round(accuracy * 100) / 100
+      accuracy: Math.round(accuracy * 100) / 100,
     };
   }
 }
