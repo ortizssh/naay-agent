@@ -5004,7 +5004,7 @@ router.post(
           break;
         }
 
-        const ordersData = await ordersResponse.json();
+        const ordersData = (await ordersResponse.json()) as any;
         const rawOrders = ordersData.orders || [];
 
         if (rawOrders.length > 0) {
@@ -5327,7 +5327,7 @@ router.post(
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
-        const data = await response.json();
+        const data = (await response.json()) as any;
         const testOrders = data.orders || [];
 
         logger.info(`Found ${testOrders.length} test orders from Shopify`);
@@ -5481,7 +5481,7 @@ router.post(
         },
       });
 
-      const ordersData = await ordersResponse.json();
+      const ordersData = (await ordersResponse.json()) as any;
       const orders = ordersData.orders || [];
 
       logger.info(

@@ -79,7 +79,7 @@ export interface ConversionAnalytics {
 }
 
 export class HistoricalConversionAnalyticsService {
-  private supabaseService: SupabaseService;
+  public supabaseService: SupabaseService;
   private shopifyService: ShopifyService;
 
   // Attribution windows in minutes
@@ -244,76 +244,33 @@ export class HistoricalConversionAnalyticsService {
         throw new AppError(`Store not found: ${shopDomain}`, 404);
       }
 
-      // Initialize Shopify service with store token
-      await this.shopifyService.initializeForStore(
-        store.shop_domain,
-        store.access_token
+      // Use existing method from ShopifyService
+      const shopifyOrders = await this.shopifyService.getOrdersByDateRange(
+        shopDomain,
+        store.access_token,
+        fromDate ? fromDate.toISOString() : new Date(0).toISOString(),
+        toDate ? toDate.toISOString() : new Date().toISOString()
       );
 
-      // Build query parameters
-      const params: any = {
-        limit: 250, // Max allowed by Shopify
-        status: 'any',
-        financial_status: 'paid', // Only paid orders for conversions
-      };
-
-      if (fromDate) {
-        params.created_at_min = fromDate.toISOString();
-      }
-      if (toDate) {
-        params.created_at_max = toDate.toISOString();
-      }
-
+      // Transform to our format
       const orders: ShopifyOrder[] = [];
-      let hasMore = true;
-      let sinceId = '';
-
-      // Paginate through all orders
-      while (hasMore) {
-        const queryParams = { ...params };
-        if (sinceId) {
-          queryParams.since_id = sinceId;
-        }
-
-        const response = await this.shopifyService.makeRequest(
-          'GET',
-          '/admin/api/2023-10/orders.json',
-          queryParams
-        );
-        const fetchedOrders = response.orders || [];
-
-        if (fetchedOrders.length === 0) {
-          hasMore = false;
-          break;
-        }
-
-        // Transform to our format
-        for (const order of fetchedOrders) {
-          orders.push({
-            id: order.id.toString(),
-            name: order.name,
-            createdAt: order.created_at,
-            totalPrice: order.total_price,
-            currency: order.currency,
-            customerId: order.customer?.id?.toString(),
-            lineItems:
-              order.line_items?.map((item: any) => ({
-                productId: item.product_id?.toString() || '',
-                variantId: item.variant_id?.toString() || '',
-                title: item.title,
-                quantity: item.quantity,
-                price: item.price,
-              })) || [],
-          });
-        }
-
-        // Update pagination
-        sinceId = fetchedOrders[fetchedOrders.length - 1].id.toString();
-
-        // If we got less than the limit, we're done
-        if (fetchedOrders.length < params.limit) {
-          hasMore = false;
-        }
+      for (const order of shopifyOrders) {
+        orders.push({
+          id: order.id.toString(),
+          name: order.name,
+          createdAt: order.created_at,
+          totalPrice: order.total_price,
+          currency: order.currency,
+          customerId: order.customer?.id?.toString(),
+          lineItems:
+            order.line_items?.map((item: any) => ({
+              productId: item.product_id?.toString() || '',
+              variantId: item.variant_id?.toString() || '',
+              title: item.title,
+              quantity: item.quantity,
+              price: item.price,
+            })) || [],
+        });
       }
 
       logger.info('Shopify historical orders fetched', {

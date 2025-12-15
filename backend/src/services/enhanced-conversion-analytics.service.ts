@@ -495,8 +495,8 @@ export class EnhancedConversionAnalyticsService {
         throw new AppError(`Store not found: ${shopDomain}`, 404);
       }
 
-      // Initialize Shopify service
-      await this.shopifyService.initializeForStore(
+      // Initialize Shopify client
+      const adminClient = this.shopifyService.getAdminClient(
         shopDomain,
         store.access_token
       );
@@ -717,61 +717,19 @@ export class EnhancedConversionAnalyticsService {
     fromDate: Date,
     toDate: Date
   ): Promise<any[]> {
-    const orders: any[] = [];
-    let hasMore = true;
-    let sinceId = '';
-
-    while (hasMore) {
-      const params: any = {
-        limit: 250,
-        status: 'any',
-        financial_status: 'paid',
-        created_at_min: fromDate.toISOString(),
-        created_at_max: toDate.toISOString(),
-      };
-
-      if (sinceId) {
-        params.since_id = sinceId;
-      }
-
-      const response = await this.shopifyService.makeRequest(
-        'GET',
-        '/admin/api/2023-10/orders.json',
-        params
-      );
-      const fetchedOrders = response.orders || [];
-
-      if (fetchedOrders.length === 0) {
-        hasMore = false;
-        break;
-      }
-
-      // Transform to our format
-      for (const order of fetchedOrders) {
-        orders.push({
-          id: order.id.toString(),
-          name: order.name,
-          createdAt: order.created_at,
-          totalPrice: order.total_price,
-          currency: order.currency,
-          customerId: order.customer?.id?.toString(),
-          lineItems:
-            order.line_items?.map((item: any) => ({
-              productId: item.product_id?.toString() || '',
-              variantId: item.variant_id?.toString() || '',
-              title: item.title,
-              quantity: item.quantity,
-              price: item.price,
-            })) || [],
-        });
-      }
-
-      sinceId = fetchedOrders[fetchedOrders.length - 1].id.toString();
-
-      if (fetchedOrders.length < params.limit) {
-        hasMore = false;
-      }
+    // Get store data to access token
+    const store = await this.supabaseService.getStore(shopDomain);
+    if (!store) {
+      throw new AppError(`Store not found: ${shopDomain}`, 404);
     }
+
+    // Use existing method from ShopifyService
+    const orders = await this.shopifyService.getOrdersByDateRange(
+      shopDomain,
+      store.access_token,
+      fromDate.toISOString(),
+      toDate.toISOString()
+    );
 
     return orders;
   }
