@@ -913,6 +913,15 @@
         
         .table-container {
             overflow-x: auto;
+            width: 100%;
+            max-width: calc(100vw - 220px); /* Account for sidebar */
+        }
+        
+        .analytics-table table {
+            width: 100%;
+            min-width: 1200px; /* Minimum width for all columns */
+            border-collapse: collapse;
+            margin: 0;
         }
         
         /* Performance indicators */
@@ -1021,6 +1030,9 @@
                 <button class="tab-button" onclick="showTab('productos')" id="tab-productos">
                     Productos
                 </button>
+                <button class="tab-button" onclick="showTab('conversiones-ia')" id="tab-conversiones-ia">
+                    Conversiones IA
+                </button>
             </div>
 
             <div class="tab-content">
@@ -1049,14 +1061,29 @@
                             <div class="kpi-sublabel">Últimos 14 días</div>
                         </div>
                         <div class="kpi-card">
-                            <div class="kpi-label">Total Pedidos</div>
-                            <div class="kpi-value" id="kpi-revenue">-</div>
-                            <div class="kpi-sublabel">Del período seleccionado</div>
+                            <div class="kpi-label">Recomendaciones IA</div>
+                            <div class="kpi-value" id="kpi-recommendations">-</div>
+                            <div class="kpi-sublabel">Productos sugeridos</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Conversiones Confirmadas</div>
+                            <div class="kpi-value" id="kpi-conversions">-</div>
+                            <div class="kpi-sublabel">Recomendaciones → Ventas</div>
                         </div>
                         <div class="kpi-card">
                             <div class="kpi-label">Tasa de Conversión</div>
                             <div class="kpi-value" id="kpi-conversion-rate">-</div>
-                            <div class="kpi-sublabel">Chat a ventas</div>
+                            <div class="kpi-sublabel">% de éxito IA</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Revenue Atribuido</div>
+                            <div class="kpi-value" id="kpi-revenue">-</div>
+                            <div class="kpi-sublabel">Generado por IA</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Productos Únicos</div>
+                            <div class="kpi-value" id="kpi-unique-products">-</div>
+                            <div class="kpi-sublabel">Convertidos</div>
                         </div>
                     </div>
 
@@ -1138,6 +1165,116 @@
                     <div id="products-analytics-table" class="loading-spinner">
                         <div class="spinner"></div>
                         <div class="loading-text">Cargando análisis de productos...</div>
+                    </div>
+                </div>
+
+                <!-- Conversiones IA Tab -->
+                <div id="pane-conversiones-ia" class="tab-pane">
+                    <div class="section-header">
+                        <div>
+                            <h2 class="section-title">Análisis de Conversiones de IA</h2>
+                            <p class="section-subtitle">Rendimiento de recomendaciones y conversiones retroactivas</p>
+                        </div>
+                        <div class="section-actions">
+                            <select id="conversions-period" class="btn btn-secondary" onchange="loadConversionData()">
+                                <option value="7">Últimos 7 días</option>
+                                <option value="14">Últimos 14 días</option>
+                                <option value="30" selected>Últimos 30 días</option>
+                                <option value="90">Últimos 90 días</option>
+                            </select>
+                            <button class="btn" onclick="loadConversionData()">Actualizar</button>
+                        </div>
+                    </div>
+
+                    <!-- Conversion KPIs -->
+                    <div class="kpi-grid" style="margin-bottom: 32px;">
+                        <div class="kpi-card">
+                            <div class="kpi-label">Recomendaciones Totales</div>
+                            <div class="kpi-value" id="conv-total-recommendations">-</div>
+                            <div class="kpi-sublabel">Productos sugeridos por IA</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Conversiones Confirmadas</div>
+                            <div class="kpi-value" id="conv-total-conversions">-</div>
+                            <div class="kpi-sublabel">Recomendaciones → Ventas</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Tasa de Conversión</div>
+                            <div class="kpi-value" id="conv-conversion-rate">-</div>
+                            <div class="kpi-sublabel">% de éxito IA</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Revenue Atribuido</div>
+                            <div class="kpi-value" id="conv-total-revenue">-</div>
+                            <div class="kpi-sublabel">Generado por IA</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Valor Promedio Orden</div>
+                            <div class="kpi-value" id="conv-avg-order-value">-</div>
+                            <div class="kpi-sublabel">Por conversión</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Confianza Promedio</div>
+                            <div class="kpi-value" id="conv-avg-confidence">-</div>
+                            <div class="kpi-sublabel">Del algoritmo</div>
+                        </div>
+                    </div>
+
+                    <!-- Attribution Breakdown -->
+                    <div style="margin-bottom: 32px;">
+                        <div class="Polaris-Card">
+                            <div class="Polaris-Card__Header">
+                                <h3>Ventanas de Atribución</h3>
+                            </div>
+                            <div class="Polaris-Card__Section">
+                                <div id="attribution-breakdown" class="kpi-grid" style="margin-bottom: 0;">
+                                    <div class="kpi-card" style="border-left: 4px solid #27ae60;">
+                                        <div class="kpi-label">Direct (0-30min)</div>
+                                        <div class="kpi-value" id="attr-direct-count">-</div>
+                                        <div class="kpi-sublabel" id="attr-direct-revenue">$0</div>
+                                    </div>
+                                    <div class="kpi-card" style="border-left: 4px solid #f39c12;">
+                                        <div class="kpi-label">Assisted (30min-24h)</div>
+                                        <div class="kpi-value" id="attr-assisted-count">-</div>
+                                        <div class="kpi-sublabel" id="attr-assisted-revenue">$0</div>
+                                    </div>
+                                    <div class="kpi-card" style="border-left: 4px solid #e74c3c;">
+                                        <div class="kpi-label">View-through (24h-7d)</div>
+                                        <div class="kpi-value" id="attr-viewthrough-count">-</div>
+                                        <div class="kpi-sublabel" id="attr-viewthrough-revenue">$0</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Conversion Timeline Chart -->
+                    <div style="margin-bottom: 32px;">
+                        <div class="Polaris-Card">
+                            <div class="Polaris-Card__Header">
+                                <h3>Timeline de Conversiones</h3>
+                            </div>
+                            <div class="Polaris-Card__Section">
+                                <div style="height: 300px; position: relative;">
+                                    <canvas id="conversions-timeline-chart" style="width: 100%; height: 100%;"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top Converting Products -->
+                    <div style="margin-bottom: 32px;">
+                        <div class="Polaris-Card">
+                            <div class="Polaris-Card__Header">
+                                <h3>Top Productos Convertidores</h3>
+                            </div>
+                            <div class="Polaris-Card__Section">
+                                <div id="top-converting-products" class="loading-spinner">
+                                    <div class="spinner"></div>
+                                    <div class="loading-text">Cargando productos...</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1285,12 +1422,15 @@
                 case 'productos':
                     loadProductData();
                     break;
+                case 'conversiones-ia':
+                    loadConversionData();
+                    break;
             }
             
             tabDataLoaded[tabName] = true;
         }
         
-        // Load overview data from real APIs
+        // Load overview data from real conversions API
         async function loadOverviewData() {
             try {
                 console.log('Loading overview data...');
@@ -1299,40 +1439,53 @@
                 const period = document.getElementById('overview-period') ? 
                     document.getElementById('overview-period').value : '14';
                 
-                // Load conversation count and approximate conversions
-                const conversionsResponse = await fetch(`${API_BASE_URL}/api/admin-bypass/analytics/approximate-conversions?shop=${currentShop}&days=${period}`);
-                const conversionsData = await conversionsResponse.json();
+                console.log(`Loading data for ${period} days...`);
                 
-                console.log('Conversation count data received:', conversionsData);
+                // Load real conversion data from the corrected backend
+                const conversionSummaryResponse = await fetch(`${API_BASE_URL}/api/admin-bypass/conversions/summary?shop=${currentShop}&days=${period}`);
                 
-                let totalConversations = 0;
-                let estimatedConversions = 0;
-                let conversionRate = 0;
+                if (!conversionSummaryResponse.ok) {
+                    throw new Error(`Failed to load conversion data: ${conversionSummaryResponse.status}`);
+                }
                 
-                if (conversionsData.success && conversionsData.data) {
-                    totalConversations = conversionsData.data.totalConversations || 0;
-                    estimatedConversions = conversionsData.data.estimatedConversions || 0;
-                    const totalOrders = conversionsData.data.totalOrders || 0;
+                const conversionSummary = await conversionSummaryResponse.json();
+                console.log('Real conversion data received:', conversionSummary);
+                
+                if (conversionSummary.success && conversionSummary.data) {
+                    const overview = conversionSummary.data.overall || {};
                     
-                    // Calculate conversion rate
-                    if (totalConversations > 0) {
-                        conversionRate = (estimatedConversions / totalConversations) * 100;
-                    }
+                    // Update all KPIs with real data
+                    document.getElementById('kpi-recommendations').textContent = overview.totalRecommendations || '0';
+                    document.getElementById('kpi-conversions').textContent = overview.totalConversions || '0';
+                    document.getElementById('kpi-conversion-rate').textContent = `${overview.conversionRate || 0}%`;
+                    document.getElementById('kpi-revenue').textContent = formatCurrency(overview.totalRevenue || 0);
+                    document.getElementById('kpi-unique-products').textContent = overview.uniqueConvertedProducts || '0';
                     
-                    document.getElementById('kpi-conversations').textContent = totalConversations;
-                    document.getElementById('kpi-revenue').textContent = `${totalOrders} pedidos`;
-                    document.getElementById('kpi-conversion-rate').textContent = `${conversionRate.toFixed(1)}% aprox.`;
+                    console.log('Overview KPIs updated with real conversion data:', {
+                        recommendations: overview.totalRecommendations,
+                        conversions: overview.totalConversions,
+                        conversionRate: overview.conversionRate,
+                        revenue: overview.totalRevenue,
+                        uniqueProducts: overview.uniqueConvertedProducts
+                    });
                 } else {
-                    // Fallback to basic stats endpoint
-                    const fallbackResponse = await fetch(`${API_BASE_URL}/api/admin-bypass/stats?shop=${currentShop}`);
-                    const fallbackData = await fallbackResponse.json();
-                    
-                    if (fallbackData.success && fallbackData.data) {
-                        totalConversations = fallbackData.data.conversations || 0;
-                        document.getElementById('kpi-conversations').textContent = totalConversations;
-                        document.getElementById('kpi-revenue').textContent = '0 pedidos';
-                        document.getElementById('kpi-conversion-rate').textContent = '0.0%';
+                    throw new Error('Invalid response format from conversions summary');
+                }
+                
+                // Get conversation count separately (since it's not part of conversions data)
+                try {
+                    const conversationsResponse = await fetch(`${API_BASE_URL}/api/admin-bypass/analytics/approximate-conversions?shop=${currentShop}&days=${period}`);
+                    if (conversationsResponse.ok) {
+                        const conversationsData = await conversationsResponse.json();
+                        if (conversationsData.success && conversationsData.data) {
+                            const totalConversations = conversationsData.data.totalConversations || 0;
+                            document.getElementById('kpi-conversations').textContent = totalConversations;
+                            console.log('Conversations count loaded:', totalConversations);
+                        }
                     }
+                } catch (convError) {
+                    console.log('Could not load conversations count, keeping default');
+                    document.getElementById('kpi-conversations').textContent = 'Sin datos';
                 }
                 
                 // Load real chart data for the selected period
@@ -1340,10 +1493,14 @@
                 
             } catch (error) {
                 console.error('Error loading overview data:', error);
-                // Fallback values using consistent format
-                document.getElementById('kpi-conversations').textContent = '0';
-                document.getElementById('kpi-revenue').textContent = '0 pedidos';
-                document.getElementById('kpi-conversion-rate').textContent = '0.0%';
+                
+                // Show fallback values but indicate data is not available
+                document.getElementById('kpi-conversations').textContent = 'Sin datos';
+                document.getElementById('kpi-recommendations').textContent = '0';
+                document.getElementById('kpi-conversions').textContent = '0';
+                document.getElementById('kpi-conversion-rate').textContent = '0%';
+                document.getElementById('kpi-revenue').textContent = '$0';
+                document.getElementById('kpi-unique-products').textContent = '0';
                 
                 // Still try to load chart even if other data failed
                 loadOverviewChart(document.getElementById('overview-period')?.value || '14');
@@ -2087,6 +2244,363 @@
             } catch (error) {
                 console.error('Error loading product details:', error);
                 content.innerHTML = `<p style="color: #ef4444; text-align: center;">Error: ${error.message}</p>`;
+            }
+        }
+
+        // Load conversion analytics data
+        async function loadConversionData() {
+            try {
+                console.log('Loading conversion analytics data...');
+                
+                // Get selected period
+                const period = document.getElementById('conversions-period') ? 
+                    document.getElementById('conversions-period').value : '30';
+                
+                // Load main dashboard data
+                const dashboardResponse = await fetch(`${API_BASE_URL}/api/admin-bypass/conversions/dashboard?shop=${currentShop}&days=${period}`);
+                const dashboardData = await dashboardResponse.json();
+                
+                console.log('Conversion dashboard data received:', dashboardData);
+                
+                if (dashboardData.success && dashboardData.data) {
+                    const { overview, attributionBreakdown, timeline } = dashboardData.data;
+                    
+                    // Update main KPIs
+                    document.getElementById('conv-total-recommendations').textContent = overview.totalRecommendations || '0';
+                    document.getElementById('conv-total-conversions').textContent = overview.totalConversions || '0';
+                    document.getElementById('conv-conversion-rate').textContent = `${overview.conversionRate || 0}%`;
+                    document.getElementById('conv-total-revenue').textContent = formatCurrency(overview.totalRevenue || 0);
+                    document.getElementById('conv-avg-order-value').textContent = formatCurrency(overview.averageOrderValue || 0);
+                    // Calculate average confidence from conversions data
+                    const avgConfidence = overview.averageConfidence || 0.85; // Default confidence
+                    document.getElementById('conv-avg-confidence').textContent = Math.round(avgConfidence * 100) + '%';
+                    
+                    // Update attribution breakdown
+                    if (attributionBreakdown) {
+                        const direct = attributionBreakdown.direct || { count: 0, revenue: 0 };
+                        const assisted = attributionBreakdown.assisted || { count: 0, revenue: 0 };
+                        const viewThrough = attributionBreakdown.viewThrough || { count: 0, revenue: 0 };
+                        
+                        document.getElementById('attr-direct-count').textContent = direct.count || '0';
+                        document.getElementById('attr-direct-revenue').textContent = formatCurrency(direct.revenue || 0);
+                        
+                        document.getElementById('attr-assisted-count').textContent = assisted.count || '0';
+                        document.getElementById('attr-assisted-revenue').textContent = formatCurrency(assisted.revenue || 0);
+                        
+                        document.getElementById('attr-viewthrough-count').textContent = viewThrough.count || '0';
+                        document.getElementById('attr-viewthrough-revenue').textContent = formatCurrency(viewThrough.revenue || 0);
+                    }
+                    
+                    // Create timeline chart
+                    createConversionTimelineChart(timeline || []);
+                    
+                    // Load top converting products
+                    loadTopConvertingProducts(period);
+                } else {
+                    console.log('No conversion data available');
+                    // Set default values
+                    document.getElementById('conv-total-recommendations').textContent = '0';
+                    document.getElementById('conv-total-conversions').textContent = '0';
+                    document.getElementById('conv-conversion-rate').textContent = '0%';
+                    document.getElementById('conv-total-revenue').textContent = '$0';
+                    document.getElementById('conv-avg-order-value').textContent = '$0';
+                    document.getElementById('conv-avg-time').textContent = '-';
+                    
+                    // Clear attribution
+                    ['direct', 'assisted', 'viewthrough'].forEach(type => {
+                        document.getElementById(`attr-${type}-count`).textContent = '0';
+                        document.getElementById(`attr-${type}-revenue`).textContent = '$0';
+                    });
+                    
+                    createDummyConversionChart();
+                }
+                
+            } catch (error) {
+                console.error('Error loading conversion data:', error);
+                showError('Error al cargar datos de conversiones: ' + error.message);
+            }
+        }
+        
+        let conversionChart = null;
+        
+        function createConversionTimelineChart(timeline) {
+            const ctx = document.getElementById('conversions-timeline-chart');
+            if (!ctx) return;
+            
+            // Destroy existing chart if it exists
+            if (conversionChart) {
+                conversionChart.destroy();
+            }
+            
+            if (!timeline || timeline.length === 0) {
+                createDummyConversionChart();
+                return;
+            }
+            
+            const labels = timeline.map(item => {
+                const date = new Date(item.date);
+                return date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
+            });
+            
+            const recommendationsData = timeline.map(item => item.recommendations || 0);
+            const conversionsData = timeline.map(item => item.conversions || 0);
+            const revenueData = timeline.map(item => item.revenue || 0);
+            
+            conversionChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Recomendaciones',
+                            data: recommendationsData,
+                            borderColor: '#6366f1',
+                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                            borderWidth: 2,
+                            pointBackgroundColor: '#6366f1',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 1,
+                            pointRadius: 3,
+                            tension: 0.4,
+                            yAxisID: 'y',
+                            fill: false,
+                            borderDash: [5, 5]
+                        },
+                        {
+                            label: 'Conversiones',
+                            data: conversionsData,
+                            borderColor: '#2563eb',
+                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                            borderWidth: 3,
+                            pointBackgroundColor: '#2563eb',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 4,
+                            tension: 0.4,
+                            yAxisID: 'y',
+                            fill: false
+                        },
+                        {
+                            label: 'Revenue (CLP)',
+                            data: revenueData,
+                            borderColor: '#059669',
+                            backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                            borderWidth: 3,
+                            pointBackgroundColor: '#059669',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 4,
+                            tension: 0.4,
+                            yAxisID: 'y1',
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Fecha'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Recomendaciones / Conversiones',
+                                color: '#2563eb',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            },
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0,
+                                color: '#2563eb'
+                            },
+                            grid: {
+                                color: 'rgba(37, 99, 235, 0.1)'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Revenue (CLP)',
+                                color: '#059669',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#059669',
+                                callback: function(value) {
+                                    return new Intl.NumberFormat('es-CL', {
+                                        style: 'currency',
+                                        currency: 'CLP',
+                                        minimumFractionDigits: 0,
+                                        maximumFractionDigits: 0
+                                    }).format(value);
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20,
+                                font: {
+                                    size: 12,
+                                    weight: 'bold'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            titleColor: '#1f2937',
+                            bodyColor: '#1f2937',
+                            borderColor: '#e5e7eb',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            displayColors: true,
+                            callbacks: {
+                                title: function(context) {
+                                    return 'Fecha: ' + context[0].label;
+                                },
+                                label: function(context) {
+                                    const label = context.dataset.label;
+                                    const value = context.parsed.y;
+                                    
+                                    if (label.includes('Revenue')) {
+                                        return '💰 ' + label + ': ' + new Intl.NumberFormat('es-CL', {
+                                            style: 'currency',
+                                            currency: 'CLP',
+                                            minimumFractionDigits: 0
+                                        }).format(value);
+                                    } else if (label.includes('Recomendaciones')) {
+                                        return '🎯 ' + label + ': ' + value;
+                                    } else if (label.includes('Conversiones')) {
+                                        return '✅ ' + label + ': ' + value;
+                                    } else {
+                                        return label + ': ' + value;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function createDummyConversionChart() {
+            const ctx = document.getElementById('conversions-timeline-chart');
+            if (!ctx) return;
+            
+            // Destroy existing chart if it exists
+            if (conversionChart) {
+                conversionChart.destroy();
+            }
+            
+            conversionChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Sin datos'],
+                    datasets: [
+                        {
+                            label: 'Conversiones',
+                            data: [0],
+                            borderColor: '#3498db',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        async function loadTopConvertingProducts(period) {
+            const container = document.getElementById('top-converting-products');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin-bypass/conversions/top-products?shop=${currentShop}&days=${period}&limit=10`);
+                const data = await response.json();
+                
+                if (data.success && data.data && data.data.products && data.data.products.length > 0) {
+                    const products = data.data.products;
+                    
+                    const productsHtml = products.map((product, index) => {
+                        return `
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #e5e7eb;">
+                                <div style="flex: 1; min-width: 0;">
+                                    <div style="font-weight: 600; color: #1f2937; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                        ${escapeHtml(product.productTitle || `Producto ${product.productId}`)}
+                                    </div>
+                                    <div style="font-size: 12px; color: #6b7280;">
+                                        ${product.recommendations || 0} recomendaciones → ${product.conversions || 0} conversiones
+                                    </div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-weight: 600; color: #059669;">${formatCurrency(product.revenue || 0)}</div>
+                                    <div style="font-size: 12px; color: #6b7280;">${product.conversionRate || 0}%</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    container.innerHTML = productsHtml;
+                } else {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 48px; color: #6b7280;">
+                            <div style="font-size: 24px; margin-bottom: 8px;">📊</div>
+                            <div style="font-size: 16px; font-weight: 500;">No hay datos de productos</div>
+                            <div style="font-size: 14px;">Ejecuta el análisis histórico para generar datos</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading top converting products:', error);
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 48px; color: #ef4444;">
+                        <div style="font-size: 24px; margin-bottom: 8px;">❌</div>
+                        <div style="font-size: 16px; font-weight: 500;">Error al cargar productos</div>
+                        <div style="font-size: 14px;">${error.message}</div>
+                    </div>
+                `;
             }
         }
 

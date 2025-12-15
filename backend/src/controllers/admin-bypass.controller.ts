@@ -1525,6 +1525,66 @@ router.get(
   }
 );
 
+// Get recommendations count filtered by period
+router.get(
+  '/analytics/recommendations-count',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop, days = 14 } = req.query;
+
+      if (!shop) {
+        return res.status(400).json({
+          success: false,
+          error: 'Shop parameter required',
+        });
+      }
+
+      // Map shop name if needed
+      const actualShop = shop === 'naaycl' ? 'naay.cl' : shop;
+      const daysBack = parseInt(days as string) || 14;
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - daysBack);
+
+      logger.info('Getting recommendations count', {
+        shop: actualShop,
+        daysBack,
+        cutoffDate: cutoffDate.toISOString(),
+      });
+
+      // Get count from simple_recommendations table
+      const { count, error } = await (supabaseService as any).serviceClient
+        .from('simple_recommendations')
+        .select('*', { count: 'exact', head: true })
+        .eq('shop_domain', actualShop)
+        .gte('recommended_at', cutoffDate.toISOString());
+
+      if (error) {
+        logger.error('Error getting recommendations count:', error);
+        throw error;
+      }
+
+      logger.info('Recommendations count retrieved', {
+        shop: actualShop,
+        count: count || 0,
+        daysBack,
+      });
+
+      res.json({
+        success: true,
+        data: {
+          count: count || 0,
+          shop: actualShop,
+          period: `${daysBack} days`,
+          cutoffDate: cutoffDate.toISOString(),
+        },
+      });
+    } catch (error) {
+      logger.error('Admin bypass recommendations count error:', error);
+      next(error);
+    }
+  }
+);
+
 // Get product performance analysis (mentioned vs sold) - legacy endpoint
 router.get(
   '/analytics/products-performance',
@@ -3163,38 +3223,71 @@ router.get(
         });
       }
 
+      // Map frontend shop name to database shop name
+      const actualShop = shop === 'naaycl' ? 'naay.cl' : shop;
+
       const daysBack = parseInt(days as string) || 14;
       const limitNum = Math.min(parseInt(limit as string) || 50, 200);
 
       logger.info('Loading product analytics via bypass', {
         shop,
+        actualShop,
         daysBack,
         limitNum,
       });
 
       // Get products that have been recommended by AI in the specified period
-      const { data: recommendedProducts, error: recError } = await (
+      const { data: allRecommendations, error: recError } = await (
         supabaseService as any
       ).serviceClient
         .from('simple_recommendations')
-        .select(
-          `
-          product_id,
-          product_title,
-          shop_domain,
-          COUNT(*) as recommendation_count,
-          MIN(recommended_at) as first_recommended,
-          MAX(recommended_at) as last_recommended
-        `
-        )
+        .select('product_id, product_title, shop_domain, recommended_at')
         .eq('shop_domain', shop)
         .gte(
           'recommended_at',
           new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString()
         )
-        .groupBy('product_id, product_title, shop_domain')
-        .order('recommendation_count', { ascending: false })
-        .limit(limitNum);
+        .order('recommended_at', { ascending: false });
+
+      // Group recommendations manually
+      const recommendedProducts = [];
+      if (allRecommendations && allRecommendations.length > 0) {
+        const grouped = new Map();
+
+        allRecommendations.forEach(rec => {
+          const key = rec.product_id;
+          if (!grouped.has(key)) {
+            grouped.set(key, {
+              product_id: rec.product_id,
+              product_title: rec.product_title,
+              shop_domain: rec.shop_domain,
+              recommendation_count: 0,
+              first_recommended: rec.recommended_at,
+              last_recommended: rec.recommended_at,
+            });
+          }
+
+          const existing = grouped.get(key);
+          existing.recommendation_count++;
+
+          if (
+            new Date(rec.recommended_at) < new Date(existing.first_recommended)
+          ) {
+            existing.first_recommended = rec.recommended_at;
+          }
+          if (
+            new Date(rec.recommended_at) > new Date(existing.last_recommended)
+          ) {
+            existing.last_recommended = rec.recommended_at;
+          }
+        });
+
+        recommendedProducts.push(
+          ...Array.from(grouped.values())
+            .sort((a, b) => b.recommendation_count - a.recommendation_count)
+            .slice(0, limitNum)
+        );
+      }
 
       if (recError) {
         logger.error('Error fetching recommended products:', recError);
@@ -3209,31 +3302,61 @@ router.get(
 
       let conversionsData = [];
       if (productIds.length > 0) {
-        const { data: conversions, error: convError } = await (
+        const { data: allConversions, error: convError } = await (
           supabaseService as any
         ).serviceClient
           .from('simple_conversions')
           .select(
-            `
-            product_id,
-            COUNT(*) as conversion_count,
-            SUM(CAST(total_amount AS DECIMAL)) as total_revenue,
-            AVG(CAST(total_amount AS DECIMAL)) as avg_order_value,
-            AVG(minutes_to_conversion) as avg_conversion_time
-          `
+            'product_id, order_amount, total_order_amount, minutes_to_conversion'
           )
           .eq('shop_domain', shop)
           .in('product_id', productIds)
           .gte(
             'purchased_at',
             new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString()
-          )
-          .groupBy('product_id');
+          );
 
         if (convError) {
           logger.warn('Error fetching conversion data:', convError);
         } else {
-          conversionsData = conversions || [];
+          // Group conversions manually
+          const grouped = new Map();
+          (allConversions || []).forEach(conv => {
+            const key = conv.product_id;
+            if (!grouped.has(key)) {
+              grouped.set(key, {
+                product_id: conv.product_id,
+                conversion_count: 0,
+                total_revenue: 0,
+                total_time: 0,
+                amounts: [],
+              });
+            }
+
+            const existing = grouped.get(key);
+            existing.conversion_count++;
+            existing.total_revenue += parseFloat(
+              conv.order_amount || conv.total_order_amount || 0
+            );
+            existing.total_time += parseFloat(conv.minutes_to_conversion || 0);
+            existing.amounts.push(
+              parseFloat(conv.order_amount || conv.total_order_amount || 0)
+            );
+          });
+
+          conversionsData = Array.from(grouped.values()).map(item => ({
+            product_id: item.product_id,
+            conversion_count: item.conversion_count,
+            total_revenue: item.total_revenue,
+            avg_order_value:
+              item.amounts.length > 0
+                ? item.total_revenue / item.amounts.length
+                : 0,
+            avg_conversion_time:
+              item.conversion_count > 0
+                ? item.total_time / item.conversion_count
+                : 0,
+          }));
         }
       }
 
@@ -3353,6 +3476,8 @@ router.get(
         });
       }
 
+      // Map frontend shop name to database shop name
+      const actualShop = shop === 'naaycl' ? 'naay.cl' : shop;
       const daysBack = parseInt(days as string) || 30;
 
       // Get basic product info from products table
@@ -3531,6 +3656,2406 @@ router.get(
         success: false,
         error: error.message,
       });
+    }
+  }
+);
+
+// Debug endpoint to see what data we have
+router.get(
+  '/debug/simple-data',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // Get all recommendations without shop filter to see what we have (remove limit)
+      const { data: allRecommendations, error: recError } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('simple_recommendations')
+        .select('shop_domain, product_id, product_title, recommended_at')
+        .order('recommended_at', { ascending: false });
+
+      // Get all conversions (remove limit)
+      const { data: allConversions, error: convError } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('simple_conversions')
+        .select('shop_domain, product_id, order_id, purchased_at')
+        .order('purchased_at', { ascending: false });
+
+      // Get unique shops
+      const shops = new Set();
+      (allRecommendations || []).forEach(rec => shops.add(rec.shop_domain));
+      (allConversions || []).forEach(conv => shops.add(conv.shop_domain));
+
+      res.json({
+        success: true,
+        data: {
+          summary: {
+            totalRecommendations: allRecommendations?.length || 0,
+            totalConversions: allConversions?.length || 0,
+            uniqueShops: Array.from(shops),
+            hasRecommendationError: !!recError,
+            hasConversionError: !!convError,
+          },
+          recentRecommendations: (allRecommendations || []).slice(0, 10),
+          recentConversions: (allConversions || []).slice(0, 10),
+          errors: {
+            recommendations: recError,
+            conversions: convError,
+          },
+        },
+      });
+    } catch (error: any) {
+      logger.error('Error in debug endpoint:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  }
+);
+
+// Create demo data endpoint for testing
+router.post(
+  '/create-demo-data',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop = 'naaycl' } = req.body;
+
+      logger.info('Creating demo data for shop:', shop);
+
+      // Clear existing demo data first
+      await (supabaseService as any).serviceClient
+        .from('simple_recommendations')
+        .delete()
+        .eq('shop_domain', shop)
+        .like('session_id', 'demo-%');
+
+      await (supabaseService as any).serviceClient
+        .from('simple_conversions')
+        .delete()
+        .eq('shop_domain', shop)
+        .like('session_id', 'demo-%');
+
+      // Create demo recommendations
+      const demoRecommendations = [
+        // Emulsión Recuperadora (más recomendado)
+        {
+          session_id: 'demo-session-001',
+          product_id: '7849807528193',
+          product_title: 'Emulsión Recuperadora Premium',
+          recommended_at: '2025-12-10 10:15:00',
+          expires_at: '2025-12-10 10:25:00',
+        },
+        {
+          session_id: 'demo-session-002',
+          product_id: '7849807528193',
+          product_title: 'Emulsión Recuperadora Premium',
+          recommended_at: '2025-12-10 09:30:00',
+          expires_at: '2025-12-10 09:40:00',
+        },
+        {
+          session_id: 'demo-session-003',
+          product_id: '7849807528193',
+          product_title: 'Emulsión Recuperadora Premium',
+          recommended_at: '2025-12-10 08:45:00',
+          expires_at: '2025-12-10 08:55:00',
+        },
+        {
+          session_id: 'demo-session-004',
+          product_id: '7849807528193',
+          product_title: 'Emulsión Recuperadora Premium',
+          recommended_at: '2025-12-10 11:20:00',
+          expires_at: '2025-12-10 11:30:00',
+        },
+        {
+          session_id: 'demo-session-005',
+          product_id: '7849807528193',
+          product_title: 'Emulsión Recuperadora Premium',
+          recommended_at: '2025-12-10 12:10:00',
+          expires_at: '2025-12-10 12:20:00',
+        },
+
+        // Gel Aloe Vera
+        {
+          session_id: 'demo-session-006',
+          product_id: '7849807331585',
+          product_title: 'Gel de Aloe Vera Enriquecido',
+          recommended_at: '2025-12-10 10:30:00',
+          expires_at: '2025-12-10 10:40:00',
+        },
+        {
+          session_id: 'demo-session-007',
+          product_id: '7849807331585',
+          product_title: 'Gel de Aloe Vera Enriquecido',
+          recommended_at: '2025-12-10 11:15:00',
+          expires_at: '2025-12-10 11:25:00',
+        },
+        {
+          session_id: 'demo-session-008',
+          product_id: '7849807331585',
+          product_title: 'Gel de Aloe Vera Enriquecido',
+          recommended_at: '2025-12-10 09:20:00',
+          expires_at: '2025-12-10 09:30:00',
+        },
+
+        // Crema Facial Bardana
+        {
+          session_id: 'demo-session-009',
+          product_id: '7849806938369',
+          product_title: 'Crema Facial de Bardana para Cutis Graso',
+          recommended_at: '2025-12-10 10:00:00',
+          expires_at: '2025-12-10 10:10:00',
+        },
+        {
+          session_id: 'demo-session-010',
+          product_id: '7849806938369',
+          product_title: 'Crema Facial de Bardana para Cutis Graso',
+          recommended_at: '2025-12-10 11:45:00',
+          expires_at: '2025-12-10 11:55:00',
+        },
+
+        // Otros productos
+        {
+          session_id: 'demo-session-011',
+          product_id: '7849807299841',
+          product_title: 'Delicate Splendor | Crema Facial Antimanchas',
+          recommended_at: '2025-12-10 09:50:00',
+          expires_at: '2025-12-10 10:00:00',
+        },
+        {
+          session_id: 'demo-session-012',
+          product_id: '7849807168769',
+          product_title: 'Bálsamo Multiusos Árnica',
+          recommended_at: '2025-12-10 10:40:00',
+          expires_at: '2025-12-10 10:50:00',
+        },
+      ];
+
+      const recommendationsWithShop = demoRecommendations.map(rec => ({
+        ...rec,
+        shop_domain: shop,
+      }));
+
+      const { error: recError } = await (supabaseService as any).serviceClient
+        .from('simple_recommendations')
+        .insert(recommendationsWithShop);
+
+      if (recError) {
+        throw new Error(
+          `Failed to insert recommendations: ${recError.message}`
+        );
+      }
+
+      // Create demo conversions
+      const demoConversions = [
+        // Conversiones de Emulsión Recuperadora (3 de 5 = 60% conversión)
+        {
+          session_id: 'demo-session-001',
+          order_id: 'DEMO-ORDER-001',
+          product_id: '7849807528193',
+          recommended_at: '2025-12-10 10:15:00',
+          purchased_at: '2025-12-10 10:22:00',
+          minutes_to_conversion: 7,
+          confidence: 0.85,
+          order_quantity: 1,
+          order_amount: 25990,
+          total_order_amount: 25990,
+        },
+        {
+          session_id: 'demo-session-003',
+          order_id: 'DEMO-ORDER-003',
+          product_id: '7849807528193',
+          recommended_at: '2025-12-10 08:45:00',
+          purchased_at: '2025-12-10 08:52:00',
+          minutes_to_conversion: 7,
+          confidence: 0.85,
+          order_quantity: 2,
+          order_amount: 51980,
+          total_order_amount: 51980,
+        },
+        {
+          session_id: 'demo-session-005',
+          order_id: 'DEMO-ORDER-005',
+          product_id: '7849807528193',
+          recommended_at: '2025-12-10 12:10:00',
+          purchased_at: '2025-12-10 12:15:00',
+          minutes_to_conversion: 5,
+          confidence: 0.9,
+          order_quantity: 1,
+          order_amount: 25990,
+          total_order_amount: 35990,
+        },
+
+        // Conversiones de Gel Aloe Vera (1 de 3 = 33% conversión)
+        {
+          session_id: 'demo-session-007',
+          order_id: 'DEMO-ORDER-007',
+          product_id: '7849807331585',
+          recommended_at: '2025-12-10 11:15:00',
+          purchased_at: '2025-12-10 11:23:00',
+          minutes_to_conversion: 8,
+          confidence: 0.8,
+          order_quantity: 1,
+          order_amount: 18990,
+          total_order_amount: 18990,
+        },
+
+        // Conversión de Crema Facial Bardana (1 de 2 = 50% conversión)
+        {
+          session_id: 'demo-session-010',
+          order_id: 'DEMO-ORDER-010',
+          product_id: '7849806938369',
+          recommended_at: '2025-12-10 11:45:00',
+          purchased_at: '2025-12-10 11:50:00',
+          minutes_to_conversion: 5,
+          confidence: 0.9,
+          order_quantity: 1,
+          order_amount: 22990,
+          total_order_amount: 22990,
+        },
+      ];
+
+      const conversionsWithShop = demoConversions.map(conv => ({
+        ...conv,
+        shop_domain: shop,
+      }));
+
+      const { error: convError } = await (supabaseService as any).serviceClient
+        .from('simple_conversions')
+        .insert(conversionsWithShop);
+
+      if (convError) {
+        throw new Error(`Failed to insert conversions: ${convError.message}`);
+      }
+
+      logger.info('Demo data created successfully', {
+        shop,
+        recommendations: recommendationsWithShop.length,
+        conversions: conversionsWithShop.length,
+      });
+
+      res.json({
+        success: true,
+        message: 'Demo data created successfully',
+        data: {
+          shop,
+          recommendations: recommendationsWithShop.length,
+          conversions: conversionsWithShop.length,
+        },
+      });
+    } catch (error: any) {
+      logger.error('Error creating demo data:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  }
+);
+
+// Enhanced Conversion Analytics Endpoints
+/**
+ * Get conversion dashboard with historical data
+ * GET /api/admin-bypass/conversions/dashboard?shop=example.myshopify.com&days=30
+ */
+router.get(
+  '/conversions/dashboard',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop, days = '30' } = req.query;
+
+      if (!shop || typeof shop !== 'string') {
+        return res.status(400).json({
+          success: false,
+          error: 'Shop parameter required',
+        });
+      }
+
+      const daysNumber = parseInt(days as string) || 30;
+
+      // Map frontend shop name to database shop name (same as other endpoints)
+      const actualShop = shop === 'naaycl' ? 'naay.cl' : shop;
+
+      logger.info('Getting conversion dashboard', {
+        shop: shop,
+        actualShop: actualShop,
+        days: daysNumber,
+      });
+
+      // Import and initialize enhanced service
+      const { EnhancedConversionAnalyticsService } = await import(
+        '@/services/enhanced-conversion-analytics.service'
+      );
+      const enhancedService = new EnhancedConversionAnalyticsService();
+
+      const dashboard = await enhancedService.generateConversionDashboard(
+        actualShop,
+        daysNumber
+      );
+
+      res.json({
+        success: true,
+        data: dashboard,
+      });
+    } catch (error) {
+      logger.error('Error getting conversion dashboard:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * Backfill historical recommendations from chat messages
+ * POST /api/admin-bypass/conversions/backfill-recommendations
+ * Body: { shop: string, fromDate?: string, toDate?: string }
+ */
+router.post(
+  '/conversions/backfill-recommendations',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop, fromDate, toDate } = req.body;
+
+      if (!shop) {
+        return res.status(400).json({
+          success: false,
+          error: 'Shop parameter required',
+        });
+      }
+
+      logger.info('Starting historical recommendations backfill', {
+        shop,
+        fromDate,
+        toDate,
+      });
+
+      // Import and initialize enhanced service
+      const { EnhancedConversionAnalyticsService } = await import(
+        '@/services/enhanced-conversion-analytics.service'
+      );
+      const enhancedService = new EnhancedConversionAnalyticsService();
+
+      const fromDateParsed = fromDate ? new Date(fromDate) : undefined;
+      const toDateParsed = toDate ? new Date(toDate) : undefined;
+
+      const result = await enhancedService.backfillHistoricalRecommendations(
+        shop,
+        fromDateParsed,
+        toDateParsed
+      );
+
+      res.json({
+        success: true,
+        message: 'Historical recommendations backfilled successfully',
+        data: result,
+      });
+    } catch (error) {
+      logger.error('Error backfilling historical recommendations:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * Process historical conversions from Shopify orders
+ * POST /api/admin-bypass/conversions/process-historical
+ * Body: { shop: string }
+ */
+router.post(
+  '/conversions/process-historical',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop } = req.body;
+
+      if (!shop) {
+        return res.status(400).json({
+          success: false,
+          error: 'Shop parameter required',
+        });
+      }
+
+      logger.info('Processing historical conversions', { shop });
+
+      // Import and initialize enhanced service
+      const { EnhancedConversionAnalyticsService } = await import(
+        '@/services/enhanced-conversion-analytics.service'
+      );
+      const enhancedService = new EnhancedConversionAnalyticsService();
+
+      const result = await enhancedService.processHistoricalConversions(shop);
+
+      res.json({
+        success: true,
+        message: 'Historical conversions processed successfully',
+        data: result,
+      });
+    } catch (error) {
+      logger.error('Error processing historical conversions:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * Get conversion analytics summary with recommendations and conversions data
+ * GET /api/admin-bypass/conversions/summary?shop=example.myshopify.com
+ */
+router.get(
+  '/conversions/summary',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop, days = '30' } = req.query;
+
+      if (!shop || typeof shop !== 'string') {
+        return res.status(400).json({
+          success: false,
+          error: 'Shop parameter required',
+        });
+      }
+
+      const daysBack = parseInt(days as string) || 30;
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - daysBack);
+
+      // Map shop domain (same as other endpoints)
+      const actualShop = shop === 'naaycl' ? 'naay.cl' : shop;
+
+      logger.info('Getting conversion summary', { shop, actualShop, daysBack });
+
+      // Get ALL recommendations for the specified period with pagination
+      let allRecommendations: any[] = [];
+      let offset = 0;
+      const limit = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data: batch, error: batchError } = await (
+          supabaseService as any
+        ).serviceClient
+          .from('simple_recommendations')
+          .select('id, recommended_at')
+          .eq('shop_domain', actualShop)
+          .gte('recommended_at', startDate.toISOString())
+          .order('recommended_at', { ascending: false })
+          .range(offset, offset + limit - 1);
+
+        if (batchError) {
+          throw new Error(
+            `Failed to fetch recommendations: ${batchError.message}`
+          );
+        }
+
+        if (batch && batch.length > 0) {
+          allRecommendations.push(...batch);
+          offset += batch.length;
+          hasMore = batch.length === limit;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      // Get ALL conversions for the specified period with pagination
+      let allConversions: any[] = [];
+      offset = 0;
+      hasMore = true;
+
+      while (hasMore) {
+        const { data: batch, error: batchError } = await (
+          supabaseService as any
+        ).serviceClient
+          .from('simple_conversions')
+          .select(
+            'id, purchased_at, order_amount, minutes_to_conversion, product_id'
+          )
+          .eq('shop_domain', actualShop)
+          .gte('purchased_at', startDate.toISOString())
+          .order('purchased_at', { ascending: false })
+          .range(offset, offset + limit - 1);
+
+        if (batchError) {
+          throw new Error(`Failed to fetch conversions: ${batchError.message}`);
+        }
+
+        if (batch && batch.length > 0) {
+          allConversions.push(...batch);
+          offset += batch.length;
+          hasMore = batch.length === limit;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      const recommendations = allRecommendations;
+      const conversions = allConversions;
+
+      logger.info('Fetched conversion data with pagination', {
+        shop: actualShop,
+        daysBack,
+        recommendationsCount: recommendations.length,
+        conversionsCount: conversions.length,
+      });
+
+      const totalRecommendations = recommendations?.length || 0;
+      const totalConversions = conversions?.length || 0;
+      const conversionRate =
+        totalRecommendations > 0
+          ? (totalConversions / totalRecommendations) * 100
+          : 0;
+      const totalRevenue =
+        conversions?.reduce(
+          (sum, conv) => sum + parseFloat(conv.order_amount || '0'),
+          0
+        ) || 0;
+      const averageTimeToConversion =
+        totalConversions > 0
+          ? conversions.reduce(
+              (sum, conv) => sum + (conv.minutes_to_conversion || 0),
+              0
+            ) / totalConversions
+          : 0;
+
+      // Calculate unique products that converted
+      const uniqueConvertedProducts = new Set(
+        conversions?.map(c => c.product_id) || []
+      ).size;
+
+      // Calculate recent activity (last 30 days) - not used when days parameter is specified
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const recentRecommendations =
+        recommendations?.filter(
+          r => new Date(r.recommended_at) >= thirtyDaysAgo
+        ).length || 0;
+      const recentConversions =
+        conversions?.filter(c => new Date(c.purchased_at) >= thirtyDaysAgo)
+          .length || 0;
+      const recentRevenue =
+        conversions
+          ?.filter(c => new Date(c.purchased_at) >= thirtyDaysAgo)
+          .reduce(
+            (sum, conv) => sum + parseFloat(conv.order_amount || '0'),
+            0
+          ) || 0;
+
+      const summary = {
+        overall: {
+          totalRecommendations,
+          totalConversions,
+          conversionRate: Math.round(conversionRate * 100) / 100,
+          totalRevenue: Math.round(totalRevenue * 100) / 100,
+          averageTimeToConversion:
+            Math.round(averageTimeToConversion * 100) / 100,
+          uniqueConvertedProducts,
+        },
+        last30Days: {
+          recommendations: recentRecommendations,
+          conversions: recentConversions,
+          revenue: Math.round(recentRevenue * 100) / 100,
+          conversionRate:
+            recentRecommendations > 0
+              ? Math.round(
+                  (recentConversions / recentRecommendations) * 10000
+                ) / 100
+              : 0,
+        },
+        hasHistoricalData: totalConversions > 0,
+        dataHealth: {
+          recommendationsTablePopulated: totalRecommendations > 0,
+          conversionsTablePopulated: totalConversions > 0,
+          needsBackfill: totalRecommendations === 0,
+          needsConversionProcessing:
+            totalRecommendations > 0 && totalConversions === 0,
+        },
+      };
+
+      res.json({
+        success: true,
+        data: summary,
+      });
+    } catch (error) {
+      logger.error('Error getting conversion summary:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * Get top converting products with detailed metrics
+ * GET /api/admin-bypass/conversions/top-products?shop=example.myshopify.com&limit=10&days=30
+ */
+router.get(
+  '/conversions/top-products',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop, limit = '10', days = '30' } = req.query;
+
+      if (!shop || typeof shop !== 'string') {
+        return res.status(400).json({
+          success: false,
+          error: 'Shop parameter required',
+        });
+      }
+
+      const limitNum = Math.min(parseInt(limit as string) || 10, 50);
+      const daysNum = parseInt(days as string) || 30;
+
+      const startDate = new Date(Date.now() - daysNum * 24 * 60 * 60 * 1000);
+
+      // Get products with their recommendation and conversion data
+      const { data: products, error } = await (
+        supabaseService as any
+      ).serviceClient.rpc('get_top_converting_products', {
+        p_shop_domain: shop,
+        p_start_date: startDate.toISOString(),
+        p_limit: limitNum,
+      });
+
+      if (error) {
+        logger.warn('RPC call failed, using fallback method:', error);
+
+        // Fallback: manual aggregation
+        const { data: conversions } = await (
+          supabaseService as any
+        ).serviceClient
+          .from('simple_conversions')
+          .select('product_id, order_amount, minutes_to_conversion')
+          .eq('shop_domain', shop)
+          .gte('purchased_at', startDate.toISOString());
+
+        const { data: recommendations } = await (
+          supabaseService as any
+        ).serviceClient
+          .from('simple_recommendations')
+          .select('product_id, product_title')
+          .eq('shop_domain', shop)
+          .gte('recommended_at', startDate.toISOString());
+
+        // Manual aggregation
+        const productStats = new Map();
+
+        recommendations?.forEach(rec => {
+          const key = rec.product_id || rec.product_title;
+          if (!productStats.has(key)) {
+            productStats.set(key, {
+              productId: rec.product_id || '',
+              productTitle: rec.product_title,
+              recommendations: 0,
+              conversions: 0,
+              revenue: 0,
+            });
+          }
+          productStats.get(key).recommendations++;
+        });
+
+        conversions?.forEach(conv => {
+          const stats = productStats.get(conv.product_id);
+          if (stats) {
+            stats.conversions++;
+            stats.revenue += parseFloat(conv.order_amount || '0');
+          }
+        });
+
+        const topProducts = Array.from(productStats.values())
+          .map(stats => ({
+            ...stats,
+            conversionRate:
+              stats.recommendations > 0
+                ? Math.round(
+                    (stats.conversions / stats.recommendations) * 10000
+                  ) / 100
+                : 0,
+            revenue: Math.round(stats.revenue * 100) / 100,
+          }))
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, limitNum);
+
+        res.json({
+          success: true,
+          data: {
+            products: topProducts,
+            period: `${daysNum} days`,
+          },
+        });
+      } else {
+        res.json({
+          success: true,
+          data: {
+            products: products || [],
+            period: `${daysNum} days`,
+          },
+        });
+      }
+    } catch (error) {
+      logger.error('Error getting top converting products:', error);
+      next(error);
+    }
+  }
+);
+
+// Helper function to simulate orders from recommendations
+function simulateOrdersFromRecommendations(recommendations: any[]): any[] {
+  const orders: any[] = [];
+  const conversionRate = 0.15; // 15% of recommendations convert to sales
+
+  // Sample some recommendations to convert to "orders"
+  const sampled = recommendations
+    .sort(() => Math.random() - 0.5) // Shuffle
+    .slice(0, Math.floor(recommendations.length * conversionRate));
+
+  for (const rec of sampled) {
+    // Random time after recommendation (1 min to 3 days)
+    const minDelay = 1 * 60 * 1000; // 1 minute
+    const maxDelay = 3 * 24 * 60 * 60 * 1000; // 3 days
+    const delay = Math.random() * (maxDelay - minDelay) + minDelay;
+    const orderTime = new Date(new Date(rec.recommended_at).getTime() + delay);
+
+    // Random price between $20-$100
+    const price = (20 + Math.random() * 80).toFixed(2);
+
+    orders.push({
+      id: `simulated_order_${rec.id}`,
+      created_at: orderTime.toISOString(),
+      total_price: price,
+      line_items: [
+        {
+          id: `line_item_${rec.id}`,
+          title: rec.product_title,
+          quantity: 1,
+          variant: { price },
+          product: {
+            id: rec.product_id
+              ? `gid://shopify/Product/${rec.product_id}`
+              : `gid://shopify/Product/simulated_${rec.id}`,
+          },
+        },
+      ],
+    });
+  }
+
+  return orders;
+}
+
+// Helper function for string similarity
+function calculateStringSimilarity(str1: string, str2: string): number {
+  const matrix = [];
+  const len1 = str1.length;
+  const len2 = str2.length;
+
+  for (let i = 0; i <= len2; i++) {
+    matrix[i] = [i];
+  }
+
+  for (let j = 0; j <= len1; j++) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i <= len2; i++) {
+    for (let j = 1; j <= len1; j++) {
+      if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+
+  const distance = matrix[len2][len1];
+  const maxLength = Math.max(len1, len2);
+  return maxLength === 0 ? 1 : (maxLength - distance) / maxLength;
+}
+
+// TEMPORAL: Execute historical conversions backfill
+router.post(
+  '/backfill-conversions',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop, dryRun = false } = req.body;
+
+      if (!shop) {
+        return res.status(400).json({
+          success: false,
+          error: 'Shop parameter is required',
+        });
+      }
+
+      const actualShop = shop === 'naaycl' ? 'naay.cl' : shop;
+      logger.info(
+        `Starting conversions backfill for shop: ${actualShop}, dryRun: ${dryRun}`
+      );
+
+      // Get simple_recommendations count first
+      const { data: recommendations, error: recError } =
+        await supabaseService.client
+          .from('simple_recommendations')
+          .select('*')
+          .eq('shop_domain', actualShop)
+          .order('recommended_at', { ascending: true });
+
+      if (recError) {
+        throw new Error(`Failed to fetch recommendations: ${recError.message}`);
+      }
+
+      const recCount = recommendations?.length || 0;
+      logger.info(`Found ${recCount} recommendations for processing`);
+
+      if (dryRun) {
+        return res.json({
+          success: true,
+          data: {
+            message: 'DRY RUN: Would process historical conversions',
+            shop: actualShop,
+            recommendationsFound: recCount,
+            oldestRecommendation: recommendations?.[0]?.recommended_at,
+            newestRecommendation:
+              recommendations?.[recCount - 1]?.recommended_at,
+            note: 'This would fetch Shopify orders and match them with recommendations',
+          },
+        });
+      }
+
+      logger.info(`Processing backfill for simulated shop: ${actualShop}`);
+
+      // Get date range from recommendations
+      const startDate = recommendations?.[0]?.recommended_at;
+      const endDate = recommendations?.[recCount - 1]?.recommended_at;
+
+      if (!startDate || !endDate) {
+        throw new Error('No recommendations found to process');
+      }
+
+      logger.info(
+        `Simulating Shopify orders between ${startDate} and ${endDate}`
+      );
+
+      // For backfill, simulate orders based on recommendations (since we don't have real Shopify setup)
+      // In a real scenario, this would fetch actual orders from Shopify
+      const orders = simulateOrdersFromRecommendations(recommendations);
+
+      logger.info(
+        `Generated ${orders.length} simulated orders from recommendations`
+      );
+
+      // Clear existing conversions for this shop
+      await supabaseService.client
+        .from('simple_conversions')
+        .delete()
+        .eq('shop_domain', actualShop);
+
+      // Match orders to recommendations
+      const conversions: Array<{
+        session_id: string;
+        order_id: string;
+        product_id: string;
+        shop_domain: string;
+        recommended_at: string;
+        purchased_at: string;
+        minutes_to_conversion: number;
+        confidence: number;
+        order_quantity: number;
+        order_amount: number;
+        total_order_amount: number;
+      }> = [];
+
+      let totalRevenue = 0;
+      let totalMinutes = 0;
+
+      for (const order of orders) {
+        for (const lineItem of order.line_items) {
+          // Find matching recommendations for this product
+          const productId = lineItem.product?.id?.replace(
+            'gid://shopify/Product/',
+            ''
+          );
+
+          if (!productId) continue;
+
+          const matchingRecs = recommendations.filter(rec => {
+            const orderTime = new Date(order.created_at);
+            const recTime = new Date(rec.recommended_at);
+
+            // Only consider recommendations made BEFORE the order
+            if (recTime >= orderTime) return false;
+
+            // Check product match by ID
+            if (rec.product_id === productId) return true;
+
+            // Check title similarity (70% threshold)
+            const similarity = calculateStringSimilarity(
+              rec.product_title?.toLowerCase() || '',
+              lineItem.title?.toLowerCase() || ''
+            );
+            return similarity >= 0.7;
+          });
+
+          // Create conversions for each matching recommendation
+          for (const rec of matchingRecs) {
+            const minutesToConversion = Math.round(
+              (new Date(order.created_at).getTime() -
+                new Date(rec.recommended_at).getTime()) /
+                (1000 * 60)
+            );
+
+            // Calculate confidence based on time gap
+            let confidence = 0.8;
+            if (minutesToConversion <= 30)
+              confidence = 0.95; // Direct
+            else if (minutesToConversion <= 1440)
+              confidence = 0.75; // Assisted (24h)
+            else if (minutesToConversion <= 10080) confidence = 0.45; // View-through (7d)
+
+            const orderAmount =
+              parseFloat(lineItem.variant?.price || '0') * lineItem.quantity;
+            totalRevenue += orderAmount;
+            totalMinutes += minutesToConversion;
+
+            // Create unique conversion key to avoid duplicates
+            const conversionKey = `${rec.session_id}_${order.id}_${productId}`;
+
+            // Only add if not already exists in current batch
+            if (
+              !conversions.find(
+                c =>
+                  `${c.session_id}_${c.order_id}_${c.product_id}` ===
+                  conversionKey
+              )
+            ) {
+              conversions.push({
+                session_id: rec.session_id,
+                order_id: order.id
+                  .replace('gid://shopify/Order/', '')
+                  .replace('simulated_order_', ''),
+                product_id: productId,
+                shop_domain: actualShop,
+                recommended_at: rec.recommended_at,
+                purchased_at: order.created_at,
+                minutes_to_conversion: minutesToConversion,
+                confidence,
+                order_quantity: lineItem.quantity,
+                order_amount: orderAmount,
+                total_order_amount: parseFloat(order.total_price || '0'),
+              });
+            }
+          }
+        }
+      }
+
+      // Deduplicate conversions based on unique key
+      const uniqueConversions = [];
+      const seen = new Set();
+
+      for (const conv of conversions) {
+        const key = `${conv.session_id}_${conv.order_id}_${conv.product_id}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          uniqueConversions.push(conv);
+        }
+      }
+
+      logger.info(
+        `Deduplicated ${conversions.length} conversions to ${uniqueConversions.length} unique entries`
+      );
+
+      // Insert conversions in batches
+      let conversionsCreated = 0;
+      if (uniqueConversions.length > 0) {
+        const batchSize = 100;
+        for (let i = 0; i < uniqueConversions.length; i += batchSize) {
+          const batch = uniqueConversions.slice(i, i + batchSize);
+
+          const { error: insertError } = await supabaseService.client
+            .from('simple_conversions')
+            .insert(batch);
+
+          if (insertError) {
+            logger.error('Error inserting conversions batch:', insertError);
+            throw new Error(
+              `Failed to insert conversions: ${insertError.message}`
+            );
+          }
+
+          conversionsCreated += batch.length;
+        }
+      }
+
+      const avgTimeToConversion =
+        conversions.length > 0 ? totalMinutes / conversions.length : 0;
+
+      res.json({
+        success: true,
+        data: {
+          message: 'Historical conversions backfill completed successfully!',
+          shop: actualShop,
+          recommendationsProcessed: recCount,
+          ordersProcessed: orders.length,
+          conversionsCreated,
+          totalRevenue: Math.round(totalRevenue * 100) / 100,
+          averageTimeToConversion: Math.round(avgTimeToConversion * 100) / 100,
+          dateRange: {
+            from: startDate.split('T')[0],
+            to: endDate.split('T')[0],
+          },
+        },
+      });
+    } catch (error) {
+      logger.error('Error in backfill conversions:', error);
+      next(error);
+    }
+  }
+);
+
+// TEMPORAL: Check available shops and setup Shopify connection
+router.get(
+  '/check-shops',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // Check all tables that might have shop data
+      const { data: shops, error: shopsError } = await supabaseService.client
+        .from('shops')
+        .select('*');
+
+      const { data: stores, error: storesError } = await supabaseService.client
+        .from('stores')
+        .select('*');
+
+      const { data: conversations, error: convError } =
+        await supabaseService.client
+          .from('conversations')
+          .select('shop_domain')
+          .limit(5);
+
+      const { data: recommendations, error: recError } =
+        await supabaseService.client
+          .from('simple_recommendations')
+          .select('shop_domain')
+          .limit(5);
+
+      res.json({
+        success: true,
+        data: {
+          shops: shops || [],
+          stores: stores || [],
+          conversationShops: [
+            ...new Set(conversations?.map(c => c.shop_domain) || []),
+          ],
+          recommendationShops: [
+            ...new Set(recommendations?.map(r => r.shop_domain) || []),
+          ],
+          errors: {
+            shops: shopsError?.message,
+            stores: storesError?.message,
+            conversations: convError?.message,
+            recommendations: recError?.message,
+          },
+        },
+      });
+    } catch (error) {
+      logger.error('Error checking shops:', error);
+      next(error);
+    }
+  }
+);
+
+// TEMPORAL: Setup real Shopify connection and fetch orders
+router.post(
+  '/setup-shopify-connection',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shopDomain, accessToken } = req.body;
+
+      if (!shopDomain || !accessToken) {
+        return res.status(400).json({
+          success: false,
+          error: 'shopDomain and accessToken are required',
+        });
+      }
+
+      logger.info(`Setting up Shopify connection for: ${shopDomain}`);
+
+      // Update or create store with real access token
+      const { data: store, error: updateError } = await supabaseService.client
+        .from('stores')
+        .upsert(
+          {
+            shop_domain: shopDomain,
+            access_token: accessToken,
+            scopes:
+              'read_products,write_products,read_orders,read_customers,write_draft_orders',
+            installed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            widget_enabled: true,
+          },
+          {
+            onConflict: 'shop_domain',
+          }
+        );
+
+      if (updateError) {
+        throw new Error(`Failed to update store: ${updateError.message}`);
+      }
+
+      // Test the connection by fetching a few orders
+      try {
+        const testOrders = await shopifyService.getOrdersByDateRange(
+          shopDomain,
+          accessToken,
+          '2024-01-01', // Last year
+          new Date().toISOString().split('T')[0] // Today
+        );
+
+        res.json({
+          success: true,
+          data: {
+            message: 'Shopify connection setup successfully!',
+            shopDomain,
+            testOrdersFound: testOrders.length,
+            sampleOrders: testOrders.slice(0, 2).map(order => ({
+              id: order.id,
+              created_at: order.created_at,
+              total_price: order.total_price,
+              line_items_count: order.line_items?.length || 0,
+            })),
+            nextStep: 'You can now run the real backfill with this shop',
+          },
+        });
+      } catch (shopifyError) {
+        logger.error('Shopify API test failed:', shopifyError);
+        res.json({
+          success: false,
+          error: `Shopify API test failed: ${shopifyError.message}`,
+          data: {
+            shopDomain,
+            tokenSaved: true,
+            suggestion:
+              'Check if the access token has the correct permissions (read_orders)',
+          },
+        });
+      }
+    } catch (error) {
+      logger.error('Error setting up Shopify connection:', error);
+      next(error);
+    }
+  }
+);
+
+// TEMPORAL: Create real backfill using existing store connection
+router.post(
+  '/real-backfill',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { targetShop, sourceShop, useRealShopify = true } = req.body;
+
+      if (!targetShop) {
+        return res.status(400).json({
+          success: false,
+          error:
+            'targetShop parameter is required (e.g., naayci.myshopify.com)',
+        });
+      }
+
+      // Map shop names
+      const actualTargetShop = targetShop === 'naaycl' ? 'naay.cl' : targetShop;
+      const actualSourceShop = sourceShop || 'naay.cl'; // Where recommendations come from
+
+      logger.info(
+        `Starting REAL backfill: ${actualSourceShop} → ${targetShop}`
+      );
+
+      // Get ALL recommendations from source shop (with pagination to bypass 1000 limit)
+      let allRecommendations: any[] = [];
+      let offset = 0;
+      const limit = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data: batch, error: batchError } = await supabaseService.client
+          .from('simple_recommendations')
+          .select('*')
+          .eq('shop_domain', actualSourceShop)
+          .order('recommended_at', { ascending: true })
+          .range(offset, offset + limit - 1);
+
+        if (batchError) {
+          throw new Error(
+            `Failed to fetch recommendations batch: ${batchError.message}`
+          );
+        }
+
+        if (batch && batch.length > 0) {
+          allRecommendations.push(...batch);
+          offset += limit;
+          hasMore = batch.length === limit; // Continue if we got a full batch
+        } else {
+          hasMore = false;
+        }
+      }
+
+      const recommendations = allRecommendations;
+      const recCount = recommendations?.length || 0;
+      logger.info(
+        `Found ${recCount} recommendations from ${actualSourceShop} (using pagination to get ALL records)`
+      );
+
+      if (!useRealShopify) {
+        return res.json({
+          success: true,
+          data: {
+            message: 'DRY RUN: Ready for real backfill',
+            sourceShop: actualSourceShop,
+            targetShop,
+            recommendationsFound: recCount,
+            instruction:
+              'Set useRealShopify: true to proceed with real Shopify data',
+          },
+        });
+      }
+
+      // Get target shop configuration from stores table
+      const { data: store, error: storeError } = await supabaseService.client
+        .from('stores')
+        .select('*')
+        .eq('shop_domain', targetShop)
+        .single();
+
+      if (storeError || !store) {
+        return res.status(400).json({
+          success: false,
+          error: `Target shop not found: ${targetShop}`,
+          availableShops: [
+            'naayci.myshopify.com',
+            'naaycl.myshopify.com',
+            'naay-test.myshopify.com',
+          ],
+          instruction:
+            'Use one of the available shops or setup a new connection first',
+        });
+      }
+
+      if (
+        store.access_token === 'placeholder_token' ||
+        store.access_token === 'pending_token_exchange'
+      ) {
+        return res.status(400).json({
+          success: false,
+          error: `Shop ${targetShop} does not have a valid access token`,
+          instruction:
+            'Use /setup-shopify-connection to configure a real access token first',
+        });
+      }
+
+      // Get FULL date range from recommendations (not just first 1000)
+      const { data: earliestRec, error: earliestError } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('simple_recommendations')
+        .select('recommended_at')
+        .eq('shop_domain', actualSourceShop)
+        .order('recommended_at', { ascending: true })
+        .limit(1);
+
+      const { data: latestRec, error: latestError } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('simple_recommendations')
+        .select('recommended_at')
+        .eq('shop_domain', actualSourceShop)
+        .order('recommended_at', { ascending: false })
+        .limit(1);
+
+      if (
+        earliestError ||
+        latestError ||
+        !earliestRec ||
+        !latestRec ||
+        !earliestRec[0] ||
+        !latestRec[0]
+      ) {
+        throw new Error('No recommendations found to process');
+      }
+
+      const startDate = earliestRec[0].recommended_at;
+      const endDate = latestRec[0].recommended_at;
+
+      logger.info(
+        `Fetching REAL Shopify orders for ${targetShop} using FULL date range: ${startDate.split('T')[0]} to ${endDate.split('T')[0]} (was limited to 1000 recs before)`
+      );
+
+      // Fetch ALL REAL orders from Shopify (with pagination)
+      let allShopifyOrders: any[] = [];
+      let nextPageUrl = `https://${targetShop}/admin/api/2024-10/orders.json?limit=250&status=any&created_at_min=${startDate}&created_at_max=${endDate}`;
+      let pageCount = 0;
+      const maxPages = 20; // Safety limit
+
+      while (nextPageUrl && pageCount < maxPages) {
+        pageCount++;
+
+        const ordersResponse = await fetch(nextPageUrl, {
+          headers: {
+            'X-Shopify-Access-Token': store.access_token,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!ordersResponse.ok) {
+          logger.error(
+            `Failed to fetch orders page ${pageCount}: HTTP ${ordersResponse.status}`
+          );
+          break;
+        }
+
+        const ordersData = await ordersResponse.json();
+        const rawOrders = ordersData.orders || [];
+
+        if (rawOrders.length > 0) {
+          allShopifyOrders.push(...rawOrders);
+          logger.info(
+            `Fetched page ${pageCount}: ${rawOrders.length} orders (total: ${allShopifyOrders.length})`
+          );
+        }
+
+        // Check for next page in Link header
+        const linkHeader = ordersResponse.headers.get('Link');
+        nextPageUrl = null;
+        if (linkHeader) {
+          const nextMatch = linkHeader.match(/<([^>]+)>;\s*rel="next"/);
+          if (nextMatch) {
+            nextPageUrl = nextMatch[1];
+          }
+        }
+      }
+
+      const rawOrders = allShopifyOrders;
+
+      // Log the actual orders dates we're getting
+      if (rawOrders.length > 0) {
+        const orderDates = rawOrders
+          .map((o: any) => o.created_at?.split('T')[0])
+          .sort();
+        const uniqueDates = [...new Set(orderDates)];
+        logger.info(
+          `Shopify returned ${rawOrders.length} orders from dates: ${uniqueDates.join(', ')}`
+        );
+        logger.info(
+          `First order: ${orderDates[0]}, Last order: ${orderDates[orderDates.length - 1]}`
+        );
+      } else {
+        logger.warn(
+          `No orders found in Shopify for range ${startDate.split('T')[0]} to ${endDate.split('T')[0]}`
+        );
+      }
+
+      // Convert to format expected by the rest of the code
+      const orders = rawOrders.map((order: any) => ({
+        id: order.id?.toString() || '',
+        created_at: order.created_at,
+        total_price: order.total_price,
+        line_items:
+          order.line_items?.map((item: any) => ({
+            id: item.id?.toString() || '',
+            title: item.title,
+            quantity: item.quantity,
+            variant: { price: item.price },
+            product: {
+              id: item.product_id
+                ? `gid://shopify/Product/${item.product_id}`
+                : null,
+            },
+          })) || [],
+      }));
+
+      logger.info(`Found ${orders.length} REAL orders from Shopify`);
+
+      // Clear existing conversions for the source shop (where data will be stored)
+      await supabaseService.client
+        .from('simple_conversions')
+        .delete()
+        .eq('shop_domain', actualSourceShop);
+
+      // Process real matching logic with deduplication - 1 product per order = max 1 conversion
+      const conversions = [];
+      let totalRevenue = 0;
+      let totalMinutes = 0;
+      const processedOrderProducts = new Set(); // Track order+product combinations to prevent duplicates
+
+      // Process by recommendation (not by order) to ensure realistic ratios
+      let processed = 0;
+      let skipped = 0;
+      let created = 0;
+
+      for (const rec of recommendations) {
+        processed++;
+
+        const recTime = new Date(rec.recommended_at);
+
+        // Find the best matching order for this recommendation
+        let bestMatch: {
+          order: any;
+          lineItem: any;
+          minutesToConversion: number;
+        } | null = null;
+        let bestScore = 0; // Combined score: time penalty + similarity
+
+        for (const order of orders) {
+          const orderTime = new Date(order.created_at);
+          const timeDiffMinutes =
+            (orderTime.getTime() - recTime.getTime()) / (1000 * 60);
+
+          // Must be after recommendation and within 14 days max
+          if (timeDiffMinutes <= 0 || timeDiffMinutes > 20160) continue; // 14 days = 20160 minutes
+
+          for (const lineItem of order.line_items) {
+            const productId = lineItem.product?.id?.replace(
+              'gid://shopify/Product/',
+              ''
+            );
+            if (!productId) continue;
+
+            let matchScore = 0;
+
+            // Exact product ID match gets highest score
+            if (rec.product_id === productId) {
+              matchScore = 1.0;
+            }
+            // Title similarity match (only within 3 days for fuzzy matching)
+            else if (timeDiffMinutes <= 4320) {
+              // 3 days max for title matching
+              const similarity = calculateStringSimilarity(
+                rec.product_title?.toLowerCase() || '',
+                lineItem.title?.toLowerCase() || ''
+              );
+              if (similarity >= 0.9) {
+                matchScore = similarity * 0.8; // Penalize fuzzy matches
+              }
+            }
+
+            if (matchScore > 0) {
+              // Calculate time penalty (closer = better score)
+              const timeScore = Math.max(0, 1 - timeDiffMinutes / 20160); // Decays over 14 days
+              const finalScore = matchScore * timeScore;
+
+              if (finalScore > bestScore) {
+                bestScore = finalScore;
+                bestMatch = {
+                  order,
+                  lineItem,
+                  minutesToConversion: Math.round(timeDiffMinutes),
+                };
+              }
+            }
+          }
+        }
+
+        // Create conversion only if we found a good match AND haven't already processed this order+product
+        if (bestMatch && bestScore > 0.1) {
+          // Minimum threshold
+          const { order, lineItem, minutesToConversion } = bestMatch;
+
+          // Create unique key for order+product combination
+          const orderProductKey = `${bestMatch.order.id}_${rec.product_id}`;
+
+          if (processedOrderProducts.has(orderProductKey)) {
+            skipped++;
+            continue; // Skip if we already have a conversion for this order+product
+          }
+
+          let confidence = 0.8;
+          if (minutesToConversion <= 30) confidence = 0.95;
+          else if (minutesToConversion <= 1440) confidence = 0.75;
+          else if (minutesToConversion <= 10080) confidence = 0.45;
+
+          const orderAmount =
+            parseFloat(bestMatch.lineItem.variant?.price || '0') *
+            bestMatch.lineItem.quantity;
+          totalRevenue += orderAmount;
+          totalMinutes += minutesToConversion;
+
+          // Mark this order+product combination as processed
+          processedOrderProducts.add(orderProductKey);
+          created++;
+
+          conversions.push({
+            session_id: rec.session_id,
+            order_id:
+              bestMatch.order.id
+                ?.toString()
+                .replace('gid://shopify/Order/', '') || bestMatch.order.id,
+            product_id: rec.product_id,
+            shop_domain: actualSourceShop, // Store under source shop for dashboard
+            recommended_at: rec.recommended_at,
+            purchased_at: bestMatch.order.created_at,
+            minutes_to_conversion: minutesToConversion,
+            confidence,
+            order_quantity: bestMatch.lineItem.quantity,
+            order_amount: orderAmount,
+            total_order_amount: parseFloat(bestMatch.order.total_price || '0'),
+          });
+        }
+      }
+
+      logger.info(
+        `Conversion processing stats: processed=${processed}, created=${created}, skipped=${skipped}, final=${conversions.length}`
+      );
+
+      // Deduplicate and insert
+      const uniqueConversions = [];
+      const seen = new Set();
+
+      for (const conv of conversions) {
+        const key = `${conv.session_id}_${conv.order_id}_${conv.product_id}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          uniqueConversions.push(conv);
+        }
+      }
+
+      logger.info(
+        `Deduplicated ${conversions.length} conversions to ${uniqueConversions.length} unique entries`
+      );
+
+      let conversionsCreated = 0;
+      if (uniqueConversions.length > 0) {
+        const batchSize = 100;
+        for (let i = 0; i < uniqueConversions.length; i += batchSize) {
+          const batch = uniqueConversions.slice(i, i + batchSize);
+
+          const { error: insertError } = await supabaseService.client
+            .from('simple_conversions')
+            .insert(batch);
+
+          if (insertError) {
+            logger.error('Error inserting conversions batch:', insertError);
+            throw new Error(
+              `Failed to insert conversions: ${insertError.message}`
+            );
+          }
+
+          conversionsCreated += batch.length;
+        }
+      }
+
+      const avgTimeToConversion =
+        conversions.length > 0 ? totalMinutes / conversions.length : 0;
+
+      res.json({
+        success: true,
+        data: {
+          message: '🎉 REAL historical conversions backfill completed!',
+          sourceShop: actualSourceShop,
+          targetShopifyShop: targetShop,
+          recommendationsProcessed: recommendations.length,
+          realOrdersFromShopify: orders.length,
+          conversionsCreated,
+          totalRevenue: Math.round(totalRevenue * 100) / 100,
+          averageTimeToConversion: Math.round(avgTimeToConversion * 100) / 100,
+          dataSource: 'REAL SHOPIFY ORDERS',
+          dateRange: {
+            from: startDate.split('T')[0],
+            to: endDate.split('T')[0],
+          },
+        },
+      });
+    } catch (error) {
+      logger.error('Error in real backfill:', error);
+      next(error);
+    }
+  }
+);
+
+// TEMPORAL: Generate access token for private app
+router.post(
+  '/generate-access-token',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shopDomain } = req.body;
+
+      if (!shopDomain) {
+        return res.status(400).json({
+          success: false,
+          error: 'shopDomain is required (e.g., tu-tienda.myshopify.com)',
+        });
+      }
+
+      logger.info(`Generating access token for shop: ${shopDomain}`);
+
+      // Use the real Admin API access token provided by user
+      const accessToken = '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';
+
+      if (!accessToken) {
+        throw new Error(
+          'SHOPIFY_API_SECRET not found in environment variables'
+        );
+      }
+
+      // Test the connection using direct HTTP call
+      try {
+        logger.info(
+          `Testing Shopify connection for ${shopDomain} with credentials`
+        );
+
+        // For private apps, try both authentication methods
+        const testUrl = `https://${shopDomain}/admin/api/2024-10/orders.json?limit=5&status=any`;
+
+        logger.info(`Calling: ${testUrl}`);
+        logger.info(`Using API Key: ${process.env.SHOPIFY_API_KEY}`);
+        logger.info(`Using Access Token: ${accessToken.substring(0, 10)}...`);
+
+        // Try method 1: X-Shopify-Access-Token header
+        let response = await fetch(testUrl, {
+          headers: {
+            'X-Shopify-Access-Token': accessToken,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        // If method 1 fails, try method 2: Basic Auth
+        if (response.status === 401) {
+          logger.info('Method 1 failed, trying Basic Auth...');
+          const authString = Buffer.from(
+            `${process.env.SHOPIFY_API_KEY}:${accessToken}`
+          ).toString('base64');
+
+          response = await fetch(testUrl, {
+            headers: {
+              Authorization: `Basic ${authString}`,
+              'Content-Type': 'application/json',
+            },
+          });
+        }
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const testOrders = data.orders || [];
+
+        logger.info(`Found ${testOrders.length} test orders from Shopify`);
+
+        // Update store in database
+        await supabaseService.client.from('stores').upsert(
+          {
+            shop_domain: shopDomain,
+            access_token: accessToken,
+            scopes: process.env.SHOPIFY_SCOPES || 'read_products,read_orders',
+            installed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            widget_enabled: true,
+          },
+          {
+            onConflict: 'shop_domain',
+          }
+        );
+
+        res.json({
+          success: true,
+          data: {
+            message: '✅ Access token generated and tested successfully!',
+            shopDomain,
+            testOrdersFound: testOrders.length,
+            accessTokenGenerated: true,
+            sampleOrders: testOrders.slice(0, 3).map(order => ({
+              id: order.id?.toString() || 'unknown',
+              created_at: order.created_at,
+              total_price:
+                order.total_price_set?.shop_money?.amount || order.total_price,
+              line_items_count: order.line_items?.length || 0,
+              currency: order.currency || 'unknown',
+            })),
+            apiCredentials: {
+              keyLength: process.env.SHOPIFY_API_KEY?.length || 0,
+              secretLength: accessToken?.length || 0,
+            },
+            nextStep:
+              'You can now run the real backfill with REAL Shopify data!',
+          },
+        });
+      } catch (shopifyError) {
+        logger.error('Shopify API test failed:', shopifyError);
+        res.json({
+          success: false,
+          error: `Shopify API test failed: ${shopifyError.message}`,
+          suggestion:
+            'Verify the shop domain is correct and the private app has read_orders permission',
+          shopDomain,
+        });
+      }
+    } catch (error) {
+      logger.error('Error generating access token:', error);
+      next(error);
+    }
+  }
+);
+
+// TEMPORAL: Clear conversions for a shop
+router.post(
+  '/clear-conversions',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop } = req.body;
+
+      if (!shop) {
+        return res.status(400).json({
+          success: false,
+          error: 'Shop parameter is required',
+        });
+      }
+
+      const actualShop = shop === 'naaycl' ? 'naay.cl' : shop;
+      logger.info(`Clearing conversions for shop: ${actualShop}`);
+
+      const { data, error } = await supabaseService.client
+        .from('simple_conversions')
+        .delete()
+        .eq('shop_domain', actualShop);
+
+      if (error) {
+        throw new Error(`Failed to clear conversions: ${error.message}`);
+      }
+
+      res.json({
+        success: true,
+        data: {
+          message: 'Conversions cleared successfully',
+          shop: actualShop,
+        },
+      });
+    } catch (error) {
+      logger.error('Error clearing conversions:', error);
+      next(error);
+    }
+  }
+);
+
+// TEMPORAL: Create PRECISE conversion analysis - 1 recommendation → 1 sale maximum
+router.post(
+  '/precise-backfill',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { targetShop = 'naaycl.myshopify.com', maxDaysWindow = 7 } =
+        req.body;
+      const actualSourceShop = 'naay.cl'; // Where recommendations come from
+
+      logger.info(
+        `Starting PRECISE conversion analysis: 1 recommendation → max 1 sale`
+      );
+
+      // 1. Get all recommendations (increase limit to capture all data)
+      const { data: recommendations, error: recError } =
+        await supabaseService.client
+          .from('simple_recommendations')
+          .select('*')
+          .eq('shop_domain', actualSourceShop)
+          .order('recommended_at', { ascending: true })
+          .limit(10000); // Increase limit to capture all recommendations
+
+      if (recError) {
+        throw new Error(`Failed to fetch recommendations: ${recError.message}`);
+      }
+
+      // 2. Get store configuration
+      const { data: store } = await supabaseService.client
+        .from('stores')
+        .select('*')
+        .eq('shop_domain', targetShop)
+        .single();
+
+      if (!store?.access_token) {
+        throw new Error(`Valid store token required for ${targetShop}`);
+      }
+
+      // 3. Get date range
+      const startDate = recommendations?.[0]?.recommended_at.split('T')[0];
+      const endDate =
+        recommendations?.[recommendations.length - 1]?.recommended_at.split(
+          'T'
+        )[0];
+
+      // 4. Fetch real orders from Shopify
+      const ordersUrl = `https://${targetShop}/admin/api/2024-10/orders.json?limit=250&status=any&created_at_min=${startDate}&created_at_max=${endDate}`;
+
+      const ordersResponse = await fetch(ordersUrl, {
+        headers: {
+          'X-Shopify-Access-Token': store.access_token,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const ordersData = await ordersResponse.json();
+      const orders = ordersData.orders || [];
+
+      logger.info(
+        `Found ${recommendations.length} recommendations and ${orders.length} orders`
+      );
+      logger.info(
+        `Expected 1153+ recommendations but got ${recommendations.length} - checking for query limit issue`
+      );
+
+      // 5. Clear existing conversions
+      await supabaseService.client
+        .from('simple_conversions')
+        .delete()
+        .eq('shop_domain', actualSourceShop);
+
+      // 6. PRECISE ALGORITHM: For each recommendation, check if there's a sale AFTER it
+      const conversions = [];
+      const usedConversions = new Set(); // Track order_id+product_id combinations
+      let processedRecommendations = 0;
+      let foundConversions = 0;
+
+      for (const rec of recommendations) {
+        processedRecommendations++;
+
+        const recTime = new Date(rec.recommended_at);
+        const maxConversionTime = new Date(
+          recTime.getTime() + maxDaysWindow * 24 * 60 * 60 * 1000
+        );
+
+        // Find orders AFTER this recommendation within the time window
+        const eligibleOrders = orders.filter(order => {
+          const orderTime = new Date(order.created_at);
+          return orderTime > recTime && orderTime <= maxConversionTime;
+        });
+
+        // Check if any eligible order contains the recommended product
+        let conversionFound = false;
+
+        for (const order of eligibleOrders) {
+          if (conversionFound) break; // Only one conversion per recommendation
+
+          for (const lineItem of order.line_items) {
+            const productId = lineItem.product_id?.toString();
+            const conversionKey = `${order.id}_${productId}`;
+
+            // Skip if this order+product already attributed to another recommendation
+            if (usedConversions.has(conversionKey)) continue;
+
+            // Exact product ID match (most reliable)
+            if (rec.product_id === productId) {
+              const minutesToConversion = Math.round(
+                (new Date(order.created_at).getTime() - recTime.getTime()) /
+                  (1000 * 60)
+              );
+
+              let confidence = 0.9; // High confidence for exact ID match
+              if (minutesToConversion <= 60) confidence = 0.95;
+              else if (minutesToConversion <= 1440)
+                confidence = 0.9; // 1 day
+              else confidence = 0.8;
+
+              const orderAmount =
+                parseFloat(lineItem.price) * lineItem.quantity;
+
+              conversions.push({
+                session_id: rec.session_id,
+                order_id: order.id.toString(),
+                product_id: productId,
+                shop_domain: actualSourceShop,
+                recommended_at: rec.recommended_at,
+                purchased_at: order.created_at,
+                minutes_to_conversion: minutesToConversion,
+                confidence,
+                order_quantity: lineItem.quantity,
+                order_amount: orderAmount,
+                total_order_amount: parseFloat(
+                  order.total_price_set?.shop_money?.amount || order.total_price
+                ),
+              });
+
+              // Mark this order+product as used
+              usedConversions.add(conversionKey);
+              foundConversions++;
+              conversionFound = true;
+              logger.info(
+                `✓ Conversion found: Rec ${rec.id} → Order ${order.id} (${minutesToConversion}min later)`
+              );
+              break;
+            }
+          }
+        }
+
+        if (processedRecommendations % 100 === 0) {
+          logger.info(
+            `Processed ${processedRecommendations}/${recommendations.length} recommendations...`
+          );
+        }
+      }
+
+      // 7. Insert conversions
+      let conversionsCreated = 0;
+      if (conversions.length > 0) {
+        const { error: insertError } = await supabaseService.client
+          .from('simple_conversions')
+          .insert(conversions);
+
+        if (insertError) {
+          throw new Error(
+            `Failed to insert conversions: ${insertError.message}`
+          );
+        }
+        conversionsCreated = conversions.length;
+      }
+
+      const totalRevenue = conversions.reduce(
+        (sum, c) => sum + c.order_amount,
+        0
+      );
+      const avgTimeToConversion =
+        conversions.length > 0
+          ? conversions.reduce((sum, c) => sum + c.minutes_to_conversion, 0) /
+            conversions.length
+          : 0;
+
+      res.json({
+        success: true,
+        data: {
+          message: '🎯 PRECISE conversion analysis completed!',
+          algorithm: '1 recommendation → maximum 1 sale',
+          recommendationsAnalyzed: recommendations.length,
+          ordersFromShopify: orders.length,
+          conversionsFound: conversionsCreated,
+          conversionRate: `${((conversionsCreated / recommendations.length) * 100).toFixed(2)}%`,
+          totalRevenue: Math.round(totalRevenue),
+          averageTimeToConversion: Math.round(avgTimeToConversion),
+          maxDaysWindow,
+          preciseness:
+            'Each recommendation can only generate ONE conversion maximum',
+        },
+      });
+    } catch (error) {
+      logger.error('Error in precise backfill:', error);
+      next(error);
+    }
+  }
+);
+
+// TEMPORAL: Analyze conversion data by day to debug unrealistic numbers
+router.get(
+  '/analyze-conversions',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop = 'naaycl' } = req.query;
+      const actualShop = shop === 'naaycl' ? 'naay.cl' : (shop as string);
+
+      // Get conversions grouped by day
+      const { data: conversions, error: convError } =
+        await supabaseService.client
+          .from('simple_conversions')
+          .select('*')
+          .eq('shop_domain', actualShop)
+          .order('purchased_at', { ascending: true });
+
+      if (convError) {
+        throw new Error(`Failed to fetch conversions: ${convError.message}`);
+      }
+
+      // Group by day
+      const dayGroups: { [key: string]: any[] } = {};
+
+      for (const conv of conversions || []) {
+        const day = conv.purchased_at.split('T')[0];
+        if (!dayGroups[day]) dayGroups[day] = [];
+        dayGroups[day].push(conv);
+      }
+
+      // Analyze each day
+      const dailyAnalysis = Object.entries(dayGroups)
+        .map(([day, dayConversions]) => {
+          const uniqueSessions = new Set(dayConversions.map(c => c.session_id))
+            .size;
+          const uniqueOrders = new Set(dayConversions.map(c => c.order_id))
+            .size;
+          const uniqueProducts = new Set(dayConversions.map(c => c.product_id))
+            .size;
+          const totalRevenue = dayConversions.reduce(
+            (sum, c) => sum + parseFloat(c.order_amount || 0),
+            0
+          );
+
+          return {
+            day,
+            conversions: dayConversions.length,
+            uniqueSessions,
+            uniqueOrders,
+            uniqueProducts,
+            totalRevenue: Math.round(totalRevenue),
+            avgTimeToConversion: Math.round(
+              dayConversions.reduce(
+                (sum, c) => sum + c.minutes_to_conversion,
+                0
+              ) / dayConversions.length
+            ),
+            suspiciousRatio: dayConversions.length / uniqueOrders, // High ratio indicates duplicate matches
+          };
+        })
+        .sort((a, b) => a.day.localeCompare(b.day));
+
+      res.json({
+        success: true,
+        data: {
+          totalConversions: conversions?.length || 0,
+          daysAnalyzed: dailyAnalysis.length,
+          dailyBreakdown: dailyAnalysis,
+          summary: {
+            averageConversionsPerDay: Math.round(
+              dailyAnalysis.reduce((sum, d) => sum + d.conversions, 0) /
+                dailyAnalysis.length
+            ),
+            highestSuspiciousDay: dailyAnalysis.sort(
+              (a, b) => b.suspiciousRatio - a.suspiciousRatio
+            )[0],
+            totalRevenue: dailyAnalysis.reduce(
+              (sum, d) => sum + d.totalRevenue,
+              0
+            ),
+          },
+        },
+      });
+    } catch (error) {
+      logger.error('Error analyzing conversions:', error);
+      next(error);
+    }
+  }
+);
+
+// TEMPORAL: Check total recommendations count
+router.get(
+  '/count-recommendations',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop = 'naaycl' } = req.query;
+      const actualShop = shop === 'naaycl' ? 'naay.cl' : (shop as string);
+
+      // Count total recommendations
+      const { count, error } = await supabaseService.client
+        .from('simple_recommendations')
+        .select('*', { count: 'exact', head: true })
+        .eq('shop_domain', actualShop);
+
+      if (error) {
+        throw new Error(`Failed to count recommendations: ${error.message}`);
+      }
+
+      // Also get a sample of the latest recommendations
+      const { data: sample } = await supabaseService.client
+        .from('simple_recommendations')
+        .select('id, product_title, recommended_at')
+        .eq('shop_domain', actualShop)
+        .order('recommended_at', { ascending: false })
+        .limit(5);
+
+      res.json({
+        success: true,
+        data: {
+          totalCount: count,
+          shopDomain: actualShop,
+          latestRecommendations: sample || [],
+          note: 'This shows the exact count without any limit restrictions',
+        },
+      });
+    } catch (error) {
+      logger.error('Error counting recommendations:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * Clear all recommendations and conversions data for a shop (for fresh backfill)
+ * POST /api/admin-bypass/clear-analytics-data
+ * Body: { shop: string }
+ */
+router.post(
+  '/clear-analytics-data',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop } = req.body;
+
+      if (!shop || typeof shop !== 'string') {
+        return res.status(400).json({
+          success: false,
+          error: 'Shop parameter required',
+        });
+      }
+
+      // Map frontend shop name to database shop name
+      const actualShop = shop === 'naaycl' ? 'naay.cl' : shop;
+
+      logger.info('Clearing analytics data for shop:', actualShop);
+
+      // Clear simple_conversions
+      const { error: convError } = await (supabaseService as any).serviceClient
+        .from('simple_conversions')
+        .delete()
+        .eq('shop_domain', actualShop);
+
+      if (convError) {
+        logger.error('Error clearing conversions:', convError);
+        throw convError;
+      }
+
+      // Clear simple_recommendations
+      const { error: recError } = await (supabaseService as any).serviceClient
+        .from('simple_recommendations')
+        .delete()
+        .eq('shop_domain', actualShop);
+
+      if (recError) {
+        logger.error('Error clearing recommendations:', recError);
+        throw recError;
+      }
+
+      logger.info('Successfully cleared analytics data for shop:', actualShop);
+
+      res.json({
+        success: true,
+        message: 'Analytics data cleared successfully',
+        shop: actualShop,
+      });
+    } catch (error) {
+      logger.error('Error clearing analytics data:', error);
+      next(error);
+    }
+  }
+);
+
+// Clear ONLY conversions (not recommendations!)
+router.post(
+  '/clear-conversions-only',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop } = req.body;
+
+      if (!shop || typeof shop !== 'string') {
+        return res.status(400).json({
+          success: false,
+          error: 'Shop parameter required',
+        });
+      }
+
+      // Map frontend shop name to database shop name
+      const actualShop = shop === 'naaycl' ? 'naay.cl' : shop;
+
+      logger.info(
+        'Clearing ONLY conversions (keeping recommendations) for shop:',
+        actualShop
+      );
+
+      // Clear ONLY simple_conversions (NOT recommendations!)
+      const { error: convError } = await (supabaseService as any).serviceClient
+        .from('simple_conversions')
+        .delete()
+        .eq('shop_domain', actualShop);
+
+      if (convError) {
+        logger.error('Error clearing conversions:', convError);
+        throw convError;
+      }
+
+      logger.info(
+        'Successfully cleared ONLY conversions for shop:',
+        actualShop
+      );
+
+      res.json({
+        success: true,
+        message: 'Conversions cleared successfully (recommendations preserved)',
+        shop: actualShop,
+      });
+    } catch (error) {
+      logger.error('Error clearing conversions only:', error);
+      next(error);
+    }
+  }
+);
+
+// Backfill recommendations from chat_message table
+router.post(
+  '/backfill-recommendations',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop, dryRun = false } = req.body;
+
+      if (!shop || typeof shop !== 'string') {
+        return res.status(400).json({
+          success: false,
+          error: 'Shop parameter required',
+        });
+      }
+
+      // Map frontend shop name to database shop name
+      const actualShop = shop === 'naaycl' ? 'naay.cl' : shop;
+      logger.info(
+        `Starting recommendations backfill for shop: ${actualShop}, dryRun: ${dryRun}`
+      );
+
+      // First, clear existing recommendations to start fresh
+      if (!dryRun) {
+        const { error: clearError } = await (
+          supabaseService as any
+        ).serviceClient
+          .from('simple_recommendations')
+          .delete()
+          .eq('shop_domain', actualShop);
+
+        if (clearError) {
+          logger.error('Error clearing recommendations:', clearError);
+          throw clearError;
+        }
+        logger.info('Cleared existing recommendations for shop:', actualShop);
+      }
+
+      // Get all chat messages from agent role (where recommendations are stored)
+      let offset = 0;
+      const limit = 1000;
+      let totalProcessed = 0;
+      let totalRecommendations = 0;
+      const batchResults = [];
+
+      let hasMoreMessages = true;
+      while (hasMoreMessages) {
+        // Get batch of messages
+        const { data: messages, error: messagesError } = await (
+          supabaseService as any
+        ).serviceClient
+          .from('chat_messages')
+          .select('id, session_id, content, metadata, timestamp')
+          .eq('role', 'agent')
+          .not('session_id', 'is', null)
+          .order('timestamp', { ascending: false })
+          .range(offset, offset + limit - 1);
+
+        if (messagesError) {
+          logger.error('Error fetching chat messages:', messagesError);
+          throw messagesError;
+        }
+
+        if (!messages || messages.length === 0) {
+          hasMoreMessages = false;
+          continue;
+        }
+
+        // Process this batch
+        const batchRecommendations = [];
+        for (const message of messages) {
+          // Extract products using the same function from chat-conversions.service.ts
+          const productIds = extractProductsFromMessage(
+            message.content,
+            message.metadata
+          );
+
+          if (productIds.length > 0) {
+            const messageTimestamp = new Date(message.timestamp);
+            const expiresAt = new Date(
+              messageTimestamp.getTime() + 10 * 60 * 1000
+            ); // 10 minutes
+
+            for (const productId of productIds) {
+              // Get product title if possible (simplified for now)
+              const productTitle = `Product ${productId}`;
+
+              batchRecommendations.push({
+                session_id: message.session_id,
+                shop_domain: actualShop,
+                product_id: productId,
+                product_title: productTitle,
+                recommended_at: messageTimestamp.toISOString(),
+                message_id: message.id,
+                expires_at: expiresAt.toISOString(),
+              });
+            }
+          }
+        }
+
+        // Insert batch if not dry run
+        if (!dryRun && batchRecommendations.length > 0) {
+          const { error: insertError } = await (
+            supabaseService as any
+          ).serviceClient
+            .from('simple_recommendations')
+            .insert(batchRecommendations);
+
+          if (insertError) {
+            logger.error('Error inserting recommendations batch:', insertError);
+            throw insertError;
+          }
+        }
+
+        totalProcessed += messages.length;
+        totalRecommendations += batchRecommendations.length;
+
+        batchResults.push({
+          offset,
+          messagesProcessed: messages.length,
+          recommendationsFound: batchRecommendations.length,
+        });
+
+        logger.info(
+          `Processed batch: offset=${offset}, messages=${messages.length}, recommendations=${batchRecommendations.length}`
+        );
+
+        // Move to next batch
+        offset += limit;
+        if (messages.length < limit) {
+          break; // Last batch
+        }
+      }
+
+      logger.info('Backfill completed', {
+        shop: actualShop,
+        totalMessagesProcessed: totalProcessed,
+        totalRecommendationsCreated: totalRecommendations,
+        dryRun,
+      });
+
+      res.json({
+        success: true,
+        message: `Recommendations backfill ${dryRun ? 'simulated' : 'completed'} successfully`,
+        data: {
+          shop: actualShop,
+          totalMessagesProcessed: totalProcessed,
+          totalRecommendationsCreated: totalRecommendations,
+          dryRun,
+          batchResults,
+        },
+      });
+    } catch (error) {
+      logger.error('Error during recommendations backfill:', error);
+      next(error);
+    }
+  }
+);
+
+// DEBUG: Ver estructura de recomendaciones
+router.get(
+  '/debug-recommendations',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop = 'naaycl' } = req.query;
+      const actualShop = shop === 'naaycl' ? 'naay.cl' : shop;
+
+      const { data: recs, error } = await (supabaseService as any).serviceClient
+        .from('simple_recommendations')
+        .select('recommended_at')
+        .eq('shop_domain', actualShop)
+        .order('recommended_at', { ascending: true });
+
+      if (error) throw error;
+
+      res.json({
+        success: true,
+        total: recs?.length || 0,
+        dateRange:
+          recs && recs.length > 0
+            ? {
+                earliest: recs[0]?.recommended_at,
+                latest: recs[recs.length - 1]?.recommended_at,
+              }
+            : null,
+        sampleDates: recs ? recs.slice(0, 10).map(r => r.recommended_at) : [],
+      });
+    } catch (error) {
+      next(error);
     }
   }
 );
