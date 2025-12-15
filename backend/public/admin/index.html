@@ -1027,11 +1027,8 @@
                 <button class="tab-button" onclick="showTab('conversaciones')" id="tab-conversaciones">
                     Conversaciones
                 </button>
-                <button class="tab-button" onclick="showTab('productos')" id="tab-productos">
-                    Productos
-                </button>
                 <button class="tab-button" onclick="showTab('conversiones-ia')" id="tab-conversiones-ia">
-                    Conversiones IA
+                    Ventas
                 </button>
             </div>
 
@@ -1127,52 +1124,12 @@
                     </div>
                 </div>
 
-                <!-- Productos Tab -->  
-                <div id="pane-productos" class="tab-pane">
-                    <div class="section-header">
-                        <div>
-                            <h2 class="section-title">Análisis de Productos Recomendados</h2>
-                            <p class="section-subtitle">Productos recomendados vs ventas reales</p>
-                        </div>
-                        <div class="section-actions">
-                            <select id="products-period" class="btn btn-secondary" onchange="loadProductAnalytics()">
-                                <option value="7">Últimos 7 días</option>
-                                <option value="14" selected>Últimos 14 días</option>
-                                <option value="30">Últimos 30 días</option>
-                            </select>
-                            <button class="btn" onclick="loadProductAnalytics()">Actualizar</button>
-                        </div>
-                    </div>
-                    
-                    <div id="products-analytics-summary" class="kpi-grid" style="margin-bottom: 32px; display: none;">
-                        <div class="kpi-card">
-                            <div class="kpi-label">Total Productos</div>
-                            <div class="kpi-value" id="summary-total-products">-</div>
-                            <div class="kpi-sublabel">Productos analizados</div>
-                        </div>
-                        <div class="kpi-card">
-                            <div class="kpi-label">Tasa Conversión Global</div>
-                            <div class="kpi-value" id="summary-conversion-rate">-</div>
-                            <div class="kpi-sublabel">Recomendaciones → Ventas</div>
-                        </div>
-                        <div class="kpi-card">
-                            <div class="kpi-label">Revenue Generado</div>
-                            <div class="kpi-value" id="summary-total-revenue">-</div>
-                            <div class="kpi-sublabel">Por recomendaciones AI</div>
-                        </div>
-                    </div>
-                    
-                    <div id="products-analytics-table" class="loading-spinner">
-                        <div class="spinner"></div>
-                        <div class="loading-text">Cargando análisis de productos...</div>
-                    </div>
-                </div>
 
-                <!-- Conversiones IA Tab -->
+                <!-- Ventas Tab -->
                 <div id="pane-conversiones-ia" class="tab-pane">
                     <div class="section-header">
                         <div>
-                            <h2 class="section-title">Análisis de Conversiones de IA</h2>
+                            <h2 class="section-title">Análisis de Ventas</h2>
                             <p class="section-subtitle">Rendimiento de recomendaciones y conversiones retroactivas</p>
                         </div>
                         <div class="section-actions">
@@ -1418,9 +1375,6 @@
                     break;
                 case 'conversaciones':
                     loadConversationData();
-                    break;
-                case 'productos':
-                    loadProductData();
                     break;
                 case 'conversiones-ia':
                     loadConversionData();
@@ -1686,192 +1640,8 @@
             }
         }
         
-        async function loadProductData() {
-            // Load product analytics instead of simple products list
-            loadProductAnalytics();
-        }
         
-        async function loadProductAnalytics() {
-            const container = document.getElementById('products-analytics-table');
-            const summaryContainer = document.getElementById('products-analytics-summary');
-            
-            container.innerHTML = '<div class="loading-spinner"><div class="spinner"></div><div class="loading-text">Cargando análisis de productos...</div></div>';
-            summaryContainer.style.display = 'none';
-            
-            try {
-                console.log('Loading product analytics data...');
-                
-                // Get selected period
-                const period = document.getElementById('products-period') ? 
-                    document.getElementById('products-period').value : '14';
-                
-                const response = await fetch(`${API_BASE_URL}/api/admin-bypass/products/recommended-analytics?shop=${currentShop}&days=${period}&limit=50`);
-                const data = await response.json();
-                
-                console.log('Product analytics data received:', data);
-                
-                if (data.success && data.data) {
-                    const { products, summary } = data.data;
-                    
-                    // Update summary KPIs
-                    document.getElementById('summary-total-products').textContent = summary.totalProducts || '0';
-                    document.getElementById('summary-conversion-rate').textContent = `${summary.overallConversionRate || 0}%`;
-                    document.getElementById('summary-total-revenue').textContent = formatCurrency(summary.totalRevenue || 0);
-                    summaryContainer.style.display = 'grid';
-                    
-                    if (products && products.length > 0) {
-                        // Generate table rows
-                        const tableRows = products.map((product, index) => {
-                            const conversionRateWidth = Math.min(product.conversionRate || 0, 100);
-                            
-                            return `
-                                <tr onclick="showProductDetails('${product.productId}')">
-                                    <td>
-                                        <div class="metric-number">#${index + 1}</div>
-                                    </td>
-                                    <td>
-                                        <div class="product-title-cell" title="${escapeHtml(product.productTitle)}">
-                                            ${escapeHtml(product.productTitle || `Producto ${product.productId}`)}
-                                        </div>
-                                    </td>
-                                    <td class="text-center">
-                                        <div class="metric-number">${product.recommendations || 0}</div>
-                                    </td>
-                                    <td class="text-center">
-                                        <div class="metric-number">${product.conversions || 0}</div>
-                                    </td>
-                                    <td class="conversion-rate-cell text-center">
-                                        <div class="metric-percentage">${product.conversionRate || 0}%</div>
-                                        <div class="conversion-rate-bar">
-                                            <div class="conversion-rate-progress" style="width: ${conversionRateWidth}%"></div>
-                                        </div>
-                                    </td>
-                                    <td class="text-center">
-                                        <div class="metric-currency">${formatCurrency(product.totalRevenue || 0)}</div>
-                                    </td>
-                                    <td class="text-center">
-                                        <div class="metric-currency">${formatCurrency(product.avgOrderValue || 0)}</div>
-                                    </td>
-                                    <td class="text-center">
-                                        <div class="metric-time">${formatMinutes(product.avgConversionTime || 0)}</div>
-                                    </td>
-                                    <td class="text-center">
-                                        <span class="performance-badge performance-${product.performance || 'poor'}">
-                                            ${getPerformanceLabel(product.performance || 'poor')}
-                                        </span>
-                                    </td>
-                                </tr>
-                            `;
-                        }).join('');
-                        
-                        container.innerHTML = `
-                            <div class="table-container">
-                                <div class="analytics-table">
-                                    <table>
-                                        <thead>
-                                            <tr>
-                                                <th>Ranking</th>
-                                                <th>Producto</th>
-                                                <th style="text-align: center;">Recomendaciones</th>
-                                                <th style="text-align: center;">Conversiones</th>
-                                                <th style="text-align: center;">Tasa Conversión</th>
-                                                <th style="text-align: center;">Revenue Total</th>
-                                                <th style="text-align: center;">Valor Promedio</th>
-                                                <th style="text-align: center;">Tiempo Conversión</th>
-                                                <th style="text-align: center;">Performance</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            ${tableRows}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        `;
-                    } else {
-                        container.innerHTML = `
-                            <div class="no-data-row">
-                                <div style="font-size: 24px; margin-bottom: 8px;">📊</div>
-                                <div style="font-size: 16px; font-weight: 500; margin-bottom: 4px;">No hay datos de análisis</div>
-                                <div style="font-size: 14px;">No se han encontrado productos con recomendaciones en el período seleccionado</div>
-                            </div>
-                        `;
-                    }
-                } else {
-                    // Fallback to legacy endpoint
-                    await loadSimpleProductDataFallback(container);
-                }
-                
-            } catch (error) {
-                console.error('Error loading product analytics:', error);
-                container.innerHTML = `
-                    <div style="text-align: center; padding: 48px; color: #ef4444;">
-                        <div style="font-size: 24px; margin-bottom: 8px;">❌</div>
-                        <div style="font-size: 16px; font-weight: 500; margin-bottom: 4px;">Error al cargar análisis</div>
-                        <div style="font-size: 14px;">Error: ${error.message}</div>
-                    </div>
-                `;
-            }
-        }
         
-        async function loadSimpleProductDataFallback(container) {
-            try {
-                console.log('Loading fallback product data...');
-                
-                const response = await fetch(`${API_BASE_URL}/api/admin-bypass/analytics/top-recommended-products?shop=${currentShop}&days=30`);
-                const data = await response.json();
-                
-                if (data.success && data.data && data.data.products && data.data.products.length > 0) {
-                    const tableRows = data.data.products.map((product, index) => `
-                        <tr>
-                            <td><div class="metric-number">#${index + 1}</div></td>
-                            <td>
-                                <div class="product-title-cell" title="${escapeHtml(product.title)}">
-                                    ${escapeHtml(product.title || `Producto ${product.productId}`)}
-                                </div>
-                            </td>
-                            <td class="text-center"><div class="metric-number">${product.recommendations || 0}</div></td>
-                            <td class="text-center"><div class="metric-number">-</div></td>
-                            <td class="text-center"><div class="metric-percentage">-</div></td>
-                            <td class="text-center"><div class="metric-currency">-</div></td>
-                            <td class="text-center"><div class="metric-currency">-</div></td>
-                            <td class="text-center"><div class="metric-time">-</div></td>
-                            <td class="text-center">
-                                <span class="performance-badge performance-fair">Datos limitados</span>
-                            </td>
-                        </tr>
-                    `).join('');
-                    
-                    container.innerHTML = `
-                        <div class="table-container">
-                            <div class="analytics-table">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Ranking</th>
-                                            <th>Producto</th>
-                                            <th style="text-align: center;">Recomendaciones</th>
-                                            <th style="text-align: center;">Conversiones</th>
-                                            <th style="text-align: center;">Tasa Conversión</th>
-                                            <th style="text-align: center;">Revenue Total</th>
-                                            <th style="text-align: center;">Valor Promedio</th>
-                                            <th style="text-align: center;">Tiempo Conversión</th>
-                                            <th style="text-align: center;">Performance</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${tableRows}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    `;
-                }
-            } catch (fallbackError) {
-                console.error('Fallback also failed:', fallbackError);
-                throw fallbackError;
-            }
-        }
         
         
         function loadAllMetrics() {
