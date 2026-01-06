@@ -1,6 +1,6 @@
 {% comment %}
-  Naay AI Chat Widget - App Block
-  This is the official Naay AI chat widget for Shopify stores
+  Kova AI Chat Widget - App Block
+  This is the official Kova AI chat widget for Shopify stores
 {% endcomment %}
 
 <div 
@@ -14,7 +14,7 @@
 </div>
 
 <script>
-  // Naay Widget Configuration
+  // Kova Widget Configuration
   window.NaayConfig = window.NaayConfig || {};
   window.NaayConfig = {
     shopDomain: '{{ shop.permanent_domain }}',
@@ -48,43 +48,43 @@
   if (!window.naayWidgetLoaded) {
     window.naayWidgetLoaded = true;
     
-    console.log('🌿 Naay Chat: Loading widget for block {{ block.id }}');
+    console.log('🌿 Kova Chat: Loading widget for block {{ block.id }}');
     
     var script = document.createElement('script');
     script.src = 'https://naay-agent-app1763504937.azurewebsites.net/widget/naay-widget.js?v=' + Date.now();
     script.async = true;
     script.crossOrigin = 'anonymous';
     script.onload = function() {
-      console.log('✅ Naay Chat: Widget loaded successfully');
+      console.log('✅ Kova Chat: Widget loaded successfully');
       try {
         // Only initialize if no widget instance exists
         if (window.NaayWidget && window.NaayConfig && !window.naayWidgetInstance) {
           window.naayWidgetInstance = new window.NaayWidget(window.NaayConfig);
-          console.log('✅ Naay Widget instance created');
+          console.log('✅ Kova Widget instance created');
         } else if (window.naayWidgetInstance) {
-          console.log('⚠️ Naay Widget instance already exists, skipping creation');
+          console.log('⚠️ Kova Widget instance already exists, skipping creation');
         } else {
           console.warn('⚠️ NaayWidget or NaayConfig not available after script load');
         }
       } catch (error) {
-        console.error('❌ Error initializing Naay Widget:', error);
+        console.error('❌ Error initializing Kova Widget:', error);
       }
     };
     script.onerror = function(error) {
-      console.error('❌ Failed to load Naay Widget script:', error);
+      console.error('❌ Failed to load Kova Widget script:', error);
     };
     document.head.appendChild(script);
   } else if (window.NaayWidget && window.NaayConfig && !window.naayWidgetInstance) {
     // Script already loaded, but no instance created yet
-    console.log('🔄 Naay Chat: Script already loaded, creating widget instance');
+    console.log('🔄 Kova Chat: Script already loaded, creating widget instance');
     try {
       window.naayWidgetInstance = new window.NaayWidget(window.NaayConfig);
-      console.log('✅ Naay Widget instance created');
+      console.log('✅ Kova Widget instance created');
     } catch (error) {
-      console.error('❌ Error creating Naay Widget instance:', error);
+      console.error('❌ Error creating Kova Widget instance:', error);
     }
   } else if (window.naayWidgetInstance) {
-    console.log('✅ Naay Widget already running, no action needed');
+    console.log('✅ Kova Widget already running, no action needed');
   }
 </script>
 
@@ -102,12 +102,12 @@
 
 {% schema %}
 {
-  "name": "Naay AI Chat Widget",
+  "name": "Kova AI Chat Widget",
   "target": "body",
   "settings": [
     {
       "type": "header",
-      "content": "Naay AI Chat Widget"
+      "content": "Kova AI Chat Widget"
     },
     {
       "type": "paragraph",
