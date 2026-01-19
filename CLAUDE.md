@@ -16,316 +16,140 @@ Naay Agent is a Shopify AI assistant that combines a Node.js backend, Shopify th
 
 ### Primary Commands
 ```bash
-# Start all development services
-npm run dev
+npm run dev                  # Start backend + admin concurrently
+npm run dev:backend          # Backend only (tsx watch mode)
+npm run dev:admin            # Admin panel only
+npm run dev:shopify          # Shopify CLI dev (requires Shopify CLI)
 
-# Start individual services
-npm run dev:backend          # Backend API server
-npm run dev:admin           # Admin frontend panel  
-npm run dev:shopify         # Shopify CLI development (requires Shopify CLI)
+npm run build                # Build all components
+npm run build:backend        # Build backend (tsc + alias + assets)
 
-# Build commands
-npm run build               # Build all components
-npm run build:backend       # Build backend only
-npm run build:admin         # Build admin panel only
+npm run test                 # Run all tests
+npm run test:backend         # Backend tests only
 
-# Testing
-npm run test                # Run all tests
-npm run test:backend        # Backend tests only
-npm run test:admin          # Frontend tests only
+npm run lint                 # Lint TypeScript files
+npm run lint:fix             # Auto-fix linting issues
 
-# Linting and code quality
-npm run lint                # Lint TypeScript files
-npm run lint:fix            # Auto-fix linting issues
-
-# Shopify commands
-npm run shopify:generate    # Generate Shopify extensions
-npm run shopify:deploy      # Deploy Shopify app
-npm run shopify:info        # Show app info
-
-# Asset management
-npm run sync:assets         # Copy assets to backend dist
-npm run verify:sync         # Verify widget files are synced between source and dist
+npm run verify:sync          # Verify widget files synced between source/dist
 ```
 
-### Backend-Specific Commands
+### Backend-Specific Commands (run from `backend/`)
 ```bash
-cd backend
+npm run dev                  # Start with tsx watch mode
+npm run build                # Safe build: tsc + alias resolution + asset copy
+npm run start                # Start production server
 
-# Development
-npm run dev                 # Start with tsx watch mode
-npm run build               # Safe build with tsc + alias + assets
-npm run build:safe          # Same as build (primary build command)
-npm run build:compile       # TypeScript compilation only
-npm run build:alias         # Path alias resolution
-npm run build:assets        # Copy public directory to dist
-npm run start               # Start production server
+npm test                     # Run Jest tests
+npm run test:watch           # Jest in watch mode
+npm run test:coverage        # Generate coverage report
 
-# Testing  
-npm test                    # Run Jest tests
-npm run test:watch          # Jest in watch mode
-npm run test:coverage       # Generate coverage report
-
-# Single test commands
+# Run single test
 npm test -- --testNamePattern="specific test name"
-npx jest path/to/test.js    # Run single test file
-
-# Linting
-npm run lint                # ESLint on TypeScript files
-npm run lint:fix            # Auto-fix linting issues
+npx jest path/to/test.ts
 ```
 
 ### Critical Configuration Notes
-- TypeScript strict mode is **disabled** (`strict: false`) - be aware when making type changes
-- Path aliases use `@/` prefix (e.g., `@/services/`, `@/types/`)
-- Environment config validation in `backend/src/utils/config.ts` with detailed error logging
-- Environment files located in `config/.env` (not backend/.env)
-- Build process includes type compilation, alias resolution, and asset copying
+- **TypeScript strict mode**: `strict: true` in `tsconfig.json` (dev), but `strict: false` in `tsconfig.deployment.json` (production builds)
+- **Path aliases**: Use `@/` prefix (e.g., `@/services/`, `@/types/`)
+- **Environment files**: Located in `config/.env` (not `backend/.env`)
+- **Build process**: Compilation → alias resolution (`tsc-alias`) → asset copying (`public/` to `dist/`)
 
 ## Architecture Overview
 
 ### Monorepo Structure
-- **Root level**: Workspace configuration, shared scripts, Shopify app config
-- **backend/**: Node.js/Express API with TypeScript
-- **frontend-admin/**: Admin panel (App Bridge integration)
-- **extensions/naay-chat-widget/**: Shopify theme extension
-- **database/**: SQL schemas, migrations, functions
-- **docs/**: Technical documentation
-- **scripts/**: Automation and setup scripts
-
-### Key Technologies
-- **Backend**: Node.js, Express, TypeScript
-- **Database**: Supabase (PostgreSQL + pgvector for embeddings)
-- **AI**: OpenAI GPT-4 + embeddings for semantic search
-- **Queue**: BullMQ + Redis for background jobs
-- **Auth**: Shopify OAuth + JWT sessions
-- **Shopify**: Admin API, Storefront API, webhooks, theme extensions
-
-### Core Services Architecture
-
-**Controllers Layer** (`backend/src/controllers/`)
-- `auth.controller.ts` - Shopify OAuth flow
-- `webhook.controller.ts` - Shopify webhook handlers  
-- `chat.controller.ts` - AI chat endpoints
-- `product.controller.ts` - Product sync and search
-- `widget.controller.ts` - Widget integration endpoints
-- `admin.controller.ts` - Admin panel APIs
-- `admin-bypass.controller.ts` - Direct admin operations
-
-**Services Layer** (`backend/src/services/`)
-- `ai-agent.service.ts` - AI orchestration and chat logic
-- `shopify.service.ts` - Shopify API interactions
-- `modern-shopify.service.ts` - Modern Shopify auth patterns
-- `supabase.service.ts` - Database operations
-- `embedding.service.ts` - Vector embeddings generation
-- `queue.service.ts` - Background job management
-- `cart.service.ts` - Shopping cart operations
-- `cache.service.ts` - Redis caching with memory fallback
-
-**Key Patterns**
-- Clean architecture with separation of concerns
-- Repository pattern for data access
-- Service layer for business logic
-- Queue-based async processing for product sync
-- Event-driven webhook processing
-- Type casting used extensively in services (requires careful refactoring)
-- Dual-layer caching (Redis + memory fallback) for resilience
-
-### Database Schema
-
-**Core Tables**:
-- `shops` - Shopify store configurations and tokens
-- `products` - Synchronized product catalog
-- `product_variants` - Product variant details  
-- `product_embeddings` - Vector embeddings for semantic search
-- `conversations` - Chat session history
-- `webhook_events` - Webhook processing log
-
-**Database Access Patterns**:
-- Direct Supabase client calls in services (not abstracted through repositories)
-- Type casting used for database operations: `(supabaseService as any).serviceClient`
-- Row-level security policies enforce multi-tenant data isolation
-
-**Key Features**:
-- pgvector extension for similarity search
-- Row-level security for multi-tenancy
-- Automated sync via webhooks
-- Background job processing for embeddings
-
-### AI Agent System
-
-**Intent Detection**: Classifies user messages into categories:
-- Product search and discovery
-- Cart operations (add/remove/view)
-- Store information queries
-- General conversation
-
-**Semantic Search**: Uses OpenAI embeddings + pgvector for:
-- Product title and description matching
-- Category and attribute filtering
-- Similarity-based recommendations
-
-**Action Execution**: Handles e-commerce actions:
-- Cart management via Storefront API
-- Product recommendations
-- Store policy information
-- Order status inquiries
-
-## Development Workflow
-
-### Local Setup
-1. Run `./scripts/dev-setup.sh` or `npm install` in root
-2. Configure environment variables in `config/.env`
-3. Setup Supabase: `./scripts/setup-supabase.sh`
-4. Start services: `npm run dev`
-
-### Testing Strategy
-- Unit tests for services and utilities
-- Integration tests for API endpoints  
-- Webhook testing via admin bypass endpoints
-- Chat testing through widget interface
-
-### Code Quality
-- ESLint configuration for TypeScript
-- Prettier for consistent formatting
-- TypeScript strict mode **disabled** (requires careful type handling)
-- No pre-commit hooks currently configured
-
-## Important Configuration Files
-
-### Environment Configuration
-- `config/.env` - Main environment variables
-- `backend/src/utils/config.ts` - Configuration validation
-- `shopify.app.toml` - Shopify app configuration
-
-### Key Environment Variables
-```bash
-# Shopify
-SHOPIFY_API_KEY=           # From Partner Dashboard
-SHOPIFY_API_SECRET=        # From Partner Dashboard  
-SHOPIFY_APP_URL=           # Your app domain
-SHOPIFY_SCOPES=            # App permissions
-
-# Supabase
-SUPABASE_URL=              # Project URL
-SUPABASE_SERVICE_KEY=      # Service role key
-
-# OpenAI
-OPENAI_API_KEY=            # API key for GPT-4 + embeddings
-OPENAI_MODEL=              # Optional: gpt-4 (default)
-EMBEDDING_MODEL=           # Optional: text-embedding-3-small (default)
-
-# Redis (Optional - falls back to memory cache)
-REDIS_URL=                 # Full Redis connection string (preferred)
-REDIS_HOST=localhost       # Redis host (fallback)
-REDIS_PORT=6379           # Redis port (fallback)
-REDIS_PASSWORD=           # Redis password (if required)
-REDIS_ENABLED=true        # Set to 'false' to disable Redis
-
-# Runtime
-NODE_ENV=development|production
-PORT=3000
-JWT_SECRET=               # JWT signing secret
+```
+naay-agent/
+├── backend/                 # Node.js/Express API (TypeScript)
+├── frontend-admin/          # Admin panel (Shopify App Bridge)
+├── extensions/              # Shopify theme extension (chat widget)
+├── database/                # SQL schemas, migrations, functions
+├── config/                  # Environment variables (.env)
+├── scripts/                 # Automation scripts
+└── azure-config/            # Azure deployment configuration
 ```
 
-### TypeScript Configuration
-- Root `tsconfig.json` for workspace
-- `backend/tsconfig.json` for backend compilation
-- `backend/tsconfig.deployment.json` for production builds
+### Core Services (`backend/src/services/`)
+- `ai-agent.service.ts` - AI orchestration, intent detection, chat logic
+- `shopify.service.ts` - Shopify Admin & Storefront API interactions
+- `supabase.service.ts` - Database operations
+- `embedding.service.ts` - OpenAI embeddings generation
+- `queue.service.ts` - BullMQ background job management
+- `cart.service.ts` - Shopping cart operations via Storefront API
+- `cache.service.ts` - Redis caching with memory fallback
+- `*-analytics.service.ts` - Conversion tracking and analytics
 
-## Deployment Architecture
+### Controllers (`backend/src/controllers/`)
+- `auth.controller.ts` - Shopify OAuth flow
+- `webhook.controller.ts` - Shopify webhook handlers
+- `chat.controller.ts` / `simple-chat.controller.ts` - AI chat endpoints
+- `product.controller.ts` - Product sync and search
+- `admin-bypass.controller.ts` - Direct admin operations (testing/debugging)
+- `health.controller.ts` - Health check endpoints
 
-### Production Stack
-- **Hosting**: Azure App Service (configured in azure-config/)
-- **Database**: Supabase hosted PostgreSQL
-- **CDN**: Static widget files via Azure/CDN
-- **Monitoring**: Built-in health checks and logging
+### Key Patterns
+- Controllers → Services → Supabase (no repository layer)
+- Type casting used in some services: `(supabaseService as any).serviceClient`
+- Queue-based async processing for product sync and embeddings
+- Dual-layer caching: Redis primary, memory fallback
 
-### Key Deployment Files
-- `azure-config/azure-deploy.json` - Azure deployment template
-- `azure-config/startup.js` - Azure startup script
-- `scripts/deploy-to-azure.sh` - Deployment automation
-- `.github/workflows/` - CI/CD pipeline
+### Database (Supabase + pgvector)
+**Core Tables**: `shops`, `products`, `product_variants`, `product_embeddings`, `conversations`, `webhook_events`
 
-### Health Monitoring
-- `/health` - Basic health check
-- `/health/detailed` - Comprehensive service status
-- Structured logging with Winston
-- Error tracking and alerting
+- pgvector extension for semantic similarity search
+- Row-level security for multi-tenant isolation
+- Direct Supabase client calls (not abstracted through repositories)
 
-## Shopify Integration Specifics
+## Environment Configuration
 
-### Modern Authentication (2024)
-- App Bridge 3.0 with session tokens
-- OAuth + session token hybrid flow
+Environment variables in `config/.env`:
+```bash
+# Required
+SHOPIFY_API_KEY, SHOPIFY_API_SECRET, SHOPIFY_APP_URL
+SUPABASE_URL, SUPABASE_SERVICE_KEY
+OPENAI_API_KEY
+JWT_SECRET
+
+# Optional
+REDIS_URL                    # Falls back to memory cache if unavailable
+NODE_ENV=development|production
+PORT=3000
+```
+
+## Testing & Debugging
+
+### Manual Testing Endpoints
+- `GET /health` - Basic health check
+- `GET /health/detailed` - Comprehensive service status
+- `POST /api/admin-bypass/products/sync` - Force product sync
+- `GET /api/admin-bypass/stats` - System statistics
+
+### Widget Testing
+- Use `test-cart.html` or `test-cart-widget.html` in root for local testing
+- Widget served from `backend/public/naay-widget.js`
+
+### Jest Configuration
+- Coverage thresholds: 70% branches, 80% functions/lines/statements
+- Test setup: `backend/src/test/setup.ts`
+- Uses `tsconfig.test.json` for test compilation
+
+## Shopify Integration
+
+### Authentication
+- OAuth + session token hybrid (App Bridge 3.0)
 - HMAC validation for webhooks
 - JWT for internal session management
 
-### Theme Extension Structure
-```
-extensions/naay-chat-widget/
-├── blocks/naay-chat.liquid      # Chat widget block
-├── snippets/
-│   ├── naay-auto-inject.liquid  # Auto-injection snippet
-│   ├── naay-body-inject.liquid  # Body injection script
-│   └── naay-init.liquid         # Widget initialization
-├── locales/en.default.json      # Translations
-└── shopify.extension.toml       # Extension config
-```
-
 ### Webhook Events
-- `products/create` - New product sync
-- `products/update` - Product updates
-- `products/delete` - Product removal
-- `app/uninstalled` - Cleanup on uninstall
+`products/create`, `products/update`, `products/delete`, `app/uninstalled`
 
-## Testing and Quality Assurance
+### Theme Extension (`extensions/naay-chat-widget/`)
+- `blocks/naay-chat.liquid` - Chat widget block
+- `snippets/naay-*.liquid` - Injection scripts
+- `shopify.extension.toml` - Extension config
 
-### Manual Testing Endpoints
-- `POST /api/admin-bypass/products/sync` - Force product sync
-- `GET /api/admin-bypass/stats` - System statistics
-- `POST /api/admin-bypass/settings/update` - Update widget config
-- `GET /health/detailed` - Comprehensive health check
+## Deployment
 
-### Widget Testing
-- Test in Shopify theme preview mode
-- Use `backend/test-cart.html` for local widget testing
-- Verify CORS configuration for cross-domain loading
-- Check responsive behavior across devices
-- Validate chat functionality and cart operations
-- Widget file served from `backend/public/naay-widget.js`
-
-### Common Issues to Check
-- CORS headers for widget script loading
-- Webhook HMAC validation
-- OpenAI API rate limits and token usage
-- Supabase connection pooling
-- Redis availability for queue processing
-
-### Code Quality Considerations
-- **Type Safety**: Many service methods use `(service as any)` type casting - requires careful refactoring
-- **Error Handling**: Inconsistent error handling patterns across controllers - some use try/catch, others rely on middleware
-- **Validation**: Webhook verification uses manual header parsing - consider using middleware
-- **Cache Implementation**: Redis service has extensive type casting that should be refactored for better type safety
-
-## Performance Considerations
-
-### Backend Optimization
-- Connection pooling for database
-- Redis caching for frequently accessed data
-- Background job processing for heavy operations
-- Rate limiting on API endpoints
-
-### AI Performance
-- Embedding caching to reduce OpenAI calls
-- Vector search index optimization
-- Batch processing for product embeddings
-- Response streaming for real-time chat
-
-### Frontend Optimization
-- Widget lazy loading
-- Minimal JavaScript bundle size
-- Cached assets via CDN
-- Progressive enhancement patterns
-
-This architecture supports a production-ready Shopify AI assistant with proper scalability, security, and maintainability patterns.
+- **Hosting**: Azure App Service
+- **Config**: `azure-config/azure-deploy.json`, `startup.js`
+- **CI/CD**: `.github/workflows/`
+- **Build for Azure**: `npm run azure:setup`
