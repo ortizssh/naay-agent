@@ -12,11 +12,19 @@ export default defineConfig({
   server: {
     port: 3001,
     host: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+    },
   },
   build: {
-    outDir: 'dist',
+    outDir: '../backend/public/admin',
+    emptyOutDir: true,
     sourcemap: true,
   },
+  base: '/admin/',
   define: {
     global: 'globalThis',
   },

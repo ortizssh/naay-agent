@@ -31,6 +31,9 @@ import publicProductsRoutes from '@/controllers/public-products.controller';
 import simpleConversionAnalyticsRoutes from '@/controllers/simple-conversion-analytics.controller';
 import historicalConversionMigratorRoutes from '@/controllers/historical-conversion-migrator.controller';
 import realConversionAnalyzerRoutes from '@/controllers/real-conversion-analyzer.controller';
+import tenantAdminRoutes from '@/controllers/tenant-admin.controller';
+import adminAuthRoutes from '@/controllers/admin-auth.controller';
+import clientRoutes from '@/controllers/client.controller';
 
 async function startServer() {
   try {
@@ -202,6 +205,82 @@ async function startServer() {
         next();
       }
     });
+    // Client API CORS middleware
+    app.use('/api/client', (req, res, next) => {
+      const origin = req.get('Origin');
+
+      const allowedOrigins = [
+        /^https?:\/\/localhost(:\d+)?$/,
+        /^https:\/\/naay-agent.*\.azurewebsites\.net$/,
+        /^https:\/\/kova-agent.*\.azurewebsites\.net$/,
+      ];
+
+      let allowOrigin = !origin;
+      if (origin) {
+        allowOrigin = allowedOrigins.some(pattern => pattern.test(origin));
+      }
+
+      if (allowOrigin || !origin) {
+        res.setHeader('Access-Control-Allow-Origin', origin || '*');
+        if (origin) {
+          res.setHeader('Vary', 'Origin');
+        }
+      }
+
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization, X-Requested-With'
+      );
+      res.setHeader('Access-Control-Max-Age', '86400');
+
+      if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+      }
+
+      next();
+    });
+
+    // Admin API CORS middleware
+    app.use('/api/admin', (req, res, next) => {
+      // Allow requests from local development and same origin
+      const origin = req.get('Origin');
+
+      // Allow same-origin requests, local development, and Azure deployment
+      const allowedOrigins = [
+        /^https?:\/\/localhost(:\d+)?$/,
+        /^https:\/\/naay-agent.*\.azurewebsites\.net$/,
+        /^https:\/\/kova-agent.*\.azurewebsites\.net$/,
+      ];
+
+      let allowOrigin = !origin; // Allow same-origin (no Origin header)
+      if (origin) {
+        allowOrigin = allowedOrigins.some(pattern => pattern.test(origin));
+      }
+
+      if (allowOrigin || !origin) {
+        res.setHeader('Access-Control-Allow-Origin', origin || '*');
+        if (origin) {
+          res.setHeader('Vary', 'Origin');
+        }
+      }
+
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization, X-Requested-With'
+      );
+      res.setHeader('Access-Control-Max-Age', '86400');
+
+      // Handle OPTIONS preflight
+      if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+      }
+
+      console.log('Admin API request - CORS headers set for:', req.path, 'Origin:', origin);
+      next();
+    });
+
     // Public APIs CORS middleware - MOVED BEFORE GENERAL CORS
     app.use('/api/public', (req, res, next) => {
       const origin = req.get('Origin');
@@ -421,11 +500,34 @@ async function startServer() {
       res.json(result);
     });
 
-    // Root route for Shopify app installation
+    // Serve landing page
     app.get('/', (req: express.Request, res: express.Response) => {
-      // Admin panel is available via dedicated route, redirect there
-      logger.info('Redirecting root to admin panel');
-      res.redirect('/admin');
+      const landingPath = path.join(__dirname, '../public/index.html');
+      if (fs.existsSync(landingPath)) {
+        res.sendFile(landingPath);
+      } else {
+        res.redirect('/admin');
+      }
+    });
+
+    // Serve login page
+    app.get('/login', (req: express.Request, res: express.Response) => {
+      const loginPath = path.join(__dirname, '../public/login.html');
+      if (fs.existsSync(loginPath)) {
+        res.sendFile(loginPath);
+      } else {
+        res.status(404).send('Login page not found');
+      }
+    });
+
+    // Serve register page
+    app.get('/register', (req: express.Request, res: express.Response) => {
+      const registerPath = path.join(__dirname, '../public/register.html');
+      if (fs.existsSync(registerPath)) {
+        res.sendFile(registerPath);
+      } else {
+        res.status(404).send('Register page not found');
+      }
     });
 
     // Success page after Shopify app installation
@@ -545,6 +647,9 @@ async function startServer() {
     app.use('/api/widget', widgetRoutes);
     app.use('/api/settings', settingsRoutes);
     app.use('/api/admin', adminRoutes);
+    app.use('/api/admin/tenants', tenantAdminRoutes);
+    app.use('/api/auth', adminAuthRoutes);
+    app.use('/api/client', clientRoutes);
     app.use('/api/admin-bypass', adminBypassRoutes);
 
     // Conversion Analytics Routes
@@ -552,37 +657,50 @@ async function startServer() {
     app.use('/api/migration', historicalConversionMigratorRoutes);
     app.use('/api/real-conversions', realConversionAnalyzerRoutes);
 
-    // Serve admin panel
-    app.get('/admin', (req, res) => {
-      try {
-        // Try multiple paths until we find the file
-        const possiblePaths = [
-          path.join(__dirname, '../public/admin/index.html'),
-          path.join(__dirname, 'public/admin/index.html'),
-          path.join(process.cwd(), 'public/admin/index.html'),
-          path.join(process.cwd(), 'dist/public/admin/index.html'),
-        ];
+    // Admin panel static files middleware
+    const getAdminDir = () => {
+      const possibleDirs = [
+        path.join(__dirname, '../public/admin'),
+        path.join(__dirname, 'public/admin'),
+        path.join(process.cwd(), 'public/admin'),
+        path.join(process.cwd(), 'dist/public/admin'),
+      ];
 
-        let foundPath = null;
-        for (const testPath of possiblePaths) {
-          if (fs.existsSync(testPath)) {
-            foundPath = testPath;
-            console.log('✅ Admin found at:', testPath);
-            break;
-          } else {
-            console.log('❌ Admin not found at:', testPath);
+      for (const dir of possibleDirs) {
+        if (fs.existsSync(dir)) {
+          return dir;
+        }
+      }
+      return null;
+    };
+
+    // Serve admin static assets (js, css, etc.)
+    app.use('/admin/assets', (req, res, next) => {
+      const adminDir = getAdminDir();
+      if (adminDir) {
+        express.static(path.join(adminDir, 'assets'))(req, res, next);
+      } else {
+        next();
+      }
+    });
+
+    // Serve admin panel (SPA - catch all admin routes)
+    app.get('/admin*', (req, res) => {
+      try {
+        const adminDir = getAdminDir();
+
+        if (adminDir) {
+          const indexPath = path.join(adminDir, 'index.html');
+          if (fs.existsSync(indexPath)) {
+            console.log('✅ Admin served from:', indexPath);
+            return res.sendFile(indexPath);
           }
         }
 
-        if (foundPath) {
-          res.sendFile(foundPath);
-        } else {
-          console.error('❌ Admin file not found in any location');
-          res.status(404).json({
-            error: 'Admin panel file not found',
-            tested_paths: possiblePaths,
-          });
-        }
+        console.error('❌ Admin file not found');
+        res.status(404).json({
+          error: 'Admin panel not found. Run: cd frontend-admin && npm run build',
+        });
       } catch (error) {
         console.error('Error serving admin panel:', error);
         res.status(500).json({
@@ -591,12 +709,6 @@ async function startServer() {
         });
       }
     });
-
-    // Serve admin static files
-    app.use(
-      '/admin-static',
-      express.static(path.join(__dirname, '../../frontend-admin/public'))
-    );
 
     // 404 handler
     app.use('*', (req, res) => {
