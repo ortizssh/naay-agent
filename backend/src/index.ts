@@ -227,7 +227,10 @@ async function startServer() {
         }
       }
 
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      res.setHeader(
+        'Access-Control-Allow-Methods',
+        'GET, POST, PUT, DELETE, OPTIONS'
+      );
       res.setHeader(
         'Access-Control-Allow-Headers',
         'Content-Type, Authorization, X-Requested-With'
@@ -265,7 +268,10 @@ async function startServer() {
         }
       }
 
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      res.setHeader(
+        'Access-Control-Allow-Methods',
+        'GET, POST, PUT, DELETE, OPTIONS'
+      );
       res.setHeader(
         'Access-Control-Allow-Headers',
         'Content-Type, Authorization, X-Requested-With'
@@ -277,7 +283,12 @@ async function startServer() {
         return res.status(200).end();
       }
 
-      console.log('Admin API request - CORS headers set for:', req.path, 'Origin:', origin);
+      console.log(
+        'Admin API request - CORS headers set for:',
+        req.path,
+        'Origin:',
+        origin
+      );
       next();
     });
 
@@ -699,7 +710,8 @@ async function startServer() {
 
         console.error('❌ Admin file not found');
         res.status(404).json({
-          error: 'Admin panel not found. Run: cd frontend-admin && npm run build',
+          error:
+            'Admin panel not found. Run: cd frontend-admin && npm run build',
         });
       } catch (error) {
         console.error('Error serving admin panel:', error);
