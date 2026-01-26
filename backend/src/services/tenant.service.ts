@@ -50,7 +50,9 @@ export class TenantService {
       const tenant = this.mapDbToTenant(data);
 
       // Cache the result
-      await cacheService.set(cacheKey, tenant, { ttl: TenantService.CACHE_TTL });
+      await cacheService.set(cacheKey, tenant, {
+        ttl: TenantService.CACHE_TTL,
+      });
 
       return tenant;
     } catch (error) {
@@ -453,7 +455,9 @@ export class TenantService {
       shop_email: data.shop_email,
       plan: data.plan,
       status: data.status,
-      trial_ends_at: data.trial_ends_at ? new Date(data.trial_ends_at) : undefined,
+      trial_ends_at: data.trial_ends_at
+        ? new Date(data.trial_ends_at)
+        : undefined,
       monthly_messages_limit: data.monthly_messages_limit,
       monthly_messages_used: data.monthly_messages_used,
       products_limit: data.products_limit,

@@ -53,7 +53,10 @@ const optionalTenantValidation = async (
           error: error.message,
         });
 
-        const statusCode = error.metadata?.tenantErrorCode === 'USAGE_LIMIT_EXCEEDED' ? 429 : 403;
+        const statusCode =
+          error.metadata?.tenantErrorCode === 'USAGE_LIMIT_EXCEEDED'
+            ? 429
+            : 403;
 
         res.status(statusCode).json({
           success: false,
@@ -227,55 +230,55 @@ router.post(
   optionalTenantValidation,
   trackUsageAfterResponse,
   async (req: Request, res: Response) => {
-  try {
-    const { message, shop, conversationId } = req.body;
+    try {
+      const { message, shop, conversationId } = req.body;
 
-    if (!message || typeof message !== 'string') {
-      return res.status(400).json({
-        success: false,
-        error: 'Message is required',
+      if (!message || typeof message !== 'string') {
+        return res.status(400).json({
+          success: false,
+          error: 'Message is required',
+        });
+      }
+
+      // Generate conversation ID if not provided
+      const currentConversationId =
+        conversationId ||
+        `simple_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      logger.info('Simple chat message received', {
+        shop: shop || 'unknown',
+        conversationId: currentConversationId,
+        messageLength: message.length,
+        hasApiKey: !!apiKey,
+        hasHistory: !!conversationStore[currentConversationId],
       });
-    }
 
-    // Generate conversation ID if not provided
-    const currentConversationId =
-      conversationId ||
-      `simple_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      if (!apiKey) {
+        throw new Error('OpenAI API key not configured');
+      }
 
-    logger.info('Simple chat message received', {
-      shop: shop || 'unknown',
-      conversationId: currentConversationId,
-      messageLength: message.length,
-      hasApiKey: !!apiKey,
-      hasHistory: !!conversationStore[currentConversationId],
-    });
+      // Get or initialize conversation history
+      if (!conversationStore[currentConversationId]) {
+        conversationStore[currentConversationId] = [];
+      }
 
-    if (!apiKey) {
-      throw new Error('OpenAI API key not configured');
-    }
+      // Add current user message to conversation history
+      conversationStore[currentConversationId].push({
+        role: 'user',
+        content: message,
+      });
 
-    // Get or initialize conversation history
-    if (!conversationStore[currentConversationId]) {
-      conversationStore[currentConversationId] = [];
-    }
+      // Keep conversation history manageable (last 20 messages)
+      if (conversationStore[currentConversationId].length > 20) {
+        conversationStore[currentConversationId] =
+          conversationStore[currentConversationId].slice(-20);
+      }
 
-    // Add current user message to conversation history
-    conversationStore[currentConversationId].push({
-      role: 'user',
-      content: message,
-    });
-
-    // Keep conversation history manageable (last 20 messages)
-    if (conversationStore[currentConversationId].length > 20) {
-      conversationStore[currentConversationId] =
-        conversationStore[currentConversationId].slice(-20);
-    }
-
-    // Prepare messages for OpenAI (system prompt + conversation history)
-    const messages = [
-      {
-        role: 'system',
-        content: `#### 💬 **Rol del Agente**
+      // Prepare messages for OpenAI (system prompt + conversation history)
+      const messages = [
+        {
+          role: 'system',
+          content: `#### 💬 **Rol del Agente**
 
 Eres **Naáy Assistant**, el asesor virtual de **Naáy**, marca española de cosmética natural y ecológica fundada en Valladolid. Tu misión es ofrecer orientación personalizada sobre el cuidado de la piel y el uso de productos Naáy, reflejando siempre el tono cálido, cercano, profesional y respetuoso con el medio ambiente que caracteriza a la marca.
 
@@ -365,196 +368,196 @@ Cuando un usuario interactúe:
 - SIEMPRE usar las herramientas antes de responder sobre productos específicos
 
 **Si no encuentras productos reales que coincidan con la consulta, explica que no tienes productos específicos disponibles actualmente y ofrece consejos generales de cuidado de la piel.**`,
-      },
-      ...conversationStore[currentConversationId], // Include conversation history
-    ];
-
-    // Define tools for product search
-    const tools = [
-      {
-        type: 'function' as const,
-        function: {
-          name: 'search_products',
-          description:
-            'Busca productos específicos en el catálogo de Shopify basado en una consulta de texto',
-          parameters: {
-            type: 'object',
-            properties: {
-              query: {
-                type: 'string',
-                description:
-                  "Término de búsqueda para encontrar productos (ej: 'crema facial', 'limpiador', 'anti-edad')",
-              },
-              skin_type: {
-                type: 'string',
-                description:
-                  "Tipo de piel del usuario (ej: 'seca', 'grasa', 'mixta', 'sensible')",
-                enum: ['seca', 'grasa', 'mixta', 'sensible', 'normal'],
-              },
-              limit: {
-                type: 'number',
-                description: 'Número máximo de productos a devolver',
-                default: 5,
-              },
-            },
-            required: ['query'],
-          },
         },
-      },
-      {
-        type: 'function' as const,
-        function: {
-          name: 'get_product_recommendations',
-          description:
-            'Obtiene recomendaciones de productos basadas en el tipo de piel y preocupaciones específicas',
-          parameters: {
-            type: 'object',
-            properties: {
-              skin_type: {
-                type: 'string',
-                description: 'Tipo de piel del usuario',
-                enum: ['seca', 'grasa', 'mixta', 'sensible', 'normal'],
-              },
-              concerns: {
-                type: 'array',
-                items: {
+        ...conversationStore[currentConversationId], // Include conversation history
+      ];
+
+      // Define tools for product search
+      const tools = [
+        {
+          type: 'function' as const,
+          function: {
+            name: 'search_products',
+            description:
+              'Busca productos específicos en el catálogo de Shopify basado en una consulta de texto',
+            parameters: {
+              type: 'object',
+              properties: {
+                query: {
                   type: 'string',
+                  description:
+                    "Término de búsqueda para encontrar productos (ej: 'crema facial', 'limpiador', 'anti-edad')",
                 },
-                description:
-                  "Lista de preocupaciones de la piel (ej: ['anti-edad', 'acné', 'manchas'])",
+                skin_type: {
+                  type: 'string',
+                  description:
+                    "Tipo de piel del usuario (ej: 'seca', 'grasa', 'mixta', 'sensible')",
+                  enum: ['seca', 'grasa', 'mixta', 'sensible', 'normal'],
+                },
+                limit: {
+                  type: 'number',
+                  description: 'Número máximo de productos a devolver',
+                  default: 5,
+                },
               },
-              limit: {
-                type: 'number',
-                description: 'Número máximo de productos a recomendar',
-                default: 3,
+              required: ['query'],
+            },
+          },
+        },
+        {
+          type: 'function' as const,
+          function: {
+            name: 'get_product_recommendations',
+            description:
+              'Obtiene recomendaciones de productos basadas en el tipo de piel y preocupaciones específicas',
+            parameters: {
+              type: 'object',
+              properties: {
+                skin_type: {
+                  type: 'string',
+                  description: 'Tipo de piel del usuario',
+                  enum: ['seca', 'grasa', 'mixta', 'sensible', 'normal'],
+                },
+                concerns: {
+                  type: 'array',
+                  items: {
+                    type: 'string',
+                  },
+                  description:
+                    "Lista de preocupaciones de la piel (ej: ['anti-edad', 'acné', 'manchas'])",
+                },
+                limit: {
+                  type: 'number',
+                  description: 'Número máximo de productos a recomendar',
+                  default: 3,
+                },
               },
             },
           },
         },
-      },
-    ];
+      ];
 
-    // Call OpenAI with tools
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: messages,
-      tools: tools,
-      tool_choice: 'auto',
-      max_tokens: 500,
-      temperature: 0.7,
-    });
+      // Call OpenAI with tools
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: messages,
+        tools: tools,
+        tool_choice: 'auto',
+        max_tokens: 500,
+        temperature: 0.7,
+      });
 
-    let response =
-      completion.choices[0]?.message?.content ||
-      '¡Hola! Soy tu asistente de Naay. ¿En qué puedo ayudarte con tu cuidado de la piel?';
+      let response =
+        completion.choices[0]?.message?.content ||
+        '¡Hola! Soy tu asistente de Naay. ¿En qué puedo ayudarte con tu cuidado de la piel?';
 
-    // Handle function calls
-    if (completion.choices[0]?.message?.tool_calls) {
-      const toolCalls = completion.choices[0].message.tool_calls;
-      let toolResults: any[] = [];
+      // Handle function calls
+      if (completion.choices[0]?.message?.tool_calls) {
+        const toolCalls = completion.choices[0].message.tool_calls;
+        let toolResults: any[] = [];
 
-      for (const toolCall of toolCalls) {
-        if (toolCall.function.name === 'search_products') {
-          const args = JSON.parse(toolCall.function.arguments);
-          const products = await searchProducts(
-            shop,
-            args.query,
-            args.limit,
-            args.skin_type
-          );
-          toolResults.push({
-            tool_call_id: toolCall.id,
-            role: 'tool' as const,
-            content: JSON.stringify(products),
+        for (const toolCall of toolCalls) {
+          if (toolCall.function.name === 'search_products') {
+            const args = JSON.parse(toolCall.function.arguments);
+            const products = await searchProducts(
+              shop,
+              args.query,
+              args.limit,
+              args.skin_type
+            );
+            toolResults.push({
+              tool_call_id: toolCall.id,
+              role: 'tool' as const,
+              content: JSON.stringify(products),
+            });
+          } else if (toolCall.function.name === 'get_product_recommendations') {
+            const args = JSON.parse(toolCall.function.arguments);
+            const products = await getProductRecommendations(
+              shop,
+              args.skin_type,
+              args.concerns,
+              args.limit
+            );
+            toolResults.push({
+              tool_call_id: toolCall.id,
+              role: 'tool' as const,
+              content: JSON.stringify(products),
+            });
+          }
+        }
+
+        // If we have tool results, make another call to get the final response
+        if (toolResults.length > 0) {
+          const messagesWithTools = [
+            ...messages,
+            completion.choices[0].message,
+            ...toolResults,
+          ];
+
+          const finalCompletion = await openai.chat.completions.create({
+            model: 'gpt-3.5-turbo',
+            messages: messagesWithTools,
+            max_tokens: 500,
+            temperature: 0.7,
           });
-        } else if (toolCall.function.name === 'get_product_recommendations') {
-          const args = JSON.parse(toolCall.function.arguments);
-          const products = await getProductRecommendations(
-            shop,
-            args.skin_type,
-            args.concerns,
-            args.limit
-          );
-          toolResults.push({
-            tool_call_id: toolCall.id,
-            role: 'tool' as const,
-            content: JSON.stringify(products),
-          });
+
+          response = finalCompletion.choices[0]?.message?.content || response;
         }
       }
 
-      // If we have tool results, make another call to get the final response
-      if (toolResults.length > 0) {
-        const messagesWithTools = [
-          ...messages,
-          completion.choices[0].message,
-          ...toolResults,
-        ];
+      // Store assistant's response in conversation history
+      conversationStore[currentConversationId].push({
+        role: 'assistant',
+        content: response,
+      });
 
-        const finalCompletion = await openai.chat.completions.create({
-          model: 'gpt-3.5-turbo',
-          messages: messagesWithTools,
-          max_tokens: 500,
-          temperature: 0.7,
-        });
+      res.json({
+        success: true,
+        data: {
+          response,
+          conversationId: currentConversationId, // Return the same conversation ID
+        },
+      });
+    } catch (error: any) {
+      logger.error('Simple chat error:', {
+        message: error?.message,
+        type: error?.constructor?.name,
+        status: error?.status,
+        code: error?.code,
+        hasApiKey: !!apiKey,
+      });
 
-        response = finalCompletion.choices[0]?.message?.content || response;
+      // Specific error handling for OpenAI issues
+      let errorMessage =
+        'Lo siento, hubo un problema al procesar tu mensaje. Por favor intenta de nuevo.';
+
+      if (error?.message?.includes('API key')) {
+        errorMessage =
+          'Error de configuración del servicio. Por favor contacta al administrador.';
+      } else if (error?.status === 401) {
+        errorMessage = 'Error de autenticación con el servicio de IA.';
+      } else if (error?.status === 429) {
+        errorMessage =
+          'El servicio está muy ocupado. Por favor intenta en unos momentos.';
       }
+
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor',
+        data: {
+          response: errorMessage,
+          conversationId: null,
+          debug:
+            process.env.NODE_ENV === 'development'
+              ? {
+                  hasApiKey: !!apiKey,
+                  errorType: error?.constructor?.name,
+                  errorMessage: error?.message,
+                }
+              : undefined,
+        },
+      });
     }
-
-    // Store assistant's response in conversation history
-    conversationStore[currentConversationId].push({
-      role: 'assistant',
-      content: response,
-    });
-
-    res.json({
-      success: true,
-      data: {
-        response,
-        conversationId: currentConversationId, // Return the same conversation ID
-      },
-    });
-  } catch (error: any) {
-    logger.error('Simple chat error:', {
-      message: error?.message,
-      type: error?.constructor?.name,
-      status: error?.status,
-      code: error?.code,
-      hasApiKey: !!apiKey,
-    });
-
-    // Specific error handling for OpenAI issues
-    let errorMessage =
-      'Lo siento, hubo un problema al procesar tu mensaje. Por favor intenta de nuevo.';
-
-    if (error?.message?.includes('API key')) {
-      errorMessage =
-        'Error de configuración del servicio. Por favor contacta al administrador.';
-    } else if (error?.status === 401) {
-      errorMessage = 'Error de autenticación con el servicio de IA.';
-    } else if (error?.status === 429) {
-      errorMessage =
-        'El servicio está muy ocupado. Por favor intenta en unos momentos.';
-    }
-
-    res.status(500).json({
-      success: false,
-      error: 'Error interno del servidor',
-      data: {
-        response: errorMessage,
-        conversationId: null,
-        debug:
-          process.env.NODE_ENV === 'development'
-            ? {
-                hasApiKey: !!apiKey,
-                errorType: error?.constructor?.name,
-                errorMessage: error?.message,
-              }
-            : undefined,
-      },
-    });
-  }
   }
 );
 
