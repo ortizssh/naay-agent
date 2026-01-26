@@ -625,3 +625,147 @@ declare global {
     }
   }
 }
+
+// =====================================================
+// SaaS Multi-Tenant Types
+// =====================================================
+
+export type TenantPlan = 'free' | 'starter' | 'professional' | 'enterprise';
+export type TenantStatus = 'active' | 'suspended' | 'cancelled' | 'trial';
+
+export interface TenantFeatures {
+  semantic_search: boolean;
+  cart_management: boolean;
+  analytics: boolean;
+  custom_branding: boolean;
+  priority_support: boolean;
+  api_access: boolean;
+}
+
+export interface TenantSettings {
+  widget_position: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+  widget_color: string;
+  welcome_message: string;
+  language: string;
+}
+
+export interface Tenant {
+  id: string;
+  shop_domain: string;
+  shop_name?: string;
+  shop_email?: string;
+
+  // Subscription
+  plan: TenantPlan;
+  status: TenantStatus;
+  trial_ends_at?: Date;
+
+  // Limits
+  monthly_messages_limit: number;
+  monthly_messages_used: number;
+  products_limit: number;
+
+  // Billing
+  billing_email?: string;
+  stripe_customer_id?: string;
+  stripe_subscription_id?: string;
+
+  // Configuration
+  features: TenantFeatures;
+  settings: TenantSettings;
+
+  // Timestamps
+  created_at: Date;
+  updated_at: Date;
+  last_activity_at: Date;
+}
+
+export interface TenantUsageInfo {
+  messages_used: number;
+  messages_limit: number;
+  messages_remaining: number;
+  usage_percentage: number;
+  is_over_limit: boolean;
+}
+
+export interface TenantPlanLimits {
+  monthly_messages: number;
+  products: number;
+  features: TenantFeatures;
+}
+
+export const TENANT_PLAN_LIMITS: Record<TenantPlan, TenantPlanLimits> = {
+  free: {
+    monthly_messages: 100,
+    products: 50,
+    features: {
+      semantic_search: true,
+      cart_management: true,
+      analytics: false,
+      custom_branding: false,
+      priority_support: false,
+      api_access: false,
+    },
+  },
+  starter: {
+    monthly_messages: 1000,
+    products: 500,
+    features: {
+      semantic_search: true,
+      cart_management: true,
+      analytics: true,
+      custom_branding: false,
+      priority_support: false,
+      api_access: false,
+    },
+  },
+  professional: {
+    monthly_messages: 10000,
+    products: 5000,
+    features: {
+      semantic_search: true,
+      cart_management: true,
+      analytics: true,
+      custom_branding: true,
+      priority_support: true,
+      api_access: false,
+    },
+  },
+  enterprise: {
+    monthly_messages: -1, // Unlimited
+    products: -1, // Unlimited
+    features: {
+      semantic_search: true,
+      cart_management: true,
+      analytics: true,
+      custom_branding: true,
+      priority_support: true,
+      api_access: true,
+    },
+  },
+};
+
+// Error codes for tenant operations
+export enum TenantErrorCode {
+  TENANT_NOT_FOUND = 'TENANT_NOT_FOUND',
+  TENANT_SUSPENDED = 'TENANT_SUSPENDED',
+  TENANT_CANCELLED = 'TENANT_CANCELLED',
+  USAGE_LIMIT_EXCEEDED = 'USAGE_LIMIT_EXCEEDED',
+  FEATURE_NOT_AVAILABLE = 'FEATURE_NOT_AVAILABLE',
+  PLAN_LIMIT_EXCEEDED = 'PLAN_LIMIT_EXCEEDED',
+}
+
+export class TenantError extends AppError {
+  constructor(
+    message: string,
+    code: TenantErrorCode,
+    shopDomain?: string,
+    metadata?: Record<string, any>
+  ) {
+    super(message, 403, ErrorCode.AUTHORIZATION_ERROR, true, shopDomain, {
+      tenantErrorCode: code,
+      ...metadata,
+    });
+    this.name = 'TenantError';
+  }
+}

@@ -1,10 +1,116 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import OpenAI from 'openai';
 import { config } from '@/utils/config';
 import { logger } from '@/utils/logger';
 import { SupabaseService } from '@/services/supabase.service';
+import { tenantService } from '@/services/tenant.service';
+import { createTenantRateLimiter } from '@/middleware/tenant.middleware';
 
 const router = Router();
+
+// Per-tenant rate limiter (100 requests per minute per shop)
+const tenantRateLimiter = createTenantRateLimiter({
+  windowMs: 60 * 1000, // 1 minute
+  maxRequests: 100,
+});
+
+/**
+ * Backwards-compatible tenant validation middleware
+ * - If tenant exists: validates access and tracks usage
+ * - If tenant doesn't exist: allows access (for existing stores like naay)
+ */
+const optionalTenantValidation = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const shop = req.body?.shop;
+
+    if (!shop) {
+      // No shop provided, continue without tenant validation
+      next();
+      return;
+    }
+
+    // Try to get tenant info
+    const tenant = await tenantService.getTenant(shop);
+
+    if (tenant) {
+      // Tenant exists - validate access
+      try {
+        await tenantService.validateTenantAccess(shop);
+
+        // Attach tenant info to request for later use
+        (req as any).tenant = tenant;
+
+        // Record activity (non-blocking)
+        tenantService.recordActivity(shop).catch(() => {});
+      } catch (error: any) {
+        // Tenant validation failed
+        logger.warn('Tenant access denied', {
+          shop,
+          error: error.message,
+        });
+
+        const statusCode = error.metadata?.tenantErrorCode === 'USAGE_LIMIT_EXCEEDED' ? 429 : 403;
+
+        res.status(statusCode).json({
+          success: false,
+          error: error.message,
+          data: {
+            response: error.message,
+            conversationId: null,
+          },
+        });
+        return;
+      }
+    } else {
+      // No tenant record - this is an existing store without tenant setup
+      // Allow access but log for tracking
+      logger.debug('Shop without tenant record accessed', { shop });
+    }
+
+    next();
+  } catch (error) {
+    logger.error('Error in optionalTenantValidation:', error);
+    // On error, allow access to not break existing functionality
+    next();
+  }
+};
+
+/**
+ * Track message usage after successful response
+ */
+const trackUsageAfterResponse = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const originalJson = res.json.bind(res);
+
+  res.json = (body: any) => {
+    // Only track on successful responses
+    if (res.statusCode >= 200 && res.statusCode < 300 && body?.success) {
+      const shop = req.body?.shop;
+      const tenant = (req as any).tenant;
+
+      if (shop && tenant) {
+        // Increment usage for tenants
+        tenantService.incrementUsage(shop, 1).catch(error => {
+          logger.warn('Failed to increment tenant usage:', {
+            shop,
+            error: error.message,
+          });
+        });
+      }
+    }
+
+    return originalJson(body);
+  };
+
+  next();
+};
 
 // Simple OpenAI client
 const apiKey = process.env.OPENAI_API_KEY || config.openai?.apiKey;
@@ -114,7 +220,13 @@ async function getProductRecommendations(
 }
 
 // Simple chat endpoint that directly connects to OpenAI
-router.post('/', async (req: Request, res: Response) => {
+// Middlewares: rate limit per tenant -> validate tenant -> track usage
+router.post(
+  '/',
+  tenantRateLimiter,
+  optionalTenantValidation,
+  trackUsageAfterResponse,
+  async (req: Request, res: Response) => {
   try {
     const { message, shop, conversationId } = req.body;
 
@@ -443,7 +555,8 @@ Cuando un usuario interactúe:
       },
     });
   }
-});
+  }
+);
 
 // Test endpoint to check OpenAI configuration
 router.get('/test', async (req: Request, res: Response) => {
