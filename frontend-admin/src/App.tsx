@@ -47,36 +47,60 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check current path for auth routing
-    const path = window.location.pathname;
-    if (path === '/register') {
-      setAuthPage('register');
-    } else if (path === '/login') {
-      setAuthPage('login');
-    } else {
-      setAuthPage('app');
-    }
+    const initAuth = async () => {
+      // Check current path for auth routing
+      const path = window.location.pathname;
+      if (path === '/register') {
+        setAuthPage('register');
+      } else if (path === '/login') {
+        setAuthPage('login');
+      } else {
+        setAuthPage('app');
+      }
 
-    // Check for stored user
-    const storedUser = localStorage.getItem('user');
-    const token = localStorage.getItem('auth_token');
+      // Check for stored user and validate token
+      const storedUser = localStorage.getItem('user');
+      const token = localStorage.getItem('auth_token');
 
-    if (storedUser && token) {
-      const parsedUser = JSON.parse(storedUser);
-      setUser(parsedUser);
+      if (storedUser && token) {
+        try {
+          // Validate token with server
+          const { authApi } = await import('./services/api');
+          const response = await authApi.getMe();
 
-      // Check if client needs onboarding
-      if (parsedUser.userType === 'client' && !parsedUser.onboardingCompleted) {
+          if (response.success && response.user) {
+            // Token is valid, use fresh user data from server
+            const userData = response.user;
+            setUser(userData);
+            localStorage.setItem('user', JSON.stringify(userData));
+
+            // Check if client needs onboarding
+            if (userData.userType === 'client' && !userData.onboardingCompleted) {
+              setShowOnboarding(true);
+            }
+          } else {
+            // Token invalid, clear storage
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user');
+          }
+        } catch (error) {
+          // Token validation failed, clear storage
+          console.error('Token validation failed:', error);
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('user');
+        }
+      }
+
+      setLoading(false);
+
+      // Check URL for oauth callback
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('oauth') === 'success') {
         setShowOnboarding(true);
       }
-    }
-    setLoading(false);
+    };
 
-    // Check URL for oauth callback
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('oauth') === 'success') {
-      setShowOnboarding(true);
-    }
+    initAuth();
   }, []);
 
   const handleLogout = () => {
