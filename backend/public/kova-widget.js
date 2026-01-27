@@ -2178,20 +2178,25 @@
         }
 
         @media (max-width: 480px) {
-          /* ===== MOBILE OPTIMIZED STYLES ===== */
+          /* ===== MOBILE STYLES - SIMPLIFIED ===== */
 
-          /* Widget container - ensure it doesn't clip content */
+          /* Widget container - ensure button is visible */
           .kova-widget {
-            bottom: 0 !important;
-            right: 0 !important;
-            left: 0 !important;
-            top: auto !important;
-            width: 100% !important;
-            height: auto !important;
-            pointer-events: none !important;
+            position: fixed !important;
+            bottom: 16px !important;
+            right: 16px !important;
+            z-index: 999998 !important;
           }
 
-          /* Full screen chat on mobile */
+          /* Button - always visible */
+          .kova-widget__button {
+            position: relative !important;
+            width: 56px !important;
+            height: 56px !important;
+            z-index: 999998 !important;
+          }
+
+          /* Chat panel - fullscreen when open */
           .kova-widget__chat {
             position: fixed !important;
             top: 0 !important;
@@ -2199,184 +2204,61 @@
             right: 0 !important;
             bottom: 0 !important;
             width: 100vw !important;
+            height: 100vh !important;
             height: 100dvh !important;
             max-width: none !important;
+            max-height: none !important;
             border-radius: 0 !important;
-            box-shadow: none !important;
-            padding-bottom: env(safe-area-inset-bottom) !important;
             z-index: 999999 !important;
-            pointer-events: auto !important;
+            margin: 0 !important;
           }
 
-          /* Widget button mobile - always visible and fully on screen */
-          .kova-widget__button {
-            width: 56px !important;
-            height: 56px !important;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
-            position: fixed !important;
-            bottom: calc(20px + env(safe-area-inset-bottom)) !important;
-            right: 20px !important;
-            left: auto !important;
-            top: auto !important;
-            z-index: 999998 !important;
-            pointer-events: auto !important;
+          /* CRITICAL: Ensure chat is visible when open */
+          .kova-widget--open .kova-widget__chat {
+            display: flex !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            transform: none !important;
           }
 
-          /* Promotional message mobile */
+          /* Promotional message */
           .kova-widget__promotional-message {
-            position: fixed !important;
-            bottom: calc(86px + env(safe-area-inset-bottom)) !important;
-            right: 20px !important;
-            left: auto !important;
-            max-width: calc(100vw - 100px) !important;
-            pointer-events: auto !important;
+            right: 0 !important;
+            bottom: 70px !important;
+            max-width: calc(100vw - 90px) !important;
           }
 
-          .kova-widget__button-content {
-            width: 22px !important;
-            height: 22px !important;
-          }
-
-          .kova-widget__chat-icon,
-          .kova-widget__close-icon {
-            width: 22px !important;
-            height: 22px !important;
-          }
-
-          /* Floating actions mobile */
+          /* Floating actions in chat */
           .kova-widget__floating-actions {
-            top: calc(12px + env(safe-area-inset-top)) !important;
-            left: 16px !important;
-            right: 16px !important;
+            top: 12px !important;
+            left: 12px !important;
+            right: 12px !important;
           }
 
-          .kova-widget__cart-toggle-btn,
-          .kova-widget__close {
-            padding: 12px !important;
-            border-radius: 14px !important;
-            min-width: 44px !important;
-            min-height: 44px !important;
-          }
-
-          .kova-widget__cart-toggle-btn svg,
-          .kova-cart-toggle-icon,
-          .kova-widget__close svg {
-            width: 20px !important;
-            height: 20px !important;
-          }
-
-          .kova-cart-toggle-count {
-            width: 18px !important;
-            height: 18px !important;
-            font-size: 10px !important;
-            top: -6px !important;
-            right: -6px !important;
-          }
-
-          /* Messages area mobile */
+          /* Messages */
           .kova-widget__messages {
-            padding: calc(70px + env(safe-area-inset-top)) 16px 16px 16px !important;
-            -webkit-overflow-scrolling: touch !important;
+            padding: 70px 12px 12px 12px !important;
           }
 
-          .kova-widget__message {
-            max-width: 88% !important;
-            padding: 14px 16px !important;
-            font-size: 15px !important;
-            line-height: 1.5 !important;
-            border-radius: 18px !important;
-          }
-
-          /* Welcome screen mobile */
-          .kova-widget__welcome {
-            padding: 16px !important;
-          }
-
-          .kova-widget__welcome-title {
-            font-size: 22px !important;
-            margin-bottom: 6px !important;
-            line-height: 1.3 !important;
-          }
-
-          .kova-widget__welcome-subtitle {
-            font-size: 15px !important;
-            display: block !important;
-            margin-top: 8px !important;
-          }
-
-          .kova-widget__welcome-features {
-            gap: 12px !important;
-            margin-top: 24px !important;
-          }
-
-          .kova-widget__feature {
-            padding: 16px !important;
-            border-radius: 16px !important;
-            min-height: 56px !important;
-            touch-action: manipulation !important;
-          }
-          
-          .kova-widget__feature span {
-            font-size: 15px !important;
-            line-height: 1.4 !important;
-          }
-
-          .kova-feature-icon {
-            width: 24px !important;
-            height: 24px !important;
-            flex-shrink: 0 !important;
-          }
-
-          /* Input area mobile */
-          .kova-widget__input-container {
-            padding: 12px 16px !important;
-            padding-bottom: calc(12px + env(safe-area-inset-bottom)) !important;
-            background: rgba(255, 255, 255, 0.98) !important;
-            border-top: 1px solid rgba(0, 0, 0, 0.06) !important;
-          }
-
-          .kova-widget__input-wrapper {
-            gap: 10px !important;
-          }
-
+          /* Input */
           .kova-widget__input {
-            padding: 14px 18px !important;
-            font-size: 16px !important; /* Prevent iOS zoom */
-            border-radius: 24px !important;
-            background: rgba(0, 0, 0, 0.04) !important;
-            border: none !important;
+            font-size: 16px !important;
           }
 
-          .kova-widget__input:focus {
-            background: white !important;
-            border: 1px solid var(--kova-primary-dynamic, var(--kova-perfect)) !important;
+          .kova-widget__input-container {
+            padding: 12px !important;
           }
 
-          .kova-widget__send {
-            width: 48px !important;
-            height: 48px !important;
-            border-radius: 24px !important;
-            flex-shrink: 0 !important;
-            touch-action: manipulation !important;
-          }
-
-          .kova-widget__send svg {
-            width: 20px !important;
-            height: 20px !important;
-          }
-
-          /* Cart panel mobile - centered modal */
-          .kova-widget .kova-cart-panel,
-          html .kova-widget .kova-cart-panel,
+          /* Cart panel - centered */
           .kova-cart-panel {
             position: fixed !important;
             top: 50% !important;
             left: 50% !important;
             right: auto !important;
             bottom: auto !important;
-            transform: translate(-50%, -50%) scale(0.9) !important;
+            transform: translate(-50%, -50%) scale(0.95) !important;
             width: calc(100vw - 32px) !important;
-            max-width: 400px !important;
+            max-width: 380px !important;
             height: auto !important;
             max-height: 75vh !important;
             min-height: 300px !important;
@@ -3839,6 +3721,12 @@
           .kova-widget__button {
             width: ${Math.min(buttonSize, 64)}px !important;
             height: ${Math.min(buttonSize, 64)}px !important;
+          }
+          /* Ensure chat visibility on mobile */
+          .kova-widget--open .kova-widget__chat {
+            display: flex !important;
+            opacity: 1 !important;
+            visibility: visible !important;
           }
         }
       `;
