@@ -250,6 +250,9 @@ router.put(
 /**
  * Helper function to get analytics for a shop with optional date filtering
  * Optimized with parallel queries for better performance
+ *
+ * NOTE: chat_messages doesn't have shop_domain column.
+ * We need to get sessions from chat_sessions first, then fetch messages for those sessions.
  */
 async function getAnalyticsForShop(
   shopDomain: string,
@@ -257,18 +260,44 @@ async function getAnalyticsForShop(
 ) {
   const client = (supabaseService as any).serviceClient;
 
-  // Build all queries
-  const buildMessagesQuery = () => {
+  // First, get all session IDs for this shop from chat_sessions
+  let sessionsQuery = client
+    .from('chat_sessions')
+    .select('id, started_at')
+    .eq('shop_domain', shopDomain);
+
+  // Apply date filters to sessions
+  if (dateFilters.start) {
+    sessionsQuery = sessionsQuery.gte('started_at', dateFilters.start);
+  }
+  if (dateFilters.end) {
+    sessionsQuery = sessionsQuery.lte('started_at', dateFilters.end);
+  }
+
+  const { data: sessions, error: sessionsError } = await sessionsQuery;
+
+  if (sessionsError) {
+    logger.error('Error fetching sessions:', sessionsError);
+  }
+
+  const sessionIds = sessions?.map((s: any) => s.id) || [];
+
+  // Build messages query - only if we have sessions
+  const buildMessagesQuery = async () => {
+    if (sessionIds.length === 0) {
+      return { data: [], error: null };
+    }
+
     let query = client
       .from('chat_messages')
-      .select('session_id, created_at')
-      .eq('shop_domain', shopDomain);
+      .select('session_id, timestamp')
+      .in('session_id', sessionIds);
 
     if (dateFilters.start) {
-      query = query.gte('created_at', dateFilters.start);
+      query = query.gte('timestamp', dateFilters.start);
     }
     if (dateFilters.end) {
-      query = query.lte('created_at', dateFilters.end);
+      query = query.lte('timestamp', dateFilters.end);
     }
     return query;
   };
@@ -303,7 +332,7 @@ async function getAnalyticsForShop(
     return query;
   };
 
-  // Execute all queries in parallel for better performance
+  // Execute remaining queries in parallel for better performance
   const [
     messagesResult,
     productCountResult,
@@ -344,7 +373,7 @@ async function getAnalyticsForShop(
     const sessionsByDay: Record<string, Set<string>> = {};
 
     messagesData.forEach((msg: any) => {
-      const date = new Date(msg.created_at).toISOString().split('T')[0];
+      const date = new Date(msg.timestamp).toISOString().split('T')[0];
       if (!sessionsByDay[date]) {
         sessionsByDay[date] = new Set();
       }
