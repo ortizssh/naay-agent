@@ -377,4 +377,134 @@ async function getAnalyticsForShop(
   };
 }
 
+/**
+ * GET /api/shopify/embedded/conversations
+ * Get chat conversations for a shop with date filtering
+ */
+router.get(
+  '/conversations',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const shopDomain = req.query.shop as string;
+      const date = req.query.date as string | undefined; // Format: YYYY-MM-DD
+
+      if (!shopDomain) {
+        return res.status(400).json({
+          success: false,
+          error: 'Shop domain is required',
+        });
+      }
+
+      // Normalize shop domain
+      let normalizedShop = shopDomain.toLowerCase().trim();
+      if (!normalizedShop.includes('.myshopify.com')) {
+        normalizedShop = `${normalizedShop}.myshopify.com`;
+      }
+
+      logger.info(`Fetching conversations for: ${normalizedShop}`, { date });
+
+      // Build date filter
+      let startOfDay: string;
+      let endOfDay: string;
+
+      if (date) {
+        startOfDay = `${date}T00:00:00.000Z`;
+        endOfDay = `${date}T23:59:59.999Z`;
+      } else {
+        // Default to today
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        startOfDay = `${todayStr}T00:00:00.000Z`;
+        endOfDay = `${todayStr}T23:59:59.999Z`;
+      }
+
+      // Get unique sessions with their messages for the date
+      const { data: messages, error } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('chat_messages')
+        .select('session_id, role, content, timestamp')
+        .eq('shop_domain', normalizedShop)
+        .gte('timestamp', startOfDay)
+        .lte('timestamp', endOfDay)
+        .order('timestamp', { ascending: true });
+
+      if (error) {
+        logger.error('Error fetching conversations:', error);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to fetch conversations',
+        });
+      }
+
+      // Group messages by session
+      const sessionsMap = new Map<
+        string,
+        {
+          sessionId: string;
+          startedAt: string;
+          messages: Array<{
+            role: string;
+            content: string;
+            timestamp: string;
+          }>;
+        }
+      >();
+
+      for (const msg of messages || []) {
+        if (!sessionsMap.has(msg.session_id)) {
+          sessionsMap.set(msg.session_id, {
+            sessionId: msg.session_id,
+            startedAt: msg.timestamp,
+            messages: [],
+          });
+        }
+        sessionsMap.get(msg.session_id)!.messages.push({
+          role: msg.role,
+          content: msg.content,
+          timestamp: msg.timestamp,
+        });
+      }
+
+      // Convert to array and sort by start time (newest first)
+      const conversations = Array.from(sessionsMap.values()).sort(
+        (a, b) =>
+          new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime()
+      );
+
+      // Get available dates (for date picker)
+      const { data: availableDates } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('chat_messages')
+        .select('timestamp')
+        .eq('shop_domain', normalizedShop)
+        .order('timestamp', { ascending: false })
+        .limit(1000);
+
+      const uniqueDates = [
+        ...new Set(
+          (availableDates || []).map((d: any) =>
+            new Date(d.timestamp).toISOString().split('T')[0]
+          )
+        ),
+      ].slice(0, 30); // Last 30 days with data
+
+      return res.json({
+        success: true,
+        data: {
+          conversations,
+          totalConversations: conversations.length,
+          totalMessages: messages?.length || 0,
+          date: date || new Date().toISOString().split('T')[0],
+          availableDates: uniqueDates,
+        },
+      });
+    } catch (error) {
+      logger.error('Conversations endpoint error:', error);
+      next(error);
+    }
+  }
+);
+
 export default router;

@@ -5,8 +5,10 @@ import { logger } from '@/utils/logger';
 import { SupabaseService } from '@/services/supabase.service';
 import { tenantService } from '@/services/tenant.service';
 import { createTenantRateLimiter } from '@/middleware/tenant.middleware';
+import { SimpleConversionTracker } from '@/services/simple-conversion-tracker.service';
 
 const router = Router();
+const simpleConversionTracker = new SimpleConversionTracker();
 
 // Per-tenant rate limiter (100 requests per minute per shop)
 const tenantRateLimiter = createTenantRateLimiter({
@@ -136,6 +138,35 @@ const conversationStore: Record<
   string,
   Array<{ role: string; content: string }>
 > = {};
+
+/**
+ * Persist a chat message to the database for conversation history
+ * Uses the existing chat_messages table
+ */
+async function persistChatMessage(
+  sessionId: string,
+  shopDomain: string,
+  role: 'user' | 'assistant',
+  content: string
+): Promise<void> {
+  try {
+    const { error } = await (supabaseService as any).serviceClient
+      .from('chat_messages')
+      .insert({
+        session_id: sessionId,
+        shop_domain: shopDomain,
+        role,
+        content,
+        timestamp: new Date().toISOString(),
+      });
+
+    if (error) {
+      logger.warn('Failed to persist chat message:', { error, sessionId });
+    }
+  } catch (error) {
+    logger.warn('Error persisting chat message:', { error, sessionId });
+  }
+}
 
 // Function to search for products
 async function searchProducts(
@@ -267,6 +298,11 @@ router.post(
         role: 'user',
         content: message,
       });
+
+      // Persist user message to database (non-blocking)
+      if (shop) {
+        persistChatMessage(currentConversationId, shop, 'user', message).catch(() => {});
+      }
 
       // Keep conversation history manageable (last 20 messages)
       if (conversationStore[currentConversationId].length > 20) {
@@ -455,6 +491,7 @@ Cuando un usuario interactúe:
       if (completion.choices[0]?.message?.tool_calls) {
         const toolCalls = completion.choices[0].message.tool_calls;
         let toolResults: any[] = [];
+        let allRecommendedProducts: any[] = []; // Track all products for conversion tracking
 
         for (const toolCall of toolCalls) {
           if (toolCall.function.name === 'search_products') {
@@ -465,6 +502,7 @@ Cuando un usuario interactúe:
               args.limit,
               args.skin_type
             );
+            allRecommendedProducts.push(...products);
             toolResults.push({
               tool_call_id: toolCall.id,
               role: 'tool' as const,
@@ -478,12 +516,41 @@ Cuando un usuario interactúe:
               args.concerns,
               args.limit
             );
+            allRecommendedProducts.push(...products);
             toolResults.push({
               tool_call_id: toolCall.id,
               role: 'tool' as const,
               content: JSON.stringify(products),
             });
           }
+        }
+
+        // Track product recommendations for conversion attribution
+        if (allRecommendedProducts.length > 0 && shop) {
+          const now = new Date();
+          for (const product of allRecommendedProducts) {
+            if (product.id) {
+              try {
+                await simpleConversionTracker.trackRecommendation({
+                  sessionId: currentConversationId,
+                  shopDomain: shop,
+                  productId: product.id.toString(),
+                  productTitle: product.title || 'Unknown Product',
+                  recommendedAt: now,
+                });
+              } catch (trackError) {
+                logger.warn('Failed to track recommendation:', {
+                  productId: product.id,
+                  error: trackError,
+                });
+              }
+            }
+          }
+          logger.info('Product recommendations tracked for conversion', {
+            shop,
+            conversationId: currentConversationId,
+            productsTracked: allRecommendedProducts.length,
+          });
         }
 
         // If we have tool results, make another call to get the final response
@@ -510,6 +577,11 @@ Cuando un usuario interactúe:
         role: 'assistant',
         content: response,
       });
+
+      // Persist assistant response to database (non-blocking)
+      if (shop) {
+        persistChatMessage(currentConversationId, shop, 'assistant', response).catch(() => {});
+      }
 
       res.json({
         success: true,

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,20 +13,23 @@
             min-height: 100vh;
             color: white;
         }
+
         .container {
             max-width: 800px;
             margin: 0 auto;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             padding: 30px;
             border-radius: 15px;
             backdrop-filter: blur(10px);
         }
+
         .status {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
             padding: 15px;
             border-radius: 10px;
             margin: 15px 0;
         }
+
         button {
             background: #a59457;
             color: white;
@@ -36,25 +40,36 @@
             margin: 5px;
             font-size: 14px;
         }
+
         button:hover {
             background: #8d7f49;
         }
-        .success { color: #4ade80; }
-        .error { color: #f87171; }
-        .info { color: #60a5fa; }
+
+        .success {
+            color: #4ade80;
+        }
+
+        .error {
+            color: #f87171;
+        }
+
+        .info {
+            color: #60a5fa;
+        }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>🧪 Naay Widget Development Test</h1>
-        
+
         <div class="status">
             <h3>Widget Status</h3>
             <p>Widget Loaded: <span id="widget-status" class="info">Loading...</span></p>
             <p>API Connection: <span id="api-status" class="info">Testing...</span></p>
             <p>Chat Available: <span id="chat-status" class="info">Checking...</span></p>
         </div>
-        
+
         <div class="status">
             <h3>Test Actions</h3>
             <button onclick="testWidget()">🔍 Test Widget</button>
@@ -62,10 +77,11 @@
             <button onclick="testAPI()">🔌 Test API</button>
             <button onclick="clearConsole()">🧹 Clear Console</button>
         </div>
-        
+
         <div class="status">
             <h3>Console Output</h3>
-            <div id="console-output" style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px;">
+            <div id="console-output"
+                style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px;">
                 Console logs will appear here...<br>
             </div>
         </div>
@@ -76,35 +92,35 @@
         const originalLog = console.log;
         const originalError = console.error;
         const originalWarn = console.warn;
-        
+
         function logToDiv(message, type = 'log') {
             const timestamp = new Date().toLocaleTimeString();
             const color = type === 'error' ? '#f87171' : type === 'warn' ? '#fbbf24' : '#e5e5e5';
             consoleDiv.innerHTML += `<span style="color: ${color}">[${timestamp}] ${message}</span><br>`;
             consoleDiv.scrollTop = consoleDiv.scrollHeight;
         }
-        
-        console.log = function(...args) {
+
+        console.log = function (...args) {
             originalLog.apply(console, args);
             logToDiv(args.join(' '), 'log');
         };
-        
-        console.error = function(...args) {
+
+        console.error = function (...args) {
             originalError.apply(console, args);
             logToDiv(args.join(' '), 'error');
         };
-        
-        console.warn = function(...args) {
+
+        console.warn = function (...args) {
             originalWarn.apply(console, args);
             logToDiv(args.join(' '), 'warn');
         };
-        
+
         function updateStatus(elementId, message, className) {
             const element = document.getElementById(elementId);
             element.textContent = message;
             element.className = className;
         }
-        
+
         function testWidget() {
             console.log('🔍 Testing widget functionality...');
             if (window.kovaWidget) {
@@ -119,7 +135,7 @@
                 console.log('❌ Widget not found');
             }
         }
-        
+
         function openChat() {
             console.log('💬 Attempting to open chat...');
             if (window.kovaWidget && window.kovaWidget.openChat) {
@@ -132,7 +148,7 @@
                 console.log('❌ Chat function not available');
             }
         }
-        
+
         async function testAPI() {
             console.log('🔌 Testing API connection...');
             try {
@@ -145,15 +161,15 @@
                 console.log('❌ API connection failed:', error.message);
             }
         }
-        
+
         function clearConsole() {
             consoleDiv.innerHTML = 'Console cleared...<br>';
         }
-        
+
         // Initialize widget when page loads
-        window.addEventListener('DOMContentLoaded', function() {
+        window.addEventListener('DOMContentLoaded', function () {
             console.log('🚀 Page loaded, initializing widget test...');
-            
+
             // Set up Naay config
             window.KovaConfig = {
                 shopDomain: 'test-shop.myshopify.com',
@@ -163,16 +179,16 @@
                 greeting: '¡Hola! Soy tu asistente de Naay para testing.',
                 enabled: true
             };
-            
+
             // Load widget script
             const script = document.createElement('script');
-            script.src = '/widget/kova-widget.js?v=' + Date.now();
+            script.src = '/kova-widget.js?v=' + Date.now();
             script.async = true;
-            
-            script.onload = function() {
+
+            script.onload = function () {
                 console.log('✅ Widget script loaded');
                 updateStatus('widget-status', 'Script Loaded ✅', 'success');
-                
+
                 // Try to initialize widget
                 if (window.KovaWidget) {
                     try {
@@ -188,22 +204,23 @@
                     updateStatus('chat-status', 'Class Missing ❌', 'error');
                 }
             };
-            
-            script.onerror = function() {
+
+            script.onerror = function () {
                 console.error('❌ Failed to load widget script');
                 updateStatus('widget-status', 'Load Failed ❌', 'error');
             };
-            
+
             document.head.appendChild(script);
-            
+
             // Test API on load
             testAPI();
         });
-        
+
         // Auto-test widget every 5 seconds
         setInterval(testWidget, 5000);
-        
+
         console.log('🧪 Test page initialized');
     </script>
 </body>
+
 </html>

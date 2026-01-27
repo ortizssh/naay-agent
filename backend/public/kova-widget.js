@@ -2205,15 +2205,15 @@
             bottom: auto !important;
             transform: translate(-50%, -50%) scale(0.95) !important;
             width: calc(100vw - 24px) !important;
-            height: calc(100vh - 48px) !important;
             height: calc(100dvh - 48px) !important;
             max-width: 400px !important;
-            max-height: 85vh !important;
+            max-height: 85dvh !important;
             border-radius: 20px !important;
             z-index: 999999 !important;
             margin: 0 !important;
             opacity: 0 !important;
             visibility: hidden !important;
+            display: none !important;
           }
 
           /* CRITICAL: Ensure chat is visible and centered when open */
@@ -2252,7 +2252,7 @@
             padding: 12px !important;
           }
 
-          /* Cart panel - centered */
+          /* Cart panel - centered on mobile */
           .kova-cart-panel {
             position: fixed !important;
             top: 50% !important;
@@ -2263,11 +2263,12 @@
             width: calc(100vw - 32px) !important;
             max-width: 380px !important;
             height: auto !important;
-            max-height: 75vh !important;
+            max-height: 75dvh !important;
             min-height: 300px !important;
             opacity: 0 !important;
             visibility: hidden !important;
             pointer-events: none !important;
+            display: none !important;
             z-index: 1000001 !important;
             transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease, visibility 0.3s !important;
             background: white !important;
@@ -2280,9 +2281,11 @@
             overflow: hidden !important;
           }
 
+          /* Cart panel visible when open - IMPORTANT: Keep centering transform */
           .kova-widget .kova-cart-panel--open,
           html .kova-widget .kova-cart-panel--open,
           .kova-cart-panel--open {
+            display: flex !important;
             transform: translate(-50%, -50%) scale(1) !important;
             opacity: 1 !important;
             visibility: visible !important;
@@ -2459,10 +2462,11 @@
         }
 
         @media (max-width: 360px) {
+          /* Small mobile - keep centered but adjust width */
           .kova-widget__chat {
-            width: calc(100vw - 24px) !important;
-            left: 12px !important;
+            width: calc(100vw - 16px) !important;
             max-width: 360px !important;
+            /* Keep centered - don't use left/right positioning */
           }
           
           .kova-widget__promotional-message {
@@ -3721,7 +3725,7 @@
             width: calc(100vw - 24px) !important;
             height: calc(100dvh - 48px) !important;
             max-width: 400px !important;
-            max-height: 85vh !important;
+            max-height: 85dvh !important;
           }
           .kova-widget__button {
             width: ${Math.min(buttonSize, 64)}px !important;
@@ -3733,6 +3737,14 @@
             opacity: 1 !important;
             visibility: visible !important;
             transform: translate(-50%, -50%) scale(1) !important;
+          }
+          /* Cart panel mobile centering */
+          .kova-cart-panel--open {
+            display: flex !important;
+            transform: translate(-50%, -50%) scale(1) !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
           }
         }
       `;
@@ -3774,15 +3786,17 @@
           const chatContainer = this.container.querySelector('.kova-widget__chat');
 
           if (chatContainer) {
-            // Adjust height to fit visible viewport
-            // Subtract header (88px) and some padding
-            const availableHeight = viewport.height;
-            const keyboardVisible = viewport.height < window.innerHeight;
+            const keyboardVisible = viewport.height < window.innerHeight * 0.85;
 
             if (keyboardVisible) {
-              // Keyboard is open
-              chatContainer.style.height = `${availableHeight - 20}px`;
-              chatContainer.style.bottom = `${window.innerHeight - viewport.height - viewport.offsetTop + 10}px`;
+              // Keyboard is open - adjust height and keep centered
+              const availableHeight = viewport.height - 24;
+              chatContainer.style.height = `${availableHeight}px`;
+              chatContainer.style.maxHeight = `${availableHeight}px`;
+              // Keep centered but shift up slightly for better visibility
+              const keyboardHeight = window.innerHeight - viewport.height;
+              const offsetY = Math.round(keyboardHeight / 2);
+              chatContainer.style.transform = `translate(-50%, calc(-50% - ${offsetY}px)) scale(1)`;
 
               // Ensure input is visible
               setTimeout(() => {
@@ -3791,7 +3805,8 @@
             } else {
               // Keyboard is closed - reset to CSS defaults
               chatContainer.style.height = '';
-              chatContainer.style.bottom = '';
+              chatContainer.style.maxHeight = '';
+              chatContainer.style.transform = '';
             }
           }
         };
@@ -4221,11 +4236,13 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           return 'Cart panel not found in DOM';
         }
 
-        // Force visibility
-        widget.cartPanel.style.opacity = '1';
-        widget.cartPanel.style.visibility = 'visible';
-        widget.cartPanel.style.pointerEvents = 'auto';
-        widget.cartPanel.style.transform = 'translateX(0) scale(1)';
+        // Clear any conflicting inline styles
+        widget.cartPanel.style.cssText = '';
+
+        // Add cart-open class to widget for backdrop on mobile
+        widget.container.classList.add('kova-widget--cart-open');
+
+        // Add open class - let CSS handle all positioning including transforms
         widget.cartPanel.classList.add('kova-cart-panel--open');
         widget.cartVisible = true;
 
@@ -4233,7 +4250,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         widget.updateCartDisplay();
 
         console.log('✅ Cart panel forced to show');
-        return 'Cart panel forced visible - check the left side of the chat';
+        return 'Cart panel forced visible - check the screen (centered on mobile)';
       }.bind(this);
 
       console.log('🧪 Debug functions available:');
@@ -5030,7 +5047,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       try {
         const storageKey = `kova_session_${this.config.shopDomain}`;
         let sessionId = localStorage.getItem(storageKey);
-        
+
         if (!sessionId) {
           // Generate unique session ID combining timestamp, random, and browser fingerprint
           const timestamp = Date.now();
@@ -5039,21 +5056,21 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           const screenSize = `${window.screen.width}x${window.screen.height}`;
           const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
           const language = navigator.language || 'unknown';
-          
+
           // Create a fingerprint hash (simple version)
           const fingerprint = btoa(`${userAgent}_${screenSize}_${timezone}_${language}`).substring(0, 16).replace(/[^a-zA-Z0-9]/g, '');
-          
+
           sessionId = `kova_${timestamp}_${random}_${fingerprint}`;
-          
+
           localStorage.setItem(storageKey, sessionId);
           console.log('🆔 Generated new session ID:', sessionId);
-          
+
           // Optionally try to enhance session with IP (non-blocking)
           this.enhanceSessionWithIP(sessionId);
         } else {
           console.log('🆔 Retrieved existing session ID:', sessionId);
         }
-        
+
         return sessionId;
       } catch (error) {
         // Fallback if localStorage is not available
@@ -5072,12 +5089,12 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           method: 'GET',
           timeout: 2000 // Quick timeout to not delay the UI
         });
-        
+
         if (ipResponse.ok) {
           const ipData = await ipResponse.json();
           const ipHash = btoa(ipData.ip).substring(0, 8).replace(/[^a-zA-Z0-9]/g, '');
           console.log('🌐 Enhanced session with IP info (hashed):', ipHash);
-          
+
           // Store enhanced session info for analytics (optional)
           const storageKey = `kova_session_enhanced_${this.config.shopDomain}`;
           localStorage.setItem(storageKey, JSON.stringify({
@@ -5364,7 +5381,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       // This allows customers to add the same product multiple times
       // Generate unique cart item ID to allow multiple instances of same product
       const uniqueCartItemId = `${product.id}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-      
+
       // Always add as new item - no quantity merging
       this.cartData.items.push({
         id: product.id, // Keep original product ID for reference
@@ -5696,13 +5713,13 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
       this.cartData.items.forEach((item, index) => {
         console.log(`🎨 Rendering item ${index + 1}:`, item);
-        
+
         // FIXED: Ensure every item has a cartItemId
         if (!item.cartItemId) {
           item.cartItemId = `fallback_${item.id}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
           console.log('⚠️ Added fallback cartItemId to item:', item.cartItemId);
         }
-        
+
         const itemElement = document.createElement('div');
         itemElement.className = 'kova-cart-panel__item';
 
@@ -5786,20 +5803,20 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             e.preventDefault();
             const cartItemId = decreaseBtn.getAttribute('data-cart-item-id');
             const quantityValue = itemElement.querySelector('.kova-cart-panel__quantity-value');
-            
+
             // Visual feedback
             decreaseBtn.style.transform = 'scale(0.95)';
             setTimeout(() => {
               decreaseBtn.style.transform = 'scale(1)';
             }, 150);
-            
+
             if (quantityValue) {
               quantityValue.classList.add('kova-cart-panel__quantity-value--updating');
               setTimeout(() => {
                 quantityValue.classList.remove('kova-cart-panel__quantity-value--updating');
               }, 200);
             }
-            
+
             this.updateQuantityByItemId(cartItemId, item.quantity - 1);
           });
         }
@@ -5809,20 +5826,20 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             e.preventDefault();
             const cartItemId = increaseBtn.getAttribute('data-cart-item-id');
             const quantityValue = itemElement.querySelector('.kova-cart-panel__quantity-value');
-            
+
             // Visual feedback
             increaseBtn.style.transform = 'scale(0.95)';
             setTimeout(() => {
               increaseBtn.style.transform = 'scale(1)';
             }, 150);
-            
+
             if (quantityValue) {
               quantityValue.classList.add('kova-cart-panel__quantity-value--updating');
               setTimeout(() => {
                 quantityValue.classList.remove('kova-cart-panel__quantity-value--updating');
               }, 200);
             }
-            
+
             this.updateQuantityByItemId(cartItemId, item.quantity + 1);
           });
         }
@@ -5859,7 +5876,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
     showCartLoading() {
       console.log('⏳ Showing cart loading state');
-      
+
       if (!this.cartItems) {
         console.warn('⚠️ Cart items container not found');
         return;
@@ -6313,17 +6330,17 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
   // GLOBAL EMERGENCY FUNCTIONS - Available before widget initialization
   // Quick cart position check
-  window.KOVA_WHERE_IS_CART = function() {
+  window.KOVA_WHERE_IS_CART = function () {
     const cartPanel = document.querySelector('.kova-cart-panel');
     if (!cartPanel) {
       console.log('❌ NO CART PANEL FOUND');
       return 'No cart panel found';
     }
-    
+
     const rect = cartPanel.getBoundingClientRect();
     const computed = window.getComputedStyle(cartPanel);
     const viewport = { width: window.innerWidth, height: window.innerHeight };
-    
+
     console.log('🎯 CART POSITION DEBUG:');
     console.log('   Position:', computed.position);
     console.log('   Top:', computed.top, 'Left:', computed.left);
@@ -6332,14 +6349,14 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     console.log('   Bounding Rect:', rect);
     console.log('   Viewport:', viewport);
     console.log('   Visible?', rect.left >= 0 && rect.top >= 0 && rect.right <= viewport.width && rect.bottom <= viewport.height);
-    
+
     // Simple visibility check
     const isVisible = rect.width > 0 && rect.height > 0;
     const isOnScreen = rect.left < viewport.width && rect.right > 0 && rect.top < viewport.height && rect.bottom > 0;
-    
+
     console.log('   Has dimensions?', isVisible);
     console.log('   On screen?', isOnScreen);
-    
+
     return {
       found: true,
       position: { top: rect.top, left: rect.left, right: rect.right, bottom: rect.bottom },

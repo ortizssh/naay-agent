@@ -53,7 +53,27 @@ interface WidgetConfig {
   widget_brand_name: string;
 }
 
-type TabType = 'dashboard' | 'analytics' | 'widget';
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+}
+
+interface ChatConversation {
+  sessionId: string;
+  startedAt: string;
+  messages: ChatMessage[];
+}
+
+interface ConversationsData {
+  conversations: ChatConversation[];
+  totalConversations: number;
+  totalMessages: number;
+  date: string;
+  availableDates: string[];
+}
+
+type TabType = 'dashboard' | 'analytics' | 'widget' | 'conversations';
 type DatePreset = 'today' | 'yesterday' | '3d' | '7d' | '14d' | '30d' | 'thisWeek' | 'thisMonth' | 'custom';
 
 // Helper functions for date calculations
@@ -138,6 +158,12 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [widgetTab, setWidgetTab] = useState<'appearance' | 'content' | 'features'>('appearance');
+
+  // Conversations state
+  const [conversationsData, setConversationsData] = useState<ConversationsData | null>(null);
+  const [conversationsDate, setConversationsDate] = useState(getDateString(new Date()));
+  const [conversationsLoading, setConversationsLoading] = useState(false);
+  const [expandedConversation, setExpandedConversation] = useState<string | null>(null);
 
   // Date filter state - optimized
   const [selectedPreset, setSelectedPreset] = useState<DatePreset>('7d');
@@ -255,6 +281,35 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
       loadWidgetConfig();
     }
   }, [currentTab, shop]);
+
+  // Conversations load
+  useEffect(() => {
+    if (currentTab === 'conversations') {
+      loadConversations(conversationsDate);
+    }
+  }, [currentTab, conversationsDate, shop]);
+
+  // Load conversations function
+  const loadConversations = async (date: string) => {
+    try {
+      setConversationsLoading(true);
+      const apiUrl = getApiUrl();
+      const res = await fetch(
+        `${apiUrl}/api/shopify/embedded/conversations?shop=${encodeURIComponent(shop)}&date=${date}`
+      );
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setConversationsData(data.data);
+        }
+      }
+    } catch (err) {
+      console.error('Error loading conversations:', err);
+    } finally {
+      setConversationsLoading(false);
+    }
+  };
 
   // Cleanup debounce timer on unmount
   useEffect(() => {
@@ -475,6 +530,15 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
           Widget
+        </button>
+        <button
+          className={`embedded-tab ${currentTab === 'conversations' ? 'active' : ''}`}
+          onClick={() => setCurrentTab('conversations')}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+          </svg>
+          Conversaciones
         </button>
       </nav>
 
@@ -1285,6 +1349,234 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                 </>
               )}
             </div>
+          </>
+        )}
+
+        {/* Conversations Tab */}
+        {currentTab === 'conversations' && (
+          <>
+            {/* Date Selector */}
+            <div className="card" style={{ marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: '500' }}>
+                    Fecha
+                  </label>
+                  <input
+                    type="date"
+                    value={conversationsDate}
+                    max={getDateString(new Date())}
+                    onChange={e => setConversationsDate(e.target.value)}
+                    disabled={conversationsLoading}
+                    style={{
+                      padding: '0.5rem 0.75rem',
+                      borderRadius: '8px',
+                      border: '1px solid var(--color-primary)',
+                      background: 'var(--color-bg)',
+                      color: 'var(--color-text)',
+                      fontSize: '0.9rem',
+                      cursor: conversationsLoading ? 'not-allowed' : 'pointer',
+                    }}
+                  />
+                </div>
+
+                {/* Quick date buttons */}
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  {[
+                    { label: 'Hoy', days: 0 },
+                    { label: 'Ayer', days: 1 },
+                    { label: 'Hace 2 dias', days: 2 },
+                  ].map(({ label, days }) => {
+                    const d = new Date();
+                    d.setDate(d.getDate() - days);
+                    const dateStr = getDateString(d);
+                    return (
+                      <button
+                        key={days}
+                        onClick={() => setConversationsDate(dateStr)}
+                        disabled={conversationsLoading}
+                        style={{
+                          padding: '0.4rem 0.7rem',
+                          fontSize: '0.8rem',
+                          borderRadius: '6px',
+                          border: conversationsDate === dateStr
+                            ? '1px solid var(--color-primary)'
+                            : '1px solid var(--color-border)',
+                          background: conversationsDate === dateStr
+                            ? 'var(--color-primary)'
+                            : 'var(--color-bg)',
+                          color: conversationsDate === dateStr
+                            ? 'white'
+                            : 'var(--color-text)',
+                          cursor: conversationsLoading ? 'not-allowed' : 'pointer',
+                          fontWeight: conversationsDate === dateStr ? '600' : '400',
+                        }}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Stats */}
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: '1.5rem', fontSize: '0.85rem' }}>
+                  <div>
+                    <span style={{ color: 'var(--color-text-muted)' }}>Conversaciones: </span>
+                    <strong>{conversationsData?.totalConversations || 0}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--color-text-muted)' }}>Mensajes: </span>
+                    <strong>{conversationsData?.totalMessages || 0}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Loading State */}
+            {conversationsLoading && (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+                <div style={{
+                  width: '30px',
+                  height: '30px',
+                  border: '3px solid var(--color-border)',
+                  borderTopColor: 'var(--color-primary)',
+                  borderRadius: '50%',
+                  animation: 'spin 0.8s linear infinite',
+                }} />
+              </div>
+            )}
+
+            {/* Conversations List */}
+            {!conversationsLoading && conversationsData && (
+              <>
+                {conversationsData.conversations.length === 0 ? (
+                  <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" strokeWidth="1.5" style={{ margin: '0 auto 1rem' }}>
+                      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                    </svg>
+                    <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.1rem', fontWeight: '600' }}>
+                      No hay conversaciones
+                    </h3>
+                    <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
+                      No se encontraron conversaciones para el {new Date(conversationsDate + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {conversationsData.conversations.map((conv) => (
+                      <div
+                        key={conv.sessionId}
+                        className="card"
+                        style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
+                        onClick={() => setExpandedConversation(
+                          expandedConversation === conv.sessionId ? null : conv.sessionId
+                        )}
+                      >
+                        {/* Conversation Header */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{
+                              width: '40px',
+                              height: '40px',
+                              borderRadius: '50%',
+                              background: 'var(--color-primary)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: 'white',
+                              fontWeight: '600',
+                              fontSize: '0.9rem',
+                            }}>
+                              {conv.messages.filter(m => m.role === 'user').length}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: '600', fontSize: '0.95rem' }}>
+                                Conversacion #{conv.sessionId.slice(-6)}
+                              </div>
+                              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                                {new Date(conv.startedAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                                {' - '}
+                                {conv.messages.length} mensajes
+                              </div>
+                            </div>
+                          </div>
+                          <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            style={{
+                              transform: expandedConversation === conv.sessionId ? 'rotate(180deg)' : 'rotate(0deg)',
+                              transition: 'transform 0.2s ease',
+                            }}
+                          >
+                            <polyline points="6 9 12 15 18 9" />
+                          </svg>
+                        </div>
+
+                        {/* Conversation Messages (Expanded) */}
+                        {expandedConversation === conv.sessionId && (
+                          <div style={{
+                            marginTop: '1rem',
+                            paddingTop: '1rem',
+                            borderTop: '1px solid var(--color-border)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.75rem',
+                          }}>
+                            {conv.messages.map((msg, idx) => (
+                              <div
+                                key={idx}
+                                style={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                                }}
+                              >
+                                <div style={{
+                                  maxWidth: '85%',
+                                  padding: '0.75rem 1rem',
+                                  borderRadius: msg.role === 'user'
+                                    ? '16px 16px 4px 16px'
+                                    : '16px 16px 16px 4px',
+                                  background: msg.role === 'user'
+                                    ? 'var(--color-primary)'
+                                    : 'var(--color-bg)',
+                                  color: msg.role === 'user'
+                                    ? 'white'
+                                    : 'var(--color-text)',
+                                  fontSize: '0.9rem',
+                                  lineHeight: '1.4',
+                                  boxShadow: msg.role === 'user'
+                                    ? 'none'
+                                    : '0 1px 3px rgba(0,0,0,0.1)',
+                                }}>
+                                  {msg.content}
+                                </div>
+                                <div style={{
+                                  fontSize: '0.7rem',
+                                  color: 'var(--color-text-muted)',
+                                  marginTop: '0.25rem',
+                                  padding: '0 0.5rem',
+                                }}>
+                                  {new Date(msg.timestamp).toLocaleTimeString('es-ES', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit',
+                                  })}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
           </>
         )}
       </div>
