@@ -84,7 +84,10 @@ router.get(
         };
 
         // Get analytics from chat_messages
-        const analytics = await getAnalyticsForShop(normalizedShop, dateFilters);
+        const analytics = await getAnalyticsForShop(
+          normalizedShop,
+          dateFilters
+        );
 
         return res.json({
           success: true,
@@ -157,7 +160,8 @@ router.put(
       // Build update data
       const updateData: any = {};
 
-      if (config.widgetPosition) updateData.widget_position = config.widgetPosition;
+      if (config.widgetPosition)
+        updateData.widget_position = config.widgetPosition;
       if (config.widgetColor) updateData.widget_color = config.widgetColor;
       if (config.welcomeMessage !== undefined)
         updateData.welcome_message = config.welcomeMessage;
