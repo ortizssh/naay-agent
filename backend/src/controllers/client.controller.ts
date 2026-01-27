@@ -449,8 +449,7 @@ router.put(
       if (widgetAccentColor) updateData.widget_accent_color = widgetAccentColor;
       if (widgetButtonSize !== undefined)
         updateData.widget_button_size = widgetButtonSize;
-      if (widgetButtonStyle)
-        updateData.widget_button_style = widgetButtonStyle;
+      if (widgetButtonStyle) updateData.widget_button_style = widgetButtonStyle;
       if (widgetShowPulse !== undefined)
         updateData.widget_show_pulse = widgetShowPulse;
       if (widgetChatWidth !== undefined)
@@ -805,7 +804,7 @@ router.get(
 
         Object.keys(sessionsByDay)
           .sort()
-          .forEach((date) => {
+          .forEach(date => {
             conversationsByDay.push({
               date,
               count: sessionsByDay[date].size,

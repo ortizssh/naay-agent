@@ -174,9 +174,11 @@ router.get(
           data: {
             enabled: clientStore.widget_enabled ?? true,
             position: clientStore.widget_position || defaultConfig.position,
-            primaryColor: clientStore.widget_color || defaultConfig.primaryColor,
+            primaryColor:
+              clientStore.widget_color || defaultConfig.primaryColor,
             secondaryColor:
-              clientStore.widget_secondary_color || defaultConfig.secondaryColor,
+              clientStore.widget_secondary_color ||
+              defaultConfig.secondaryColor,
             accentColor:
               clientStore.widget_accent_color || defaultConfig.accentColor,
             greeting: clientStore.welcome_message || defaultConfig.greeting,

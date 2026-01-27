@@ -133,8 +133,10 @@ router.get('/config', async (req: Request, res: Response) => {
           secondaryColor: clientStore.widget_secondary_color || '#212120',
           accentColor: clientStore.widget_accent_color || '#cf795e',
           greeting: clientStore.welcome_message || '',
-          subtitle: clientStore.widget_subtitle || 'Asistente de compras con IA',
-          placeholder: clientStore.widget_placeholder || 'Escribe tu mensaje...',
+          subtitle:
+            clientStore.widget_subtitle || 'Asistente de compras con IA',
+          placeholder:
+            clientStore.widget_placeholder || 'Escribe tu mensaje...',
           avatar: clientStore.widget_avatar || '🌿',
           brandName: clientStore.widget_brand_name || 'Kova',
           buttonSize: clientStore.widget_button_size || 72,
