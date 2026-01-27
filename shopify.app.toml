@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 name = "kova-agent"
-client_id = "fe1ae1a565f32a2ab13a6c4a9e27718c"
+client_id = "0172a0c3012d86608e6e7b6234448a03"
 application_url = "https://naay-agent-app1763504937.azurewebsites.net"
 embedded = true
 
