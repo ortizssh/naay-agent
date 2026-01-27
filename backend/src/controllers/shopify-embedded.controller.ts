@@ -16,6 +16,8 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const shopDomain = req.query.shop as string;
+      const startDate = req.query.startDate as string | undefined;
+      const endDate = req.query.endDate as string | undefined;
 
       if (!shopDomain) {
         return res.status(400).json({
@@ -30,7 +32,18 @@ router.get(
         normalizedShop = `${normalizedShop}.myshopify.com`;
       }
 
-      logger.info(`Embedded analytics request for: ${normalizedShop}`);
+      logger.info(`Embedded analytics request for: ${normalizedShop}`, {
+        startDate,
+        endDate,
+      });
+
+      // Build date filters
+      const dateFilters = {
+        start: startDate ? new Date(startDate).toISOString() : null,
+        end: endDate
+          ? new Date(new Date(endDate).setHours(23, 59, 59, 999)).toISOString()
+          : null,
+      };
 
       // Verify the shop exists in our system (security check)
       const { data: store, error: storeError } = await (
@@ -71,7 +84,7 @@ router.get(
         };
 
         // Get analytics from chat_messages
-        const analytics = await getAnalyticsForShop(normalizedShop);
+        const analytics = await getAnalyticsForShop(normalizedShop, dateFilters);
 
         return res.json({
           success: true,
@@ -100,7 +113,7 @@ router.get(
       };
 
       // Get analytics
-      const analytics = await getAnalyticsForShop(normalizedShop);
+      const analytics = await getAnalyticsForShop(normalizedShop, dateFilters);
 
       return res.json({
         success: true,
@@ -117,47 +130,212 @@ router.get(
 );
 
 /**
- * Helper function to get analytics for a shop
+ * PUT /api/shopify/embedded/widget/config
+ * Update widget configuration from embedded Shopify context
  */
-async function getAnalyticsForShop(shopDomain: string) {
-  // Get unique sessions (conversations)
-  const { data: sessionsData } = await (supabaseService as any).serviceClient
+router.put(
+  '/widget/config',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop, config } = req.body;
+
+      if (!shop) {
+        return res.status(400).json({
+          success: false,
+          error: 'Shop domain is required',
+        });
+      }
+
+      // Normalize shop domain
+      let normalizedShop = shop.toLowerCase().trim();
+      if (!normalizedShop.includes('.myshopify.com')) {
+        normalizedShop = `${normalizedShop}.myshopify.com`;
+      }
+
+      logger.info(`Embedded widget config update for: ${normalizedShop}`);
+
+      // Build update data
+      const updateData: any = {};
+
+      if (config.widgetPosition) updateData.widget_position = config.widgetPosition;
+      if (config.widgetColor) updateData.widget_color = config.widgetColor;
+      if (config.welcomeMessage !== undefined)
+        updateData.welcome_message = config.welcomeMessage;
+      if (config.widgetEnabled !== undefined)
+        updateData.widget_enabled = config.widgetEnabled;
+      if (config.widgetSecondaryColor)
+        updateData.widget_secondary_color = config.widgetSecondaryColor;
+      if (config.widgetAccentColor)
+        updateData.widget_accent_color = config.widgetAccentColor;
+      if (config.widgetButtonSize !== undefined)
+        updateData.widget_button_size = config.widgetButtonSize;
+      if (config.widgetButtonStyle)
+        updateData.widget_button_style = config.widgetButtonStyle;
+      if (config.widgetShowPulse !== undefined)
+        updateData.widget_show_pulse = config.widgetShowPulse;
+      if (config.widgetChatWidth !== undefined)
+        updateData.widget_chat_width = config.widgetChatWidth;
+      if (config.widgetChatHeight !== undefined)
+        updateData.widget_chat_height = config.widgetChatHeight;
+      if (config.widgetSubtitle !== undefined)
+        updateData.widget_subtitle = config.widgetSubtitle;
+      if (config.widgetPlaceholder !== undefined)
+        updateData.widget_placeholder = config.widgetPlaceholder;
+      if (config.widgetAvatar !== undefined)
+        updateData.widget_avatar = config.widgetAvatar;
+      if (config.widgetShowPromoMessage !== undefined)
+        updateData.widget_show_promo_message = config.widgetShowPromoMessage;
+      if (config.widgetShowCart !== undefined)
+        updateData.widget_show_cart = config.widgetShowCart;
+      if (config.widgetEnableAnimations !== undefined)
+        updateData.widget_enable_animations = config.widgetEnableAnimations;
+      if (config.widgetTheme) updateData.widget_theme = config.widgetTheme;
+      if (config.widgetBrandName !== undefined)
+        updateData.widget_brand_name = config.widgetBrandName;
+
+      // Try to update client_stores first
+      const { data: clientStore, error: clientError } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('client_stores')
+        .update(updateData)
+        .eq('shop_domain', normalizedShop)
+        .select()
+        .single();
+
+      if (!clientError && clientStore) {
+        return res.json({
+          success: true,
+          data: clientStore,
+        });
+      }
+
+      // If no client_store, update stores table (basic fields only)
+      const basicUpdateData: any = {};
+      if (config.widgetEnabled !== undefined)
+        basicUpdateData.widget_enabled = config.widgetEnabled;
+
+      const { data: store, error: storeError } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('stores')
+        .update(basicUpdateData)
+        .eq('shop_domain', normalizedShop)
+        .select()
+        .single();
+
+      if (storeError) {
+        logger.error('Error updating widget config:', storeError);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to update widget configuration',
+        });
+      }
+
+      return res.json({
+        success: true,
+        data: store,
+      });
+    } catch (error) {
+      logger.error('Embedded widget config update error:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * Helper function to get analytics for a shop with optional date filtering
+ */
+async function getAnalyticsForShop(
+  shopDomain: string,
+  dateFilters: { start: string | null; end: string | null }
+) {
+  // Get chat messages with optional date filter
+  let messagesQuery = (supabaseService as any).serviceClient
     .from('chat_messages')
-    .select('session_id')
+    .select('session_id, created_at')
     .eq('shop_domain', shopDomain);
 
+  if (dateFilters.start) {
+    messagesQuery = messagesQuery.gte('created_at', dateFilters.start);
+  }
+  if (dateFilters.end) {
+    messagesQuery = messagesQuery.lte('created_at', dateFilters.end);
+  }
+
+  const { data: messagesData } = await messagesQuery;
+
+  // Calculate unique sessions (conversations)
   const uniqueSessions = new Set(
-    sessionsData?.map((m: any) => m.session_id) || []
+    messagesData?.map((m: any) => m.session_id) || []
   );
   const conversationCount = uniqueSessions.size;
+  const messageCount = messagesData?.length || 0;
 
-  // Get total messages
-  const { count: messageCount } = await (supabaseService as any).serviceClient
-    .from('chat_messages')
-    .select('*', { count: 'exact', head: true })
-    .eq('shop_domain', shopDomain);
+  // Calculate conversations by day for chart
+  const conversationsByDay: { date: string; count: number }[] = [];
+  if (messagesData && messagesData.length > 0) {
+    const sessionsByDay: Record<string, Set<string>> = {};
 
-  // Get products count
+    messagesData.forEach((msg: any) => {
+      const date = new Date(msg.created_at).toISOString().split('T')[0];
+      if (!sessionsByDay[date]) {
+        sessionsByDay[date] = new Set();
+      }
+      sessionsByDay[date].add(msg.session_id);
+    });
+
+    Object.keys(sessionsByDay)
+      .sort()
+      .forEach(date => {
+        conversationsByDay.push({
+          date,
+          count: sessionsByDay[date].size,
+        });
+      });
+  }
+
+  // Get products count (not filtered by date)
   const { count: productCount } = await (supabaseService as any).serviceClient
     .from('products')
     .select('*', { count: 'exact', head: true })
     .eq('shop_domain', shopDomain);
 
-  // Get recommendations count
-  const { count: recommendationCount } = await (
-    supabaseService as any
-  ).serviceClient
+  // Get recommendations count with date filter
+  let recommendationsQuery = (supabaseService as any).serviceClient
     .from('simple_recommendations')
     .select('*', { count: 'exact', head: true })
     .eq('shop_domain', shopDomain);
 
-  // Get conversions count
-  const { count: conversionCount } = await (
-    supabaseService as any
-  ).serviceClient
+  if (dateFilters.start) {
+    recommendationsQuery = recommendationsQuery.gte(
+      'created_at',
+      dateFilters.start
+    );
+  }
+  if (dateFilters.end) {
+    recommendationsQuery = recommendationsQuery.lte(
+      'created_at',
+      dateFilters.end
+    );
+  }
+
+  const { count: recommendationCount } = await recommendationsQuery;
+
+  // Get conversions count with date filter
+  let conversionsQuery = (supabaseService as any).serviceClient
     .from('simple_conversions')
     .select('*', { count: 'exact', head: true })
     .eq('shop_domain', shopDomain);
+
+  if (dateFilters.start) {
+    conversionsQuery = conversionsQuery.gte('created_at', dateFilters.start);
+  }
+  if (dateFilters.end) {
+    conversionsQuery = conversionsQuery.lte('created_at', dateFilters.end);
+  }
+
+  const { count: conversionCount } = await conversionsQuery;
 
   // Get store dates
   const { data: storeInfo } = await (supabaseService as any).serviceClient
@@ -168,12 +346,13 @@ async function getAnalyticsForShop(shopDomain: string) {
 
   return {
     conversations: conversationCount,
-    messages: messageCount || 0,
+    messages: messageCount,
     products: productCount || 0,
     recommendations: recommendationCount || 0,
     conversions: conversionCount || 0,
     lastSync: storeInfo?.updated_at || null,
     storeCreated: storeInfo?.installed_at || null,
+    conversationsByDay,
   };
 }
 

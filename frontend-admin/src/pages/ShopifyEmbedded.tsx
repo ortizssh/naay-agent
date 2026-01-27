@@ -1,9 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import logoKova from '../img/logo-kova.png';
 
 interface ShopifyEmbeddedProps {
   shop: string;
   host: string;
+}
+
+interface ConversationByDay {
+  date: string;
+  count: number;
 }
 
 interface AnalyticsData {
@@ -14,6 +19,7 @@ interface AnalyticsData {
   conversions: number;
   lastSync: string | null;
   storeCreated: string | null;
+  conversationsByDay?: ConversationByDay[];
 }
 
 interface StoreData {
@@ -25,14 +31,66 @@ interface StoreData {
   created_at: string | null;
 }
 
+interface WidgetConfig {
+  widget_position: string;
+  widget_color: string;
+  welcome_message: string;
+  widget_enabled: boolean;
+  widget_secondary_color: string;
+  widget_accent_color: string;
+  widget_button_size: number;
+  widget_button_style: string;
+  widget_show_pulse: boolean;
+  widget_chat_width: number;
+  widget_chat_height: number;
+  widget_subtitle: string;
+  widget_placeholder: string;
+  widget_avatar: string;
+  widget_show_promo_message: boolean;
+  widget_show_cart: boolean;
+  widget_enable_animations: boolean;
+  widget_theme: string;
+  widget_brand_name: string;
+}
+
 type TabType = 'dashboard' | 'analytics' | 'widget';
 
 function ShopifyEmbedded({ shop, host }: ShopifyEmbeddedProps) {
   const [currentTab, setCurrentTab] = useState<TabType>('dashboard');
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [store, setStore] = useState<StoreData | null>(null);
+  const [widgetConfig, setWidgetConfig] = useState<WidgetConfig>({
+    widget_position: 'bottom-right',
+    widget_color: '#a59457',
+    welcome_message: '',
+    widget_enabled: true,
+    widget_secondary_color: '#212120',
+    widget_accent_color: '#cf795e',
+    widget_button_size: 72,
+    widget_button_style: 'circle',
+    widget_show_pulse: true,
+    widget_chat_width: 420,
+    widget_chat_height: 600,
+    widget_subtitle: 'Asistente de compras con IA',
+    widget_placeholder: 'Escribe tu mensaje...',
+    widget_avatar: '🌿',
+    widget_show_promo_message: true,
+    widget_show_cart: true,
+    widget_enable_animations: true,
+    widget_theme: 'light',
+    widget_brand_name: 'Kova',
+  });
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [widgetTab, setWidgetTab] = useState<'appearance' | 'content' | 'features'>('appearance');
+
+  // Date filter state
+  const defaultEndDate = new Date().toISOString().split('T')[0];
+  const defaultStartDate = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const [startDate, setStartDate] = useState(defaultStartDate);
+  const [endDate, setEndDate] = useState(defaultEndDate);
 
   // Get API URL - for embedded Shopify context, we need the app URL, not the iframe origin
   const getApiUrl = () => {
@@ -54,7 +112,13 @@ function ShopifyEmbedded({ shop, host }: ShopifyEmbeddedProps) {
 
   useEffect(() => {
     loadData();
-  }, [shop]);
+  }, [shop, startDate, endDate]);
+
+  useEffect(() => {
+    if (currentTab === 'widget') {
+      loadWidgetConfig();
+    }
+  }, [currentTab, shop]);
 
   const loadData = async () => {
     try {
@@ -63,8 +127,10 @@ function ShopifyEmbedded({ shop, host }: ShopifyEmbeddedProps) {
 
       const apiUrl = getApiUrl();
 
-      // Fetch analytics data for the shop
-      const analyticsRes = await fetch(`${apiUrl}/api/shopify/embedded/analytics?shop=${encodeURIComponent(shop)}`);
+      // Fetch analytics data for the shop with date filters
+      const analyticsRes = await fetch(
+        `${apiUrl}/api/shopify/embedded/analytics?shop=${encodeURIComponent(shop)}&startDate=${startDate}&endDate=${endDate}`
+      );
 
       if (!analyticsRes.ok) {
         throw new Error('Error al cargar datos');
@@ -86,6 +152,88 @@ function ShopifyEmbedded({ shop, host }: ShopifyEmbeddedProps) {
     }
   };
 
+  const loadWidgetConfig = async () => {
+    try {
+      const apiUrl = getApiUrl();
+      const res = await fetch(`${apiUrl}/api/widget/config?shop=${encodeURIComponent(shop)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.data) {
+          setWidgetConfig(prev => ({
+            ...prev,
+            widget_position: data.data.position || prev.widget_position,
+            widget_color: data.data.primaryColor || prev.widget_color,
+            welcome_message: data.data.greeting || prev.welcome_message,
+            widget_enabled: data.data.enabled ?? prev.widget_enabled,
+            widget_secondary_color: data.data.secondaryColor || prev.widget_secondary_color,
+            widget_accent_color: data.data.accentColor || prev.widget_accent_color,
+            widget_button_size: data.data.buttonSize || prev.widget_button_size,
+            widget_button_style: data.data.buttonStyle || prev.widget_button_style,
+            widget_show_pulse: data.data.showPulse ?? prev.widget_show_pulse,
+            widget_chat_width: data.data.chatWidth || prev.widget_chat_width,
+            widget_chat_height: data.data.chatHeight || prev.widget_chat_height,
+            widget_subtitle: data.data.subtitle || prev.widget_subtitle,
+            widget_placeholder: data.data.placeholder || prev.widget_placeholder,
+            widget_avatar: data.data.avatar || prev.widget_avatar,
+            widget_show_promo_message: data.data.showPromoMessage ?? prev.widget_show_promo_message,
+            widget_show_cart: data.data.showCart ?? prev.widget_show_cart,
+            widget_enable_animations: data.data.enableAnimations ?? prev.widget_enable_animations,
+            widget_theme: data.data.theme || prev.widget_theme,
+            widget_brand_name: data.data.brandName || prev.widget_brand_name,
+          }));
+        }
+      }
+    } catch (err) {
+      console.error('Error loading widget config:', err);
+    }
+  };
+
+  const saveWidgetConfig = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+
+      const apiUrl = getApiUrl();
+      const res = await fetch(`${apiUrl}/api/shopify/embedded/widget/config`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shop,
+          config: {
+            widgetPosition: widgetConfig.widget_position,
+            widgetColor: widgetConfig.widget_color,
+            welcomeMessage: widgetConfig.welcome_message,
+            widgetEnabled: widgetConfig.widget_enabled,
+            widgetSecondaryColor: widgetConfig.widget_secondary_color,
+            widgetAccentColor: widgetConfig.widget_accent_color,
+            widgetButtonSize: widgetConfig.widget_button_size,
+            widgetButtonStyle: widgetConfig.widget_button_style,
+            widgetShowPulse: widgetConfig.widget_show_pulse,
+            widgetChatWidth: widgetConfig.widget_chat_width,
+            widgetChatHeight: widgetConfig.widget_chat_height,
+            widgetSubtitle: widgetConfig.widget_subtitle,
+            widgetPlaceholder: widgetConfig.widget_placeholder,
+            widgetAvatar: widgetConfig.widget_avatar,
+            widgetShowPromoMessage: widgetConfig.widget_show_promo_message,
+            widgetShowCart: widgetConfig.widget_show_cart,
+            widgetEnableAnimations: widgetConfig.widget_enable_animations,
+            widgetTheme: widgetConfig.widget_theme,
+            widgetBrandName: widgetConfig.widget_brand_name,
+          },
+        }),
+      });
+
+      if (!res.ok) throw new Error('Error al guardar');
+
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err: any) {
+      setError(err.message || 'Error al guardar configuracion');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('es-ES', {
@@ -97,9 +245,54 @@ function ShopifyEmbedded({ shop, host }: ShopifyEmbeddedProps) {
     });
   };
 
-  const conversionRate = analytics && analytics.recommendations > 0
-    ? ((analytics.conversions / analytics.recommendations) * 100).toFixed(1)
-    : '0';
+  const formatShortDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+  };
+
+  const chartData = useMemo(() => {
+    if (!analytics?.conversationsByDay) return [];
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const dates: string[] = [];
+
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      dates.push(d.toISOString().split('T')[0]);
+    }
+
+    const dataMap = new Map(analytics.conversationsByDay.map(item => [item.date, item.count]));
+    return dates.map(date => ({ date, count: dataMap.get(date) || 0 }));
+  }, [analytics?.conversationsByDay, startDate, endDate]);
+
+  const maxCount = useMemo(() => {
+    if (chartData.length === 0) return 1;
+    const max = Math.max(...chartData.map(d => d.count));
+    return max > 0 ? max : 1;
+  }, [chartData]);
+
+  const conversionRate =
+    analytics && analytics.recommendations > 0
+      ? ((analytics.conversions / analytics.recommendations) * 100).toFixed(1)
+      : '0';
+
+  const positions = [
+    { value: 'bottom-right', label: 'Abajo Derecha' },
+    { value: 'bottom-left', label: 'Abajo Izquierda' },
+    { value: 'top-right', label: 'Arriba Derecha' },
+    { value: 'top-left', label: 'Arriba Izquierda' },
+  ];
+
+  const buttonStyles = [
+    { value: 'circle', label: 'Circular' },
+    { value: 'rounded', label: 'Redondeado' },
+    { value: 'square', label: 'Cuadrado' },
+  ];
+
+  const themes = [
+    { value: 'light', label: 'Claro' },
+    { value: 'dark', label: 'Oscuro' },
+  ];
 
   if (loading) {
     return (
@@ -182,9 +375,73 @@ function ShopifyEmbedded({ shop, host }: ShopifyEmbeddedProps) {
           </div>
         )}
 
+        {success && (
+          <div className="alert alert-success">
+            <div className="alert-content">
+              <div className="alert-message">Configuracion guardada exitosamente</div>
+            </div>
+          </div>
+        )}
+
         {/* Dashboard Tab */}
         {currentTab === 'dashboard' && analytics && (
           <>
+            {/* Date Filter */}
+            <div className="card" style={{ marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Desde</label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={e => setStartDate(e.target.value)}
+                    style={{
+                      padding: '0.4rem 0.6rem',
+                      borderRadius: '6px',
+                      border: '1px solid var(--color-border)',
+                      background: 'var(--color-bg)',
+                      color: 'var(--color-text)',
+                      fontSize: '0.85rem',
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Hasta</label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={e => setEndDate(e.target.value)}
+                    style={{
+                      padding: '0.4rem 0.6rem',
+                      borderRadius: '6px',
+                      border: '1px solid var(--color-border)',
+                      background: 'var(--color-bg)',
+                      color: 'var(--color-text)',
+                      fontSize: '0.85rem',
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '0.25rem', marginLeft: 'auto' }}>
+                  {[3, 7, 30].map(days => (
+                    <button
+                      key={days}
+                      className="btn btn-secondary"
+                      onClick={() => {
+                        const today = new Date();
+                        setEndDate(today.toISOString().split('T')[0]);
+                        setStartDate(
+                          new Date(today.getTime() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+                        );
+                      }}
+                      style={{ fontSize: '0.8rem', padding: '0.4rem 0.6rem' }}
+                    >
+                      {days}d
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             {/* Main Stats */}
             <div className="stats-grid embedded-stats">
               <div className="stat-card">
@@ -231,8 +488,50 @@ function ShopifyEmbedded({ shop, host }: ShopifyEmbeddedProps) {
               </div>
             </div>
 
+            {/* Chart */}
+            {chartData.length > 0 && (
+              <div className="card" style={{ marginTop: '1rem' }}>
+                <div className="card-header">
+                  <h3 className="card-title">Conversaciones por Dia</h3>
+                </div>
+                <div style={{ padding: '0.5rem 0' }}>
+                  <div
+                    style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '120px', padding: '0 0.5rem' }}
+                  >
+                    {chartData.map(item => (
+                      <div
+                        key={item.date}
+                        style={{
+                          flex: 1,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          height: '100%',
+                          justifyContent: 'flex-end',
+                        }}
+                      >
+                        <span style={{ fontSize: '0.65rem', fontWeight: '600', marginBottom: '2px' }}>{item.count}</span>
+                        <div
+                          style={{
+                            width: '100%',
+                            maxWidth: '30px',
+                            height: `${Math.max((item.count / maxCount) * 80, 3)}px`,
+                            background: item.count > 0 ? 'var(--color-primary)' : 'var(--color-border)',
+                            borderRadius: '3px 3px 0 0',
+                          }}
+                        />
+                        <span style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                          {formatShortDate(item.date)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Quick Info */}
-            <div className="card" style={{ marginTop: '1.5rem' }}>
+            <div className="card" style={{ marginTop: '1rem' }}>
               <div className="card-header">
                 <h3 className="card-title">Resumen</h3>
               </div>
@@ -261,6 +560,62 @@ function ShopifyEmbedded({ shop, host }: ShopifyEmbeddedProps) {
         {/* Analytics Tab */}
         {currentTab === 'analytics' && analytics && (
           <>
+            {/* Date Filter */}
+            <div className="card" style={{ marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Desde</label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={e => setStartDate(e.target.value)}
+                    style={{
+                      padding: '0.4rem 0.6rem',
+                      borderRadius: '6px',
+                      border: '1px solid var(--color-border)',
+                      background: 'var(--color-bg)',
+                      color: 'var(--color-text)',
+                      fontSize: '0.85rem',
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Hasta</label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={e => setEndDate(e.target.value)}
+                    style={{
+                      padding: '0.4rem 0.6rem',
+                      borderRadius: '6px',
+                      border: '1px solid var(--color-border)',
+                      background: 'var(--color-bg)',
+                      color: 'var(--color-text)',
+                      fontSize: '0.85rem',
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '0.25rem', marginLeft: 'auto' }}>
+                  {[3, 7, 30].map(days => (
+                    <button
+                      key={days}
+                      className="btn btn-secondary"
+                      onClick={() => {
+                        const today = new Date();
+                        setEndDate(today.toISOString().split('T')[0]);
+                        setStartDate(
+                          new Date(today.getTime() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+                        );
+                      }}
+                      style={{ fontSize: '0.8rem', padding: '0.4rem 0.6rem' }}
+                    >
+                      {days}d
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             <div className="stats-grid embedded-stats">
               <div className="stat-card">
                 <div className="stat-value">{analytics.conversations.toLocaleString()}</div>
@@ -289,34 +644,55 @@ function ShopifyEmbedded({ shop, host }: ShopifyEmbeddedProps) {
 
             {/* Conversion Metrics */}
             {analytics.recommendations > 0 && (
-              <div className="card" style={{ marginTop: '1.5rem' }}>
+              <div className="card" style={{ marginTop: '1rem' }}>
                 <div className="card-header">
                   <h3 className="card-title">Metricas de Conversion</h3>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
-                  <div style={{ textAlign: 'center', padding: '1.5rem 1rem', background: 'var(--color-bg)', borderRadius: '12px' }}>
-                    <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--color-primary)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+                  <div
+                    style={{
+                      textAlign: 'center',
+                      padding: '1rem',
+                      background: 'var(--color-bg)',
+                      borderRadius: '10px',
+                    }}
+                  >
+                    <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--color-primary)' }}>
                       {conversionRate}%
                     </div>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
                       Recomendacion a Compra
                     </div>
                   </div>
 
-                  <div style={{ textAlign: 'center', padding: '1.5rem 1rem', background: 'var(--color-bg)', borderRadius: '12px' }}>
-                    <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--color-success)' }}>
+                  <div
+                    style={{
+                      textAlign: 'center',
+                      padding: '1rem',
+                      background: 'var(--color-bg)',
+                      borderRadius: '10px',
+                    }}
+                  >
+                    <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--color-success)' }}>
                       {analytics.conversations > 0 ? (analytics.recommendations / analytics.conversations).toFixed(1) : 0}
                     </div>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
                       Recomendaciones por Chat
                     </div>
                   </div>
 
-                  <div style={{ textAlign: 'center', padding: '1.5rem 1rem', background: 'var(--color-bg)', borderRadius: '12px' }}>
-                    <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--color-warning)' }}>
+                  <div
+                    style={{
+                      textAlign: 'center',
+                      padding: '1rem',
+                      background: 'var(--color-bg)',
+                      borderRadius: '10px',
+                    }}
+                  >
+                    <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--color-warning)' }}>
                       {analytics.conversations > 0 ? (analytics.messages / analytics.conversations).toFixed(1) : 0}
                     </div>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
                       Mensajes por Chat
                     </div>
                   </div>
@@ -327,44 +703,249 @@ function ShopifyEmbedded({ shop, host }: ShopifyEmbeddedProps) {
         )}
 
         {/* Widget Tab */}
-        {currentTab === 'widget' && store && (
-          <div className="card">
-            <div className="card-header">
-              <h3 className="card-title">Configuracion del Widget</h3>
-              <span className={`badge ${store.widget_enabled ? 'badge-success' : 'badge-warning'}`}>
-                {store.widget_enabled ? 'Activo' : 'Inactivo'}
-              </span>
+        {currentTab === 'widget' && (
+          <>
+            {/* Save Button */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+              <button className="btn btn-primary" onClick={saveWidgetConfig} disabled={saving}>
+                {saving ? 'Guardando...' : 'Guardar Cambios'}
+              </button>
             </div>
 
-            <div style={{ marginBottom: '1.5rem' }}>
-              <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
-                El widget de chat Kova esta {store.widget_enabled ? 'activo' : 'inactivo'} en tu tienda.
-              </p>
-
-              <div className="info-grid" style={{ display: 'grid', gap: '1rem' }}>
-                <div className="info-item">
-                  <span className="info-label">Tienda</span>
-                  <span className="info-value">{store.shop_domain}</span>
+            {/* Widget Enable Toggle */}
+            <div className="card" style={{ marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>Estado del Widget</h3>
+                  <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                    {widgetConfig.widget_enabled ? 'Visible en tu tienda' : 'Oculto'}
+                  </p>
                 </div>
-                <div className="info-item">
-                  <span className="info-label">Estado</span>
-                  <span className="info-value">{store.status}</span>
-                </div>
-                <div className="info-item">
-                  <span className="info-label">Productos Sincronizados</span>
-                  <span className="info-value">{store.products_synced}</span>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    className={`btn ${widgetConfig.widget_enabled ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => setWidgetConfig({ ...widgetConfig, widget_enabled: true })}
+                    style={{ fontSize: '0.85rem', padding: '0.4rem 0.75rem' }}
+                  >
+                    Activo
+                  </button>
+                  <button
+                    className={`btn ${!widgetConfig.widget_enabled ? 'btn-danger' : 'btn-secondary'}`}
+                    onClick={() => setWidgetConfig({ ...widgetConfig, widget_enabled: false })}
+                    style={{ fontSize: '0.85rem', padding: '0.4rem 0.75rem' }}
+                  >
+                    Inactivo
+                  </button>
                 </div>
               </div>
             </div>
 
-            <div style={{ padding: '1rem', background: 'var(--color-bg)', borderRadius: '8px' }}>
-              <h4 style={{ marginBottom: '0.5rem', fontSize: '0.9rem' }}>Para personalizar el widget:</h4>
-              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                Ve a <strong>Tema &gt; Personalizar &gt; App embeds</strong> y busca "Kova AI Chat Widget"
-                para ajustar colores, mensajes y posicion.
-              </p>
+            {/* Widget Sub-Tabs */}
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+              {(['appearance', 'content', 'features'] as const).map(tab => (
+                <button
+                  key={tab}
+                  className={`btn ${widgetTab === tab ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => setWidgetTab(tab)}
+                  style={{ fontSize: '0.85rem', padding: '0.4rem 0.75rem' }}
+                >
+                  {tab === 'appearance' ? 'Apariencia' : tab === 'content' ? 'Contenido' : 'Funciones'}
+                </button>
+              ))}
             </div>
-          </div>
+
+            <div className="card">
+              {widgetTab === 'appearance' && (
+                <>
+                  <div className="form-group">
+                    <label className="form-label">Tema</label>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      {themes.map(theme => (
+                        <button
+                          key={theme.value}
+                          className={`btn ${widgetConfig.widget_theme === theme.value ? 'btn-primary' : 'btn-secondary'}`}
+                          onClick={() => setWidgetConfig({ ...widgetConfig, widget_theme: theme.value })}
+                          style={{ flex: 1, fontSize: '0.85rem' }}
+                        >
+                          {theme.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Color primario</label>
+                    <div className="color-picker-wrapper">
+                      <input
+                        type="color"
+                        className="color-picker-input"
+                        value={widgetConfig.widget_color}
+                        onChange={e => setWidgetConfig({ ...widgetConfig, widget_color: e.target.value })}
+                      />
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={widgetConfig.widget_color}
+                        onChange={e => setWidgetConfig({ ...widgetConfig, widget_color: e.target.value })}
+                        style={{ flex: 1 }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Color secundario</label>
+                    <div className="color-picker-wrapper">
+                      <input
+                        type="color"
+                        className="color-picker-input"
+                        value={widgetConfig.widget_secondary_color}
+                        onChange={e => setWidgetConfig({ ...widgetConfig, widget_secondary_color: e.target.value })}
+                      />
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={widgetConfig.widget_secondary_color}
+                        onChange={e => setWidgetConfig({ ...widgetConfig, widget_secondary_color: e.target.value })}
+                        style={{ flex: 1 }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Posicion</label>
+                    <div className="position-grid">
+                      {positions.map(pos => (
+                        <button
+                          key={pos.value}
+                          className={`position-option ${widgetConfig.widget_position === pos.value ? 'selected' : ''}`}
+                          onClick={() => setWidgetConfig({ ...widgetConfig, widget_position: pos.value })}
+                        >
+                          {pos.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Estilo del boton</label>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      {buttonStyles.map(style => (
+                        <button
+                          key={style.value}
+                          className={`btn ${widgetConfig.widget_button_style === style.value ? 'btn-primary' : 'btn-secondary'}`}
+                          onClick={() => setWidgetConfig({ ...widgetConfig, widget_button_style: style.value })}
+                          style={{ flex: 1, fontSize: '0.85rem' }}
+                        >
+                          {style.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Tamano del boton: {widgetConfig.widget_button_size}px</label>
+                    <input
+                      type="range"
+                      min="56"
+                      max="80"
+                      step="4"
+                      value={widgetConfig.widget_button_size}
+                      onChange={e => setWidgetConfig({ ...widgetConfig, widget_button_size: parseInt(e.target.value) })}
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                </>
+              )}
+
+              {widgetTab === 'content' && (
+                <>
+                  <div className="form-group">
+                    <label className="form-label">Nombre de marca</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={widgetConfig.widget_brand_name}
+                      onChange={e => setWidgetConfig({ ...widgetConfig, widget_brand_name: e.target.value })}
+                      placeholder="Kova"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Avatar / Emoji</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={widgetConfig.widget_avatar}
+                      onChange={e => setWidgetConfig({ ...widgetConfig, widget_avatar: e.target.value })}
+                      placeholder="🌿"
+                      maxLength={4}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Mensaje de bienvenida</label>
+                    <textarea
+                      className="form-input"
+                      rows={2}
+                      value={widgetConfig.welcome_message}
+                      onChange={e => setWidgetConfig({ ...widgetConfig, welcome_message: e.target.value })}
+                      placeholder="Necesitas ayuda para tu compra?"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Subtitulo</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={widgetConfig.widget_subtitle}
+                      onChange={e => setWidgetConfig({ ...widgetConfig, widget_subtitle: e.target.value })}
+                      placeholder="Asistente de compras con IA"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Placeholder del input</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={widgetConfig.widget_placeholder}
+                      onChange={e => setWidgetConfig({ ...widgetConfig, widget_placeholder: e.target.value })}
+                      placeholder="Escribe tu mensaje..."
+                    />
+                  </div>
+                </>
+              )}
+
+              {widgetTab === 'features' && (
+                <>
+                  {[
+                    { key: 'widget_show_pulse', label: 'Animacion de pulso', desc: 'Efecto para llamar la atencion' },
+                    { key: 'widget_show_promo_message', label: 'Mensaje promocional', desc: 'Junto al boton' },
+                    { key: 'widget_show_cart', label: 'Carrito integrado', desc: 'Agregar productos desde el chat' },
+                    { key: 'widget_enable_animations', label: 'Animaciones', desc: 'Transiciones y efectos' },
+                  ].map(item => (
+                    <div className="form-group" key={item.key}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={(widgetConfig as any)[item.key]}
+                          onChange={e => setWidgetConfig({ ...widgetConfig, [item.key]: e.target.checked })}
+                          style={{ width: '18px', height: '18px' }}
+                        />
+                        <div>
+                          <span style={{ fontWeight: '500', fontSize: '0.9rem' }}>{item.label}</span>
+                          <p style={{ margin: '0.15rem 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                            {item.desc}
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          </>
         )}
       </div>
     </div>
