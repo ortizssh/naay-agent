@@ -316,6 +316,9 @@
       // Add luxury styles
       this.addLuxuryStyles();
 
+      // Apply dynamic styles from loaded configuration
+      this.applyDynamicStyles();
+
       // Append to document
       document.body.appendChild(this.container);
 
@@ -361,6 +364,86 @@
         cartTotal: !!this.cartTotal,
         cartToggle: !!this.cartToggle,
         cartBadge: !!this.cartBadge
+      });
+
+      // Apply dynamic content from config
+      this.applyDynamicContent();
+    }
+
+    /**
+     * Apply dynamic content based on loaded configuration
+     * Updates placeholder, greeting, subtitle, avatar, brand name
+     */
+    applyDynamicContent() {
+      const brandName = this.config.brandName || 'Kova';
+      const subtitle = this.config.subtitle || 'Asistente de compras con IA';
+      const avatar = this.config.avatar || '🌿';
+
+      // Update input placeholder
+      if (this.input && this.config.placeholder) {
+        this.input.placeholder = this.config.placeholder;
+      }
+
+      // Update welcome message / greeting
+      const welcomeTitle = this.container.querySelector('.kova-widget__welcome-title');
+      if (welcomeTitle) {
+        if (this.config.greeting) {
+          // Custom greeting provided
+          welcomeTitle.innerHTML = `
+            ${this.config.greeting}
+            <span class="kova-widget__welcome-subtitle">${subtitle}</span>
+          `;
+        } else {
+          // Default greeting with dynamic brand name
+          welcomeTitle.innerHTML = `
+            ¡Hola! Soy tu asesora personal de ${brandName}.
+            <span class="kova-widget__welcome-subtitle">¿En qué puedo ayudarte? ✨${avatar}</span>
+          `;
+        }
+      }
+
+      // Update promotional message
+      const promoText = this.container.querySelector('.kova-widget__promotional-text');
+      if (promoText) {
+        if (this.config.greeting) {
+          promoText.innerHTML = `
+            ${this.config.greeting}
+            <span class="kova-widget__promotional-subtitle">${subtitle}</span>
+          `;
+        } else {
+          promoText.innerHTML = `
+            ¿Necesitas ayuda? ${avatar}
+            <span class="kova-widget__promotional-subtitle">Te guiamos en tu compra</span>
+          `;
+        }
+      }
+
+      // Update ARIA labels with brand name
+      if (this.button) {
+        this.button.setAttribute('aria-label', `Abrir chat de ${brandName}`);
+      }
+      if (this.chat) {
+        this.chat.setAttribute('aria-label', `Chat de ${brandName}`);
+      }
+
+      // Hide promotional message if showPromoMessage is false
+      if (this.promotionalMessage && this.config.showPromoMessage === false) {
+        this.promotionalMessage.style.display = 'none';
+      }
+
+      // Hide cart button if showCart is false
+      if (this.cartSmallToggle && this.config.showCart === false) {
+        this.cartSmallToggle.style.display = 'none';
+      }
+
+      console.log('📝 Dynamic content applied:', {
+        brandName,
+        placeholder: this.config.placeholder,
+        greeting: this.config.greeting,
+        subtitle,
+        avatar,
+        showPromoMessage: this.config.showPromoMessage,
+        showCart: this.config.showCart
       });
     }
 
@@ -3477,6 +3560,209 @@
       `;
 
       document.head.appendChild(style);
+    }
+
+    /**
+     * Apply dynamic styles based on loaded configuration
+     * This method updates CSS custom properties based on this.config values
+     */
+    applyDynamicStyles() {
+      // Remove existing dynamic styles if present
+      const existingDynamic = document.getElementById('kova-dynamic-styles');
+      if (existingDynamic) {
+        existingDynamic.remove();
+      }
+
+      const dynamicStyle = document.createElement('style');
+      dynamicStyle.id = 'kova-dynamic-styles';
+
+      // Get config values with fallbacks
+      const primaryColor = this.config.primaryColor || '#a59457';
+      const secondaryColor = this.config.secondaryColor || '#212120';
+      const accentColor = this.config.accentColor || '#cf795e';
+      const buttonSize = this.config.buttonSize || 72;
+      const chatWidth = this.config.chatWidth || 420;
+      const chatHeight = this.config.chatHeight || 600;
+      const buttonStyle = this.config.buttonStyle || 'circle';
+      const showPulse = this.config.showPulse !== false;
+      const theme = this.config.theme || 'light';
+
+      // Calculate button border radius based on style
+      let buttonRadius = '50%'; // circle (default)
+      if (buttonStyle === 'rounded') buttonRadius = '16px';
+      if (buttonStyle === 'square') buttonRadius = '8px';
+
+      // Theme-based surface colors
+      const surfaceColor = theme === 'dark' ? '#1a1a1a' : '#F8F9F8';
+      const surfaceBg = theme === 'dark' ? 'rgba(26, 26, 26, 0.95)' : 'rgba(248, 249, 248, 0.95)';
+      const textPrimary = theme === 'dark' ? '#ffffff' : '#212120';
+
+      dynamicStyle.textContent = `
+        /* Dynamic Kova Widget Styles - Applied from configuration */
+        :root {
+          --kova-primary-dynamic: ${primaryColor} !important;
+          --kova-secondary-dynamic: ${secondaryColor} !important;
+          --kova-accent-dynamic: ${accentColor} !important;
+        }
+
+        /* Override base colors with dynamic values */
+        .kova-widget__button {
+          width: ${buttonSize}px !important;
+          height: ${buttonSize}px !important;
+          border-radius: ${buttonRadius} !important;
+          background: ${primaryColor} !important;
+        }
+
+        .kova-widget__button:hover {
+          background: ${this.adjustColor(primaryColor, -15)} !important;
+        }
+
+        .kova-widget__button-pulse {
+          background: ${primaryColor} !important;
+          ${!showPulse ? 'display: none !important;' : ''}
+        }
+
+        .kova-widget__chat {
+          width: ${chatWidth}px !important;
+          height: ${chatHeight}px !important;
+          background: ${surfaceBg} !important;
+        }
+
+        /* Header and accent elements */
+        .kova-widget__simple-header {
+          background: ${secondaryColor} !important;
+        }
+
+        /* Input focus and send button */
+        .kova-widget__input:focus {
+          border-color: ${primaryColor} !important;
+          box-shadow: 0 0 0 3px ${primaryColor}22 !important;
+        }
+
+        .kova-widget__send {
+          background: ${primaryColor} !important;
+        }
+
+        .kova-widget__send:hover:not(:disabled) {
+          background: ${this.adjustColor(primaryColor, -15)} !important;
+        }
+
+        /* Message bubbles */
+        .kova-widget__message--assistant .kova-widget__message-content {
+          border-left-color: ${primaryColor} !important;
+        }
+
+        /* Product cards */
+        .kova-widget__product-actions button,
+        .kova-widget__product-add {
+          background: ${primaryColor} !important;
+        }
+
+        .kova-widget__product-actions button:hover,
+        .kova-widget__product-add:hover {
+          background: ${this.adjustColor(primaryColor, -15)} !important;
+        }
+
+        /* Cart panel */
+        .kova-cart-panel__checkout {
+          background: ${primaryColor} !important;
+        }
+
+        .kova-cart-panel__checkout:hover {
+          background: ${this.adjustColor(primaryColor, -15)} !important;
+        }
+
+        /* Feature items and promotional message */
+        .kova-widget__feature:hover {
+          border-color: ${primaryColor} !important;
+        }
+
+        .kova-widget__promotional-text {
+          color: ${primaryColor} !important;
+        }
+
+        /* Typing indicator */
+        .kova-typing-dot {
+          background: ${primaryColor} !important;
+        }
+
+        /* Welcome title accent */
+        .kova-widget__welcome-title {
+          color: ${secondaryColor} !important;
+        }
+
+        .kova-widget__welcome-subtitle {
+          color: ${primaryColor} !important;
+        }
+
+        /* Cart toggle button */
+        .kova-widget__cart-toggle-btn:hover {
+          background: ${primaryColor}15 !important;
+          border-color: ${primaryColor}40 !important;
+        }
+
+        .kova-cart-toggle-count {
+          background: ${accentColor} !important;
+        }
+
+        /* Theme-specific overrides */
+        ${theme === 'dark' ? `
+        .kova-widget__chat {
+          background: ${surfaceBg} !important;
+          border-color: rgba(255, 255, 255, 0.1) !important;
+        }
+        .kova-widget__messages {
+          background: ${surfaceColor} !important;
+        }
+        .kova-widget__input {
+          background: rgba(255, 255, 255, 0.05) !important;
+          color: ${textPrimary} !important;
+          border-color: rgba(255, 255, 255, 0.1) !important;
+        }
+        .kova-widget__message--user .kova-widget__message-content {
+          background: ${primaryColor} !important;
+          color: white !important;
+        }
+        .kova-widget__message--assistant .kova-widget__message-content {
+          background: rgba(255, 255, 255, 0.05) !important;
+          color: ${textPrimary} !important;
+        }
+        .kova-widget__welcome {
+          background: transparent !important;
+        }
+        .kova-widget__welcome-title,
+        .kova-widget__feature span {
+          color: ${textPrimary} !important;
+        }
+        ` : ''}
+
+        /* Mobile responsiveness - maintain dynamic sizes on small screens */
+        @media (max-width: 480px) {
+          .kova-widget__chat {
+            width: 100vw !important;
+            height: 100dvh !important;
+          }
+          .kova-widget__button {
+            width: ${Math.min(buttonSize, 64)}px !important;
+            height: ${Math.min(buttonSize, 64)}px !important;
+          }
+        }
+      `;
+
+      document.head.appendChild(dynamicStyle);
+      console.log('🎨 Dynamic styles applied:', { primaryColor, secondaryColor, accentColor, buttonSize, chatWidth, chatHeight, buttonStyle, theme });
+    }
+
+    /**
+     * Adjust color brightness (helper for hover states)
+     */
+    adjustColor(color, amount) {
+      // Convert hex to RGB, adjust, and convert back
+      const hex = color.replace('#', '');
+      const r = Math.max(0, Math.min(255, parseInt(hex.substr(0, 2), 16) + amount));
+      const g = Math.max(0, Math.min(255, parseInt(hex.substr(2, 2), 16) + amount));
+      const b = Math.max(0, Math.min(255, parseInt(hex.substr(4, 2), 16) + amount));
+      return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
     }
 
     addEventListeners() {
