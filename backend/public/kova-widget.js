@@ -2719,20 +2719,23 @@
           transition: all 0.2s var(--kova-transition) !important;
         }
 
-        /* Cart Panel - Left extension of the chat widget */
+        /* Cart Panel - Floating panel to the left of chat widget */
         .kova-cart-panel {
-          position: absolute !important;
+          position: fixed !important;
           bottom: 88px !important; /* Same as chat widget */
-          right: calc(50vw - 100px) !important; /* Start closer, only 100px slide distance */
-          width: 360px !important;
-          height: 620px !important; /* Same height as chat widget */
-          background: rgba(248, 249, 248, 0.98) !important;
-          backdrop-filter: blur(20px) !important;
-          -webkit-backdrop-filter: blur(20px) !important;
-          border-radius: 16px 0 0 16px !important; /* Rounded only on left side */
-          border: 1px solid rgba(212, 196, 184, 0.3) !important;
-          border-right: none !important; /* No right border to connect with chat */
-          box-shadow: -4px 0 16px rgba(207, 121, 94, 0.1) !important; /* Shadow only on left */
+          right: auto !important;
+          left: auto !important;
+          width: 340px !important;
+          height: 580px !important; /* Slightly shorter than chat */
+          background: rgba(255, 255, 255, 0.98) !important;
+          backdrop-filter: blur(24px) !important;
+          -webkit-backdrop-filter: blur(24px) !important;
+          border-radius: 16px !important; /* Rounded on all sides */
+          border: 1px solid rgba(212, 196, 184, 0.25) !important;
+          box-shadow:
+            0 20px 60px rgba(0, 0, 0, 0.12),
+            0 8px 24px rgba(165, 148, 87, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
           display: flex !important;
           flex-direction: column !important;
           overflow: hidden !important;
@@ -2740,97 +2743,99 @@
           visibility: hidden !important;
           pointer-events: none !important;
           z-index: 999997 !important;
-          transition: all 0.4s var(--kova-transition) !important;
+          transform: translateX(30px) scale(0.95) !important;
+          transition: all 0.35s cubic-bezier(0.32, 0.72, 0, 1) !important;
         }
 
         .kova-cart-panel--open {
-          right: 50vw !important; /* Slide from right to left, touching chat left edge */
           opacity: 1 !important;
           visibility: visible !important;
           pointer-events: auto !important;
+          transform: translateX(0) scale(1) !important;
         }
 
         /* Cart panel positioning for bottom-right widget (default) */
+        /* Position to the left of the chat widget with a gap */
         .kova-widget--bottom-right .kova-cart-panel {
-          right: calc(50vw - 100px) !important; /* Start closer for shorter slide */
-        }
-
-        .kova-widget--bottom-right .kova-cart-panel--open {
-          right: 50vw !important; /* Short 100px slide from right to left */
+          right: calc(var(--kova-chat-width, 420px) + 32px + 20px) !important; /* chat width + widget margin + gap */
+          left: auto !important;
         }
 
         /* Cart panel positioning for bottom-left widget */
         .kova-widget--bottom-left .kova-cart-panel {
-          left: calc(50vw + 20px) !important; /* Hidden to left of chat widget */
-          right: auto !important;
-          border-radius: 0 16px 16px 0 !important; /* Rounded only on right side */
-          border-right: none !important; /* No right border to connect with chat */
-          border-left: 1px solid rgba(212, 196, 184, 0.3) !important;
-          box-shadow: 4px 0 16px rgba(207, 121, 94, 0.1) !important; /* Shadow only on right */
-        }
-
-        .kova-widget--bottom-left .kova-cart-panel--open {
-          left: 50vw !important; /* Position to right of chat widget */
+          left: calc(var(--kova-chat-width, 420px) + 32px + 20px) !important; /* Position to right of chat */
           right: auto !important;
         }
 
-        /* Connect chat widget with cart when cart is open */
-        .kova-cart-panel--open + .kova-chat-container .kova-widget__chat {
-          border-radius: 0 16px 16px 0 !important; /* Remove left border radius */
-          border-left: none !important; /* Remove left border to connect with cart */
-        }
-        
-        .kova-widget--bottom-left .kova-cart-panel--open + .kova-chat-container .kova-widget__chat {
-          border-radius: 0 16px 16px 0 !important; /* Remove left border radius */
-          border-left: none !important; /* Remove left border to connect with cart */
-        }
+        /* No longer connecting the panels - they float separately */
 
         /* Cart Panel Header */
         .kova-cart-panel__header {
-          padding: 16px 20px !important;
-          background: transparent !important;
+          padding: 18px 20px !important;
+          background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(248,249,248,0.95) 100%) !important;
           color: var(--kova-black) !important;
           display: flex !important;
           align-items: center !important;
           justify-content: space-between !important;
           border: none !important;
-          border-bottom: 1px solid rgba(212, 196, 184, 0.2) !important;
+          border-bottom: 1px solid rgba(212, 196, 184, 0.15) !important;
           flex-shrink: 0 !important;
+          position: relative !important;
+        }
+
+        .kova-cart-panel__header::after {
+          content: '' !important;
+          position: absolute !important;
+          bottom: 0 !important;
+          left: 20px !important;
+          right: 20px !important;
+          height: 1px !important;
+          background: linear-gradient(90deg, transparent, rgba(165, 148, 87, 0.3), transparent) !important;
         }
 
         .kova-cart-panel__title {
-          font-size: 14px !important;
+          font-size: 15px !important;
           font-weight: var(--kova-font-weight-semibold) !important;
           margin: 0 !important;
           display: flex !important;
           align-items: center !important;
-          gap: 8px !important;
+          gap: 10px !important;
+          color: var(--kova-black) !important;
+        }
+
+        .kova-cart-panel__title h3 {
+          margin: 0 !important;
+          font-size: 15px !important;
+          font-weight: 600 !important;
         }
 
         .kova-cart-panel__icon {
-          width: 16px !important;
-          height: 16px !important;
+          width: 18px !important;
+          height: 18px !important;
           color: var(--kova-perfect) !important;
         }
 
         .kova-cart-panel__close {
-          background: rgba(207, 121, 94, 0.1) !important;
+          background: rgba(0, 0, 0, 0.04) !important;
           border: none !important;
-          border-radius: 8px !important;
+          border-radius: 10px !important;
           padding: 8px !important;
-          color: var(--kova-perfect) !important;
+          color: var(--kova-black) !important;
           cursor: pointer !important;
           transition: all 0.2s var(--kova-transition) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
         }
 
         .kova-cart-panel__close:hover {
-          background: rgba(207, 121, 94, 0.15) !important;
+          background: rgba(0, 0, 0, 0.08) !important;
           transform: scale(1.05) !important;
         }
 
         .kova-cart-panel__close svg {
-          width: 16px !important;
-          height: 16px !important;
+          width: 18px !important;
+          height: 18px !important;
         }
 
         /* Cart Panel Content */
@@ -3199,15 +3204,22 @@
 
         /* Cart Panel Footer */
         .kova-cart-panel__footer {
-          padding: 16px 20px !important;
-          background: rgba(248, 249, 248, 0.98) !important;
-          border-top: 1px solid rgba(212, 196, 184, 0.2) !important;
-          backdrop-filter: blur(10px) !important;
-          -webkit-backdrop-filter: blur(10px) !important;
-          position: sticky !important;
-          bottom: 0 !important;
+          padding: 20px !important;
+          background: linear-gradient(180deg, rgba(248,249,248,0.95) 0%, rgba(255,255,255,1) 100%) !important;
+          border-top: none !important;
+          position: relative !important;
           z-index: 10 !important;
           flex-shrink: 0 !important;
+        }
+
+        .kova-cart-panel__footer::before {
+          content: '' !important;
+          position: absolute !important;
+          top: 0 !important;
+          left: 20px !important;
+          right: 20px !important;
+          height: 1px !important;
+          background: linear-gradient(90deg, transparent, rgba(165, 148, 87, 0.2), transparent) !important;
         }
 
         .kova-cart-panel__total {
@@ -3215,51 +3227,58 @@
           justify-content: space-between !important;
           align-items: center !important;
           margin-bottom: 16px !important;
-          padding: 16px 0 !important;
-          border-top: 1px solid rgba(212, 196, 184, 0.2) !important;
+          padding: 0 !important;
+          border: none !important;
         }
 
         .kova-cart-panel__total-label {
-          font-size: 16px !important;
-          font-weight: var(--kova-font-weight-semibold) !important;
+          font-size: 14px !important;
+          font-weight: 500 !important;
           color: var(--kova-text-primary) !important;
+          opacity: 0.7 !important;
         }
 
         .kova-cart-panel__total-price {
-          font-size: 20px !important;
-          font-weight: var(--kova-font-weight-bold) !important;
+          font-size: 22px !important;
+          font-weight: 700 !important;
           color: var(--kova-perfect) !important;
+          letter-spacing: -0.5px !important;
         }
 
-        /* Checkout Button - Black Background */
+        /* Checkout Button - Uses dynamic primary color */
         .kova-cart-panel__checkout {
           width: 100% !important;
-          background: #000000 !important;
+          background: var(--kova-primary-dynamic, var(--kova-perfect)) !important;
           color: var(--kova-white) !important;
           border: none !important;
-          border-radius: 12px !important;
+          border-radius: 14px !important;
           padding: 16px 24px !important;
-          font-size: 16px !important;
-          font-weight: var(--kova-font-weight-bold) !important;
+          font-size: 15px !important;
+          font-weight: 600 !important;
           cursor: pointer !important;
-          transition: none !important;
+          transition: all 0.25s cubic-bezier(0.32, 0.72, 0, 1) !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
-          gap: 8px !important;
-          text-transform: uppercase !important;
-          letter-spacing: 0.5px !important;
+          gap: 10px !important;
+          text-transform: none !important;
+          letter-spacing: 0 !important;
+          box-shadow: 0 4px 12px rgba(165, 148, 87, 0.25) !important;
         }
 
         .kova-cart-panel__checkout:hover {
-          background: #333333 !important;
           transform: translateY(-2px) !important;
-          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+          box-shadow: 0 8px 24px rgba(165, 148, 87, 0.35) !important;
+          filter: brightness(1.05) !important;
+        }
+
+        .kova-cart-panel__checkout:active {
+          transform: translateY(0) !important;
         }
 
         .kova-cart-panel__checkout svg {
-          width: 16px !important;
-          height: 16px !important;
+          width: 18px !important;
+          height: 18px !important;
         }
 
         /* Chat Container positioning */
@@ -3603,6 +3622,9 @@
           --kova-primary-dynamic: ${primaryColor} !important;
           --kova-secondary-dynamic: ${secondaryColor} !important;
           --kova-accent-dynamic: ${accentColor} !important;
+          --kova-chat-width: ${chatWidth}px !important;
+          --kova-chat-height: ${chatHeight}px !important;
+          --kova-button-size: ${buttonSize}px !important;
         }
 
         /* Override base colors with dynamic values */
@@ -3619,6 +3641,7 @@
 
         .kova-widget__button-pulse {
           background: ${primaryColor} !important;
+          border-radius: ${buttonRadius} !important;
           ${!showPulse ? 'display: none !important;' : ''}
         }
 
@@ -3626,6 +3649,19 @@
           width: ${chatWidth}px !important;
           height: ${chatHeight}px !important;
           background: ${surfaceBg} !important;
+        }
+
+        /* Cart panel dynamic positioning */
+        .kova-widget--bottom-right .kova-cart-panel {
+          right: calc(${chatWidth}px + 52px) !important;
+        }
+
+        .kova-widget--bottom-left .kova-cart-panel {
+          left: calc(${chatWidth}px + 52px) !important;
+        }
+
+        .kova-cart-panel {
+          height: ${Math.min(chatHeight - 40, 580)}px !important;
         }
 
         /* Header and accent elements */

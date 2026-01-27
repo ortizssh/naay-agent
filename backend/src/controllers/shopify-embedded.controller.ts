@@ -249,25 +249,87 @@ router.put(
 
 /**
  * Helper function to get analytics for a shop with optional date filtering
+ * Optimized with parallel queries for better performance
  */
 async function getAnalyticsForShop(
   shopDomain: string,
   dateFilters: { start: string | null; end: string | null }
 ) {
-  // Get chat messages with optional date filter
-  let messagesQuery = (supabaseService as any).serviceClient
-    .from('chat_messages')
-    .select('session_id, created_at')
-    .eq('shop_domain', shopDomain);
+  const client = (supabaseService as any).serviceClient;
 
-  if (dateFilters.start) {
-    messagesQuery = messagesQuery.gte('created_at', dateFilters.start);
-  }
-  if (dateFilters.end) {
-    messagesQuery = messagesQuery.lte('created_at', dateFilters.end);
-  }
+  // Build all queries
+  const buildMessagesQuery = () => {
+    let query = client
+      .from('chat_messages')
+      .select('session_id, created_at')
+      .eq('shop_domain', shopDomain);
 
-  const { data: messagesData } = await messagesQuery;
+    if (dateFilters.start) {
+      query = query.gte('created_at', dateFilters.start);
+    }
+    if (dateFilters.end) {
+      query = query.lte('created_at', dateFilters.end);
+    }
+    return query;
+  };
+
+  const buildRecommendationsQuery = () => {
+    let query = client
+      .from('simple_recommendations')
+      .select('*', { count: 'exact', head: true })
+      .eq('shop_domain', shopDomain);
+
+    if (dateFilters.start) {
+      query = query.gte('created_at', dateFilters.start);
+    }
+    if (dateFilters.end) {
+      query = query.lte('created_at', dateFilters.end);
+    }
+    return query;
+  };
+
+  const buildConversionsQuery = () => {
+    let query = client
+      .from('simple_conversions')
+      .select('*', { count: 'exact', head: true })
+      .eq('shop_domain', shopDomain);
+
+    if (dateFilters.start) {
+      query = query.gte('created_at', dateFilters.start);
+    }
+    if (dateFilters.end) {
+      query = query.lte('created_at', dateFilters.end);
+    }
+    return query;
+  };
+
+  // Execute all queries in parallel for better performance
+  const [
+    messagesResult,
+    productCountResult,
+    recommendationsResult,
+    conversionsResult,
+    storeInfoResult,
+  ] = await Promise.all([
+    buildMessagesQuery(),
+    client
+      .from('products')
+      .select('*', { count: 'exact', head: true })
+      .eq('shop_domain', shopDomain),
+    buildRecommendationsQuery(),
+    buildConversionsQuery(),
+    client
+      .from('stores')
+      .select('installed_at, updated_at')
+      .eq('shop_domain', shopDomain)
+      .single(),
+  ]);
+
+  const messagesData = messagesResult.data;
+  const productCount = productCountResult.count;
+  const recommendationCount = recommendationsResult.count;
+  const conversionCount = conversionsResult.count;
+  const storeInfo = storeInfoResult.data;
 
   // Calculate unique sessions (conversations)
   const uniqueSessions = new Set(
@@ -298,55 +360,6 @@ async function getAnalyticsForShop(
         });
       });
   }
-
-  // Get products count (not filtered by date)
-  const { count: productCount } = await (supabaseService as any).serviceClient
-    .from('products')
-    .select('*', { count: 'exact', head: true })
-    .eq('shop_domain', shopDomain);
-
-  // Get recommendations count with date filter
-  let recommendationsQuery = (supabaseService as any).serviceClient
-    .from('simple_recommendations')
-    .select('*', { count: 'exact', head: true })
-    .eq('shop_domain', shopDomain);
-
-  if (dateFilters.start) {
-    recommendationsQuery = recommendationsQuery.gte(
-      'created_at',
-      dateFilters.start
-    );
-  }
-  if (dateFilters.end) {
-    recommendationsQuery = recommendationsQuery.lte(
-      'created_at',
-      dateFilters.end
-    );
-  }
-
-  const { count: recommendationCount } = await recommendationsQuery;
-
-  // Get conversions count with date filter
-  let conversionsQuery = (supabaseService as any).serviceClient
-    .from('simple_conversions')
-    .select('*', { count: 'exact', head: true })
-    .eq('shop_domain', shopDomain);
-
-  if (dateFilters.start) {
-    conversionsQuery = conversionsQuery.gte('created_at', dateFilters.start);
-  }
-  if (dateFilters.end) {
-    conversionsQuery = conversionsQuery.lte('created_at', dateFilters.end);
-  }
-
-  const { count: conversionCount } = await conversionsQuery;
-
-  // Get store dates
-  const { data: storeInfo } = await (supabaseService as any).serviceClient
-    .from('stores')
-    .select('installed_at, updated_at')
-    .eq('shop_domain', shopDomain)
-    .single();
 
   return {
     conversations: conversationCount,

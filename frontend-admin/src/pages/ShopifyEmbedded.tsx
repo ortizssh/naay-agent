@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import logoKova from '../img/logo-kova.png';
 
 interface ShopifyEmbeddedProps {
@@ -54,8 +54,61 @@ interface WidgetConfig {
 }
 
 type TabType = 'dashboard' | 'analytics' | 'widget';
+type DatePreset = 'today' | 'yesterday' | '3d' | '7d' | '14d' | '30d' | 'thisWeek' | 'thisMonth' | 'custom';
 
-function ShopifyEmbedded({ shop, host }: ShopifyEmbeddedProps) {
+// Helper functions for date calculations
+const getDateString = (date: Date) => date.toISOString().split('T')[0];
+
+const getPresetDates = (preset: DatePreset): { start: string; end: string } => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = getDateString(today);
+
+  switch (preset) {
+    case 'today':
+      return { start: todayStr, end: todayStr };
+    case 'yesterday': {
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = getDateString(yesterday);
+      return { start: yesterdayStr, end: yesterdayStr };
+    }
+    case '3d': {
+      const threeDaysAgo = new Date(today);
+      threeDaysAgo.setDate(threeDaysAgo.getDate() - 2);
+      return { start: getDateString(threeDaysAgo), end: todayStr };
+    }
+    case '7d': {
+      const sevenDaysAgo = new Date(today);
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+      return { start: getDateString(sevenDaysAgo), end: todayStr };
+    }
+    case '14d': {
+      const fourteenDaysAgo = new Date(today);
+      fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 13);
+      return { start: getDateString(fourteenDaysAgo), end: todayStr };
+    }
+    case '30d': {
+      const thirtyDaysAgo = new Date(today);
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
+      return { start: getDateString(thirtyDaysAgo), end: todayStr };
+    }
+    case 'thisWeek': {
+      const dayOfWeek = today.getDay();
+      const monday = new Date(today);
+      monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+      return { start: getDateString(monday), end: todayStr };
+    }
+    case 'thisMonth': {
+      const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      return { start: getDateString(firstOfMonth), end: todayStr };
+    }
+    default:
+      return { start: todayStr, end: todayStr };
+  }
+};
+
+function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
   const [currentTab, setCurrentTab] = useState<TabType>('dashboard');
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [store, setStore] = useState<StoreData | null>(null);
@@ -86,14 +139,17 @@ function ShopifyEmbedded({ shop, host }: ShopifyEmbeddedProps) {
   const [success, setSuccess] = useState(false);
   const [widgetTab, setWidgetTab] = useState<'appearance' | 'content' | 'features'>('appearance');
 
-  // Date filter state
-  const defaultEndDate = new Date().toISOString().split('T')[0];
-  const defaultStartDate = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-  const [startDate, setStartDate] = useState(defaultStartDate);
-  const [endDate, setEndDate] = useState(defaultEndDate);
+  // Date filter state - optimized
+  const [selectedPreset, setSelectedPreset] = useState<DatePreset>('7d');
+  const initialDates = getPresetDates('7d');
+  const [startDate, setStartDate] = useState(initialDates.start);
+  const [endDate, setEndDate] = useState(initialDates.end);
+  const [isFilterLoading, setIsFilterLoading] = useState(false);
+  const [pendingFilter, setPendingFilter] = useState(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Get API URL - for embedded Shopify context, we need the app URL, not the iframe origin
-  const getApiUrl = () => {
+  const getApiUrl = useCallback(() => {
     // Check for environment variable first
     if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
 
@@ -108,21 +164,46 @@ function ShopifyEmbedded({ shop, host }: ShopifyEmbeddedProps) {
 
     // Fallback to production URL for Shopify embedded context
     return 'https://naay-agent-app1763504937.azurewebsites.net';
-  };
+  }, []);
 
-  useEffect(() => {
-    loadData();
-  }, [shop, startDate, endDate]);
+  // Apply preset filter
+  const applyPreset = useCallback((preset: DatePreset) => {
+    const dates = getPresetDates(preset);
+    setSelectedPreset(preset);
+    setStartDate(dates.start);
+    setEndDate(dates.end);
+    setPendingFilter(false);
+  }, []);
 
-  useEffect(() => {
-    if (currentTab === 'widget') {
-      loadWidgetConfig();
+  // Handle custom date changes with debouncing
+  const handleCustomDateChange = useCallback((type: 'start' | 'end', value: string) => {
+    if (type === 'start') {
+      setStartDate(value);
+    } else {
+      setEndDate(value);
     }
-  }, [currentTab, shop]);
+    setSelectedPreset('custom');
+    setPendingFilter(true);
 
-  const loadData = async () => {
+    // Clear existing timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Set new debounced timer
+    debounceTimerRef.current = setTimeout(() => {
+      setPendingFilter(false);
+    }, 800);
+  }, []);
+
+  // Load data function
+  const loadData = useCallback(async (showFullLoading = true) => {
     try {
-      setLoading(true);
+      if (showFullLoading) {
+        setLoading(true);
+      } else {
+        setIsFilterLoading(true);
+      }
       setError(null);
 
       const apiUrl = getApiUrl();
@@ -149,8 +230,40 @@ function ShopifyEmbedded({ shop, host }: ShopifyEmbeddedProps) {
       setError(err.message || 'Error al cargar datos');
     } finally {
       setLoading(false);
+      setIsFilterLoading(false);
     }
-  };
+  }, [shop, startDate, endDate, getApiUrl]);
+
+  // Initial load and filter change effect
+  const isInitialLoad = useRef(true);
+
+  useEffect(() => {
+    if (isInitialLoad.current) {
+      // Initial load
+      isInitialLoad.current = false;
+      loadData(true);
+    } else if (!pendingFilter) {
+      // Filter change - use lighter loading indicator
+      loadData(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shop, startDate, endDate, pendingFilter]);
+
+  // Widget config load
+  useEffect(() => {
+    if (currentTab === 'widget') {
+      loadWidgetConfig();
+    }
+  }, [currentTab, shop]);
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   const loadWidgetConfig = async () => {
     try {
@@ -319,7 +432,7 @@ function ShopifyEmbedded({ shop, host }: ShopifyEmbeddedProps) {
               </span>
             )}
           </div>
-          <button className="btn btn-primary btn-sm" onClick={loadData}>
+          <button className="btn btn-primary btn-sm" onClick={() => loadData(true)} disabled={loading || isFilterLoading}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="23 4 23 10 17 10" />
               <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
@@ -386,61 +499,180 @@ function ShopifyEmbedded({ shop, host }: ShopifyEmbeddedProps) {
         {/* Dashboard Tab */}
         {currentTab === 'dashboard' && analytics && (
           <>
-            {/* Date Filter */}
-            <div className="card" style={{ marginBottom: '1rem' }}>
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* Date Filter - Optimized */}
+            <div className="card" style={{ marginBottom: '1rem', position: 'relative' }}>
+              {/* Loading overlay */}
+              {isFilterLoading && (
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'rgba(var(--color-bg-rgb, 255, 255, 255), 0.7)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '10px',
+                  zIndex: 10,
+                }}>
+                  <div style={{
+                    width: '20px',
+                    height: '20px',
+                    border: '2px solid var(--color-border)',
+                    borderTopColor: 'var(--color-primary)',
+                    borderRadius: '50%',
+                    animation: 'spin 0.8s linear infinite',
+                  }} />
+                </div>
+              )}
+
+              {/* Quick Presets Row */}
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                {([
+                  { key: 'today', label: 'Hoy' },
+                  { key: 'yesterday', label: 'Ayer' },
+                  { key: '3d', label: '3 dias' },
+                  { key: '7d', label: '7 dias' },
+                  { key: '14d', label: '14 dias' },
+                  { key: '30d', label: '30 dias' },
+                  { key: 'thisWeek', label: 'Esta semana' },
+                  { key: 'thisMonth', label: 'Este mes' },
+                ] as { key: DatePreset; label: string }[]).map(preset => (
+                  <button
+                    key={preset.key}
+                    onClick={() => applyPreset(preset.key)}
+                    disabled={isFilterLoading}
+                    style={{
+                      padding: '0.35rem 0.65rem',
+                      fontSize: '0.8rem',
+                      borderRadius: '6px',
+                      border: selectedPreset === preset.key
+                        ? '1px solid var(--color-primary)'
+                        : '1px solid var(--color-border)',
+                      background: selectedPreset === preset.key
+                        ? 'var(--color-primary)'
+                        : 'var(--color-bg)',
+                      color: selectedPreset === preset.key
+                        ? 'white'
+                        : 'var(--color-text)',
+                      cursor: isFilterLoading ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.2s ease',
+                      fontWeight: selectedPreset === preset.key ? '600' : '400',
+                    }}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Custom Date Range */}
+              <div style={{
+                display: 'flex',
+                gap: '1rem',
+                alignItems: 'flex-end',
+                flexWrap: 'wrap',
+                paddingTop: '0.5rem',
+                borderTop: '1px solid var(--color-border)',
+              }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Desde</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: '500' }}>
+                    Fecha inicio
+                  </label>
                   <input
                     type="date"
                     value={startDate}
-                    onChange={e => setStartDate(e.target.value)}
+                    max={endDate}
+                    onChange={e => handleCustomDateChange('start', e.target.value)}
+                    disabled={isFilterLoading}
                     style={{
                       padding: '0.4rem 0.6rem',
                       borderRadius: '6px',
-                      border: '1px solid var(--color-border)',
+                      border: selectedPreset === 'custom'
+                        ? '1px solid var(--color-primary)'
+                        : '1px solid var(--color-border)',
                       background: 'var(--color-bg)',
                       color: 'var(--color-text)',
                       fontSize: '0.85rem',
+                      cursor: isFilterLoading ? 'not-allowed' : 'pointer',
                     }}
                   />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Hasta</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: '500' }}>
+                    Fecha fin
+                  </label>
                   <input
                     type="date"
                     value={endDate}
-                    onChange={e => setEndDate(e.target.value)}
+                    min={startDate}
+                    max={getDateString(new Date())}
+                    onChange={e => handleCustomDateChange('end', e.target.value)}
+                    disabled={isFilterLoading}
                     style={{
                       padding: '0.4rem 0.6rem',
                       borderRadius: '6px',
-                      border: '1px solid var(--color-border)',
+                      border: selectedPreset === 'custom'
+                        ? '1px solid var(--color-primary)'
+                        : '1px solid var(--color-border)',
                       background: 'var(--color-bg)',
                       color: 'var(--color-text)',
                       fontSize: '0.85rem',
+                      cursor: isFilterLoading ? 'not-allowed' : 'pointer',
                     }}
                   />
                 </div>
-                <div style={{ display: 'flex', gap: '0.25rem', marginLeft: 'auto' }}>
-                  {[3, 7, 30].map(days => (
-                    <button
-                      key={days}
-                      className="btn btn-secondary"
-                      onClick={() => {
-                        const today = new Date();
-                        setEndDate(today.toISOString().split('T')[0]);
-                        setStartDate(
-                          new Date(today.getTime() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-                        );
-                      }}
-                      style={{ fontSize: '0.8rem', padding: '0.4rem 0.6rem' }}
-                    >
-                      {days}d
-                    </button>
-                  ))}
+
+                {/* Date range summary */}
+                <div style={{
+                  marginLeft: 'auto',
+                  fontSize: '0.8rem',
+                  color: 'var(--color-text-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                }}>
+                  {pendingFilter && (
+                    <span style={{
+                      color: 'var(--color-warning)',
+                      fontSize: '0.75rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.25rem',
+                    }}>
+                      <span style={{
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        background: 'var(--color-warning)',
+                        animation: 'pulse 1s infinite',
+                      }} />
+                      Aplicando...
+                    </span>
+                  )}
+                  <span>
+                    {(() => {
+                      const start = new Date(startDate);
+                      const end = new Date(endDate);
+                      const diffTime = Math.abs(end.getTime() - start.getTime());
+                      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                      return `${diffDays} dia${diffDays !== 1 ? 's' : ''} seleccionado${diffDays !== 1 ? 's' : ''}`;
+                    })()}
+                  </span>
                 </div>
               </div>
             </div>
+
+            {/* CSS for animations */}
+            <style>{`
+              @keyframes spin {
+                to { transform: rotate(360deg); }
+              }
+              @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.5; }
+              }
+            `}</style>
 
             {/* Main Stats */}
             <div className="stats-grid embedded-stats">
@@ -560,58 +792,166 @@ function ShopifyEmbedded({ shop, host }: ShopifyEmbeddedProps) {
         {/* Analytics Tab */}
         {currentTab === 'analytics' && analytics && (
           <>
-            {/* Date Filter */}
-            <div className="card" style={{ marginBottom: '1rem' }}>
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* Date Filter - Same optimized component */}
+            <div className="card" style={{ marginBottom: '1rem', position: 'relative' }}>
+              {/* Loading overlay */}
+              {isFilterLoading && (
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'rgba(var(--color-bg-rgb, 255, 255, 255), 0.7)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '10px',
+                  zIndex: 10,
+                }}>
+                  <div style={{
+                    width: '20px',
+                    height: '20px',
+                    border: '2px solid var(--color-border)',
+                    borderTopColor: 'var(--color-primary)',
+                    borderRadius: '50%',
+                    animation: 'spin 0.8s linear infinite',
+                  }} />
+                </div>
+              )}
+
+              {/* Quick Presets Row */}
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                {([
+                  { key: 'today', label: 'Hoy' },
+                  { key: 'yesterday', label: 'Ayer' },
+                  { key: '3d', label: '3 dias' },
+                  { key: '7d', label: '7 dias' },
+                  { key: '14d', label: '14 dias' },
+                  { key: '30d', label: '30 dias' },
+                  { key: 'thisWeek', label: 'Esta semana' },
+                  { key: 'thisMonth', label: 'Este mes' },
+                ] as { key: DatePreset; label: string }[]).map(preset => (
+                  <button
+                    key={preset.key}
+                    onClick={() => applyPreset(preset.key)}
+                    disabled={isFilterLoading}
+                    style={{
+                      padding: '0.35rem 0.65rem',
+                      fontSize: '0.8rem',
+                      borderRadius: '6px',
+                      border: selectedPreset === preset.key
+                        ? '1px solid var(--color-primary)'
+                        : '1px solid var(--color-border)',
+                      background: selectedPreset === preset.key
+                        ? 'var(--color-primary)'
+                        : 'var(--color-bg)',
+                      color: selectedPreset === preset.key
+                        ? 'white'
+                        : 'var(--color-text)',
+                      cursor: isFilterLoading ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.2s ease',
+                      fontWeight: selectedPreset === preset.key ? '600' : '400',
+                    }}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Custom Date Range */}
+              <div style={{
+                display: 'flex',
+                gap: '1rem',
+                alignItems: 'flex-end',
+                flexWrap: 'wrap',
+                paddingTop: '0.5rem',
+                borderTop: '1px solid var(--color-border)',
+              }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Desde</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: '500' }}>
+                    Fecha inicio
+                  </label>
                   <input
                     type="date"
                     value={startDate}
-                    onChange={e => setStartDate(e.target.value)}
+                    max={endDate}
+                    onChange={e => handleCustomDateChange('start', e.target.value)}
+                    disabled={isFilterLoading}
                     style={{
                       padding: '0.4rem 0.6rem',
                       borderRadius: '6px',
-                      border: '1px solid var(--color-border)',
+                      border: selectedPreset === 'custom'
+                        ? '1px solid var(--color-primary)'
+                        : '1px solid var(--color-border)',
                       background: 'var(--color-bg)',
                       color: 'var(--color-text)',
                       fontSize: '0.85rem',
+                      cursor: isFilterLoading ? 'not-allowed' : 'pointer',
                     }}
                   />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Hasta</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: '500' }}>
+                    Fecha fin
+                  </label>
                   <input
                     type="date"
                     value={endDate}
-                    onChange={e => setEndDate(e.target.value)}
+                    min={startDate}
+                    max={getDateString(new Date())}
+                    onChange={e => handleCustomDateChange('end', e.target.value)}
+                    disabled={isFilterLoading}
                     style={{
                       padding: '0.4rem 0.6rem',
                       borderRadius: '6px',
-                      border: '1px solid var(--color-border)',
+                      border: selectedPreset === 'custom'
+                        ? '1px solid var(--color-primary)'
+                        : '1px solid var(--color-border)',
                       background: 'var(--color-bg)',
                       color: 'var(--color-text)',
                       fontSize: '0.85rem',
+                      cursor: isFilterLoading ? 'not-allowed' : 'pointer',
                     }}
                   />
                 </div>
-                <div style={{ display: 'flex', gap: '0.25rem', marginLeft: 'auto' }}>
-                  {[3, 7, 30].map(days => (
-                    <button
-                      key={days}
-                      className="btn btn-secondary"
-                      onClick={() => {
-                        const today = new Date();
-                        setEndDate(today.toISOString().split('T')[0]);
-                        setStartDate(
-                          new Date(today.getTime() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-                        );
-                      }}
-                      style={{ fontSize: '0.8rem', padding: '0.4rem 0.6rem' }}
-                    >
-                      {days}d
-                    </button>
-                  ))}
+
+                {/* Date range summary */}
+                <div style={{
+                  marginLeft: 'auto',
+                  fontSize: '0.8rem',
+                  color: 'var(--color-text-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                }}>
+                  {pendingFilter && (
+                    <span style={{
+                      color: 'var(--color-warning)',
+                      fontSize: '0.75rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.25rem',
+                    }}>
+                      <span style={{
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        background: 'var(--color-warning)',
+                        animation: 'pulse 1s infinite',
+                      }} />
+                      Aplicando...
+                    </span>
+                  )}
+                  <span>
+                    {(() => {
+                      const start = new Date(startDate);
+                      const end = new Date(endDate);
+                      const diffTime = Math.abs(end.getTime() - start.getTime());
+                      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                      return `${diffDays} dia${diffDays !== 1 ? 's' : ''} seleccionado${diffDays !== 1 ? 's' : ''}`;
+                    })()}
+                  </span>
                 </div>
               </div>
             </div>
