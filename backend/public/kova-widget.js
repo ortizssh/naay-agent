@@ -2196,29 +2196,32 @@
             z-index: 999998 !important;
           }
 
-          /* Chat panel - fullscreen when open */
+          /* Chat panel - CENTERED on screen */
           .kova-widget__chat {
             position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
-            height: 100dvh !important;
-            max-width: none !important;
-            max-height: none !important;
-            border-radius: 0 !important;
+            top: 50% !important;
+            left: 50% !important;
+            right: auto !important;
+            bottom: auto !important;
+            transform: translate(-50%, -50%) scale(0.95) !important;
+            width: calc(100vw - 24px) !important;
+            height: calc(100vh - 48px) !important;
+            height: calc(100dvh - 48px) !important;
+            max-width: 400px !important;
+            max-height: 85vh !important;
+            border-radius: 20px !important;
             z-index: 999999 !important;
             margin: 0 !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
           }
 
-          /* CRITICAL: Ensure chat is visible when open */
+          /* CRITICAL: Ensure chat is visible and centered when open */
           .kova-widget--open .kova-widget__chat {
             display: flex !important;
             opacity: 1 !important;
             visibility: visible !important;
-            transform: none !important;
+            transform: translate(-50%, -50%) scale(1) !important;
           }
 
           /* Promotional message */
@@ -3712,21 +3715,24 @@
         }
         ` : ''}
 
-        /* Mobile responsiveness - maintain dynamic sizes on small screens */
+        /* Mobile responsiveness - centered panel on small screens */
         @media (max-width: 480px) {
           .kova-widget__chat {
-            width: 100vw !important;
-            height: 100dvh !important;
+            width: calc(100vw - 24px) !important;
+            height: calc(100dvh - 48px) !important;
+            max-width: 400px !important;
+            max-height: 85vh !important;
           }
           .kova-widget__button {
             width: ${Math.min(buttonSize, 64)}px !important;
             height: ${Math.min(buttonSize, 64)}px !important;
           }
-          /* Ensure chat visibility on mobile */
+          /* Ensure chat visibility and centering on mobile */
           .kova-widget--open .kova-widget__chat {
             display: flex !important;
             opacity: 1 !important;
             visibility: visible !important;
+            transform: translate(-50%, -50%) scale(1) !important;
           }
         }
       `;
