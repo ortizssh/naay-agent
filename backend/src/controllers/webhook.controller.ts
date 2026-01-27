@@ -517,7 +517,9 @@ async function trackSimpleOrderCompletion(
     const orderId = order.id.toString();
 
     // Check if this order was already processed to avoid duplicates
-    const { data: existingConversion } = await (supabaseService as any).serviceClient
+    const { data: existingConversion } = await (
+      supabaseService as any
+    ).serviceClient
       .from('simple_conversions')
       .select('id')
       .eq('order_id', orderId)
