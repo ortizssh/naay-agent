@@ -717,7 +717,10 @@ async function startServer() {
     // SPA fallback - serve React app for any non-API routes
     app.use('*', (req, res) => {
       // Don't serve SPA for API routes
-      if (req.originalUrl.startsWith('/api/') || req.originalUrl.startsWith('/auth/')) {
+      if (
+        req.originalUrl.startsWith('/api/') ||
+        req.originalUrl.startsWith('/auth/')
+      ) {
         return res.status(404).json({
           success: false,
           error: 'Route not found',
