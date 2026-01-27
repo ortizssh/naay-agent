@@ -484,8 +484,8 @@ router.get(
 
       const uniqueDates = [
         ...new Set(
-          (availableDates || []).map((d: any) =>
-            new Date(d.timestamp).toISOString().split('T')[0]
+          (availableDates || []).map(
+            (d: any) => new Date(d.timestamp).toISOString().split('T')[0]
           )
         ),
       ].slice(0, 30); // Last 30 days with data

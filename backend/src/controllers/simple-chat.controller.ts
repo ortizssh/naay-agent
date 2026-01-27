@@ -301,7 +301,9 @@ router.post(
 
       // Persist user message to database (non-blocking)
       if (shop) {
-        persistChatMessage(currentConversationId, shop, 'user', message).catch(() => {});
+        persistChatMessage(currentConversationId, shop, 'user', message).catch(
+          () => {}
+        );
       }
 
       // Keep conversation history manageable (last 20 messages)
@@ -580,7 +582,12 @@ Cuando un usuario interactúe:
 
       // Persist assistant response to database (non-blocking)
       if (shop) {
-        persistChatMessage(currentConversationId, shop, 'assistant', response).catch(() => {});
+        persistChatMessage(
+          currentConversationId,
+          shop,
+          'assistant',
+          response
+        ).catch(() => {});
       }
 
       res.json({
