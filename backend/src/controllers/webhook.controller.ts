@@ -244,6 +244,9 @@ router.post(
       // Log webhook event
       await logWebhookEvent(shopDomain, 'orders/paid', order);
 
+      // Track conversions - also process here since orders/create webhook may not always arrive
+      await trackSimpleOrderCompletion(shopDomain, order);
+
       // Update order status and recalculate attribution if needed
       await updateOrderStatus(shopDomain, order.id.toString(), 'paid');
 
@@ -511,8 +514,27 @@ async function trackSimpleOrderCompletion(
   order: any
 ): Promise<void> {
   try {
+    const orderId = order.id.toString();
+
+    // Check if this order was already processed to avoid duplicates
+    const { data: existingConversion } = await (supabaseService as any).serviceClient
+      .from('simple_conversions')
+      .select('id')
+      .eq('order_id', orderId)
+      .eq('shop_domain', shopDomain)
+      .limit(1)
+      .single();
+
+    if (existingConversion) {
+      logger.info('Order already processed for conversions, skipping', {
+        shopDomain,
+        orderId,
+      });
+      return;
+    }
+
     const orderEvent = {
-      orderId: order.id.toString(),
+      orderId,
       shopDomain,
       customerId: order.customer?.id?.toString(),
       products: (order.line_items || [])

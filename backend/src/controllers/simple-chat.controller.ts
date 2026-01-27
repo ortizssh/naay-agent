@@ -132,6 +132,50 @@ const openai = new OpenAI({
 
 const supabaseService = new SupabaseService();
 
+/**
+ * Normalize shop domain to myshopify.com format
+ * This ensures consistency between chat recommendations and order webhooks
+ */
+async function normalizeShopDomain(shopInput: string): Promise<string> {
+  if (!shopInput) return shopInput;
+
+  let normalized = shopInput.toLowerCase().trim();
+
+  // If already in myshopify.com format, return as is
+  if (normalized.includes('.myshopify.com')) {
+    return normalized;
+  }
+
+  // Try to find the store by custom domain or name in our database
+  const { data: store } = await (supabaseService as any).serviceClient
+    .from('stores')
+    .select('shop_domain')
+    .or(`shop_domain.ilike.%${normalized}%,shop_domain.eq.${normalized}`)
+    .limit(1)
+    .single();
+
+  if (store?.shop_domain) {
+    return store.shop_domain;
+  }
+
+  // Also check client_stores
+  const { data: clientStore } = await (supabaseService as any).serviceClient
+    .from('client_stores')
+    .select('shop_domain')
+    .or(`shop_domain.ilike.%${normalized}%,shop_domain.eq.${normalized}`)
+    .limit(1)
+    .single();
+
+  if (clientStore?.shop_domain) {
+    return clientStore.shop_domain;
+  }
+
+  // Fallback: assume it's the shop name and add .myshopify.com
+  // Handle cases like "naay.cl" -> try "naaycl.myshopify.com"
+  const shopName = normalized.replace(/\.[^.]+$/, '').replace(/[^a-z0-9]/g, '');
+  return `${shopName}.myshopify.com`;
+}
+
 // In-memory conversation store (for simple implementation)
 // In production, this should use a proper database or cache
 const conversationStore: Record<
@@ -262,7 +306,7 @@ router.post(
   trackUsageAfterResponse,
   async (req: Request, res: Response) => {
     try {
-      const { message, shop, conversationId } = req.body;
+      const { message, shop: rawShop, conversationId } = req.body;
 
       if (!message || typeof message !== 'string') {
         return res.status(400).json({
@@ -271,6 +315,9 @@ router.post(
         });
       }
 
+      // Normalize shop domain to ensure consistency with webhooks
+      const shop = rawShop ? await normalizeShopDomain(rawShop) : rawShop;
+
       // Generate conversation ID if not provided
       const currentConversationId =
         conversationId ||
@@ -278,6 +325,7 @@ router.post(
 
       logger.info('Simple chat message received', {
         shop: shop || 'unknown',
+        rawShop: rawShop || 'unknown',
         conversationId: currentConversationId,
         messageLength: message.length,
         hasApiKey: !!apiKey,

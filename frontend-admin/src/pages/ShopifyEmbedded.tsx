@@ -173,7 +173,6 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
   const [endDate, setEndDate] = useState(initialDates.end);
   const [isFilterLoading, setIsFilterLoading] = useState(false);
   const [pendingFilter, setPendingFilter] = useState(false);
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Get API URL - for embedded Shopify context, we need the app URL, not the iframe origin
   const getApiUrl = useCallback(() => {
@@ -202,7 +201,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
     setPendingFilter(false);
   }, []);
 
-  // Handle custom date changes with debouncing
+  // Handle custom date changes - no auto-apply, requires button click
   const handleCustomDateChange = useCallback((type: 'start' | 'end', value: string) => {
     if (type === 'start') {
       setStartDate(value);
@@ -210,17 +209,12 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
       setEndDate(value);
     }
     setSelectedPreset('custom');
-    setPendingFilter(true);
+    setPendingFilter(true); // Mark as pending until user clicks Apply
+  }, []);
 
-    // Clear existing timer
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-
-    // Set new debounced timer
-    debounceTimerRef.current = setTimeout(() => {
-      setPendingFilter(false);
-    }, 800);
+  // Apply custom date filter
+  const applyCustomFilter = useCallback(() => {
+    setPendingFilter(false); // This triggers the loadData effect
   }, []);
 
   // Load data function
@@ -312,14 +306,6 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
     }
   };
 
-  // Cleanup debounce timer on unmount
-  useEffect(() => {
-    return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-    };
-  }, []);
 
   const loadWidgetConfig = async () => {
     try {
@@ -643,8 +629,9 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                 </span>
               </div>
 
-              {/* Quick Presets Row */}
-              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+              {/* Quick Presets Row with Custom Dates */}
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                {/* Presets */}
                 {([
                   { key: 'today', label: 'Hoy' },
                   { key: 'yesterday', label: 'Ayer' },
@@ -681,102 +668,74 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                     {preset.label}
                   </button>
                 ))}
-              </div>
 
-              {/* Custom Date Range */}
-              <div style={{
-                display: 'flex',
-                gap: '1rem',
-                alignItems: 'flex-end',
-                flexWrap: 'wrap',
-                paddingTop: '0.5rem',
-                borderTop: '1px solid var(--color-border)',
-              }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: '500' }}>
-                    Fecha inicio
-                  </label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    max={endDate}
-                    onChange={e => handleCustomDateChange('start', e.target.value)}
+                {/* Separator */}
+                <div style={{ width: '1px', height: '24px', background: 'var(--color-border)', margin: '0 0.25rem' }} />
+
+                {/* Custom Date Inputs */}
+                <input
+                  type="date"
+                  value={startDate}
+                  max={endDate}
+                  onChange={e => handleCustomDateChange('start', e.target.value)}
+                  disabled={isFilterLoading}
+                  title="Fecha inicio"
+                  style={{
+                    padding: '0.35rem 0.5rem',
+                    borderRadius: '6px',
+                    border: selectedPreset === 'custom'
+                      ? '1px solid var(--color-primary)'
+                      : '1px solid var(--color-border)',
+                    background: 'var(--color-bg)',
+                    color: 'var(--color-text)',
+                    fontSize: '0.8rem',
+                    cursor: isFilterLoading ? 'not-allowed' : 'pointer',
+                  }}
+                />
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>-</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  min={startDate}
+                  max={getDateString(new Date())}
+                  onChange={e => handleCustomDateChange('end', e.target.value)}
+                  disabled={isFilterLoading}
+                  title="Fecha fin"
+                  style={{
+                    padding: '0.35rem 0.5rem',
+                    borderRadius: '6px',
+                    border: selectedPreset === 'custom'
+                      ? '1px solid var(--color-primary)'
+                      : '1px solid var(--color-border)',
+                    background: 'var(--color-bg)',
+                    color: 'var(--color-text)',
+                    fontSize: '0.8rem',
+                    cursor: isFilterLoading ? 'not-allowed' : 'pointer',
+                  }}
+                />
+
+                {/* Apply Button - only show when custom dates are pending */}
+                {pendingFilter && (
+                  <button
+                    onClick={applyCustomFilter}
                     disabled={isFilterLoading}
                     style={{
-                      padding: '0.4rem 0.6rem',
+                      padding: '0.35rem 0.75rem',
+                      fontSize: '0.8rem',
                       borderRadius: '6px',
-                      border: selectedPreset === 'custom'
-                        ? '1px solid var(--color-primary)'
-                        : '1px solid var(--color-border)',
-                      background: 'var(--color-bg)',
-                      color: 'var(--color-text)',
-                      fontSize: '0.85rem',
+                      border: '1px solid var(--color-primary)',
+                      background: 'var(--color-primary)',
+                      color: 'white',
                       cursor: isFilterLoading ? 'not-allowed' : 'pointer',
-                    }}
-                  />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: '500' }}>
-                    Fecha fin
-                  </label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    min={startDate}
-                    max={getDateString(new Date())}
-                    onChange={e => handleCustomDateChange('end', e.target.value)}
-                    disabled={isFilterLoading}
-                    style={{
-                      padding: '0.4rem 0.6rem',
-                      borderRadius: '6px',
-                      border: selectedPreset === 'custom'
-                        ? '1px solid var(--color-primary)'
-                        : '1px solid var(--color-border)',
-                      background: 'var(--color-bg)',
-                      color: 'var(--color-text)',
-                      fontSize: '0.85rem',
-                      cursor: isFilterLoading ? 'not-allowed' : 'pointer',
-                    }}
-                  />
-                </div>
-
-                {/* Date range summary */}
-                <div style={{
-                  marginLeft: 'auto',
-                  fontSize: '0.8rem',
-                  color: 'var(--color-text-muted)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                }}>
-                  {pendingFilter && (
-                    <span style={{
-                      color: 'var(--color-warning)',
-                      fontSize: '0.75rem',
+                      fontWeight: '600',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.25rem',
-                    }}>
-                      <span style={{
-                        width: '6px',
-                        height: '6px',
-                        borderRadius: '50%',
-                        background: 'var(--color-warning)',
-                        animation: 'pulse 1s infinite',
-                      }} />
-                      Aplicando...
-                    </span>
-                  )}
-                  <span>
-                    {(() => {
-                      const start = new Date(startDate);
-                      const end = new Date(endDate);
-                      const diffTime = Math.abs(end.getTime() - start.getTime());
-                      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-                      return `${diffDays} dia${diffDays !== 1 ? 's' : ''} seleccionado${diffDays !== 1 ? 's' : ''}`;
-                    })()}
-                  </span>
-                </div>
+                      gap: '0.3rem',
+                    }}
+                  >
+                    Aplicar
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1006,8 +965,9 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                 </span>
               </div>
 
-              {/* Quick Presets Row */}
-              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+              {/* Quick Presets Row with Custom Dates */}
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                {/* Presets */}
                 {([
                   { key: 'today', label: 'Hoy' },
                   { key: 'yesterday', label: 'Ayer' },
@@ -1044,102 +1004,74 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                     {preset.label}
                   </button>
                 ))}
-              </div>
 
-              {/* Custom Date Range */}
-              <div style={{
-                display: 'flex',
-                gap: '1rem',
-                alignItems: 'flex-end',
-                flexWrap: 'wrap',
-                paddingTop: '0.5rem',
-                borderTop: '1px solid var(--color-border)',
-              }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: '500' }}>
-                    Fecha inicio
-                  </label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    max={endDate}
-                    onChange={e => handleCustomDateChange('start', e.target.value)}
+                {/* Separator */}
+                <div style={{ width: '1px', height: '24px', background: 'var(--color-border)', margin: '0 0.25rem' }} />
+
+                {/* Custom Date Inputs */}
+                <input
+                  type="date"
+                  value={startDate}
+                  max={endDate}
+                  onChange={e => handleCustomDateChange('start', e.target.value)}
+                  disabled={isFilterLoading}
+                  title="Fecha inicio"
+                  style={{
+                    padding: '0.35rem 0.5rem',
+                    borderRadius: '6px',
+                    border: selectedPreset === 'custom'
+                      ? '1px solid var(--color-primary)'
+                      : '1px solid var(--color-border)',
+                    background: 'var(--color-bg)',
+                    color: 'var(--color-text)',
+                    fontSize: '0.8rem',
+                    cursor: isFilterLoading ? 'not-allowed' : 'pointer',
+                  }}
+                />
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>-</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  min={startDate}
+                  max={getDateString(new Date())}
+                  onChange={e => handleCustomDateChange('end', e.target.value)}
+                  disabled={isFilterLoading}
+                  title="Fecha fin"
+                  style={{
+                    padding: '0.35rem 0.5rem',
+                    borderRadius: '6px',
+                    border: selectedPreset === 'custom'
+                      ? '1px solid var(--color-primary)'
+                      : '1px solid var(--color-border)',
+                    background: 'var(--color-bg)',
+                    color: 'var(--color-text)',
+                    fontSize: '0.8rem',
+                    cursor: isFilterLoading ? 'not-allowed' : 'pointer',
+                  }}
+                />
+
+                {/* Apply Button - only show when custom dates are pending */}
+                {pendingFilter && (
+                  <button
+                    onClick={applyCustomFilter}
                     disabled={isFilterLoading}
                     style={{
-                      padding: '0.4rem 0.6rem',
+                      padding: '0.35rem 0.75rem',
+                      fontSize: '0.8rem',
                       borderRadius: '6px',
-                      border: selectedPreset === 'custom'
-                        ? '1px solid var(--color-primary)'
-                        : '1px solid var(--color-border)',
-                      background: 'var(--color-bg)',
-                      color: 'var(--color-text)',
-                      fontSize: '0.85rem',
+                      border: '1px solid var(--color-primary)',
+                      background: 'var(--color-primary)',
+                      color: 'white',
                       cursor: isFilterLoading ? 'not-allowed' : 'pointer',
-                    }}
-                  />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: '500' }}>
-                    Fecha fin
-                  </label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    min={startDate}
-                    max={getDateString(new Date())}
-                    onChange={e => handleCustomDateChange('end', e.target.value)}
-                    disabled={isFilterLoading}
-                    style={{
-                      padding: '0.4rem 0.6rem',
-                      borderRadius: '6px',
-                      border: selectedPreset === 'custom'
-                        ? '1px solid var(--color-primary)'
-                        : '1px solid var(--color-border)',
-                      background: 'var(--color-bg)',
-                      color: 'var(--color-text)',
-                      fontSize: '0.85rem',
-                      cursor: isFilterLoading ? 'not-allowed' : 'pointer',
-                    }}
-                  />
-                </div>
-
-                {/* Date range summary */}
-                <div style={{
-                  marginLeft: 'auto',
-                  fontSize: '0.8rem',
-                  color: 'var(--color-text-muted)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                }}>
-                  {pendingFilter && (
-                    <span style={{
-                      color: 'var(--color-warning)',
-                      fontSize: '0.75rem',
+                      fontWeight: '600',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.25rem',
-                    }}>
-                      <span style={{
-                        width: '6px',
-                        height: '6px',
-                        borderRadius: '50%',
-                        background: 'var(--color-warning)',
-                        animation: 'pulse 1s infinite',
-                      }} />
-                      Aplicando...
-                    </span>
-                  )}
-                  <span>
-                    {(() => {
-                      const start = new Date(startDate);
-                      const end = new Date(endDate);
-                      const diffTime = Math.abs(end.getTime() - start.getTime());
-                      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-                      return `${diffDays} dia${diffDays !== 1 ? 's' : ''} seleccionado${diffDays !== 1 ? 's' : ''}`;
-                    })()}
-                  </span>
-                </div>
+                      gap: '0.3rem',
+                    }}
+                  >
+                    Aplicar
+                  </button>
+                )}
               </div>
             </div>
 

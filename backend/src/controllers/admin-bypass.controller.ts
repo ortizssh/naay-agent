@@ -6060,4 +6060,64 @@ router.get(
   }
 );
 
+// Fix shop domains in recommendations - normalize to myshopify.com format
+router.post(
+  '/fix-shop-domains',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { fromDomain, toDomain } = req.body;
+
+      if (!fromDomain || !toDomain) {
+        return res.status(400).json({
+          success: false,
+          error: 'fromDomain and toDomain are required',
+        });
+      }
+
+      logger.info('Fixing shop domains in recommendations', {
+        fromDomain,
+        toDomain,
+      });
+
+      // Update simple_recommendations
+      const { data: updatedRecs, error: recsError } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('simple_recommendations')
+        .update({ shop_domain: toDomain })
+        .eq('shop_domain', fromDomain)
+        .select('id');
+
+      if (recsError) {
+        logger.error('Error updating recommendations:', recsError);
+      }
+
+      // Update chat_messages
+      const { data: updatedMsgs, error: msgsError } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('chat_messages')
+        .update({ shop_domain: toDomain })
+        .eq('shop_domain', fromDomain)
+        .select('id');
+
+      if (msgsError) {
+        logger.error('Error updating chat_messages:', msgsError);
+      }
+
+      res.json({
+        success: true,
+        message: `Shop domains updated from ${fromDomain} to ${toDomain}`,
+        data: {
+          recommendationsUpdated: updatedRecs?.length || 0,
+          messagesUpdated: updatedMsgs?.length || 0,
+        },
+      });
+    } catch (error) {
+      logger.error('Error fixing shop domains:', error);
+      next(error);
+    }
+  }
+);
+
 export default router;
