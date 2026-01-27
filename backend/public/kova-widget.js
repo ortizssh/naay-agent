@@ -233,28 +233,28 @@
             </button>
             
             <div class="kova-widget__chat" id="kova-widget-chat" role="dialog" aria-label="Chat de Kova">
-              <div class="kova-widget__simple-header">
-                <!-- Cart Toggle Button - Small in Top Left -->
+              <!-- Floating action buttons -->
+              <div class="kova-widget__floating-actions">
                 <button class="kova-widget__cart-toggle-btn" id="kova-widget-cart-toggle-btn" aria-label="Ver carrito">
                   <svg class="kova-cart-toggle-icon" viewBox="0 0 24 24" fill="none">
                     <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19C17 19.6 16.6 20 16 20H14C13.4 20 13 19.6 13 19V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                   <span class="kova-cart-toggle-count" id="kova-widget-cart-count">0</span>
                 </button>
-                
-                <button class="kova-widget__back-btn" id="kova-widget-back-btn" aria-label="Volver">
-                  <svg viewBox="0 0 24 24" fill="none">
-                    <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </button>
-                
+
                 <button class="kova-widget__close" id="kova-widget-close" aria-label="Cerrar chat">
                   <svg viewBox="0 0 24 24" fill="none">
-                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/>
+                    <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                 </button>
               </div>
-              
+
+              <button class="kova-widget__back-btn" id="kova-widget-back-btn" aria-label="Volver" style="display: none;">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+
               <main class="kova-widget__messages" id="kova-widget-messages" role="main">
                 
                 <div class="kova-widget__welcome">
@@ -1564,86 +1564,85 @@
           box-shadow: 0 6px 20px rgba(165, 148, 87, 0.4) !important;
         }
 
-        /* Simple Header */
-        .kova-widget__simple-header {
+        /* Floating Action Buttons */
+        .kova-widget__floating-actions {
           position: absolute !important;
-          top: 0 !important;
-          left: 0 !important;
-          right: 0 !important;
-          height: 52px !important;
+          top: 12px !important;
+          left: 12px !important;
+          right: 12px !important;
           display: flex !important;
           align-items: center !important;
           justify-content: space-between !important;
-          padding: 12px !important;
-          z-index: 10 !important;
+          z-index: 20 !important;
+          pointer-events: none !important;
         }
 
-        .kova-widget__cart-button {
-          position: relative !important;
-          background: rgba(255, 255, 255, 0.9) !important;
-          border: 1px solid rgba(212, 196, 184, 0.2) !important;
-          border-radius: 8px !important;
-          padding: 8px !important;
-          color: var(--kova-perfect) !important;
-          cursor: pointer !important;
-          transition: all 0.2s var(--kova-transition) !important;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-        }
-
-        .kova-widget__cart-button:hover {
-          background: var(--kova-white) !important;
-          transform: scale(1.05) !important;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-        }
-
-        .kova-widget__cart-button svg {
-          width: 16px !important;
-          height: 16px !important;
-        }
-
-        .kova-widget__cart-count {
-          position: absolute !important;
-          top: -4px !important;
-          right: -4px !important;
-          background: var(--kova-perfect) !important;
-          color: var(--kova-white) !important;
-          border-radius: 50% !important;
-          font-size: 10px !important;
-          font-weight: var(--kova-font-weight-bold) !important;
-          min-width: 16px !important;
-          height: 16px !important;
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-          line-height: 1 !important;
+        .kova-widget__floating-actions > * {
+          pointer-events: auto !important;
         }
 
         .kova-widget__close {
-          background: rgba(255, 255, 255, 0.9) !important;
-          border: 1px solid rgba(212, 196, 184, 0.2) !important;
-          color: var(--kova-perfect) !important;
+          background: rgba(255, 255, 255, 0.95) !important;
+          backdrop-filter: blur(10px) !important;
+          -webkit-backdrop-filter: blur(10px) !important;
+          border: 1px solid rgba(0, 0, 0, 0.06) !important;
+          color: var(--kova-black) !important;
           cursor: pointer !important;
-          padding: 8px !important;
-          border-radius: 8px !important;
-          transition: all 0.2s var(--kova-transition) !important;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+          padding: 10px !important;
+          border-radius: 12px !important;
+          transition: all 0.2s cubic-bezier(0.32, 0.72, 0, 1) !important;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
         }
 
         .kova-widget__close:hover {
           background: var(--kova-white) !important;
           transform: scale(1.05) !important;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+        }
+
+        .kova-widget__close:active {
+          transform: scale(0.95) !important;
         }
 
         .kova-widget__close svg {
-          width: 16px !important;
-          height: 16px !important;
+          width: 18px !important;
+          height: 18px !important;
+        }
+
+        .kova-widget__back-btn {
+          position: absolute !important;
+          top: 12px !important;
+          left: 12px !important;
+          background: rgba(255, 255, 255, 0.95) !important;
+          backdrop-filter: blur(10px) !important;
+          -webkit-backdrop-filter: blur(10px) !important;
+          border: 1px solid rgba(0, 0, 0, 0.06) !important;
+          color: var(--kova-black) !important;
+          cursor: pointer !important;
+          padding: 10px !important;
+          border-radius: 12px !important;
+          transition: all 0.2s cubic-bezier(0.32, 0.72, 0, 1) !important;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+          z-index: 25 !important;
+        }
+
+        .kova-widget__back-btn:hover {
+          background: var(--kova-white) !important;
+          transform: scale(1.05) !important;
+        }
+
+        .kova-widget__back-btn svg {
+          width: 18px !important;
+          height: 18px !important;
         }
 
         /* Luxury Messages Area */
         .kova-widget__messages {
           flex: 1 !important;
-          padding: 64px 32px 32px 32px !important;
+          padding: 56px 24px 24px 24px !important;
           overflow-y: auto !important;
           background: transparent !important;
           scrollbar-width: thin !important;
@@ -1651,58 +1650,38 @@
           position: relative !important;
         }
 
-        /* Cart Toggle Button in Conversation */
+        /* Cart Toggle Button */
         .kova-widget__cart-toggle-btn {
           position: relative !important;
           background: rgba(255, 255, 255, 0.95) !important;
-          border: 1px solid rgba(212, 196, 184, 0.3) !important;
-          border-radius: 8px !important;
-          padding: 6px !important;
+          backdrop-filter: blur(10px) !important;
+          -webkit-backdrop-filter: blur(10px) !important;
+          border: 1px solid rgba(0, 0, 0, 0.06) !important;
+          border-radius: 12px !important;
+          padding: 10px !important;
           cursor: pointer !important;
-          transition: none !important;
-          box-shadow: 0 2px 8px rgba(165, 148, 87, 0.1) !important;
+          transition: all 0.2s cubic-bezier(0.32, 0.72, 0, 1) !important;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
-          width: 28px !important;
-          height: 28px !important;
         }
 
         .kova-widget__cart-toggle-btn:hover {
           background: var(--kova-white) !important;
-          border-color: var(--kova-perfect) !important;
-          transform: translateY(-2px) !important;
-          box-shadow: 0 4px 16px rgba(165, 148, 87, 0.2) !important;
+          transform: scale(1.05) !important;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
         }
 
-        /* Back Button in Conversation */
-        .kova-widget__back-btn {
-          position: relative !important;
-          background: rgba(255, 255, 255, 0.95) !important;
-          border: 1px solid rgba(212, 196, 184, 0.3) !important;
-          border-radius: 8px !important;
-          padding: 6px !important;
-          cursor: pointer !important;
-          transition: none !important;
-          box-shadow: 0 2px 8px rgba(165, 148, 87, 0.1) !important;
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-          width: 28px !important;
-          height: 28px !important;
+        .kova-widget__cart-toggle-btn:active {
+          transform: scale(0.95) !important;
         }
 
-        .kova-widget__back-btn:hover {
-          background: var(--kova-white) !important;
-          border-color: var(--kova-perfect) !important;
-          transform: translateY(-2px) !important;
-          box-shadow: 0 4px 16px rgba(165, 148, 87, 0.2) !important;
-        }
-
-        .kova-widget__back-btn svg {
-          width: 14px !important;
-          height: 14px !important;
-          color: var(--kova-perfect) !important;
+        .kova-widget__cart-toggle-btn svg,
+        .kova-cart-toggle-icon {
+          width: 18px !important;
+          height: 18px !important;
+          color: var(--kova-black) !important;
         }
 
         .kova-cart-toggle-icon {
@@ -2191,283 +2170,328 @@
         }
 
         @media (max-width: 480px) {
-          /* Enhanced mobile widget responsiveness */
+          /* ===== MOBILE OPTIMIZED STYLES ===== */
+
+          /* Full screen chat on mobile */
           .kova-widget__chat {
-            width: calc(100vw - 32px) !important;
-            height: calc(100dvh - 120px) !important; /* Use dvh for better mobile support */
-            left: 16px !important;
-            bottom: 88px !important;
-            border-radius: 16px !important;
-            box-shadow: 0 12px 40px rgba(207, 121, 94, 0.25) !important;
-            max-width: 400px !important;
-            padding-bottom: env(safe-area-inset-bottom) !important; /* Respect safe area */
-            transition: height 0.3s ease, bottom 0.3s ease !important; /* Smooth transition for keyboard */
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            height: 100dvh !important;
+            max-width: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            padding-bottom: env(safe-area-inset-bottom) !important;
+            z-index: 999999 !important;
           }
-          
-          /* Widget button mobile optimization */
+
+          /* Widget button mobile */
           .kova-widget__button {
             width: 56px !important;
             height: 56px !important;
-            box-shadow: 0 6px 20px rgba(165, 148, 87, 0.3) !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
             position: fixed !important;
-            bottom: 16px !important;
+            bottom: calc(16px + env(safe-area-inset-bottom)) !important;
             right: 16px !important;
-            z-index: 9999 !important;
+            z-index: 999998 !important;
           }
-          
+
           .kova-widget__button-content {
-            width: 20px !important;
-            height: 20px !important;
+            width: 22px !important;
+            height: 22px !important;
           }
-          
+
           .kova-widget__chat-icon,
           .kova-widget__close-icon {
+            width: 22px !important;
+            height: 22px !important;
+          }
+
+          /* Floating actions mobile */
+          .kova-widget__floating-actions {
+            top: calc(12px + env(safe-area-inset-top)) !important;
+            left: 16px !important;
+            right: 16px !important;
+          }
+
+          .kova-widget__cart-toggle-btn,
+          .kova-widget__close {
+            padding: 12px !important;
+            border-radius: 14px !important;
+            min-width: 44px !important;
+            min-height: 44px !important;
+          }
+
+          .kova-widget__cart-toggle-btn svg,
+          .kova-cart-toggle-icon,
+          .kova-widget__close svg {
             width: 20px !important;
             height: 20px !important;
           }
-          
-          /* Chat header mobile */
-          .kova-widget__header {
-            padding: 20px 24px !important;
-            border-bottom: 2px solid rgba(212, 196, 184, 0.15) !important;
+
+          .kova-cart-toggle-count {
+            width: 18px !important;
+            height: 18px !important;
+            font-size: 10px !important;
+            top: -6px !important;
+            right: -6px !important;
           }
-          
-          .kova-widget__title {
-            font-size: 18px !important;
-            line-height: 1.3 !important;
-          }
-          
-          .kova-widget__subtitle {
-            font-size: 13px !important;
-            margin-top: 2px !important;
-          }
-          
-          /* Chat messages mobile */
+
+          /* Messages area mobile */
           .kova-widget__messages {
-            padding: 16px 20px !important;
-            gap: 20px !important;
+            padding: calc(70px + env(safe-area-inset-top)) 16px 16px 16px !important;
+            -webkit-overflow-scrolling: touch !important;
           }
-          
+
           .kova-widget__message {
-            max-width: 90% !important;
-            padding: 12px 16px !important;
-            font-size: 14px !important;
+            max-width: 88% !important;
+            padding: 14px 16px !important;
+            font-size: 15px !important;
             line-height: 1.5 !important;
+            border-radius: 18px !important;
           }
-          
+
           /* Welcome screen mobile */
           .kova-widget__welcome {
-            padding: 20px 24px !important;
+            padding: 16px !important;
           }
-          
+
           .kova-widget__welcome-title {
-            font-size: 20px !important;
-            margin-bottom: 8px !important;
+            font-size: 22px !important;
+            margin-bottom: 6px !important;
+            line-height: 1.3 !important;
           }
-          
+
           .kova-widget__welcome-subtitle {
-            font-size: 14px !important;
-            margin-bottom: 24px !important;
+            font-size: 15px !important;
+            display: block !important;
+            margin-top: 8px !important;
           }
-          
+
           .kova-widget__welcome-features {
-            gap: 16px !important;
+            gap: 12px !important;
+            margin-top: 24px !important;
           }
-          
+
           .kova-widget__feature {
-            padding: 14px 16px !important;
-            border-radius: 14px !important;
+            padding: 16px !important;
+            border-radius: 16px !important;
+            min-height: 56px !important;
+            touch-action: manipulation !important;
           }
           
           .kova-widget__feature span {
-            font-size: 14px !important;
+            font-size: 15px !important;
             line-height: 1.4 !important;
           }
-          
-          /* Input area mobile */
-          .kova-widget__input-area {
-            padding: 20px 24px !important;
-          }
-          
-          .kova-widget__input-container {
-            gap: 10px !important;
-            margin-bottom: 8px !important;
-            padding: 0 !important;
-          }
-          
-          .kova-widget__input {
-            padding: 12px 16px !important;
-            font-size: 16px !important; /* Prevent iOS zoom */
-            border-radius: 20px !important;
-          }
-          
-          .kova-widget__send {
-            width: 40px !important;
-            height: 40px !important;
-            border-radius: 20px !important;
+
+          .kova-feature-icon {
+            width: 24px !important;
+            height: 24px !important;
             flex-shrink: 0 !important;
           }
-          
-          /* Cart panel mobile positioning - maintain original design, only adjust position */
+
+          /* Input area mobile */
+          .kova-widget__input-container {
+            padding: 12px 16px !important;
+            padding-bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+            background: rgba(255, 255, 255, 0.98) !important;
+            border-top: 1px solid rgba(0, 0, 0, 0.06) !important;
+          }
+
+          .kova-widget__input-wrapper {
+            gap: 10px !important;
+          }
+
+          .kova-widget__input {
+            padding: 14px 18px !important;
+            font-size: 16px !important; /* Prevent iOS zoom */
+            border-radius: 24px !important;
+            background: rgba(0, 0, 0, 0.04) !important;
+            border: none !important;
+          }
+
+          .kova-widget__input:focus {
+            background: white !important;
+            border: 1px solid var(--kova-primary-dynamic, var(--kova-perfect)) !important;
+          }
+
+          .kova-widget__send {
+            width: 48px !important;
+            height: 48px !important;
+            border-radius: 24px !important;
+            flex-shrink: 0 !important;
+            touch-action: manipulation !important;
+          }
+
+          .kova-widget__send svg {
+            width: 20px !important;
+            height: 20px !important;
+          }
+
+          /* Cart panel mobile - full screen bottom sheet */
           .kova-widget .kova-cart-panel,
           html .kova-widget .kova-cart-panel,
           .kova-cart-panel {
             position: fixed !important;
-            top: 50% !important;
-            left: 50% !important;
-            right: auto !important;
-            bottom: auto !important;
-            width: calc(100vw - 32px) !important;
-            max-width: 380px !important;
-            height: 80vh !important;
-            max-height: 500px !important;
-            transform: translate(-50%, -50%) scale(0.9) !important;
-            opacity: 0 !important;
+            top: auto !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            max-width: none !important;
+            height: 85vh !important;
+            max-height: none !important;
+            transform: translateY(100%) !important;
+            opacity: 1 !important;
             visibility: hidden !important;
-            z-index: 10001 !important;
-            transition: all 0.3s ease !important;
-            /* Maintain original design styles */
-            background: rgba(248, 249, 248, 0.98) !important;
-            backdrop-filter: blur(20px) !important;
-            -webkit-backdrop-filter: blur(20px) !important;
-            border-radius: 16px !important;
-            border: 1px solid rgba(212, 196, 184, 0.3) !important;
-            box-shadow: 0 8px 32px rgba(207, 121, 94, 0.15) !important;
+            z-index: 1000000 !important;
+            transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), visibility 0.35s !important;
+            background: white !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            border-radius: 24px 24px 0 0 !important;
+            border: none !important;
+            box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.15) !important;
+            padding-bottom: env(safe-area-inset-bottom) !important;
           }
-          
+
           .kova-widget .kova-cart-panel--open,
           html .kova-widget .kova-cart-panel--open,
           .kova-cart-panel--open {
-            transform: translate(-50%, -50%) scale(1) !important;
-            opacity: 1 !important;
+            transform: translateY(0) !important;
             visibility: visible !important;
           }
-          
-          /* Add backdrop when cart is open on mobile */
-          .kova-cart-panel--open::before {
+
+          /* Mobile cart backdrop */
+          .kova-widget--cart-open::before {
             content: '' !important;
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
             right: 0 !important;
             bottom: 0 !important;
-            background: rgba(0, 0, 0, 0.4) !important;
-            backdrop-filter: blur(12px) !important;
-            -webkit-backdrop-filter: blur(12px) !important;
-            z-index: -1 !important;
-          }
-          
-          .kova-widget__promotional-message {
-            right: 8px !important;
-            bottom: 88px !important;
-            max-width: calc(100vw - 88px) !important;
-            width: calc(100vw - 88px) !important;
-            padding: 14px 18px !important;
-            border-radius: 16px !important;
-            box-shadow: 0 8px 24px rgba(165, 148, 87, 0.2) !important;
-          }
-          
-          .kova-widget__promotional-text {
-            font-size: 13px !important;
-            line-height: 1.4 !important;
-          }
-          
-          .kova-widget__promotional-subtitle {
-            font-size: 11px !important;
-          }
-          
-          /* Enhanced scrolling for mobile */
-          .kova-widget__messages {
-            -webkit-overflow-scrolling: touch !important;
-            scroll-behavior: smooth !important;
-          }
-          
-          /* Better touch targets for mobile */
-          .kova-widget__feature {
-            min-height: 48px !important;
-            touch-action: manipulation !important;
-          }
-          
-          .kova-widget__send {
-            touch-action: manipulation !important;
-          }
-          
-          /* Loading states mobile */
-          .kova-widget__typing {
-            padding: 8px 16px !important;
-            margin: 8px 0 !important;
-          }
-          
-          /* Error states mobile */
-          .kova-widget__error {
-            padding: 12px 16px !important;
-            margin: 8px 0 !important;
-            font-size: 13px !important;
-            border-radius: 12px !important;
+            background: rgba(0, 0, 0, 0.5) !important;
+            z-index: 999999 !important;
+            animation: fadeIn 0.3s ease !important;
           }
 
-          .kova-widget__button {
-            width: 60px !important;
-            height: 60px !important;
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
           }
-          
-          /* Mobile optimizations for cart panel header */
+
+          /* Cart header mobile with drag handle */
           .kova-cart-panel__header {
-            padding: 20px 24px !important;
-            border-bottom: 2px solid rgba(212, 196, 184, 0.2) !important;
+            padding: 24px 20px 16px 20px !important;
             position: relative !important;
           }
-          
-          /* Add drag handle for mobile */
+
           .kova-cart-panel__header::before {
             content: '' !important;
             position: absolute !important;
-            top: -12px !important;
+            top: 10px !important;
             left: 50% !important;
             transform: translateX(-50%) !important;
-            width: 40px !important;
+            width: 36px !important;
             height: 4px !important;
-            background: rgba(212, 196, 184, 0.5) !important;
+            background: rgba(0, 0, 0, 0.15) !important;
             border-radius: 2px !important;
           }
-          
+
+          .kova-cart-panel__header::after {
+            display: none !important;
+          }
+
           .kova-cart-panel__close {
             padding: 12px !important;
             min-width: 44px !important;
             min-height: 44px !important;
+            border-radius: 12px !important;
           }
-          
-          /* Mobile cart items optimization */
+
+          /* Cart items mobile */
+          .kova-cart-panel__items {
+            padding: 0 20px !important;
+          }
+
           .kova-cart-panel__item {
-            padding: 20px !important;
-            margin-bottom: 16px !important;
+            padding: 16px !important;
+            margin-bottom: 12px !important;
+            border-radius: 16px !important;
           }
-          
+
           .kova-cart-panel__item-image-container {
-            width: 100px !important;
-            height: 100px !important;
+            width: 80px !important;
+            height: 80px !important;
           }
-          
-          /* Mobile checkout button */
+
+          /* Cart footer mobile */
+          .kova-cart-panel__footer {
+            padding: 20px !important;
+            padding-bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+          }
+
           .kova-cart-panel__checkout {
-            padding: 20px 24px !important;
-            font-size: 18px !important;
-            font-weight: var(--kova-font-weight-bold) !important;
+            padding: 18px 24px !important;
+            font-size: 16px !important;
+            font-weight: 600 !important;
             min-height: 56px !important;
             border-radius: 16px !important;
           }
 
-          .kova-widget__feature {
-            padding: 20px !important;
-            flex-direction: row !important;
-            align-items: center !important;
-            gap: 16px !important;
-            min-height: 64px !important;
+          /* Hide promotional message on mobile when widget is open */
+          .kova-widget--open .kova-widget__promotional-message {
+            display: none !important;
+          }
+
+          .kova-widget__promotional-message {
+            right: 16px !important;
+            bottom: calc(80px + env(safe-area-inset-bottom)) !important;
+            max-width: calc(100vw - 100px) !important;
+            width: auto !important;
+            padding: 14px 18px !important;
             border-radius: 16px !important;
           }
 
-          .kova-widget__feature span {
-            font-size: 15px !important;
+          /* Product cards mobile */
+          .kova-product-card {
+            border-radius: 16px !important;
+          }
+
+          .kova-product-card__add-btn {
+            min-height: 48px !important;
+            border-radius: 12px !important;
+            font-size: 14px !important;
+          }
+
+          /* Loading and error states mobile */
+          .kova-widget__typing {
+            padding: 10px 16px !important;
+            border-radius: 16px !important;
+          }
+
+          .kova-widget__error {
+            padding: 14px 16px !important;
+            font-size: 14px !important;
+            border-radius: 14px !important;
+          }
+
+          /* Empty state mobile */
+          .kova-cart-panel__empty {
+            padding: 40px 20px !important;
+          }
+
+          .kova-cart-panel__empty-icon {
+            width: 56px !important;
+            height: 56px !important;
+          }
+
+          .kova-cart-panel__empty-text {
+            font-size: 18px !important;
             line-height: 1.4 !important;
             font-weight: 500 !important;
           }
@@ -3662,11 +3686,6 @@
 
         .kova-cart-panel {
           height: ${Math.min(chatHeight - 40, 580)}px !important;
-        }
-
-        /* Header and accent elements */
-        .kova-widget__simple-header {
-          background: ${secondaryColor} !important;
         }
 
         /* Input focus and send button */
@@ -5414,45 +5433,37 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     }
 
     // ENHANCED: Remove from cart by unique cart item ID
-    async removeFromCartByItemId(cartItemId) {
+    removeFromCartByItemId(cartItemId) {
       console.log('🛒 Removing cart item by ID:', cartItemId);
 
-      // Show loading state
-      this.showCartLoading();
-
       // Find the specific cart item by unique ID only
-      const itemIndex = this.cartData.items.findIndex(item => 
+      const itemIndex = this.cartData.items.findIndex(item =>
         item.cartItemId === cartItemId
       );
 
       if (itemIndex === -1) {
         console.warn('⚠️ Cart item not found:', cartItemId);
-        this.hideCartLoading();
         return;
       }
 
       const item = this.cartData.items[itemIndex];
       console.log('🗑️ Found item to remove:', item);
 
-      // Remove the specific item from local cart
+      // Remove the specific item from local cart immediately (no loading needed - instant operation)
       this.cartData.items.splice(itemIndex, 1);
-
-      // TODO: In future, handle Shopify cart removal if needed
-      // For now, focus on local cart management
 
       console.log('✅ Cart item removed successfully. Remaining items:', this.cartData.items.length);
 
-      // Update cart display to reflect changes
+      // Update cart display immediately to reflect changes
       this.updateCartDisplay();
-      this.hideCartLoading();
     }
 
     // ENHANCED: Update quantity by unique cart item ID
-    async updateQuantityByItemId(cartItemId, newQuantity) {
+    updateQuantityByItemId(cartItemId, newQuantity) {
       console.log('🛒 Updating cart item quantity:', cartItemId, 'to', newQuantity);
 
       // Find the specific cart item by unique ID only
-      const item = this.cartData.items.find(item => 
+      const item = this.cartData.items.find(item =>
         item.cartItemId === cartItemId
       );
 
@@ -5463,16 +5474,16 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
       if (newQuantity <= 0) {
         // If quantity is 0 or less, remove the item
-        await this.removeFromCartByItemId(cartItemId);
+        this.removeFromCartByItemId(cartItemId);
         return;
       }
 
-      // Update the quantity
+      // Update the quantity immediately
       item.quantity = newQuantity;
 
       console.log('✅ Cart item quantity updated:', item);
 
-      // Update cart display to reflect changes
+      // Update cart display immediately to reflect changes
       this.updateCartDisplay();
     }
 
@@ -5883,50 +5894,23 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         const increaseBtn = itemElement.querySelector('[data-action="increase"]');
 
         if (removeBtn) {
-          removeBtn.addEventListener('click', async (e) => {
+          removeBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            console.log('🗑️ Remove button clicked for item:', item.title);
+            e.stopPropagation();
 
             const cartItemId = removeBtn.getAttribute('data-cart-item-id');
-            console.log('🗑️ Cart Item ID from button:', cartItemId);
-            console.log('🗑️ Item data:', item);
-            
+            console.log('🗑️ Remove clicked for item:', item.title, 'ID:', cartItemId);
+
             if (!cartItemId) {
               console.error('❌ No cart item ID found on remove button!');
               return;
             }
 
-            // Add immediate visual feedback with animation
-            itemElement.style.transition = 'all 0.3s ease';
-            itemElement.style.opacity = '0.5';
-            itemElement.style.transform = 'scale(0.95)';
-            itemElement.style.pointerEvents = 'none';
+            // Disable button immediately to prevent double clicks
             removeBtn.disabled = true;
 
-            console.log('🗑️ Starting removal for cart item with ID:', cartItemId);
-
-            try {
-              // Apply removal animation class
-              itemElement.classList.add('kova-cart-panel__item--removing');
-              
-              await this.removeFromCartByItemId(cartItemId);
-
-              // Remove from DOM after animation
-              setTimeout(() => {
-                if (itemElement.parentNode) {
-                  itemElement.parentNode.removeChild(itemElement);
-                  console.log('✅ Item removed from DOM');
-                }
-              }, 300);
-
-            } catch (error) {
-              console.error('❌ Error removing item:', error);
-              // Restore item if removal failed
-              itemElement.style.opacity = '1';
-              itemElement.style.transform = 'scale(1)';
-              itemElement.style.pointerEvents = 'auto';
-              removeBtn.disabled = false;
-            }
+            // Remove item immediately - updateCartDisplay will re-render the cart
+            this.removeFromCartByItemId(cartItemId);
           });
         }
 
