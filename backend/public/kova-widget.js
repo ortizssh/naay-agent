@@ -2180,6 +2180,17 @@
         @media (max-width: 480px) {
           /* ===== MOBILE OPTIMIZED STYLES ===== */
 
+          /* Widget container - ensure it doesn't clip content */
+          .kova-widget {
+            bottom: 0 !important;
+            right: 0 !important;
+            left: 0 !important;
+            top: auto !important;
+            width: 100% !important;
+            height: auto !important;
+            pointer-events: none !important;
+          }
+
           /* Full screen chat on mobile */
           .kova-widget__chat {
             position: fixed !important;
@@ -2194,17 +2205,31 @@
             box-shadow: none !important;
             padding-bottom: env(safe-area-inset-bottom) !important;
             z-index: 999999 !important;
+            pointer-events: auto !important;
           }
 
-          /* Widget button mobile */
+          /* Widget button mobile - always visible and fully on screen */
           .kova-widget__button {
             width: 56px !important;
             height: 56px !important;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
             position: fixed !important;
-            bottom: calc(16px + env(safe-area-inset-bottom)) !important;
-            right: 16px !important;
+            bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+            right: 20px !important;
+            left: auto !important;
+            top: auto !important;
             z-index: 999998 !important;
+            pointer-events: auto !important;
+          }
+
+          /* Promotional message mobile */
+          .kova-widget__promotional-message {
+            position: fixed !important;
+            bottom: calc(86px + env(safe-area-inset-bottom)) !important;
+            right: 20px !important;
+            left: auto !important;
+            max-width: calc(100vw - 100px) !important;
+            pointer-events: auto !important;
           }
 
           .kova-widget__button-content {
@@ -3389,31 +3414,11 @@
         }
 
         @media (max-width: 480px) {
-          .kova-widget {
-            bottom: 5px !important;
-            right: 5px !important;
-          }
-          
-          /* Cart panel uses centered modal on mobile (configured above) */
-          
+          /* Mobile widget already configured above - don't override */
+
+          /* Cart toggle hidden on mobile - use floating action instead */
           .kova-cart-toggle {
-            width: 45px !important;
-            height: 350px !important;
-            left: -45px !important;
-            opacity: 0 !important;
-            visibility: hidden !important;
-            pointer-events: none !important;
-          }
-          
-          .kova-widget--open .kova-cart-toggle {
-            opacity: 1 !important;
-            visibility: visible !important;
-            pointer-events: auto !important;
-          }
-          
-          .kova-cart-toggle__icon {
-            width: 18px !important;
-            height: 18px !important;
+            display: none !important;
           }
 
           /* Mobile Product Recommendations */
