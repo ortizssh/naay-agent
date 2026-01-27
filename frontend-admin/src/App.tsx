@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import './styles/admin.css';
+import logoKova from './img/logo-kova.png';
 
-// Auth pages
+// Public pages
+import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
@@ -24,7 +26,7 @@ import ClientSidebar from './components/layout/ClientSidebar';
 
 type AdminPageType = 'dashboard' | 'tenants' | 'settings';
 type ClientPageType = 'dashboard' | 'store' | 'widget' | 'analytics';
-type AuthPageType = 'login' | 'register' | 'app';
+type PageType = 'landing' | 'login' | 'register' | 'dashboard';
 
 interface User {
   id: string;
@@ -40,22 +42,35 @@ interface User {
 function App() {
   const [currentAdminPage, setCurrentAdminPage] = useState<AdminPageType>('dashboard');
   const [currentClientPage, setCurrentClientPage] = useState<ClientPageType>('dashboard');
-  const [authPage, setAuthPage] = useState<AuthPageType>('login');
+  const [currentPage, setCurrentPage] = useState<PageType>('landing');
   const [user, setUser] = useState<User | null>(null);
   const [sidebarOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const navigateTo = (page: PageType) => {
+    setCurrentPage(page);
+    const paths: Record<PageType, string> = {
+      landing: '/',
+      login: '/login',
+      register: '/register',
+      dashboard: '/dashboard',
+    };
+    window.history.pushState({}, '', paths[page]);
+  };
+
   useEffect(() => {
     const initAuth = async () => {
-      // Check current path for auth routing
+      // Check current path for routing
       const path = window.location.pathname;
+      let initialPage: PageType = 'landing';
+
       if (path === '/register') {
-        setAuthPage('register');
+        initialPage = 'register';
       } else if (path === '/login') {
-        setAuthPage('login');
-      } else {
-        setAuthPage('app');
+        initialPage = 'login';
+      } else if (path.startsWith('/dashboard') || path.startsWith('/client') || path.startsWith('/onboarding')) {
+        initialPage = 'dashboard';
       }
 
       // Check for stored user and validate token
@@ -74,6 +89,12 @@ function App() {
             setUser(userData);
             localStorage.setItem('user', JSON.stringify(userData));
 
+            // If user is authenticated and on landing/login/register, go to dashboard
+            if (initialPage === 'landing' || initialPage === 'login' || initialPage === 'register') {
+              initialPage = 'dashboard';
+              window.history.replaceState({}, '', '/dashboard');
+            }
+
             // Check if client needs onboarding
             if (userData.userType === 'client' && !userData.onboardingCompleted) {
               setShowOnboarding(true);
@@ -82,15 +103,31 @@ function App() {
             // Token invalid, clear storage
             localStorage.removeItem('auth_token');
             localStorage.removeItem('user');
+            // If trying to access dashboard without auth, redirect to login
+            if (initialPage === 'dashboard') {
+              initialPage = 'login';
+              window.history.replaceState({}, '', '/login');
+            }
           }
         } catch (error) {
           // Token validation failed, clear storage
           console.error('Token validation failed:', error);
           localStorage.removeItem('auth_token');
           localStorage.removeItem('user');
+          if (initialPage === 'dashboard') {
+            initialPage = 'login';
+            window.history.replaceState({}, '', '/login');
+          }
+        }
+      } else {
+        // No token, if trying to access dashboard, redirect to login
+        if (initialPage === 'dashboard') {
+          initialPage = 'login';
+          window.history.replaceState({}, '', '/login');
         }
       }
 
+      setCurrentPage(initialPage);
       setLoading(false);
 
       // Check URL for oauth callback
@@ -131,8 +168,7 @@ function App() {
     localStorage.setItem('auth_token', token);
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
-    setAuthPage('app');
-    window.history.pushState({}, '', '/');
+    navigateTo('dashboard');
 
     // Check if client needs onboarding
     if (userData.userType === 'client' && !userData.onboardingCompleted) {
@@ -150,26 +186,30 @@ function App() {
     );
   }
 
+  // Show landing page
+  if (currentPage === 'landing') {
+    return (
+      <Landing
+        onLoginClick={() => navigateTo('login')}
+        onRegisterClick={() => navigateTo('register')}
+      />
+    );
+  }
+
   // Show auth pages if not logged in
   if (!user) {
-    if (authPage === 'register') {
+    if (currentPage === 'register') {
       return (
         <Register
           onSuccess={handleLoginSuccess}
-          onLoginClick={() => {
-            setAuthPage('login');
-            window.history.pushState({}, '', '/login');
-          }}
+          onLoginClick={() => navigateTo('login')}
         />
       );
     }
     return (
       <Login
         onSuccess={handleLoginSuccess}
-        onRegisterClick={() => {
-          setAuthPage('register');
-          window.history.pushState({}, '', '/register');
-        }}
+        onRegisterClick={() => navigateTo('register')}
       />
     );
   }
@@ -236,8 +276,7 @@ function App() {
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <a href="/" className="sidebar-logo">
-            <div className="sidebar-logo-icon">K</div>
-            <span className="sidebar-logo-text">Kova</span>
+            <img src={logoKova} alt="Kova" className="sidebar-logo-img" />
           </a>
         </div>
 

@@ -582,6 +582,11 @@ async function startServer() {
       serveReactApp(res);
     });
 
+    // Serve React app for dashboard routes (SPA handles routing)
+    app.get('/dashboard*', (req: express.Request, res: express.Response) => {
+      serveReactApp(res);
+    });
+
     // Success page after Shopify app installation
     app.get('/success', (req, res) => {
       const { token, shop } = req.query;

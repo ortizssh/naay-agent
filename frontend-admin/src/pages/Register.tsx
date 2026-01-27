@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { authApi } from '../services/api';
+import logoKova from '../img/logo-kova.png';
 
 interface RegisterProps {
   onSuccess: (user: any, token: string) => void;
@@ -66,8 +67,7 @@ export default function Register({ onSuccess, onLoginClick }: RegisterProps) {
     <div className="auth-container">
       <div className="auth-card auth-card-wide">
         <div className="auth-header">
-          <div className="auth-logo">K</div>
-          <h1>Kova</h1>
+          <img src={logoKova} alt="Kova" className="auth-logo-img" />
           <p>Crea tu cuenta</p>
         </div>
 

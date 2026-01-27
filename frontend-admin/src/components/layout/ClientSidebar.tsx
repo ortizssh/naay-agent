@@ -1,3 +1,5 @@
+import logoKova from '../../img/logo-kova.png';
+
 interface ClientSidebarProps {
   currentPage: string;
   onPageChange: (page: string) => void;
@@ -18,8 +20,7 @@ function ClientSidebar({ currentPage, onPageChange, user, onLogout }: ClientSide
     <aside className="sidebar">
       <div className="sidebar-header">
         <a href="/" className="sidebar-logo">
-          <div className="sidebar-logo-icon">K</div>
-          <span className="sidebar-logo-text">Kova</span>
+          <img src={logoKova} alt="Kova" className="sidebar-logo-img" />
         </a>
       </div>
 
