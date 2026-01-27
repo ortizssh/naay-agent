@@ -1,9 +1,9 @@
 {
   "blocks": {
-    "naay-chat": {
-      "name": "Naay AI Chat Widget",
+    "kova-chat": {
+      "name": "Kova AI Chat Widget",
       "settings": {
-        "header": "Naay AI Chat Widget",
+        "header": "Kova AI Chat Widget",
         "description": "El asistente de IA para tu tienda Shopify. Ayuda a tus clientes a encontrar productos y responde sus preguntas automáticamente.",
         "status": "✅ Widget configurado y activo"
       }
