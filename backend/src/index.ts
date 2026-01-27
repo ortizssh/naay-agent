@@ -391,7 +391,7 @@ async function startServer() {
       // Skip rate limiting for widget routes, admin panel, and health checks
       if (
         req.path.startsWith('/widget/') ||
-        req.path.startsWith('/static/naay-widget') ||
+        req.path.startsWith('/static/kova-widget') ||
         req.path.startsWith('/api/widget/') ||
         req.path.startsWith('/api/public/') ||
         req.path === '/' ||
@@ -436,6 +436,12 @@ async function startServer() {
       },
       express.static(path.join(__dirname, '../public'))
     );
+
+    // Backwards compatibility: redirect old naay-widget.js to kova-widget.js
+    app.get('/widget/naay-widget.js', (req, res) => {
+      console.log('🔄 Redirecting naay-widget.js to kova-widget.js');
+      res.redirect(301, '/widget/kova-widget.js');
+    });
 
     // Public widget endpoint (direct route with CORS)
     app.get('/widget/kova-widget.js', (req, res) => {
