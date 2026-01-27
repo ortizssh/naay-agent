@@ -411,16 +411,66 @@ router.put(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = (req as any).user;
-      const { widgetPosition, widgetColor, welcomeMessage, widgetEnabled } =
-        req.body;
+      const {
+        widgetPosition,
+        widgetColor,
+        welcomeMessage,
+        widgetEnabled,
+        widgetSecondaryColor,
+        widgetAccentColor,
+        widgetButtonSize,
+        widgetButtonStyle,
+        widgetShowPulse,
+        widgetChatWidth,
+        widgetChatHeight,
+        widgetSubtitle,
+        widgetPlaceholder,
+        widgetAvatar,
+        widgetShowPromoMessage,
+        widgetShowCart,
+        widgetEnableAnimations,
+        widgetTheme,
+        widgetBrandName,
+      } = req.body;
 
       const updateData: any = {};
+
+      // Basic settings
       if (widgetPosition) updateData.widget_position = widgetPosition;
       if (widgetColor) updateData.widget_color = widgetColor;
       if (welcomeMessage !== undefined)
         updateData.welcome_message = welcomeMessage;
       if (widgetEnabled !== undefined)
         updateData.widget_enabled = widgetEnabled;
+
+      // Extended design settings
+      if (widgetSecondaryColor)
+        updateData.widget_secondary_color = widgetSecondaryColor;
+      if (widgetAccentColor) updateData.widget_accent_color = widgetAccentColor;
+      if (widgetButtonSize !== undefined)
+        updateData.widget_button_size = widgetButtonSize;
+      if (widgetButtonStyle)
+        updateData.widget_button_style = widgetButtonStyle;
+      if (widgetShowPulse !== undefined)
+        updateData.widget_show_pulse = widgetShowPulse;
+      if (widgetChatWidth !== undefined)
+        updateData.widget_chat_width = widgetChatWidth;
+      if (widgetChatHeight !== undefined)
+        updateData.widget_chat_height = widgetChatHeight;
+      if (widgetSubtitle !== undefined)
+        updateData.widget_subtitle = widgetSubtitle;
+      if (widgetPlaceholder !== undefined)
+        updateData.widget_placeholder = widgetPlaceholder;
+      if (widgetAvatar !== undefined) updateData.widget_avatar = widgetAvatar;
+      if (widgetShowPromoMessage !== undefined)
+        updateData.widget_show_promo_message = widgetShowPromoMessage;
+      if (widgetShowCart !== undefined)
+        updateData.widget_show_cart = widgetShowCart;
+      if (widgetEnableAnimations !== undefined)
+        updateData.widget_enable_animations = widgetEnableAnimations;
+      if (widgetTheme) updateData.widget_theme = widgetTheme;
+      if (widgetBrandName !== undefined)
+        updateData.widget_brand_name = widgetBrandName;
 
       const { data: store, error } = await (
         supabaseService as any
@@ -432,6 +482,7 @@ router.put(
         .single();
 
       if (error) {
+        logger.error('Error updating widget config:', error);
         throw new AppError('Error al actualizar configuracion', 500);
       }
 
@@ -605,7 +656,10 @@ router.get(
 /**
  * GET /api/client/analytics
  * Get basic analytics for the client's store
- * Optional query param: ?shop=domain.myshopify.com
+ * Optional query params:
+ *   - shop: domain.myshopify.com
+ *   - startDate: ISO date string
+ *   - endDate: ISO date string
  */
 router.get(
   '/analytics',
@@ -614,6 +668,8 @@ router.get(
     try {
       const user = (req as any).user;
       const requestedShop = req.query.shop as string | undefined;
+      const startDate = req.query.startDate as string | undefined;
+      const endDate = req.query.endDate as string | undefined;
 
       let store: any = null;
 
@@ -699,57 +755,114 @@ router.get(
             conversions: 0,
             lastSync: null,
             storeCreated: null,
+            conversationsByDay: [],
           },
         });
       }
 
-      // Get unique sessions count (conversations) from chat_messages
-      const { data: sessionsData } = await (
-        supabaseService as any
-      ).serviceClient
+      // Build date filters for queries
+      const dateFilters = {
+        start: startDate ? new Date(startDate).toISOString() : null,
+        end: endDate
+          ? new Date(new Date(endDate).setHours(23, 59, 59, 999)).toISOString()
+          : null,
+      };
+
+      // Get chat messages with optional date filter
+      let messagesQuery = (supabaseService as any).serviceClient
         .from('chat_messages')
-        .select('session_id')
+        .select('session_id, created_at')
         .eq('shop_domain', store.shop_domain);
 
+      if (dateFilters.start) {
+        messagesQuery = messagesQuery.gte('created_at', dateFilters.start);
+      }
+      if (dateFilters.end) {
+        messagesQuery = messagesQuery.lte('created_at', dateFilters.end);
+      }
+
+      const { data: messagesData } = await messagesQuery;
+
+      // Calculate unique sessions (conversations)
       const uniqueSessions = new Set(
-        sessionsData?.map((m: any) => m.session_id) || []
+        messagesData?.map((m: any) => m.session_id) || []
       );
       const conversationCount = uniqueSessions.size;
+      const messageCount = messagesData?.length || 0;
 
-      // Get total messages count
-      const { count: messageCount } = await (
-        supabaseService as any
-      ).serviceClient
-        .from('chat_messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('shop_domain', store.shop_domain);
+      // Calculate conversations by day for chart
+      const conversationsByDay: { date: string; count: number }[] = [];
+      if (messagesData && messagesData.length > 0) {
+        const sessionsByDay: Record<string, Set<string>> = {};
 
-      // Get recommendations count
-      const { count: recommendationCount } = await (
-        supabaseService as any
-      ).serviceClient
+        messagesData.forEach((msg: any) => {
+          const date = new Date(msg.created_at).toISOString().split('T')[0];
+          if (!sessionsByDay[date]) {
+            sessionsByDay[date] = new Set();
+          }
+          sessionsByDay[date].add(msg.session_id);
+        });
+
+        Object.keys(sessionsByDay)
+          .sort()
+          .forEach((date) => {
+            conversationsByDay.push({
+              date,
+              count: sessionsByDay[date].size,
+            });
+          });
+      }
+
+      // Get recommendations count with date filter
+      let recommendationsQuery = (supabaseService as any).serviceClient
         .from('simple_recommendations')
         .select('*', { count: 'exact', head: true })
         .eq('shop_domain', store.shop_domain);
 
-      // Get conversions count
-      const { count: conversionCount } = await (
-        supabaseService as any
-      ).serviceClient
+      if (dateFilters.start) {
+        recommendationsQuery = recommendationsQuery.gte(
+          'created_at',
+          dateFilters.start
+        );
+      }
+      if (dateFilters.end) {
+        recommendationsQuery = recommendationsQuery.lte(
+          'created_at',
+          dateFilters.end
+        );
+      }
+
+      const { count: recommendationCount } = await recommendationsQuery;
+
+      // Get conversions count with date filter
+      let conversionsQuery = (supabaseService as any).serviceClient
         .from('simple_conversions')
         .select('*', { count: 'exact', head: true })
         .eq('shop_domain', store.shop_domain);
+
+      if (dateFilters.start) {
+        conversionsQuery = conversionsQuery.gte(
+          'created_at',
+          dateFilters.start
+        );
+      }
+      if (dateFilters.end) {
+        conversionsQuery = conversionsQuery.lte('created_at', dateFilters.end);
+      }
+
+      const { count: conversionCount } = await conversionsQuery;
 
       return res.json({
         success: true,
         data: {
           conversations: conversationCount,
-          messages: messageCount || 0,
+          messages: messageCount,
           products: store.products_synced || 0,
           recommendations: recommendationCount || 0,
           conversions: conversionCount || 0,
           lastSync: store.last_sync_at,
           storeCreated: store.created_at,
+          conversationsByDay,
         },
       });
     } catch (error) {

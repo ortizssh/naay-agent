@@ -222,6 +222,21 @@ class ClientApiClient {
     widgetColor?: string;
     welcomeMessage?: string;
     widgetEnabled?: boolean;
+    widgetSecondaryColor?: string;
+    widgetAccentColor?: string;
+    widgetButtonSize?: number;
+    widgetButtonStyle?: string;
+    widgetShowPulse?: boolean;
+    widgetChatWidth?: number;
+    widgetChatHeight?: number;
+    widgetSubtitle?: string;
+    widgetPlaceholder?: string;
+    widgetAvatar?: string;
+    widgetShowPromoMessage?: boolean;
+    widgetShowCart?: boolean;
+    widgetEnableAnimations?: boolean;
+    widgetTheme?: string;
+    widgetBrandName?: string;
   }): Promise<{ success: boolean; data: any }> {
     return this.request('/api/client/widget/config', {
       method: 'PUT',
@@ -247,8 +262,16 @@ class ClientApiClient {
   }
 
   // Analytics
-  async getAnalytics(): Promise<{ success: boolean; data: any }> {
-    return this.request('/api/client/analytics');
+  async getAnalytics(params?: {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<{ success: boolean; data: any }> {
+    const searchParams = new URLSearchParams();
+    if (params?.startDate) searchParams.set('startDate', params.startDate);
+    if (params?.endDate) searchParams.set('endDate', params.endDate);
+
+    const query = searchParams.toString();
+    return this.request(`/api/client/analytics${query ? `?${query}` : ''}`);
   }
 }
 

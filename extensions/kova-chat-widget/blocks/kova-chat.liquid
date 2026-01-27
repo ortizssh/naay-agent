@@ -1,6 +1,7 @@
 {% comment %}
   Kova AI Chat Widget - App Block
   This is the official Kova AI chat widget for Shopify stores
+  Fully configurable from Shopify Theme Editor
 {% endcomment %}
 
 <div
@@ -14,21 +15,46 @@
 </div>
 
 <script>
-  // Kova Widget Configuration
+  // Kova Widget Configuration - Fully configurable from Shopify Admin
   window.KovaConfig = window.KovaConfig || {};
   window.KovaConfig = {
+    // Basic Configuration
     shopDomain: '{{ shop.permanent_domain }}',
     apiEndpoint: '{{ block.settings.api_endpoint | default: "https://naay-agent-app1763504937.azurewebsites.net" }}',
     chatEndpoint: '{{ block.settings.chat_endpoint | default: "https://n8n.dustkey.com/webhook/chat-naay" }}',
-    position: 'bottom-right',
-    primaryColor: '{{ block.settings.primary_color | default: "#a59457" }}',
-    greeting: '{{ block.settings.greeting | default: "¿Necesitas ayuda para tu compra? ¡Habla aquí!" }}',
-    placeholder: '{{ block.settings.placeholder | default: "Pregúntanos sobre tu compra..." }}',
-    theme: 'light',
-    avatar: '{{ block.settings.avatar | default: "🌿" }}',
-    language: '{{ request.locale.iso_code | default: "es" }}',
     enabled: true,
     blockId: '{{ block.id }}',
+
+    // Appearance Settings
+    position: '{{ block.settings.position | default: "bottom-right" }}',
+    theme: '{{ block.settings.theme | default: "light" }}',
+    primaryColor: '{{ block.settings.primary_color | default: "#a59457" }}',
+    secondaryColor: '{{ block.settings.secondary_color | default: "#212120" }}',
+    accentColor: '{{ block.settings.accent_color | default: "#cf795e" }}',
+
+    // Button Settings
+    buttonSize: {{ block.settings.button_size | default: 72 }},
+    buttonStyle: '{{ block.settings.button_style | default: "circle" }}',
+    showPulse: {{ block.settings.show_pulse | default: true }},
+
+    // Chat Window Settings
+    chatWidth: {{ block.settings.chat_width | default: 420 }},
+    chatHeight: {{ block.settings.chat_height | default: 600 }},
+
+    // Text Content
+    brandName: '{{ block.settings.brand_name | default: "Kova" }}',
+    greeting: '{{ block.settings.greeting | default: "¿Necesitas ayuda para tu compra? ¡Habla aquí!" }}',
+    subtitle: '{{ block.settings.subtitle | default: "Asistente de compras con IA" }}',
+    placeholder: '{{ block.settings.placeholder | default: "Escribe tu mensaje..." }}',
+    avatar: '{{ block.settings.avatar | default: "🌿" }}',
+
+    // Feature Toggles
+    showPromoMessage: {{ block.settings.show_promo_message | default: true }},
+    showCart: {{ block.settings.show_cart | default: true }},
+    enableAnimations: {{ block.settings.enable_animations | default: true }},
+
+    // Language
+    language: '{{ request.locale.iso_code | default: "es" }}',
 
     // Shopify context
     context: {
@@ -59,7 +85,6 @@
     script.onload = function() {
       console.log('✅ Kova Chat: Widget loaded successfully');
       try {
-        // Only initialize if no widget instance exists
         if (window.KovaWidget && window.KovaConfig && !window.kovaWidgetInstance) {
           window.kovaWidgetInstance = new window.KovaWidget(window.KovaConfig);
           console.log('✅ Kova Widget instance created');
@@ -77,7 +102,6 @@
     };
     document.head.appendChild(script);
   } else if (window.KovaWidget && window.KovaConfig && !window.kovaWidgetInstance) {
-    // Script already loaded, but no instance created yet
     console.log('🔄 Kova Chat: Script already loaded, creating widget instance');
     try {
       window.kovaWidgetInstance = new window.KovaWidget(window.KovaConfig);
@@ -109,53 +133,195 @@
   "settings": [
     {
       "type": "header",
-      "content": "Kova AI Chat Widget"
+      "content": "⚙️ Configuración General"
     },
     {
-      "type": "paragraph",
-      "content": "El asistente de IA para tu tienda Shopify. Ayuda a tus clientes a encontrar productos y responde sus preguntas automáticamente."
+      "type": "text",
+      "id": "brand_name",
+      "label": "Nombre de marca",
+      "default": "Kova",
+      "info": "Se mostrará en el header del chat"
     },
     {
       "type": "text",
       "id": "api_endpoint",
       "label": "API Endpoint",
       "default": "https://naay-agent-app1763504937.azurewebsites.net",
-      "info": "URL del servidor backend de Kova"
+      "info": "URL del servidor backend"
     },
     {
       "type": "text",
       "id": "chat_endpoint",
       "label": "Chat Endpoint",
       "default": "https://n8n.dustkey.com/webhook/chat-naay",
-      "info": "URL del webhook de chat (n8n o backend)"
+      "info": "URL del webhook de chat"
+    },
+    {
+      "type": "header",
+      "content": "🎨 Apariencia"
+    },
+    {
+      "type": "select",
+      "id": "position",
+      "label": "Posición del widget",
+      "default": "bottom-right",
+      "options": [
+        { "value": "bottom-right", "label": "Abajo derecha" },
+        { "value": "bottom-left", "label": "Abajo izquierda" },
+        { "value": "top-right", "label": "Arriba derecha" },
+        { "value": "top-left", "label": "Arriba izquierda" }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "theme",
+      "label": "Tema",
+      "default": "light",
+      "options": [
+        { "value": "light", "label": "Claro" },
+        { "value": "dark", "label": "Oscuro" }
+      ]
     },
     {
       "type": "color",
       "id": "primary_color",
       "label": "Color primario",
-      "default": "#a59457"
+      "default": "#a59457",
+      "info": "Color principal del botón y acentos"
+    },
+    {
+      "type": "color",
+      "id": "secondary_color",
+      "label": "Color secundario",
+      "default": "#212120",
+      "info": "Color de textos y elementos secundarios"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Color de acento",
+      "default": "#cf795e",
+      "info": "Color para destacados y acciones"
+    },
+    {
+      "type": "header",
+      "content": "🔘 Botón"
+    },
+    {
+      "type": "range",
+      "id": "button_size",
+      "label": "Tamaño del botón",
+      "min": 56,
+      "max": 80,
+      "step": 4,
+      "default": 72,
+      "unit": "px"
+    },
+    {
+      "type": "select",
+      "id": "button_style",
+      "label": "Estilo del botón",
+      "default": "circle",
+      "options": [
+        { "value": "circle", "label": "Circular" },
+        { "value": "rounded", "label": "Redondeado" },
+        { "value": "square", "label": "Cuadrado" }
+      ]
+    },
+    {
+      "type": "checkbox",
+      "id": "show_pulse",
+      "label": "Mostrar animación de pulso",
+      "default": true,
+      "info": "Efecto de pulso para llamar la atención"
+    },
+    {
+      "type": "header",
+      "content": "💬 Ventana de Chat"
+    },
+    {
+      "type": "range",
+      "id": "chat_width",
+      "label": "Ancho del chat",
+      "min": 320,
+      "max": 500,
+      "step": 20,
+      "default": 420,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "chat_height",
+      "label": "Alto del chat",
+      "min": 400,
+      "max": 700,
+      "step": 20,
+      "default": 600,
+      "unit": "px"
+    },
+    {
+      "type": "header",
+      "content": "✏️ Textos"
     },
     {
       "type": "text",
       "id": "greeting",
       "label": "Mensaje de bienvenida",
-      "default": "¿Necesitas ayuda para tu compra? ¡Habla aquí!"
+      "default": "¿Necesitas ayuda para tu compra? ¡Habla aquí!",
+      "info": "Texto del mensaje promocional"
+    },
+    {
+      "type": "text",
+      "id": "subtitle",
+      "label": "Subtítulo",
+      "default": "Asistente de compras con IA",
+      "info": "Texto debajo del mensaje de bienvenida"
     },
     {
       "type": "text",
       "id": "placeholder",
       "label": "Placeholder del input",
-      "default": "Pregúntanos sobre tu compra..."
+      "default": "Escribe tu mensaje..."
     },
     {
       "type": "text",
       "id": "avatar",
       "label": "Avatar/Emoji",
-      "default": "🌿"
+      "default": "🌿",
+      "info": "Emoji o texto para el avatar del asistente"
+    },
+    {
+      "type": "header",
+      "content": "🎛️ Funcionalidades"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_promo_message",
+      "label": "Mostrar mensaje promocional",
+      "default": true,
+      "info": "Muestra el mensaje junto al botón"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_cart",
+      "label": "Mostrar carrito integrado",
+      "default": true,
+      "info": "Permite agregar productos al carrito desde el chat"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_animations",
+      "label": "Habilitar animaciones",
+      "default": true,
+      "info": "Transiciones y efectos visuales"
+    },
+    {
+      "type": "header",
+      "content": "ℹ️ Estado"
     },
     {
       "type": "paragraph",
-      "content": "✅ Widget configurado y activo"
+      "content": "✅ Widget configurado y listo para usar"
     }
   ]
 }

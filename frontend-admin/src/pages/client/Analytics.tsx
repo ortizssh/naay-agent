@@ -1,5 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { clientApi } from '../../services/api';
+
+interface ConversationByDay {
+  date: string;
+  count: number;
+}
 
 interface AnalyticsData {
   conversations: number;
@@ -9,6 +14,7 @@ interface AnalyticsData {
   conversions: number;
   lastSync: string | null;
   storeCreated: string | null;
+  conversationsByDay: ConversationByDay[];
 }
 
 function Analytics() {
@@ -16,14 +22,26 @@ function Analytics() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Default date range: last 3 days
+  const defaultEndDate = new Date().toISOString().split('T')[0];
+  const defaultStartDate = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split('T')[0];
+
+  const [startDate, setStartDate] = useState(defaultStartDate);
+  const [endDate, setEndDate] = useState(defaultEndDate);
+
   useEffect(() => {
     loadAnalytics();
-  }, []);
+  }, [startDate, endDate]);
 
   const loadAnalytics = async () => {
     try {
       setLoading(true);
-      const response = await clientApi.getAnalytics();
+      const response = await clientApi.getAnalytics({
+        startDate,
+        endDate,
+      });
       setData(response.data);
       setError(null);
     } catch (err: any) {
@@ -43,6 +61,44 @@ function Analytics() {
       minute: '2-digit',
     });
   };
+
+  const formatShortDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', {
+      day: 'numeric',
+      month: 'short',
+    });
+  };
+
+  // Calculate chart data with filled dates
+  const chartData = useMemo(() => {
+    if (!data?.conversationsByDay) return [];
+
+    // Create date range array
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const dates: string[] = [];
+
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      dates.push(d.toISOString().split('T')[0]);
+    }
+
+    // Map existing data to dates
+    const dataMap = new Map(
+      data.conversationsByDay.map((item) => [item.date, item.count])
+    );
+
+    return dates.map((date) => ({
+      date,
+      count: dataMap.get(date) || 0,
+    }));
+  }, [data?.conversationsByDay, startDate, endDate]);
+
+  const maxCount = useMemo(() => {
+    if (chartData.length === 0) return 1;
+    const max = Math.max(...chartData.map((d) => d.count));
+    return max > 0 ? max : 1;
+  }, [chartData]);
 
   if (loading) {
     return (
@@ -91,6 +147,86 @@ function Analytics() {
             </div>
           </div>
         )}
+
+        {/* Date Filter */}
+        <div className="card" style={{ marginBottom: '1.5rem' }}>
+          <div className="card-header">
+            <h3 className="card-title">Filtrar por Fecha</h3>
+          </div>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <label style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Fecha inicio
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                style={{
+                  padding: '0.5rem 0.75rem',
+                  borderRadius: '8px',
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-bg)',
+                  color: 'var(--color-text)',
+                  fontSize: '0.9rem',
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <label style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Fecha fin
+              </label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                style={{
+                  padding: '0.5rem 0.75rem',
+                  borderRadius: '8px',
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-bg)',
+                  color: 'var(--color-text)',
+                  fontSize: '0.9rem',
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  const today = new Date();
+                  setEndDate(today.toISOString().split('T')[0]);
+                  setStartDate(new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+                }}
+                style={{ fontSize: '0.85rem', padding: '0.5rem 0.75rem' }}
+              >
+                3 dias
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  const today = new Date();
+                  setEndDate(today.toISOString().split('T')[0]);
+                  setStartDate(new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+                }}
+                style={{ fontSize: '0.85rem', padding: '0.5rem 0.75rem' }}
+              >
+                7 dias
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  const today = new Date();
+                  setEndDate(today.toISOString().split('T')[0]);
+                  setStartDate(new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+                }}
+                style={{ fontSize: '0.85rem', padding: '0.5rem 0.75rem' }}
+              >
+                30 dias
+              </button>
+            </div>
+          </div>
+        </div>
 
         {/* Stats Grid - Main Metrics */}
         <div className="stats-grid">
@@ -162,6 +298,85 @@ function Analytics() {
               Disponibles para AI
             </div>
           </div>
+        </div>
+
+        {/* Conversations Chart */}
+        <div className="card" style={{ marginTop: '1.5rem' }}>
+          <div className="card-header">
+            <h3 className="card-title">Conversaciones por Dia</h3>
+          </div>
+          {chartData.length > 0 ? (
+            <div style={{ padding: '1rem 0' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  gap: '4px',
+                  height: '200px',
+                  padding: '0 0.5rem',
+                }}
+              >
+                {chartData.map((item, index) => (
+                  <div
+                    key={item.date}
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      height: '100%',
+                      justifyContent: 'flex-end',
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: '0.75rem',
+                        fontWeight: '600',
+                        color: 'var(--color-text)',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      {item.count}
+                    </span>
+                    <div
+                      style={{
+                        width: '100%',
+                        maxWidth: '40px',
+                        height: `${Math.max((item.count / maxCount) * 150, 4)}px`,
+                        background:
+                          item.count > 0
+                            ? 'linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-dark, var(--color-primary)) 100%)'
+                            : 'var(--color-border)',
+                        borderRadius: '4px 4px 0 0',
+                        transition: 'height 0.3s ease',
+                      }}
+                    />
+                    <span
+                      style={{
+                        fontSize: '0.7rem',
+                        color: 'var(--color-text-muted)',
+                        marginTop: '8px',
+                        textAlign: 'center',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {formatShortDate(item.date)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '2rem',
+                color: 'var(--color-text-muted)',
+              }}
+            >
+              No hay datos para el rango seleccionado
+            </div>
+          )}
         </div>
 
         {/* Conversion Rate Card */}

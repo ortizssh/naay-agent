@@ -3,9 +3,87 @@
     "kova-chat": {
       "name": "Kova AI Chat Widget",
       "settings": {
-        "header": "Kova AI Chat Widget",
-        "description": "El asistente de IA para tu tienda Shopify. Ayuda a tus clientes a encontrar productos y responde sus preguntas automáticamente.",
-        "status": "✅ Widget configurado y activo"
+        "brand_name": {
+          "label": "Brand name"
+        },
+        "api_endpoint": {
+          "label": "API Endpoint",
+          "info": "Backend server URL"
+        },
+        "chat_endpoint": {
+          "label": "Chat Endpoint",
+          "info": "Chat webhook URL"
+        },
+        "position": {
+          "label": "Widget position",
+          "options__1": "Bottom right",
+          "options__2": "Bottom left",
+          "options__3": "Top right",
+          "options__4": "Top left"
+        },
+        "theme": {
+          "label": "Theme",
+          "options__1": "Light",
+          "options__2": "Dark"
+        },
+        "primary_color": {
+          "label": "Primary color",
+          "info": "Main button and accent color"
+        },
+        "secondary_color": {
+          "label": "Secondary color",
+          "info": "Text and secondary elements color"
+        },
+        "accent_color": {
+          "label": "Accent color",
+          "info": "Highlights and actions color"
+        },
+        "button_size": {
+          "label": "Button size"
+        },
+        "button_style": {
+          "label": "Button style",
+          "options__1": "Circle",
+          "options__2": "Rounded",
+          "options__3": "Square"
+        },
+        "show_pulse": {
+          "label": "Show pulse animation",
+          "info": "Pulse effect to attract attention"
+        },
+        "chat_width": {
+          "label": "Chat width"
+        },
+        "chat_height": {
+          "label": "Chat height"
+        },
+        "greeting": {
+          "label": "Welcome message",
+          "info": "Promotional message text"
+        },
+        "subtitle": {
+          "label": "Subtitle",
+          "info": "Text below welcome message"
+        },
+        "placeholder": {
+          "label": "Input placeholder"
+        },
+        "avatar": {
+          "label": "Avatar/Emoji",
+          "info": "Emoji or text for assistant avatar"
+        },
+        "show_promo_message": {
+          "label": "Show promotional message",
+          "info": "Shows message next to button"
+        },
+        "show_cart": {
+          "label": "Show integrated cart",
+          "info": "Allow adding products to cart from chat"
+        },
+        "enable_animations": {
+          "label": "Enable animations",
+          "info": "Transitions and visual effects"
+        }
       }
     }
   }

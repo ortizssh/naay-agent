@@ -1,11 +1,9 @@
-name = "kova-chat-widget"
+api_version = "2024-10"
+uid = "f13f5303-0e14-0ee5-27c3-678fd7bc694bc5ab036e"
 type = "theme_app_extension"
-api_version = "2025-10"
+name = "kova-chat-widget"
 
-[application]
-embedded = true
-
-[[app_blocks]]
+[[theme_extension.blocks]]
 type = "kova-chat"
 name = "Kova AI Chat Widget"
-files = ["blocks/kova-chat.liquid"]
+file = "blocks/kova-chat.liquid"

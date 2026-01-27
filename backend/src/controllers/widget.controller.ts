@@ -104,35 +104,118 @@ router.get(
     try {
       const { shop } = req.query;
 
+      // Default configuration
+      const defaultConfig = {
+        enabled: false,
+        position: 'bottom-right',
+        primaryColor: '#a59457',
+        secondaryColor: '#212120',
+        accentColor: '#cf795e',
+        greeting: '',
+        subtitle: 'Asistente de compras con IA',
+        placeholder: 'Escribe tu mensaje...',
+        avatar: '🌿',
+        brandName: 'Kova',
+        buttonSize: 72,
+        buttonStyle: 'circle',
+        showPulse: true,
+        chatWidth: 420,
+        chatHeight: 600,
+        showPromoMessage: true,
+        showCart: true,
+        enableAnimations: true,
+        theme: 'light',
+      };
+
       if (!shop || typeof shop !== 'string') {
         return res.json({
           success: true,
-          data: {
-            enabled: false,
-            welcome_message:
-              '¡Hola! 👋 Soy tu asistente virtual. ¿En qué puedo ayudarte?',
-            chat_position: 'bottom-right',
-            primaryColor: '#008060',
-            auto_open_chat: false,
-            show_agent_avatar: true,
-            enable_product_recommendations: true,
-          },
+          data: defaultConfig,
         });
       }
 
       logger.info(`Getting widget config for shop: ${shop}`);
 
-      // Get store from database
+      // First, try to get config from client_stores (new flow with full design settings)
+      const { data: clientStore, error: clientError } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('client_stores')
+        .select(
+          `
+          widget_position,
+          widget_color,
+          welcome_message,
+          widget_enabled,
+          widget_secondary_color,
+          widget_accent_color,
+          widget_button_size,
+          widget_button_style,
+          widget_show_pulse,
+          widget_chat_width,
+          widget_chat_height,
+          widget_subtitle,
+          widget_placeholder,
+          widget_avatar,
+          widget_show_promo_message,
+          widget_show_cart,
+          widget_enable_animations,
+          widget_theme,
+          widget_brand_name
+        `
+        )
+        .eq('shop_domain', shop)
+        .single();
+
+      if (clientStore && !clientError) {
+        logger.info('Widget config loaded from client_stores', { shop });
+        return res.json({
+          success: true,
+          data: {
+            enabled: clientStore.widget_enabled ?? true,
+            position: clientStore.widget_position || defaultConfig.position,
+            primaryColor: clientStore.widget_color || defaultConfig.primaryColor,
+            secondaryColor:
+              clientStore.widget_secondary_color || defaultConfig.secondaryColor,
+            accentColor:
+              clientStore.widget_accent_color || defaultConfig.accentColor,
+            greeting: clientStore.welcome_message || defaultConfig.greeting,
+            subtitle: clientStore.widget_subtitle || defaultConfig.subtitle,
+            placeholder:
+              clientStore.widget_placeholder || defaultConfig.placeholder,
+            avatar: clientStore.widget_avatar || defaultConfig.avatar,
+            brandName: clientStore.widget_brand_name || defaultConfig.brandName,
+            buttonSize:
+              clientStore.widget_button_size || defaultConfig.buttonSize,
+            buttonStyle:
+              clientStore.widget_button_style || defaultConfig.buttonStyle,
+            showPulse: clientStore.widget_show_pulse ?? defaultConfig.showPulse,
+            chatWidth: clientStore.widget_chat_width || defaultConfig.chatWidth,
+            chatHeight:
+              clientStore.widget_chat_height || defaultConfig.chatHeight,
+            showPromoMessage:
+              clientStore.widget_show_promo_message ??
+              defaultConfig.showPromoMessage,
+            showCart: clientStore.widget_show_cart ?? defaultConfig.showCart,
+            enableAnimations:
+              clientStore.widget_enable_animations ??
+              defaultConfig.enableAnimations,
+            theme: clientStore.widget_theme || defaultConfig.theme,
+          },
+        });
+      }
+
+      // Fallback: Get store from stores table (legacy)
       const store = await supabaseService.getStore(shop);
 
       if (!store || !store.widget_enabled) {
         return res.json({
           success: true,
-          data: { enabled: false },
+          data: { ...defaultConfig, enabled: false },
         });
       }
 
-      // Get app settings
+      // Try to get additional settings from app_settings table
       const { data: settings, error } = await (
         supabaseService as any
       ).serviceClient
@@ -142,25 +225,17 @@ router.get(
         .single();
 
       let config = {
+        ...defaultConfig,
         enabled: !!store.widget_enabled,
-        greeting: '¡Hola! 👋 Soy tu asistente virtual. ¿En qué puedo ayudarte?',
-        position: 'bottom-right',
-        primaryColor: '#008060',
-        auto_open_chat: false,
-        show_agent_avatar: true,
-        enable_product_recommendations: true,
       };
 
       if (settings && !error) {
         config = {
+          ...config,
           enabled: !!(store.widget_enabled && settings.chat_enabled !== false),
           greeting: settings.welcome_message || config.greeting,
           position: settings.chat_position || config.position,
           primaryColor: settings.chat_color || config.primaryColor,
-          auto_open_chat: settings.auto_open_chat || false,
-          show_agent_avatar: settings.show_agent_avatar !== false,
-          enable_product_recommendations:
-            settings.enable_product_recommendations !== false,
         };
       }
 
