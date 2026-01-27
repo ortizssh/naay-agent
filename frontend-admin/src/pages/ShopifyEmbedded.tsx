@@ -6,9 +6,10 @@ interface ShopifyEmbeddedProps {
   host: string;
 }
 
-interface ConversationByDay {
+interface ChartDataByDay {
   date: string;
-  count: number;
+  conversations: number;
+  recommendations: number;
 }
 
 interface AnalyticsData {
@@ -19,7 +20,7 @@ interface AnalyticsData {
   conversions: number;
   lastSync: string | null;
   storeCreated: string | null;
-  conversationsByDay?: ConversationByDay[];
+  conversationsByDay?: ChartDataByDay[];
 }
 
 interface StoreData {
@@ -429,13 +430,23 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
       dates.push(d.toISOString().split('T')[0]);
     }
 
-    const dataMap = new Map(analytics.conversationsByDay.map(item => [item.date, item.count]));
-    return dates.map(date => ({ date, count: dataMap.get(date) || 0 }));
+    const dataMap = new Map(
+      analytics.conversationsByDay.map(item => [
+        item.date,
+        { conversations: item.conversations, recommendations: item.recommendations }
+      ])
+    );
+
+    return dates.map(date => ({
+      date,
+      conversations: dataMap.get(date)?.conversations || 0,
+      recommendations: dataMap.get(date)?.recommendations || 0,
+    }));
   }, [analytics?.conversationsByDay, startDate, endDate]);
 
   const maxCount = useMemo(() => {
     if (chartData.length === 0) return 1;
-    const max = Math.max(...chartData.map(d => d.count));
+    const max = Math.max(...chartData.map(d => Math.max(d.conversations, d.recommendations)));
     return max > 0 ? max : 1;
   }, [chartData]);
 
@@ -591,6 +602,47 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                 </div>
               )}
 
+              {/* Current Date Range Indicator */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '1rem',
+                padding: '0.75rem 1rem',
+                background: 'var(--color-primary)',
+                borderRadius: '8px',
+                color: 'white',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                  <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>
+                    {new Date(startDate + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} - {new Date(endDate + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
+                </div>
+                <span style={{
+                  background: 'rgba(255,255,255,0.2)',
+                  padding: '0.25rem 0.6rem',
+                  borderRadius: '4px',
+                  fontSize: '0.8rem',
+                  fontWeight: '500',
+                }}>
+                  {selectedPreset === 'custom' ? 'Personalizado' :
+                   selectedPreset === 'today' ? 'Hoy' :
+                   selectedPreset === 'yesterday' ? 'Ayer' :
+                   selectedPreset === '3d' ? '3 dias' :
+                   selectedPreset === '7d' ? '7 dias' :
+                   selectedPreset === '14d' ? '14 dias' :
+                   selectedPreset === '30d' ? '30 dias' :
+                   selectedPreset === 'thisWeek' ? 'Esta semana' :
+                   selectedPreset === 'thisMonth' ? 'Este mes' : selectedPreset}
+                </span>
+              </div>
+
               {/* Quick Presets Row */}
               <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
                 {([
@@ -612,7 +664,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                       fontSize: '0.8rem',
                       borderRadius: '6px',
                       border: selectedPreset === preset.key
-                        ? '1px solid var(--color-primary)'
+                        ? '2px solid var(--color-primary)'
                         : '1px solid var(--color-border)',
                       background: selectedPreset === preset.key
                         ? 'var(--color-primary)'
@@ -623,6 +675,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                       cursor: isFilterLoading ? 'not-allowed' : 'pointer',
                       transition: 'all 0.2s ease',
                       fontWeight: selectedPreset === preset.key ? '600' : '400',
+                      boxShadow: selectedPreset === preset.key ? '0 2px 8px rgba(107, 92, 255, 0.3)' : 'none',
                     }}
                   >
                     {preset.label}
@@ -787,12 +840,23 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
             {/* Chart */}
             {chartData.length > 0 && (
               <div className="card" style={{ marginTop: '1rem' }}>
-                <div className="card-header">
-                  <h3 className="card-title">Conversaciones por Dia</h3>
+                <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h3 className="card-title">Actividad por Dia</h3>
+                  {/* Legend */}
+                  <div style={{ display: 'flex', gap: '1rem', fontSize: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <div style={{ width: '12px', height: '12px', background: 'var(--color-primary)', borderRadius: '2px' }} />
+                      <span>Conversaciones</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <div style={{ width: '12px', height: '12px', background: '#20b2aa', borderRadius: '2px' }} />
+                      <span>Recomendaciones</span>
+                    </div>
+                  </div>
                 </div>
                 <div style={{ padding: '0.5rem 0' }}>
                   <div
-                    style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '120px', padding: '0 0.5rem' }}
+                    style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '140px', padding: '0 0.5rem' }}
                   >
                     {chartData.map(item => (
                       <div
@@ -806,16 +870,33 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                           justifyContent: 'flex-end',
                         }}
                       >
-                        <span style={{ fontSize: '0.65rem', fontWeight: '600', marginBottom: '2px' }}>{item.count}</span>
-                        <div
-                          style={{
-                            width: '100%',
-                            maxWidth: '30px',
-                            height: `${Math.max((item.count / maxCount) * 80, 3)}px`,
-                            background: item.count > 0 ? 'var(--color-primary)' : 'var(--color-border)',
-                            borderRadius: '3px 3px 0 0',
-                          }}
-                        />
+                        {/* Values above bars */}
+                        <div style={{ display: 'flex', gap: '1px', fontSize: '0.6rem', fontWeight: '600', marginBottom: '2px' }}>
+                          <span style={{ color: 'var(--color-primary)' }}>{item.conversations}</span>
+                          <span style={{ color: 'var(--color-text-muted)' }}>/</span>
+                          <span style={{ color: '#20b2aa' }}>{item.recommendations}</span>
+                        </div>
+                        {/* Bars container */}
+                        <div style={{ display: 'flex', gap: '1px', width: '100%', maxWidth: '40px', justifyContent: 'center' }}>
+                          {/* Conversations bar */}
+                          <div
+                            style={{
+                              width: '45%',
+                              height: `${Math.max((item.conversations / maxCount) * 90, 3)}px`,
+                              background: item.conversations > 0 ? 'var(--color-primary)' : 'var(--color-border)',
+                              borderRadius: '2px 2px 0 0',
+                            }}
+                          />
+                          {/* Recommendations bar */}
+                          <div
+                            style={{
+                              width: '45%',
+                              height: `${Math.max((item.recommendations / maxCount) * 90, 3)}px`,
+                              background: item.recommendations > 0 ? '#20b2aa' : 'var(--color-border)',
+                              borderRadius: '2px 2px 0 0',
+                            }}
+                          />
+                        </div>
                         <span style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
                           {formatShortDate(item.date)}
                         </span>
@@ -884,6 +965,47 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                 </div>
               )}
 
+              {/* Current Date Range Indicator */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '1rem',
+                padding: '0.75rem 1rem',
+                background: 'var(--color-primary)',
+                borderRadius: '8px',
+                color: 'white',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                  <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>
+                    {new Date(startDate + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} - {new Date(endDate + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
+                </div>
+                <span style={{
+                  background: 'rgba(255,255,255,0.2)',
+                  padding: '0.25rem 0.6rem',
+                  borderRadius: '4px',
+                  fontSize: '0.8rem',
+                  fontWeight: '500',
+                }}>
+                  {selectedPreset === 'custom' ? 'Personalizado' :
+                   selectedPreset === 'today' ? 'Hoy' :
+                   selectedPreset === 'yesterday' ? 'Ayer' :
+                   selectedPreset === '3d' ? '3 dias' :
+                   selectedPreset === '7d' ? '7 dias' :
+                   selectedPreset === '14d' ? '14 dias' :
+                   selectedPreset === '30d' ? '30 dias' :
+                   selectedPreset === 'thisWeek' ? 'Esta semana' :
+                   selectedPreset === 'thisMonth' ? 'Este mes' : selectedPreset}
+                </span>
+              </div>
+
               {/* Quick Presets Row */}
               <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
                 {([
@@ -905,7 +1027,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                       fontSize: '0.8rem',
                       borderRadius: '6px',
                       border: selectedPreset === preset.key
-                        ? '1px solid var(--color-primary)'
+                        ? '2px solid var(--color-primary)'
                         : '1px solid var(--color-border)',
                       background: selectedPreset === preset.key
                         ? 'var(--color-primary)'
@@ -916,6 +1038,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                       cursor: isFilterLoading ? 'not-allowed' : 'pointer',
                       transition: 'all 0.2s ease',
                       fontWeight: selectedPreset === preset.key ? '600' : '400',
+                      boxShadow: selectedPreset === preset.key ? '0 2px 8px rgba(107, 92, 255, 0.3)' : 'none',
                     }}
                   >
                     {preset.label}

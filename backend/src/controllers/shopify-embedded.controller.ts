@@ -251,8 +251,8 @@ router.put(
  * Helper function to get analytics for a shop with optional date filtering
  * Optimized with parallel queries for better performance
  *
- * NOTE: The simple-chat controller uses in-memory storage and doesn't persist to chat_sessions/chat_messages.
- * Instead, we derive conversation data from simple_recommendations which has session_id.
+ * Uses chat_messages for conversation counting (all chats)
+ * Uses simple_recommendations for recommendation counting (chats with product recommendations)
  */
 async function getAnalyticsForShop(
   shopDomain: string,
@@ -260,26 +260,27 @@ async function getAnalyticsForShop(
 ) {
   const client = (supabaseService as any).serviceClient;
 
-  // Build recommendations query with session data for conversation counting
-  const buildRecommendationsWithSessionsQuery = () => {
+  // Build chat messages query for conversation counting
+  const buildChatMessagesQuery = () => {
     let query = client
-      .from('simple_recommendations')
-      .select('session_id, created_at')
+      .from('chat_messages')
+      .select('session_id, timestamp')
       .eq('shop_domain', shopDomain);
 
     if (dateFilters.start) {
-      query = query.gte('created_at', dateFilters.start);
+      query = query.gte('timestamp', dateFilters.start);
     }
     if (dateFilters.end) {
-      query = query.lte('created_at', dateFilters.end);
+      query = query.lte('timestamp', dateFilters.end);
     }
     return query;
   };
 
-  const buildRecommendationsCountQuery = () => {
+  // Build recommendations query with date data for chart
+  const buildRecommendationsWithDatesQuery = () => {
     let query = client
       .from('simple_recommendations')
-      .select('*', { count: 'exact', head: true })
+      .select('id, created_at')
       .eq('shop_domain', shopDomain);
 
     if (dateFilters.start) {
@@ -298,28 +299,28 @@ async function getAnalyticsForShop(
       .eq('shop_domain', shopDomain);
 
     if (dateFilters.start) {
-      query = query.gte('created_at', dateFilters.start);
+      query = query.gte('purchased_at', dateFilters.start);
     }
     if (dateFilters.end) {
-      query = query.lte('created_at', dateFilters.end);
+      query = query.lte('purchased_at', dateFilters.end);
     }
     return query;
   };
 
   // Execute all queries in parallel for better performance
   const [
-    recommendationsWithSessionsResult,
+    chatMessagesResult,
     productCountResult,
-    recommendationsCountResult,
+    recommendationsWithDatesResult,
     conversionsResult,
     storeInfoResult,
   ] = await Promise.all([
-    buildRecommendationsWithSessionsQuery(),
+    buildChatMessagesQuery(),
     client
       .from('products')
       .select('*', { count: 'exact', head: true })
       .eq('shop_domain', shopDomain),
-    buildRecommendationsCountQuery(),
+    buildRecommendationsWithDatesQuery(),
     buildConversionsQuery(),
     client
       .from('stores')
@@ -328,52 +329,69 @@ async function getAnalyticsForShop(
       .single(),
   ]);
 
-  const recommendationsData = recommendationsWithSessionsResult.data || [];
+  const chatMessagesData = chatMessagesResult.data || [];
+  const recommendationsData = recommendationsWithDatesResult.data || [];
   const productCount = productCountResult.count;
-  const recommendationCount = recommendationsCountResult.count;
+  const recommendationCount = recommendationsData.length;
   const conversionCount = conversionsResult.count;
   const storeInfo = storeInfoResult.data;
 
-  // Calculate unique sessions (conversations) from recommendations data
+  // Calculate unique sessions (conversations) from chat_messages
   const uniqueSessions = new Set(
-    recommendationsData.map((r: any) => r.session_id).filter(Boolean)
+    chatMessagesData.map((m: any) => m.session_id).filter(Boolean)
   );
   const conversationCount = uniqueSessions.size;
 
-  // Calculate conversations by day for chart
-  const conversationsByDay: { date: string; count: number }[] = [];
-  if (recommendationsData.length > 0) {
-    const sessionsByDay: Record<string, Set<string>> = {};
+  // Calculate conversations by day for chart from chat_messages
+  const sessionsByDay: Record<string, Set<string>> = {};
+  chatMessagesData.forEach((msg: any) => {
+    if (!msg.session_id || !msg.timestamp) return;
+    const date = new Date(msg.timestamp).toISOString().split('T')[0];
+    if (!sessionsByDay[date]) {
+      sessionsByDay[date] = new Set();
+    }
+    sessionsByDay[date].add(msg.session_id);
+  });
 
-    recommendationsData.forEach((rec: any) => {
-      if (!rec.session_id || !rec.created_at) return;
+  // Calculate recommendations by day
+  const recommendationsByDay: Record<string, number> = {};
+  recommendationsData.forEach((rec: any) => {
+    if (!rec.created_at) return;
+    const date = new Date(rec.created_at).toISOString().split('T')[0];
+    recommendationsByDay[date] = (recommendationsByDay[date] || 0) + 1;
+  });
 
-      const date = new Date(rec.created_at).toISOString().split('T')[0];
-      if (!sessionsByDay[date]) {
-        sessionsByDay[date] = new Set();
-      }
-      sessionsByDay[date].add(rec.session_id);
-    });
+  // Combine into chart data with both conversations and recommendations
+  const allDates = new Set([
+    ...Object.keys(sessionsByDay),
+    ...Object.keys(recommendationsByDay),
+  ]);
 
-    Object.keys(sessionsByDay)
-      .sort()
-      .forEach(date => {
-        conversationsByDay.push({
-          date,
-          count: sessionsByDay[date].size,
-        });
+  const chartDataByDay: {
+    date: string;
+    conversations: number;
+    recommendations: number;
+  }[] = [];
+
+  Array.from(allDates)
+    .sort()
+    .forEach(date => {
+      chartDataByDay.push({
+        date,
+        conversations: sessionsByDay[date]?.size || 0,
+        recommendations: recommendationsByDay[date] || 0,
       });
-  }
+    });
 
   return {
     conversations: conversationCount,
-    messages: recommendationsData.length, // Use recommendations count as proxy for messages
+    messages: chatMessagesData.length,
     products: productCount || 0,
     recommendations: recommendationCount || 0,
     conversions: conversionCount || 0,
     lastSync: storeInfo?.updated_at || null,
     storeCreated: storeInfo?.installed_at || null,
-    conversationsByDay,
+    conversationsByDay: chartDataByDay,
   };
 }
 

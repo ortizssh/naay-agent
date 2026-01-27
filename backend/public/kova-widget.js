@@ -2216,6 +2216,17 @@
             display: none !important;
           }
 
+          /* CRITICAL STACKING CONTEXT FIX */
+          /* Remove transform from parent when open in mobile so children position relative to viewport */
+          .kova-widget.kova-widget--open {
+            transform: none !important;
+            filter: none !important;
+            perspective: none !important;
+            /* Reset positioning bits that might interfere */
+            width: auto !important;
+            height: auto !important;
+          }
+
           /* CRITICAL: Ensure chat is visible and centered when open */
           .kova-widget--open .kova-widget__chat {
             display: flex !important;
@@ -3721,6 +3732,11 @@
 
         /* Mobile responsiveness - centered panel on small screens */
         @media (max-width: 480px) {
+          /* Remove transform from parent to allow fixed children to center to viewport */
+          .kova-widget.kova-widget--open {
+            transform: none !important;
+            filter: none !important;
+          }
           .kova-widget__chat {
             width: calc(100vw - 24px) !important;
             height: calc(100dvh - 48px) !important;
