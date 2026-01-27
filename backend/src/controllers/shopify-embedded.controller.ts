@@ -260,68 +260,46 @@ async function getAnalyticsForShop(
 ) {
   const client = (supabaseService as any).serviceClient;
 
-  // Build chat messages query for conversation counting
-  const buildChatMessagesQuery = () => {
-    let query = client
-      .from('chat_messages')
-      .select('session_id, timestamp')
-      .eq('shop_domain', shopDomain);
-
-    if (dateFilters.start) {
-      query = query.gte('timestamp', dateFilters.start);
-    }
-    if (dateFilters.end) {
-      query = query.lte('timestamp', dateFilters.end);
-    }
-    return query;
-  };
-
-  // Build recommendations query with date data for chart
-  const buildRecommendationsWithDatesQuery = () => {
-    let query = client
-      .from('simple_recommendations')
-      .select('id, created_at')
-      .eq('shop_domain', shopDomain);
-
-    if (dateFilters.start) {
-      query = query.gte('created_at', dateFilters.start);
-    }
-    if (dateFilters.end) {
-      query = query.lte('created_at', dateFilters.end);
-    }
-    return query;
-  };
-
-  const buildConversionsQuery = () => {
-    let query = client
-      .from('simple_conversions')
-      .select('*', { count: 'exact', head: true })
-      .eq('shop_domain', shopDomain);
-
-    if (dateFilters.start) {
-      query = query.gte('purchased_at', dateFilters.start);
-    }
-    if (dateFilters.end) {
-      query = query.lte('purchased_at', dateFilters.end);
-    }
-    return query;
-  };
-
-  // Execute all queries in parallel for better performance
+  // Try RPC functions first, then fallback to queries with higher limit
   const [
-    chatMessagesResult,
+    conversationStatsResult,
+    conversationsByDayResult,
+    recommendationsByDayResult,
     productCountResult,
-    recommendationsWithDatesResult,
     conversionsResult,
     storeInfoResult,
   ] = await Promise.all([
-    buildChatMessagesQuery(),
+    // Get total conversations and messages count using aggregation
+    client.rpc('get_chat_stats', {
+      p_shop_domain: shopDomain,
+      p_start_date: dateFilters.start,
+      p_end_date: dateFilters.end,
+    }).single(),
+    // Get conversations by day
+    client.rpc('get_conversations_by_day', {
+      p_shop_domain: shopDomain,
+      p_start_date: dateFilters.start,
+      p_end_date: dateFilters.end,
+    }),
+    // Get recommendations by day
+    client.rpc('get_recommendations_by_day', {
+      p_shop_domain: shopDomain,
+      p_start_date: dateFilters.start,
+      p_end_date: dateFilters.end,
+    }),
+    // Product count
     client
       .from('products')
       .select('*', { count: 'exact', head: true })
       .eq('shop_domain', shopDomain),
-    buildRecommendationsWithDatesQuery(),
-    buildConversionsQuery(),
+    // Conversions count
+    client
+      .from('simple_conversions')
+      .select('*', { count: 'exact', head: true })
+      .eq('shop_domain', shopDomain)
+      .gte('purchased_at', dateFilters.start || '1970-01-01')
+      .lte('purchased_at', dateFilters.end || '2100-01-01'),
+    // Store info
     client
       .from('stores')
       .select('installed_at, updated_at')
@@ -329,66 +307,110 @@ async function getAnalyticsForShop(
       .single(),
   ]);
 
-  const chatMessagesData = chatMessagesResult.data || [];
-  const recommendationsData = recommendationsWithDatesResult.data || [];
-  const productCount = productCountResult.count;
-  const recommendationCount = recommendationsData.length;
-  const conversionCount = conversionsResult.count;
+  // If RPC functions don't exist, fall back to regular queries with higher limit
+  let conversationCount = 0;
+  let messageCount = 0;
+  let conversationsByDayData: { date: string; count: number }[] = [];
+  let recommendationsByDayData: { date: string; count: number }[] = [];
+  let recommendationCount = 0;
+
+  if (conversationStatsResult.error || conversationsByDayResult.error) {
+    // Fallback: use regular queries with explicit high limit
+    logger.info('RPC functions not available, using fallback queries');
+
+    let chatQuery = client
+      .from('chat_messages')
+      .select('session_id, timestamp')
+      .eq('shop_domain', shopDomain)
+      .limit(10000);
+
+    if (dateFilters.start) chatQuery = chatQuery.gte('timestamp', dateFilters.start);
+    if (dateFilters.end) chatQuery = chatQuery.lte('timestamp', dateFilters.end);
+
+    const chatResult = await chatQuery;
+    const chatMessagesData = chatResult.data || [];
+
+    const uniqueSessions = new Set(
+      chatMessagesData.map((m: any) => m.session_id).filter(Boolean)
+    );
+    conversationCount = uniqueSessions.size;
+    messageCount = chatMessagesData.length;
+
+    // Group by day
+    const sessionsByDay: Record<string, Set<string>> = {};
+    chatMessagesData.forEach((msg: any) => {
+      if (!msg.session_id || !msg.timestamp) return;
+      const date = new Date(msg.timestamp).toISOString().split('T')[0];
+      if (!sessionsByDay[date]) sessionsByDay[date] = new Set();
+      sessionsByDay[date].add(msg.session_id);
+    });
+
+    conversationsByDayData = Object.entries(sessionsByDay).map(([date, sessions]) => ({
+      date,
+      count: sessions.size,
+    }));
+
+    // Recommendations fallback
+    let recQuery = client
+      .from('simple_recommendations')
+      .select('id, created_at')
+      .eq('shop_domain', shopDomain)
+      .limit(10000);
+
+    if (dateFilters.start) recQuery = recQuery.gte('created_at', dateFilters.start);
+    if (dateFilters.end) recQuery = recQuery.lte('created_at', dateFilters.end);
+
+    const recResult = await recQuery;
+    const recommendationsData = recResult.data || [];
+    recommendationCount = recommendationsData.length;
+
+    const recByDay: Record<string, number> = {};
+    recommendationsData.forEach((rec: any) => {
+      if (!rec.created_at) return;
+      const date = new Date(rec.created_at).toISOString().split('T')[0];
+      recByDay[date] = (recByDay[date] || 0) + 1;
+    });
+
+    recommendationsByDayData = Object.entries(recByDay).map(([date, count]) => ({
+      date,
+      count,
+    }));
+  } else {
+    // Use RPC results
+    conversationCount = conversationStatsResult.data?.conversation_count || 0;
+    messageCount = conversationStatsResult.data?.message_count || 0;
+    conversationsByDayData = conversationsByDayResult.data || [];
+    recommendationsByDayData = recommendationsByDayResult.data || [];
+    recommendationCount = recommendationsByDayData.reduce((sum: number, r: any) => sum + (r.count || 0), 0);
+  }
+
+  const productCount = productCountResult.count || 0;
+  const conversionCount = conversionsResult.count || 0;
   const storeInfo = storeInfoResult.data;
 
-  // Calculate unique sessions (conversations) from chat_messages
-  const uniqueSessions = new Set(
-    chatMessagesData.map((m: any) => m.session_id).filter(Boolean)
-  );
-  const conversationCount = uniqueSessions.size;
-
-  // Calculate conversations by day for chart from chat_messages
-  const sessionsByDay: Record<string, Set<string>> = {};
-  chatMessagesData.forEach((msg: any) => {
-    if (!msg.session_id || !msg.timestamp) return;
-    const date = new Date(msg.timestamp).toISOString().split('T')[0];
-    if (!sessionsByDay[date]) {
-      sessionsByDay[date] = new Set();
-    }
-    sessionsByDay[date].add(msg.session_id);
-  });
-
-  // Calculate recommendations by day
-  const recommendationsByDay: Record<string, number> = {};
-  recommendationsData.forEach((rec: any) => {
-    if (!rec.created_at) return;
-    const date = new Date(rec.created_at).toISOString().split('T')[0];
-    recommendationsByDay[date] = (recommendationsByDay[date] || 0) + 1;
-  });
-
-  // Combine into chart data with both conversations and recommendations
+  // Combine conversations and recommendations into chart data
   const allDates = new Set([
-    ...Object.keys(sessionsByDay),
-    ...Object.keys(recommendationsByDay),
+    ...conversationsByDayData.map((d: any) => d.date),
+    ...recommendationsByDayData.map((d: any) => d.date),
   ]);
 
-  const chartDataByDay: {
-    date: string;
-    conversations: number;
-    recommendations: number;
-  }[] = [];
+  const convByDayMap = new Map(conversationsByDayData.map((d: any) => [d.date, d.count]));
+  const recByDayMap = new Map(recommendationsByDayData.map((d: any) => [d.date, d.count]));
 
-  Array.from(allDates)
+  const chartDataByDay = Array.from(allDates)
     .sort()
-    .forEach(date => {
-      chartDataByDay.push({
-        date,
-        conversations: sessionsByDay[date]?.size || 0,
-        recommendations: recommendationsByDay[date] || 0,
-      });
-    });
+    .map(date => ({
+      date,
+      conversations: convByDayMap.get(date) || 0,
+      recommendations: recByDayMap.get(date) || 0,
+    }));
 
   return {
     conversations: conversationCount,
-    messages: chatMessagesData.length,
-    products: productCount || 0,
-    recommendations: recommendationCount || 0,
-    conversions: conversionCount || 0,
+    messages: messageCount,
+    products: productCount,
+    recommendations: recommendationCount,
+    conversions: conversionCount,
     lastSync: storeInfo?.updated_at || null,
     storeCreated: storeInfo?.installed_at || null,
     conversationsByDay: chartDataByDay,
