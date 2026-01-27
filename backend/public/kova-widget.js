@@ -5088,128 +5088,76 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       // Show loading state
       this.showCartLoading();
 
-      // First try to add to Shopify native cart if we're on a Shopify store
       let addedToShopify = false;
-      // Check if we're on a Shopify store (either .myshopify.com or a custom domain with a configured shop)
+
+      // Check if we're on a Shopify store
       const isShopifyDomain = window.location.hostname.includes('myshopify.com') ||
         window.location.hostname.includes('shopify.com');
-
-      // Always check window.KovaConfig for the most up-to-date configuration
       const currentShopDomain = (window.KovaConfig && window.KovaConfig.shopDomain) || this.config.shopDomain;
       const hasShopConfig = currentShopDomain && currentShopDomain.trim() !== '';
       const isShopifyStore = isShopifyDomain || hasShopConfig;
 
-      console.log('🏪 Is Shopify store?', isShopifyStore, 'Hostname:', window.location.hostname, 'Shop config:', currentShopDomain);
-      console.log('🔧 Config sources - this.config.shopDomain:', this.config.shopDomain, 'window.KovaConfig.shopDomain:', window.KovaConfig?.shopDomain);
+      console.log('🏪 Is Shopify store?', isShopifyStore, 'Hostname:', window.location.hostname);
 
-      if (isShopifyStore && hasShopConfig) {
+      if (isShopifyStore) {
+        // Add to Shopify native cart (100% sync)
         addedToShopify = await this.addToShopifyNativeCart(product.variantId, product.quantity || 1);
-      } else {
-        console.log('⚠️  No Shopify configuration or domain, skipping native cart addition');
-      }
 
-      // Also add via our API for consistency (only if we have shop config)
-      if (hasShopConfig) {
-        try {
-          const response = await fetch(`${this.config.apiEndpoint}/api/public/cart/add`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              shop: currentShopDomain,
-              cartId: this.cartId,
-              variantId: product.variantId,
-              quantity: product.quantity || 1,
-            }),
-          });
-
-          const data = await response.json();
-
-          if (data.success && data.data.cart) {
-            // Update local cart with Shopify cart data
-            this.cartId = data.data.cart.id;
-            this.syncCartFromShopify(data.data.cart);
-
-            console.log('✅ Product added to Shopify cart via API:', data.data.cart);
-          } else if (!addedToShopify) {
-            console.error('❌ Failed to add to cart via API:', data);
-            // Fallback to local cart only if Shopify native also failed
-            this.addToCartLocal(product);
-          }
-        } catch (error) {
-          console.error('❌ Error adding to cart via API:', error);
-          if (!addedToShopify) {
-            // Fallback to local cart only if Shopify native also failed
-            this.addToCartLocal(product);
-          }
-        }
-      } else {
-        console.log('⚠️ No shop configuration, adding to local cart only');
-        // Add to local cart if we don't have shop config
         if (!addedToShopify) {
-          this.addToCartLocal(product);
+          console.error('❌ Failed to add product to Shopify cart');
+          this.hideCartLoading();
+          // Show error message to user
+          this.addMessage('No se pudo agregar el producto al carrito. Por favor, intenta de nuevo.', 'assistant');
+          return;
         }
+
+        console.log('✅ Product added to Shopify cart successfully');
+      } else {
+        console.error('❌ Not on a Shopify store, cannot add to cart');
+        this.hideCartLoading();
+        this.addMessage('Error: No se detectó una tienda Shopify.', 'assistant');
+        return;
       }
 
-      // Hide loading and update cart display
+      // Hide loading - cart will be updated via loadShopifyCart called in addToShopifyNativeCart
       this.hideCartLoading();
-      // Cart stays visible always
     }
 
-    // ENHANCED: Remove from cart by unique cart item ID
+    // Remove from cart by unique cart item ID - 100% synced with Shopify
     async removeFromCartByItemId(cartItemId) {
       console.log('🛒 Removing cart item by ID:', cartItemId);
 
-      // Find the specific cart item by unique ID only
-      const itemIndex = this.cartData.items.findIndex(item =>
-        item.cartItemId === cartItemId
-      );
+      // Find the specific cart item
+      const item = this.cartData.items.find(item => item.cartItemId === cartItemId);
 
-      if (itemIndex === -1) {
+      if (!item) {
         console.warn('⚠️ Cart item not found:', cartItemId);
         return;
       }
 
-      const item = this.cartData.items[itemIndex];
       console.log('🗑️ Found item to remove:', item);
 
-      // Try to remove from Shopify native cart if applicable
-      const isShopifyDomain = window.location.hostname.includes('myshopify.com') ||
-        window.location.hostname.includes('shopify.com');
-      const currentShopDomain = (window.KovaConfig && window.KovaConfig.shopDomain) || this.config.shopDomain;
-      const hasShopConfig = currentShopDomain && currentShopDomain.trim() !== '';
-      const isShopifyStore = isShopifyDomain || hasShopConfig;
-
-      if (isShopifyStore) {
-        try {
-          // Priority 1: Use Shopify key (most reliable)
-          if (item.shopifyKey) {
-            console.log('🗑️ Removing from Shopify by key:', item.shopifyKey);
-            await this.removeFromShopifyByKey(item.shopifyKey);
-          }
-          // Priority 2: Use line_index
-          else if (item.line_index !== undefined) {
-            console.log('🗑️ Removing from Shopify by line_index:', item.line_index);
-            await this.removeFromShopifyNativeCart(item.line_index);
-          }
-          // Priority 3: Use variant ID (fallback)
-          else if (item.variantId) {
-            console.log('🗑️ Removing from Shopify by variant ID:', item.variantId);
-            await this.removeFromShopifyByVariantId(item.variantId);
-          }
-        } catch (error) {
-          console.error('❌ Failed to remove from Shopify cart:', error);
+      // Remove from Shopify using the most reliable method available
+      let removed = false;
+      try {
+        if (item.shopifyKey) {
+          console.log('🗑️ Removing from Shopify by key:', item.shopifyKey);
+          removed = await this.removeFromShopifyByKey(item.shopifyKey);
+        } else if (item.line_index !== undefined) {
+          console.log('🗑️ Removing from Shopify by line_index:', item.line_index);
+          removed = await this.removeFromShopifyNativeCart(item.line_index);
+        } else if (item.variantId) {
+          console.log('🗑️ Removing from Shopify by variant ID:', item.variantId);
+          removed = await this.removeFromShopifyByVariantId(item.variantId);
         }
+      } catch (error) {
+        console.error('❌ Failed to remove from Shopify cart:', error);
       }
 
-      // Remove the specific item from local cart immediately
-      this.cartData.items.splice(itemIndex, 1);
+      // Reload cart from Shopify to ensure 100% sync
+      await this.loadShopifyCart();
 
-      console.log('✅ Cart item removed successfully. Remaining items:', this.cartData.items.length);
-
-      // Update cart display immediately to reflect changes
-      this.updateCartDisplay();
+      console.log('✅ Cart item removal complete. Synced with Shopify.');
     }
 
     // Remove item from Shopify cart by key (most reliable method)
@@ -5297,14 +5245,12 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       }
     }
 
-    // ENHANCED: Update quantity by unique cart item ID
+    // Update quantity by unique cart item ID - 100% synced with Shopify
     async updateQuantityByItemId(cartItemId, newQuantity) {
       console.log('🛒 Updating cart item quantity:', cartItemId, 'to', newQuantity);
 
-      // Find the specific cart item by unique ID only
-      const item = this.cartData.items.find(item =>
-        item.cartItemId === cartItemId
-      );
+      // Find the specific cart item
+      const item = this.cartData.items.find(item => item.cartItemId === cartItemId);
 
       if (!item) {
         console.warn('⚠️ Cart item not found:', cartItemId);
@@ -5313,39 +5259,30 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
       if (newQuantity <= 0) {
         // If quantity is 0 or less, remove the item
-        this.removeFromCartByItemId(cartItemId);
+        await this.removeFromCartByItemId(cartItemId);
         return;
       }
 
-      // Update the quantity immediately in local cart
-      item.quantity = newQuantity;
-
-      // Try to sync with Shopify
-      const isShopifyDomain = window.location.hostname.includes('myshopify.com') ||
-        window.location.hostname.includes('shopify.com');
-      const currentShopDomain = (window.KovaConfig && window.KovaConfig.shopDomain) || this.config.shopDomain;
-      const hasShopConfig = currentShopDomain && currentShopDomain.trim() !== '';
-      const isShopifyStore = isShopifyDomain || hasShopConfig;
-
-      if (isShopifyStore) {
-        try {
-          // Priority 1: Use Shopify key (most reliable)
-          if (item.shopifyKey) {
-            await this.updateShopifyQuantityByKey(item.shopifyKey, newQuantity);
-          }
-          // Priority 2: Use variant ID (fallback)
-          else if (item.variantId) {
-            await this.updateShopifyQuantityByVariantId(item.variantId, newQuantity);
-          }
-        } catch (error) {
-          console.error('❌ Failed to update Shopify cart quantity:', error);
+      // Update in Shopify using the most reliable method available
+      try {
+        if (item.shopifyKey) {
+          console.log('🔄 Updating Shopify by key:', item.shopifyKey);
+          await this.updateShopifyQuantityByKey(item.shopifyKey, newQuantity);
+        } else if (item.line_index !== undefined) {
+          console.log('🔄 Updating Shopify by line_index:', item.line_index);
+          await this.updateShopifyCartQuantity(item.line_index, newQuantity);
+        } else if (item.variantId) {
+          console.log('🔄 Updating Shopify by variant ID:', item.variantId);
+          await this.updateShopifyQuantityByVariantId(item.variantId, newQuantity);
         }
+      } catch (error) {
+        console.error('❌ Failed to update Shopify cart quantity:', error);
       }
 
-      console.log('✅ Cart item quantity updated:', item);
+      // Reload cart from Shopify to ensure 100% sync
+      await this.loadShopifyCart();
 
-      // Update cart display immediately to reflect changes
-      this.updateCartDisplay();
+      console.log('✅ Cart item quantity update complete. Synced with Shopify.');
     }
 
     // Update quantity in Shopify cart by key (most reliable method)
@@ -5438,26 +5375,24 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     addToCartLocal(product) {
       console.log('🛒 Adding product to local cart (fallback):', product);
 
-      // ENHANCED: Allow multiple products without limitations
-      // Instead of checking for existing items, always add as new entry
-      // This allows customers to add the same product multiple times
       // Generate unique cart item ID to allow multiple instances of same product
-      const uniqueCartItemId = `${product.id}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+      const uniqueCartItemId = `local_${product.id}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
       // Always add as new item - no quantity merging
       this.cartData.items.push({
-        id: product.id, // Keep original product ID for reference
-        cartItemId: uniqueCartItemId, // Unique cart entry ID
+        id: product.id,
+        cartItemId: uniqueCartItemId,
         title: product.title,
         price: product.price,
         quantity: product.quantity || 1,
         image: product.image,
         variantId: product.variantId,
         handle: product.handle,
-        addedAt: new Date().toISOString() // Track when item was added
+        addedAt: new Date().toISOString(),
+        syncedWithShopify: false // Mark as local-only item
       });
 
-      console.log('✅ Product added to local cart as new entry. Total items in cart:', this.cartData.items.length);
+      console.log('✅ Product added to local cart. Total items:', this.cartData.items.length);
 
       // Update cart display to reflect changes
       this.updateCartDisplay();
@@ -5466,28 +5401,27 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       this.forceHideEmptyMessage();
     }
 
-    // Sync local cart data from Shopify cart
+    // Sync local cart data from Shopify cart (Storefront API format)
     syncCartFromShopify(shopifyCart) {
-      console.log('🔄 Syncing cart from Shopify:', shopifyCart);
+      console.log('🔄 Syncing cart from Shopify API:', shopifyCart);
 
-      // Transform Shopify cart lines to our format
-      this.cartData.items = shopifyCart.lines?.edges?.map(edge => ({
+      // 100% sync: cart reflects exactly what's in Shopify
+      this.cartData.items = shopifyCart.lines?.edges?.map((edge, index) => ({
         id: edge.node.id,
-        cartItemId: `shopify_${edge.node.id}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`, // Add unique cart item ID
+        cartItemId: `shopify_api_${edge.node.id}_${index}`,
         title: edge.node.merchandise?.product?.title || 'Product',
         price: edge.node.merchandise?.priceV2?.amount || 0,
         quantity: edge.node.quantity,
         image: edge.node.merchandise?.image?.url || '',
         variantId: edge.node.merchandise?.id || '',
-        handle: edge.node.merchandise?.product?.handle || '',
-        addedAt: new Date().toISOString()
+        handle: edge.node.merchandise?.product?.handle || ''
       })) || [];
 
-      // Update totals
-      this.cartData.total = shopifyCart.cost?.totalAmount?.amount || 0;
+      // Update totals from Shopify
+      this.cartData.total = parseFloat(shopifyCart.cost?.totalAmount?.amount || 0);
       this.cartData.itemCount = shopifyCart.totalQuantity || 0;
 
-      console.log('✅ Cart synced with Shopify');
+      console.log('✅ Cart synced with Shopify API. Items:', this.cartData.items.length);
     }
 
     // Search for products using the new endpoint
@@ -6083,27 +6017,27 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     syncFromShopifyNativeCart(shopifyCart) {
       console.log('🔄 Syncing from Shopify native cart:', shopifyCart);
 
-      // Transform Shopify native cart to our format
+      // 100% sync: cart reflects exactly what's in Shopify
       this.cartData.items = shopifyCart.items?.map((item, index) => ({
         id: item.variant_id.toString(),
-        cartItemId: `shopify_${item.key || item.variant_id}_${index}`, // Use Shopify's item key for consistency
-        shopifyKey: item.key, // Store the Shopify key for removal
+        cartItemId: `shopify_${item.key}_${index}`,
+        shopifyKey: item.key,
         title: item.product_title,
         variantTitle: item.variant_title,
-        price: (item.price / 100).toFixed(2), // Shopify prices are in cents
+        price: (item.price / 100).toFixed(2),
         quantity: item.quantity,
         image: item.image,
         variantId: item.variant_id.toString(),
         handle: item.handle,
         url: item.url,
-        line_index: index + 1 // Shopify line indices are 1-based
+        line_index: index + 1
       })) || [];
 
-      // Update totals
-      this.cartData.total = shopifyCart.total_price / 100; // Convert from cents
+      // Update totals from Shopify
+      this.cartData.total = shopifyCart.total_price / 100;
       this.cartData.itemCount = shopifyCart.item_count || 0;
 
-      console.log('✅ Cart synced from Shopify native cart. Items:', this.cartData.items.length);
+      console.log('✅ Cart synced from Shopify. Items:', this.cartData.items.length);
     }
 
     setupShopifyCartSync() {
