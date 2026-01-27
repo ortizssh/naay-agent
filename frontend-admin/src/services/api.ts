@@ -253,3 +253,64 @@ class ClientApiClient {
 }
 
 export const clientApi = new ClientApiClient();
+
+// Auth API
+class AuthApiClient {
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<T> {
+    const url = `${getApiUrl()}${endpoint}`;
+
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || `HTTP ${response.status}`);
+    }
+
+    return data;
+  }
+
+  async login(
+    email: string,
+    password: string
+  ): Promise<{ success: boolean; token?: string; user?: any; message?: string }> {
+    return this.request('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+  }
+
+  async register(data: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+    company?: string;
+    userType?: 'admin' | 'client';
+  }): Promise<{ success: boolean; token?: string; user?: any; message?: string }> {
+    return this.request('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getMe(): Promise<{ success: boolean; user?: any; message?: string }> {
+    const token = localStorage.getItem('auth_token');
+    return this.request('/api/auth/me', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  }
+}
+
+export const authApi = new AuthApiClient();

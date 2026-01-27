@@ -492,11 +492,10 @@ async function startServer() {
     // Debug endpoint to check file paths in production
     app.get('/debug/files', (req: express.Request, res: express.Response) => {
       const paths = [
-        path.join(__dirname, '../public/admin/index.html'),
-        path.join(__dirname, 'public/admin/index.html'),
-        path.join(__dirname, '../../backend/public/admin/index.html'),
-        path.join(process.cwd(), 'public/admin/index.html'),
-        path.join(process.cwd(), 'backend/public/admin/index.html'),
+        path.join(__dirname, '../public/app/index.html'),
+        path.join(__dirname, 'public/app/index.html'),
+        path.join(process.cwd(), 'public/app/index.html'),
+        path.join(process.cwd(), 'dist/public/app/index.html'),
       ];
 
       const result = {
@@ -511,34 +510,76 @@ async function startServer() {
       res.json(result);
     });
 
-    // Serve landing page
+    // Frontend app directory finder
+    const getAppDir = () => {
+      const possibleDirs = [
+        path.join(__dirname, '../public/app'),
+        path.join(__dirname, 'public/app'),
+        path.join(process.cwd(), 'public/app'),
+        path.join(process.cwd(), 'dist/public/app'),
+      ];
+
+      for (const dir of possibleDirs) {
+        if (fs.existsSync(dir)) {
+          return dir;
+        }
+      }
+      return null;
+    };
+
+    // Serve frontend static assets (js, css, etc.)
+    app.use('/assets', (req, res, next) => {
+      const appDir = getAppDir();
+      if (appDir) {
+        express.static(path.join(appDir, 'assets'))(req, res, next);
+      } else {
+        next();
+      }
+    });
+
+    // Helper to serve the React SPA
+    const serveReactApp = (res: express.Response) => {
+      const appDir = getAppDir();
+      if (appDir) {
+        const indexPath = path.join(appDir, 'index.html');
+        if (fs.existsSync(indexPath)) {
+          console.log('✅ React app served from:', indexPath);
+          return res.sendFile(indexPath);
+        }
+      }
+      // Fallback to old static pages if React app not built
+      const fallbackPath = path.join(__dirname, '../public/index.html');
+      if (fs.existsSync(fallbackPath)) {
+        return res.sendFile(fallbackPath);
+      }
+      res.status(404).json({
+        error: 'App not found. Run: cd frontend-admin && npm run build',
+      });
+    };
+
+    // Serve React app at root
     app.get('/', (req: express.Request, res: express.Response) => {
-      const landingPath = path.join(__dirname, '../public/index.html');
-      if (fs.existsSync(landingPath)) {
-        res.sendFile(landingPath);
-      } else {
-        res.redirect('/admin');
-      }
+      serveReactApp(res);
     });
 
-    // Serve login page
+    // Serve React app for login (SPA handles routing)
     app.get('/login', (req: express.Request, res: express.Response) => {
-      const loginPath = path.join(__dirname, '../public/login.html');
-      if (fs.existsSync(loginPath)) {
-        res.sendFile(loginPath);
-      } else {
-        res.status(404).send('Login page not found');
-      }
+      serveReactApp(res);
     });
 
-    // Serve register page
+    // Serve React app for register (SPA handles routing)
     app.get('/register', (req: express.Request, res: express.Response) => {
-      const registerPath = path.join(__dirname, '../public/register.html');
-      if (fs.existsSync(registerPath)) {
-        res.sendFile(registerPath);
-      } else {
-        res.status(404).send('Register page not found');
-      }
+      serveReactApp(res);
+    });
+
+    // Serve React app for client routes (SPA handles routing)
+    app.get('/client*', (req: express.Request, res: express.Response) => {
+      serveReactApp(res);
+    });
+
+    // Serve React app for onboarding routes (SPA handles routing)
+    app.get('/onboarding*', (req: express.Request, res: express.Response) => {
+      serveReactApp(res);
     });
 
     // Success page after Shopify app installation
@@ -668,65 +709,31 @@ async function startServer() {
     app.use('/api/migration', historicalConversionMigratorRoutes);
     app.use('/api/real-conversions', realConversionAnalyzerRoutes);
 
-    // Admin panel static files middleware
-    const getAdminDir = () => {
-      const possibleDirs = [
-        path.join(__dirname, '../public/admin'),
-        path.join(__dirname, 'public/admin'),
-        path.join(process.cwd(), 'public/admin'),
-        path.join(process.cwd(), 'dist/public/admin'),
-      ];
-
-      for (const dir of possibleDirs) {
-        if (fs.existsSync(dir)) {
-          return dir;
-        }
-      }
-      return null;
-    };
-
-    // Serve admin static assets (js, css, etc.)
-    app.use('/admin/assets', (req, res, next) => {
-      const adminDir = getAdminDir();
-      if (adminDir) {
-        express.static(path.join(adminDir, 'assets'))(req, res, next);
-      } else {
-        next();
-      }
-    });
-
-    // Serve admin panel (SPA - catch all admin routes)
+    // Legacy admin route - redirect to root
     app.get('/admin*', (req, res) => {
-      try {
-        const adminDir = getAdminDir();
-
-        if (adminDir) {
-          const indexPath = path.join(adminDir, 'index.html');
-          if (fs.existsSync(indexPath)) {
-            console.log('✅ Admin served from:', indexPath);
-            return res.sendFile(indexPath);
-          }
-        }
-
-        console.error('❌ Admin file not found');
-        res.status(404).json({
-          error:
-            'Admin panel not found. Run: cd frontend-admin && npm run build',
-        });
-      } catch (error) {
-        console.error('Error serving admin panel:', error);
-        res.status(500).json({
-          error: 'Failed to serve admin panel',
-          details: error.message,
-        });
-      }
+      res.redirect('/');
     });
 
-    // 404 handler
+    // SPA fallback - serve React app for any non-API routes
     app.use('*', (req, res) => {
+      // Don't serve SPA for API routes
+      if (req.originalUrl.startsWith('/api/') || req.originalUrl.startsWith('/auth/')) {
+        return res.status(404).json({
+          success: false,
+          error: 'Route not found',
+        });
+      }
+      // Serve React app for all other routes (SPA routing)
+      const appDir = getAppDir();
+      if (appDir) {
+        const indexPath = path.join(appDir, 'index.html');
+        if (fs.existsSync(indexPath)) {
+          return res.sendFile(indexPath);
+        }
+      }
       res.status(404).json({
         success: false,
-        error: 'Route not found',
+        error: 'App not found',
       });
     });
 

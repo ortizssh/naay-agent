@@ -20,11 +20,11 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: '../backend/public/admin',
+    outDir: '../backend/public/app',
     emptyOutDir: true,
     sourcemap: true,
   },
-  base: '/admin/',
+  base: '/',
   define: {
     global: 'globalThis',
   },

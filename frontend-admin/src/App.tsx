@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import './styles/admin.css';
 
+// Auth pages
+import Login from './pages/Login';
+import Register from './pages/Register';
+
 // Admin pages
 import Dashboard from './pages/Dashboard';
 import Tenants from './pages/Tenants';
@@ -20,6 +24,7 @@ import ClientSidebar from './components/layout/ClientSidebar';
 
 type AdminPageType = 'dashboard' | 'tenants' | 'settings';
 type ClientPageType = 'dashboard' | 'store' | 'widget' | 'analytics';
+type AuthPageType = 'login' | 'register' | 'app';
 
 interface User {
   id: string;
@@ -35,15 +40,28 @@ interface User {
 function App() {
   const [currentAdminPage, setCurrentAdminPage] = useState<AdminPageType>('dashboard');
   const [currentClientPage, setCurrentClientPage] = useState<ClientPageType>('dashboard');
+  const [authPage, setAuthPage] = useState<AuthPageType>('login');
   const [user, setUser] = useState<User | null>(null);
   const [sidebarOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Check current path for auth routing
+    const path = window.location.pathname;
+    if (path === '/register') {
+      setAuthPage('register');
+    } else if (path === '/login') {
+      setAuthPage('login');
+    } else {
+      setAuthPage('app');
+    }
+
     // Check for stored user
     const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+    const token = localStorage.getItem('auth_token');
+
+    if (storedUser && token) {
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
 
@@ -85,6 +103,19 @@ function App() {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
+  const handleLoginSuccess = (userData: User, token: string) => {
+    localStorage.setItem('auth_token', token);
+    localStorage.setItem('user', JSON.stringify(userData));
+    setUser(userData);
+    setAuthPage('app');
+    window.history.pushState({}, '', '/');
+
+    // Check if client needs onboarding
+    if (userData.userType === 'client' && !userData.onboardingCompleted) {
+      setShowOnboarding(true);
+    }
+  };
+
   // Show loading state
   if (loading) {
     return (
@@ -92,6 +123,30 @@ function App() {
         <div className="loading-spinner"></div>
         <span className="loading-text">Cargando...</span>
       </div>
+    );
+  }
+
+  // Show auth pages if not logged in
+  if (!user) {
+    if (authPage === 'register') {
+      return (
+        <Register
+          onSuccess={handleLoginSuccess}
+          onLoginClick={() => {
+            setAuthPage('login');
+            window.history.pushState({}, '', '/login');
+          }}
+        />
+      );
+    }
+    return (
+      <Login
+        onSuccess={handleLoginSuccess}
+        onRegisterClick={() => {
+          setAuthPage('register');
+          window.history.pushState({}, '', '/register');
+        }}
+      />
     );
   }
 
