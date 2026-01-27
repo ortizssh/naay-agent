@@ -1897,3 +1897,34 @@ body {
 .landing-logo .logo-img {
   height: 36px;
 }
+
+/* Skip button and onboarding header styles */
+.onboarding-header-right {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.onboarding-step-text {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.btn-skip {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: var(--font-main);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-skip:hover {
+  background: var(--color-bg);
+  border-color: var(--color-text-muted);
+  color: var(--color-text);
+}

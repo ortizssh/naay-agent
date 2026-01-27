@@ -5,6 +5,7 @@ import ConnectStore from './steps/ConnectStore';
 import ConfigureWidget from './steps/ConfigureWidget';
 import Activate from './steps/Activate';
 import { clientApi } from '../../services/api';
+import logoKova from '../../img/logo-kova.png';
 
 interface OnboardingWizardProps {
   initialStep?: number;
@@ -87,6 +88,17 @@ function OnboardingWizard({ initialStep = 0, onComplete }: OnboardingWizardProps
     }
   };
 
+  const handleSkip = async () => {
+    try {
+      await clientApi.updateOnboardingStep(4);
+      onComplete();
+    } catch (error) {
+      console.error('Error skipping onboarding:', error);
+      // Still complete even if API fails
+      onComplete();
+    }
+  };
+
   const renderStep = () => {
     switch (currentStep) {
       case 0:
@@ -133,11 +145,13 @@ function OnboardingWizard({ initialStep = 0, onComplete }: OnboardingWizardProps
     <div className="onboarding-container">
       <header className="onboarding-header">
         <div className="onboarding-logo">
-          <div className="sidebar-logo-icon">K</div>
-          <span className="sidebar-logo-text">Kova</span>
+          <img src={logoKova} alt="Kova" className="sidebar-logo-img" />
         </div>
-        <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
-          Paso {currentStep + 1} de 4
+        <div className="onboarding-header-right">
+          <span className="onboarding-step-text">Paso {currentStep + 1} de 4</span>
+          <button onClick={handleSkip} className="btn-skip">
+            Saltar configuracion
+          </button>
         </div>
       </header>
 
