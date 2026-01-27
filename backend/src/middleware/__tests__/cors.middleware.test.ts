@@ -35,7 +35,7 @@ describe('CorsMiddleware', () => {
 
   describe('widgetScript', () => {
     it('should set permissive CORS headers for widget script', () => {
-      mockReq.path = '/static/naay-widget.js';
+      mockReq.path = '/static/kova-widget.js';
 
       const middleware = CorsMiddleware.widgetScript();
       middleware(mockReq as Request, mockRes as Response, mockNext);
@@ -255,7 +255,7 @@ describe('CorsMiddleware', () => {
     });
 
     it('should not set frame options for widget files', () => {
-      mockReq.path = '/static/naay-widget.js';
+      mockReq.path = '/static/kova-widget.js';
 
       const middleware = CorsMiddleware.frameOptions();
       middleware(mockReq as Request, mockRes as Response, mockNext);

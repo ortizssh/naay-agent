@@ -24,6 +24,9 @@ import OnboardingWizard from './pages/onboarding/OnboardingWizard';
 // Layout
 import ClientSidebar from './components/layout/ClientSidebar';
 
+// Shopify Embedded
+import ShopifyEmbedded from './pages/ShopifyEmbedded';
+
 type AdminPageType = 'dashboard' | 'tenants' | 'settings';
 type ClientPageType = 'dashboard' | 'store' | 'widget' | 'analytics';
 type PageType = 'landing' | 'login' | 'register' | 'dashboard';
@@ -39,6 +42,27 @@ interface User {
   onboardingStep?: number;
 }
 
+// Helper to detect Shopify embedded context
+function getShopifyEmbedParams(): { shop: string; host: string } | null {
+  const params = new URLSearchParams(window.location.search);
+  const shop = params.get('shop');
+  const host = params.get('host');
+
+  // Check if we're in an iframe (embedded in Shopify)
+  const isInIframe = window.self !== window.top;
+
+  if (shop && host && isInIframe) {
+    return { shop, host };
+  }
+
+  // Also check for shop in path or stored session
+  if (shop && host) {
+    return { shop, host };
+  }
+
+  return null;
+}
+
 function App() {
   const [currentAdminPage, setCurrentAdminPage] = useState<AdminPageType>('dashboard');
   const [currentClientPage, setCurrentClientPage] = useState<ClientPageType>('dashboard');
@@ -47,6 +71,7 @@ function App() {
   const [sidebarOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [shopifyEmbed, setShopifyEmbed] = useState<{ shop: string; host: string } | null>(null);
 
   const navigateTo = (page: PageType) => {
     setCurrentPage(page);
@@ -61,6 +86,15 @@ function App() {
 
   useEffect(() => {
     const initAuth = async () => {
+      // Check for Shopify embedded context first
+      const embedParams = getShopifyEmbedParams();
+      if (embedParams) {
+        console.log('Shopify embedded mode detected:', embedParams.shop);
+        setShopifyEmbed(embedParams);
+        setLoading(false);
+        return; // Skip normal auth flow for embedded mode
+      }
+
       // Check current path for routing
       const path = window.location.pathname;
       let initialPage: PageType = 'landing';
@@ -184,6 +218,11 @@ function App() {
         <span className="loading-text">Cargando...</span>
       </div>
     );
+  }
+
+  // Show Shopify embedded view (no login required)
+  if (shopifyEmbed) {
+    return <ShopifyEmbedded shop={shopifyEmbed.shop} host={shopifyEmbed.host} />;
   }
 
   // Show landing page

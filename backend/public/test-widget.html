@@ -107,13 +107,13 @@
         
         function testWidget() {
             console.log('🔍 Testing widget functionality...');
-            if (window.naayWidget) {
+            if (window.kovaWidget) {
                 updateStatus('widget-status', 'Widget Active ✅', 'success');
                 console.log('✅ Widget is loaded and available');
-                console.log('Widget config:', window.naayWidget.config);
-            } else if (window.NaayWidget) {
+                console.log('Widget config:', window.kovaWidget.config);
+            } else if (window.KovaWidget) {
                 updateStatus('widget-status', 'Class Available 🟡', 'info');
-                console.log('⚠️ NaayWidget class available but not instantiated');
+                console.log('⚠️ KovaWidget class available but not instantiated');
             } else {
                 updateStatus('widget-status', 'Not Loaded ❌', 'error');
                 console.log('❌ Widget not found');
@@ -122,11 +122,11 @@
         
         function openChat() {
             console.log('💬 Attempting to open chat...');
-            if (window.naayWidget && window.naayWidget.openChat) {
-                window.naayWidget.openChat();
+            if (window.kovaWidget && window.kovaWidget.openChat) {
+                window.kovaWidget.openChat();
                 console.log('✅ Chat opening command sent');
-            } else if (window.naayWidget && window.naayWidget.toggleChat) {
-                window.naayWidget.toggleChat();
+            } else if (window.kovaWidget && window.kovaWidget.toggleChat) {
+                window.kovaWidget.toggleChat();
                 console.log('✅ Chat toggle command sent');
             } else {
                 console.log('❌ Chat function not available');
@@ -155,7 +155,7 @@
             console.log('🚀 Page loaded, initializing widget test...');
             
             // Set up Naay config
-            window.NaayConfig = {
+            window.KovaConfig = {
                 shopDomain: 'test-shop.myshopify.com',
                 apiEndpoint: 'http://localhost:3000',
                 position: 'bottom-right',
@@ -166,7 +166,7 @@
             
             // Load widget script
             const script = document.createElement('script');
-            script.src = '/widget/naay-widget.js?v=' + Date.now();
+            script.src = '/widget/kova-widget.js?v=' + Date.now();
             script.async = true;
             
             script.onload = function() {
@@ -174,9 +174,9 @@
                 updateStatus('widget-status', 'Script Loaded ✅', 'success');
                 
                 // Try to initialize widget
-                if (window.NaayWidget) {
+                if (window.KovaWidget) {
                     try {
-                        window.naayWidget = new window.NaayWidget(window.NaayConfig);
+                        window.kovaWidget = new window.KovaWidget(window.KovaConfig);
                         console.log('✅ Widget initialized successfully');
                         updateStatus('chat-status', 'Ready ✅', 'success');
                     } catch (error) {
@@ -184,7 +184,7 @@
                         updateStatus('chat-status', 'Init Failed ❌', 'error');
                     }
                 } else {
-                    console.error('❌ NaayWidget class not available');
+                    console.error('❌ KovaWidget class not available');
                     updateStatus('chat-status', 'Class Missing ❌', 'error');
                 }
             };

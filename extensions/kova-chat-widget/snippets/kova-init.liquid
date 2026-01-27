@@ -1,0 +1,104 @@
+{% comment %}
+  Kova Widget Auto-Initialization
+  This loads automatically when the app extension is enabled
+{% endcomment %}
+
+{% unless request.design_mode or checkout %}
+<!-- Kova Chat Widget Container -->
+<div id="kova-chat-container" data-shop="{{ shop.permanent_domain }}">
+  <!-- Chat widget will be created here by the JavaScript -->
+</div>
+
+<script>
+  // Kova Widget Configuration - Production endpoint
+  window.KovaConfig = {
+    shopDomain: '{{ shop.permanent_domain }}',
+    apiEndpoint: 'https://naay-agent-app1763504937.azurewebsites.net',
+    chatEndpoint: 'https://n8n.dustkey.com/webhook/chat-naay',
+    position: 'bottom-right',
+    primaryColor: '#a59457',
+    greeting: '¿Necesitas ayuda para tu compra? ¡Habla aquí!',
+    placeholder: 'Pregúntanos sobre tu compra...',
+    theme: 'light',
+    avatar: '🌿',
+    language: '{{ request.locale.iso_code | default: "es" }}',
+    enabled: true,
+
+    // Shopify-specific context
+    context: {
+      customerLoggedIn: {% if customer %}true{% else %}false{% endif %},
+      customerId: {% if customer %}'{{ customer.id }}'{% else %}null{% endif %},
+      customerEmail: {% if customer %}'{{ customer.email | escape }}'{% else %}null{% endif %},
+      currency: '{{ cart.currency.iso_code }}',
+      shopName: '{{ shop.name | escape }}',
+      cartToken: {{ cart.token | json }},
+      cartId: {% if cart.id %}'gid://shopify/Cart/{{ cart.id }}'{% else %}null{% endif %},
+      pageType: '{{ request.page_type }}',
+      productId: {% if product %}'gid://shopify/Product/{{ product.id }}'{% else %}null{% endif %},
+      collectionId: {% if collection %}'gid://shopify/Collection/{{ collection.id }}'{% else %}null{% endif %}
+    }
+  };
+</script>
+
+<!-- Load the Kova Widget -->
+<script>
+  (function() {
+    console.log('🌿 Kova Chat: Auto-initializing widget...');
+
+    // Don't load in admin preview or checkout
+    if (window.location.hostname.includes('admin') || window.location.pathname.includes('checkout')) {
+      console.log('Kova Chat: Skipping load in admin/checkout');
+      return;
+    }
+
+    // Load the official Kova widget script
+    var widgetBaseUrl = window.KovaConfig.apiEndpoint || 'https://naay-agent-app1763504937.azurewebsites.net';
+    var script = document.createElement('script');
+    script.src = widgetBaseUrl + '/widget/kova-widget.js?v=' + Date.now();
+    script.async = true;
+    script.crossOrigin = 'anonymous';
+
+    script.onload = function() {
+      console.log('✅ Kova Chat: Widget script loaded successfully');
+      if (window.KovaWidget && window.KovaConfig) {
+        try {
+          // Initialize the official Kova widget
+          new window.KovaWidget(window.KovaConfig);
+          console.log('✅ Kova Chat: Widget initialized successfully');
+        } catch (error) {
+          console.error('❌ Failed to initialize Kova Widget:', error);
+        }
+      } else {
+        console.error('❌ KovaWidget or KovaConfig not available');
+      }
+    };
+
+    script.onerror = function() {
+      console.error('❌ Failed to load Kova Widget script');
+    };
+
+    // Wait for DOM to be ready before injecting
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() {
+        document.head.appendChild(script);
+      });
+    } else {
+      document.head.appendChild(script);
+    }
+  })();
+</script>
+
+<style>
+  /* Ensure Kova widget doesn't interfere with theme */
+  #kova-chat-container {
+    position: relative;
+    z-index: 9999;
+  }
+
+  /* Hide widget in admin areas */
+  .shopify-section-header #kova-chat-container,
+  .admin #kova-chat-container {
+    display: none !important;
+  }
+</style>
+{% endunless %}

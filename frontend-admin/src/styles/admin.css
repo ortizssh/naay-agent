@@ -1928,3 +1928,160 @@ body {
   border-color: var(--color-text-muted);
   color: var(--color-text);
 }
+
+/* =====================================================
+   Shopify Embedded View Styles
+   ===================================================== */
+
+.shopify-embedded {
+  min-height: 100vh;
+  background: var(--color-bg);
+  padding: 0;
+}
+
+.embedded-header {
+  background: var(--color-bg-card);
+  border-bottom: 1px solid var(--color-border);
+  padding: 1rem 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.embedded-header-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.embedded-logo {
+  height: 32px;
+  width: auto;
+}
+
+.embedded-shop-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.embedded-shop-name {
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.embedded-status {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.embedded-status.active {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.embedded-status.inactive {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.embedded-tabs {
+  display: flex;
+  gap: 0.25rem;
+  background: var(--color-bg-card);
+  padding: 0.5rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.embedded-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  font-family: var(--font-main);
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.embedded-tab:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.embedded-tab.active {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.embedded-tab svg {
+  width: 18px;
+  height: 18px;
+}
+
+.embedded-content {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.embedded-stats {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 900px) {
+  .embedded-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 500px) {
+  .embedded-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .embedded-header-content {
+    flex-wrap: wrap;
+  }
+
+  .embedded-shop-info {
+    order: 3;
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: var(--color-bg);
+  border-radius: 8px;
+}
+
+.info-label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.info-value {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+}

@@ -93,7 +93,7 @@
     </div>
 
     <!-- Widget Script -->
-    <script src="http://localhost:3000/widget/naay-widget.js"></script>
+    <script src="http://localhost:3000/widget/kova-widget.js"></script>
     
     <script>
         let debugOutput = document.getElementById('debugOutput');
@@ -109,7 +109,7 @@
             log('🚀 Inicializando widget...');
             
             try {
-                window.naayWidget = new window.NaayWidget({
+                window.kovaWidget = new window.KovaWidget({
                     shopDomain: 'test-shop.myshopify.com',
                     apiEndpoint: 'http://localhost:3000',
                     position: 'bottom-right',
@@ -123,7 +123,7 @@
         
         // Test products
         function addTestProduct() {
-            if (!window.naayWidget) {
+            if (!window.kovaWidget) {
                 log('❌ Widget no disponible');
                 return;
             }
@@ -137,12 +137,12 @@
                 handle: 'crema-test'
             };
             
-            window.naayWidget.addToCartLocal(product);
+            window.kovaWidget.addToCartLocal(product);
             log('✅ Producto 1 agregado al carrito');
         }
         
         function addTestProduct2() {
-            if (!window.naayWidget) return;
+            if (!window.kovaWidget) return;
             
             const product = {
                 id: 'test-002',
@@ -153,12 +153,12 @@
                 handle: 'serum-test'
             };
             
-            window.naayWidget.addToCartLocal(product);
+            window.kovaWidget.addToCartLocal(product);
             log('✅ Producto 2 agregado al carrito');
         }
         
         function addTestProduct3() {
-            if (!window.naayWidget) return;
+            if (!window.kovaWidget) return;
             
             const product = {
                 id: 'test-003',
@@ -169,12 +169,12 @@
                 handle: 'limpiador-test'
             };
             
-            window.naayWidget.addToCartLocal(product);
+            window.kovaWidget.addToCartLocal(product);
             log('✅ Producto 3 agregado al carrito');
         }
         
         function addMultipleProducts() {
-            if (!window.naayWidget) return;
+            if (!window.kovaWidget) return;
             
             const product = {
                 id: 'test-multiple',
@@ -186,31 +186,31 @@
             };
             
             for (let i = 0; i < 5; i++) {
-                window.naayWidget.addToCartLocal(product);
+                window.kovaWidget.addToCartLocal(product);
             }
             log('✅ 5 productos iguales agregados al carrito');
         }
         
         // Cart controls
         function showCart() {
-            if (!window.naayWidget) return;
-            window.naayWidget.showCart();
+            if (!window.kovaWidget) return;
+            window.kovaWidget.showCart();
             log('🛒 Carrito mostrado');
         }
         
         function hideCart() {
-            if (!window.naayWidget) return;
-            window.naayWidget.hideCart();
+            if (!window.kovaWidget) return;
+            window.kovaWidget.hideCart();
             log('🛒 Carrito oculto');
         }
         
         function debugCartState() {
-            if (!window.naayWidget || !window.naayWidget.cartData) {
+            if (!window.kovaWidget || !window.kovaWidget.cartData) {
                 log('❌ No hay datos del carrito');
                 return;
             }
             
-            const cart = window.naayWidget.cartData;
+            const cart = window.kovaWidget.cartData;
             log('🔍 Estado del carrito:');
             log(`   📦 Total items: ${cart.items.length}`);
             log(`   💰 Total: $${cart.total || 0}`);
@@ -221,24 +221,24 @@
         }
         
         function clearAllItems() {
-            if (!window.naayWidget) return;
-            window.naayWidget.cartData.items = [];
-            window.naayWidget.updateCartDisplay();
+            if (!window.kovaWidget) return;
+            window.kovaWidget.cartData.items = [];
+            window.kovaWidget.updateCartDisplay();
             log('🗑️ Todos los items eliminados del carrito');
         }
         
         // Remove tests
         function testRemoveFirst() {
-            if (!window.naayWidget || !window.naayWidget.cartData.items.length) {
+            if (!window.kovaWidget || !window.kovaWidget.cartData.items.length) {
                 log('❌ No hay items en el carrito para eliminar');
                 return;
             }
             
-            const firstItem = window.naayWidget.cartData.items[0];
+            const firstItem = window.kovaWidget.cartData.items[0];
             log(`🗑️ Intentando eliminar primer item: "${firstItem.title}" (ID: ${firstItem.cartItemId})`);
             
             if (firstItem.cartItemId) {
-                window.naayWidget.removeFromCartByItemId(firstItem.cartItemId);
+                window.kovaWidget.removeFromCartByItemId(firstItem.cartItemId);
                 log('✅ Comando de eliminación enviado');
             } else {
                 log('❌ Item no tiene cartItemId');
@@ -246,17 +246,17 @@
         }
         
         function testRemoveLast() {
-            if (!window.naayWidget || !window.naayWidget.cartData.items.length) {
+            if (!window.kovaWidget || !window.kovaWidget.cartData.items.length) {
                 log('❌ No hay items en el carrito para eliminar');
                 return;
             }
             
-            const items = window.naayWidget.cartData.items;
+            const items = window.kovaWidget.cartData.items;
             const lastItem = items[items.length - 1];
             log(`🗑️ Intentando eliminar último item: "${lastItem.title}" (ID: ${lastItem.cartItemId})`);
             
             if (lastItem.cartItemId) {
-                window.naayWidget.removeFromCartByItemId(lastItem.cartItemId);
+                window.kovaWidget.removeFromCartByItemId(lastItem.cartItemId);
                 log('✅ Comando de eliminación enviado');
             } else {
                 log('❌ Item no tiene cartItemId');
@@ -264,20 +264,20 @@
         }
         
         function testRemoveSpecific() {
-            if (!window.naayWidget || !window.naayWidget.cartData.items.length) {
+            if (!window.kovaWidget || !window.kovaWidget.cartData.items.length) {
                 log('❌ No hay items en el carrito para eliminar');
                 return;
             }
             
             // Find item with "Crema" in title
-            const items = window.naayWidget.cartData.items;
+            const items = window.kovaWidget.cartData.items;
             const cremaItem = items.find(item => item.title.includes('Crema'));
             
             if (cremaItem) {
                 log(`🗑️ Intentando eliminar item específico: "${cremaItem.title}" (ID: ${cremaItem.cartItemId})`);
                 
                 if (cremaItem.cartItemId) {
-                    window.naayWidget.removeFromCartByItemId(cremaItem.cartItemId);
+                    window.kovaWidget.removeFromCartByItemId(cremaItem.cartItemId);
                     log('✅ Comando de eliminación enviado');
                 } else {
                     log('❌ Item no tiene cartItemId');

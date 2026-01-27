@@ -3,7 +3,10 @@ import { clientApi } from '../../services/api';
 
 interface AnalyticsData {
   conversations: number;
+  messages: number;
   products: number;
+  recommendations: number;
+  conversions: number;
   lastSync: string | null;
   storeCreated: string | null;
 }
@@ -89,7 +92,7 @@ function Analytics() {
           </div>
         )}
 
-        {/* Stats Grid */}
+        {/* Stats Grid - Main Metrics */}
         <div className="stats-grid">
           <div className="stat-card">
             <div className="stat-icon primary">
@@ -98,17 +101,52 @@ function Analytics() {
               </svg>
             </div>
             <div className="stat-value">{data?.conversations || 0}</div>
-            <div className="stat-label">Conversaciones Totales</div>
+            <div className="stat-label">Conversaciones</div>
             <div className="stat-change positive">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
               </svg>
-              Historico
+              {data?.messages || 0} mensajes
             </div>
           </div>
 
           <div className="stat-card">
             <div className="stat-icon success">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                <line x1="7" y1="7" x2="7.01" y2="7" />
+              </svg>
+            </div>
+            <div className="stat-value">{data?.recommendations || 0}</div>
+            <div className="stat-label">Recomendaciones</div>
+            <div className="stat-change positive">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+              </svg>
+              Productos sugeridos
+            </div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-icon warning">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="9" cy="21" r="1" />
+                <circle cx="20" cy="21" r="1" />
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+              </svg>
+            </div>
+            <div className="stat-value">{data?.conversions || 0}</div>
+            <div className="stat-label">Conversiones</div>
+            <div className="stat-change positive">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+              </svg>
+              Compras desde chat
+            </div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-icon accent">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
                 <line x1="8" y1="21" x2="16" y2="21" />
@@ -124,71 +162,62 @@ function Analytics() {
               Disponibles para AI
             </div>
           </div>
-
-          <div className="stat-card">
-            <div className="stat-icon warning">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-            </div>
-            <div className="stat-value" style={{ fontSize: '1rem' }}>{formatDate(data?.lastSync || null)}</div>
-            <div className="stat-label">Ultima Sincronizacion</div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon accent">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
-            </div>
-            <div className="stat-value" style={{ fontSize: '1rem' }}>{formatDate(data?.storeCreated || null)}</div>
-            <div className="stat-label">Tienda Conectada</div>
-          </div>
         </div>
 
-        {/* Coming Soon Features */}
+        {/* Conversion Rate Card */}
+        {data && data.recommendations > 0 && (
+          <div className="card" style={{ marginTop: '1.5rem' }}>
+            <div className="card-header">
+              <h3 className="card-title">Tasa de Conversion</h3>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
+              <div style={{ textAlign: 'center', padding: '1.5rem 1rem', background: 'var(--color-bg)', borderRadius: '12px' }}>
+                <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--color-primary)' }}>
+                  {((data.conversions / data.recommendations) * 100).toFixed(1)}%
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
+                  Recomendacion a Compra
+                </div>
+              </div>
+
+              <div style={{ textAlign: 'center', padding: '1.5rem 1rem', background: 'var(--color-bg)', borderRadius: '12px' }}>
+                <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--color-success)' }}>
+                  {data.conversations > 0 ? (data.recommendations / data.conversations).toFixed(1) : 0}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
+                  Recomendaciones por Conversacion
+                </div>
+              </div>
+
+              <div style={{ textAlign: 'center', padding: '1.5rem 1rem', background: 'var(--color-bg)', borderRadius: '12px' }}>
+                <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--color-warning)' }}>
+                  {data.conversations > 0 ? (data.messages / data.conversations).toFixed(1) : 0}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
+                  Mensajes por Conversacion
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Store Info */}
         <div className="card" style={{ marginTop: '1.5rem' }}>
           <div className="card-header">
-            <h3 className="card-title">Metricas Avanzadas</h3>
-            <span className="badge badge-primary">Proximamente</span>
+            <h3 className="card-title">Informacion de la Tienda</h3>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
-            <div style={{ textAlign: 'center', padding: '2rem 1rem', background: 'var(--color-bg)', borderRadius: '12px' }}>
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" strokeWidth="2" style={{ margin: '0 auto 1rem' }}>
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="16" x2="12" y2="12" />
-                <line x1="12" y1="8" x2="12.01" y2="8" />
-              </svg>
-              <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>Tasa de Conversion</div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                Mide cuantas conversaciones terminan en compra
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+            <div style={{ padding: '1rem', background: 'var(--color-bg)', borderRadius: '8px' }}>
+              <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>
+                Ultima Sincronizacion
               </div>
+              <div style={{ fontWeight: '600' }}>{formatDate(data?.lastSync || null)}</div>
             </div>
-
-            <div style={{ textAlign: 'center', padding: '2rem 1rem', background: 'var(--color-bg)', borderRadius: '12px' }}>
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" strokeWidth="2" style={{ margin: '0 auto 1rem' }}>
-                <path d="M12 20V10M18 20V4M6 20v-4" />
-              </svg>
-              <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>Engagement Score</div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                Analiza la calidad de las interacciones
+            <div style={{ padding: '1rem', background: 'var(--color-bg)', borderRadius: '8px' }}>
+              <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>
+                Tienda Conectada
               </div>
-            </div>
-
-            <div style={{ textAlign: 'center', padding: '2rem 1rem', background: 'var(--color-bg)', borderRadius: '12px' }}>
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" strokeWidth="2" style={{ margin: '0 auto 1rem' }}>
-                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-                <line x1="12" y1="22.08" x2="12" y2="12" />
-              </svg>
-              <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>Productos Populares</div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                Descubre que productos preguntan mas
-              </div>
+              <div style={{ fontWeight: '600' }}>{formatDate(data?.storeCreated || null)}</div>
             </div>
           </div>
         </div>

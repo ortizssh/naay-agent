@@ -3,9 +3,9 @@
   This is the official Kova AI chat widget for Shopify stores
 {% endcomment %}
 
-<div 
-  id="naay-chat-widget-{{ block.id }}" 
-  class="naay-chat-widget-container"
+<div
+  id="kova-chat-widget-{{ block.id }}"
+  class="kova-chat-widget-container"
   data-shop="{{ shop.permanent_domain }}"
   data-block-id="{{ block.id }}"
   {{ block.shopify_attributes }}
@@ -15,20 +15,21 @@
 
 <script>
   // Kova Widget Configuration
-  window.NaayConfig = window.NaayConfig || {};
-  window.NaayConfig = {
+  window.KovaConfig = window.KovaConfig || {};
+  window.KovaConfig = {
     shopDomain: '{{ shop.permanent_domain }}',
-    apiEndpoint: 'https://naay-agent-app1763504937.azurewebsites.net',
+    apiEndpoint: '{{ block.settings.api_endpoint | default: "https://naay-agent-app1763504937.azurewebsites.net" }}',
+    chatEndpoint: '{{ block.settings.chat_endpoint | default: "https://n8n.dustkey.com/webhook/chat-naay" }}',
     position: 'bottom-right',
-    primaryColor: '#a59457',
-    greeting: '¿Necesitas ayuda para tu compra? ¡Habla aquí!',
-    placeholder: 'Pregúntanos sobre tu compra...',
+    primaryColor: '{{ block.settings.primary_color | default: "#a59457" }}',
+    greeting: '{{ block.settings.greeting | default: "¿Necesitas ayuda para tu compra? ¡Habla aquí!" }}',
+    placeholder: '{{ block.settings.placeholder | default: "Pregúntanos sobre tu compra..." }}',
     theme: 'light',
-    avatar: '🌿',
+    avatar: '{{ block.settings.avatar | default: "🌿" }}',
     language: '{{ request.locale.iso_code | default: "es" }}',
     enabled: true,
     blockId: '{{ block.id }}',
-    
+
     // Shopify context
     context: {
       customerLoggedIn: {% if customer %}true{% else %}false{% endif %},
@@ -45,26 +46,27 @@
   };
 
   // Load widget script only once per page
-  if (!window.naayWidgetLoaded) {
-    window.naayWidgetLoaded = true;
-    
+  if (!window.kovaWidgetLoaded) {
+    window.kovaWidgetLoaded = true;
+
     console.log('🌿 Kova Chat: Loading widget for block {{ block.id }}');
-    
+
+    var widgetBaseUrl = '{{ block.settings.api_endpoint | default: "https://naay-agent-app1763504937.azurewebsites.net" }}';
     var script = document.createElement('script');
-    script.src = 'https://naay-agent-app1763504937.azurewebsites.net/widget/naay-widget.js?v=' + Date.now();
+    script.src = widgetBaseUrl + '/widget/kova-widget.js?v=' + Date.now();
     script.async = true;
     script.crossOrigin = 'anonymous';
     script.onload = function() {
       console.log('✅ Kova Chat: Widget loaded successfully');
       try {
         // Only initialize if no widget instance exists
-        if (window.NaayWidget && window.NaayConfig && !window.naayWidgetInstance) {
-          window.naayWidgetInstance = new window.NaayWidget(window.NaayConfig);
+        if (window.KovaWidget && window.KovaConfig && !window.kovaWidgetInstance) {
+          window.kovaWidgetInstance = new window.KovaWidget(window.KovaConfig);
           console.log('✅ Kova Widget instance created');
-        } else if (window.naayWidgetInstance) {
+        } else if (window.kovaWidgetInstance) {
           console.log('⚠️ Kova Widget instance already exists, skipping creation');
         } else {
-          console.warn('⚠️ NaayWidget or NaayConfig not available after script load');
+          console.warn('⚠️ KovaWidget or KovaConfig not available after script load');
         }
       } catch (error) {
         console.error('❌ Error initializing Kova Widget:', error);
@@ -74,28 +76,28 @@
       console.error('❌ Failed to load Kova Widget script:', error);
     };
     document.head.appendChild(script);
-  } else if (window.NaayWidget && window.NaayConfig && !window.naayWidgetInstance) {
+  } else if (window.KovaWidget && window.KovaConfig && !window.kovaWidgetInstance) {
     // Script already loaded, but no instance created yet
     console.log('🔄 Kova Chat: Script already loaded, creating widget instance');
     try {
-      window.naayWidgetInstance = new window.NaayWidget(window.NaayConfig);
+      window.kovaWidgetInstance = new window.KovaWidget(window.KovaConfig);
       console.log('✅ Kova Widget instance created');
     } catch (error) {
       console.error('❌ Error creating Kova Widget instance:', error);
     }
-  } else if (window.naayWidgetInstance) {
+  } else if (window.kovaWidgetInstance) {
     console.log('✅ Kova Widget already running, no action needed');
   }
 </script>
 
 <style>
-  .naay-chat-widget-container {
+  .kova-chat-widget-container {
     position: relative;
     z-index: 9999;
   }
-  
+
   /* Hide in admin preview */
-  .shopify-section-header .naay-chat-widget-container {
+  .shopify-section-header .kova-chat-widget-container {
     display: none !important;
   }
 </style>
@@ -112,6 +114,44 @@
     {
       "type": "paragraph",
       "content": "El asistente de IA para tu tienda Shopify. Ayuda a tus clientes a encontrar productos y responde sus preguntas automáticamente."
+    },
+    {
+      "type": "text",
+      "id": "api_endpoint",
+      "label": "API Endpoint",
+      "default": "https://naay-agent-app1763504937.azurewebsites.net",
+      "info": "URL del servidor backend de Kova"
+    },
+    {
+      "type": "text",
+      "id": "chat_endpoint",
+      "label": "Chat Endpoint",
+      "default": "https://n8n.dustkey.com/webhook/chat-naay",
+      "info": "URL del webhook de chat (n8n o backend)"
+    },
+    {
+      "type": "color",
+      "id": "primary_color",
+      "label": "Color primario",
+      "default": "#a59457"
+    },
+    {
+      "type": "text",
+      "id": "greeting",
+      "label": "Mensaje de bienvenida",
+      "default": "¿Necesitas ayuda para tu compra? ¡Habla aquí!"
+    },
+    {
+      "type": "text",
+      "id": "placeholder",
+      "label": "Placeholder del input",
+      "default": "Pregúntanos sobre tu compra..."
+    },
+    {
+      "type": "text",
+      "id": "avatar",
+      "label": "Avatar/Emoji",
+      "default": "🌿"
     },
     {
       "type": "paragraph",

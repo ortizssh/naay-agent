@@ -28,7 +28,7 @@ function Activate({ widgetCode, shopDomain, onBack, onComplete, isActivating }: 
         </div>
         <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
           La forma mas facil. Ve a tu panel de Shopify {'>'} Tema {'>'} Personalizar {'>'}
-          App embeds y activa "Naay Chat Widget".
+          App embeds y activa "Kova AI Chat Widget".
         </p>
         <a
           href={`https://${shopDomain}/admin/themes/current/editor`}

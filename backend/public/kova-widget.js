@@ -1,7 +1,7 @@
 /**
- * Naay AI Chat Widget - Ultra-Modern Minimalist Design
+ * Kova AI Chat Widget - Ultra-Modern Minimalist Design
  * Version: 3.0.0-LUXURY - 2025.11.20.17:00
- * Avant-garde Design with Naay Brand Integration
+ * Avant-garde Design with Kova Brand Integration
  * 
  * ✨ LUXURY WIDGET - Ultra-minimalist with glassmorphism
  */
@@ -10,36 +10,36 @@
   'use strict';
 
   // UNIQUE IDENTIFIER FOR VERSION DETECTION 
-  window.__NAAY_WIDGET_VERSION__ = '3.0.0-LUXURY-' + Date.now();
-  window.__NAAY_WIDGET_TIMESTAMP__ = new Date().toISOString();
-  console.log('✨ NAAY WIDGET LUXURY VERSION:', {
-    version: window.__NAAY_WIDGET_VERSION__,
-    timestamp: window.__NAAY_WIDGET_TIMESTAMP__,
+  window.__KOVA_WIDGET_VERSION__ = '3.0.0-LUXURY-' + Date.now();
+  window.__KOVA_WIDGET_TIMESTAMP__ = new Date().toISOString();
+  console.log('✨ KOVA WIDGET LUXURY VERSION:', {
+    version: window.__KOVA_WIDGET_VERSION__,
+    timestamp: window.__KOVA_WIDGET_TIMESTAMP__,
     design: 'Ultra-minimalist luxury',
-    colors: 'Naay Brand Palette',
+    colors: 'Kova Brand Palette',
     source: 'OFFICIAL-LUXURY-DESIGN'
   });
 
   // Enhanced singleton protection - prevent ANY duplicate loading
-  if (window.__NAAY_WIDGET_LOADING__ || window.__NAAY_WIDGET_INITIALIZED__) {
-    console.warn('⚠️ Naay Widget: Already loading/initialized, preventing duplicate');
+  if (window.__KOVA_WIDGET_LOADING__ || window.__KOVA_WIDGET_INITIALIZED__) {
+    console.warn('⚠️ Kova Widget: Already loading/initialized, preventing duplicate');
     return;
   }
 
   // Mark as loading immediately to prevent race conditions
-  window.__NAAY_WIDGET_LOADING__ = true;
+  window.__KOVA_WIDGET_LOADING__ = true;
 
   // Prevent multiple widget loads - check for both class and instance
-  if (window.NaayWidget && window.naayWidget) {
-    console.warn('🔒 Naay Widget already loaded and instantiated, version:', window.__NAAY_WIDGET_VERSION__);
-    window.__NAAY_WIDGET_LOADING__ = false;
+  if (window.KovaWidget && window.kovaWidget) {
+    console.warn('🔒 Kova Widget already loaded and instantiated, version:', window.__KOVA_WIDGET_VERSION__);
+    window.__KOVA_WIDGET_LOADING__ = false;
     return;
   }
 
   // Check if DOM already has widget
-  if (document.querySelector('.naay-widget')) {
-    console.warn('🔒 Naay Widget DOM already exists, skipping initialization');
-    window.__NAAY_WIDGET_LOADING__ = false;
+  if (document.querySelector('.kova-widget')) {
+    console.warn('🔒 Kova Widget DOM already exists, skipping initialization');
+    window.__KOVA_WIDGET_LOADING__ = false;
     return;
   }
 
@@ -54,13 +54,14 @@
     return `$${roundedPrice.toLocaleString('es-CL')}`;
   }
 
-  class NaayWidget {
+  class KovaWidget {
     constructor(config = {}) {
       this.config = {
         shopDomain: '',
-        apiEndpoint: 'https://naay-agent-app1763504937.azurewebsites.net',
+        apiEndpoint: '',
+        chatEndpoint: '',
         position: 'bottom-right',
-        // Naay Brand Colors - Updated Palette 2024
+        // Kova Brand Colors - Updated Palette 2024
         everyday: '#cec8ae',    // Warm cream (preserved)
         fresh: '#90a284',       // Sage green (preserved)  
         delicate: '#c3ab79',    // Soft gold (preserved)
@@ -76,14 +77,14 @@
         greeting: '',
         placeholder: 'Pregúntanos sobre tu compra...',
         avatar: '🌿',
-        brandName: 'Naay',
+        brandName: 'Kova',
         language: 'es',
         enabled: true,
         ...config
       };
 
       if (!this.config.enabled) {
-        console.log('Naay Widget is disabled');
+        console.log('Kova Widget is disabled');
         return;
       }
 
@@ -110,7 +111,7 @@
     }
 
     init() {
-      console.log('✨ Initializing Naay Luxury Widget v2.1 with Cart Sidebar:', new Date().toISOString());
+      console.log('✨ Initializing Kova Luxury Widget v2.1 with Cart Sidebar:', new Date().toISOString());
       console.log('🏪 Shop Domain:', this.config.shopDomain);
 
       // Load settings from server
@@ -148,57 +149,57 @@
 
     createWidget() {
       // Check if widget already exists in DOM
-      if (document.getElementById('naay-widget')) {
+      if (document.getElementById('kova-widget')) {
         console.log('🔒 Widget already exists in DOM, skipping creation');
-        this.container = document.getElementById('naay-widget');
+        this.container = document.getElementById('kova-widget');
         return;
       }
 
       // Create widget container
       this.container = document.createElement('div');
-      this.container.id = 'naay-widget';
-      this.container.className = `naay-widget naay-widget--${this.config.position} naay-widget--closed`;
+      this.container.id = 'kova-widget';
+      this.container.className = `kova-widget kova-widget--${this.config.position} kova-widget--closed`;
 
       // Create ultra-modern HTML with luxury design
       this.container.innerHTML = `
         <!-- Main Widget Layout Container -->
-        <div class="naay-widget-layout" id="naay-widget-layout">
+        <div class="kova-widget-layout" id="kova-widget-layout">
           
           
           <!-- Cart Panel - Slides from left -->
-          <div class="naay-cart-panel" id="naay-cart-panel">
-            <header class="naay-cart-panel__header">
-              <div class="naay-cart-panel__title">
-                <svg class="naay-cart-panel__icon" viewBox="0 0 24 24" fill="none">
+          <div class="kova-cart-panel" id="kova-cart-panel">
+            <header class="kova-cart-panel__header">
+              <div class="kova-cart-panel__title">
+                <svg class="kova-cart-panel__icon" viewBox="0 0 24 24" fill="none">
                   <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19C17 19.6 16.6 20 16 20H14C13.4 20 13 19.6 13 19V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
-                <h3 id="naay-cart-title">Mi Carrito</h3>
+                <h3 id="kova-cart-title">Mi Carrito</h3>
               </div>
-              <button class="naay-cart-panel__close" id="naay-cart-close" aria-label="Cerrar carrito">
+              <button class="kova-cart-panel__close" id="kova-cart-close" aria-label="Cerrar carrito">
                 <svg viewBox="0 0 24 24" fill="none">
                   <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/>
                 </svg>
               </button>
             </header>
             
-            <div class="naay-cart-panel__content" id="naay-cart-content">
-              <div class="naay-cart-panel__empty" id="naay-cart-empty">
-                <svg class="naay-cart-panel__empty-icon" viewBox="0 0 24 24" fill="none">
+            <div class="kova-cart-panel__content" id="kova-cart-content">
+              <div class="kova-cart-panel__empty" id="kova-cart-empty">
+                <svg class="kova-cart-panel__empty-icon" viewBox="0 0 24 24" fill="none">
                   <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19C17 19.6 16.6 20 16 20H14C13.4 20 13 19.6 13 19V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
-                <p class="naay-cart-panel__empty-text">Tu carrito está vacío</p>
-                <p class="naay-cart-panel__empty-subtitle">¡Agrega productos para comenzar a comprar!</p>
+                <p class="kova-cart-panel__empty-text">Tu carrito está vacío</p>
+                <p class="kova-cart-panel__empty-subtitle">¡Agrega productos para comenzar a comprar!</p>
               </div>
               
-              <div class="naay-cart-panel__items" id="naay-cart-items"></div>
+              <div class="kova-cart-panel__items" id="kova-cart-items"></div>
             </div>
             
-            <footer class="naay-cart-panel__footer" id="naay-cart-footer">
-              <div class="naay-cart-panel__total">
-                <span class="naay-cart-panel__total-label">Total:</span>
-                <span class="naay-cart-panel__total-price" id="naay-cart-total">$0</span>
+            <footer class="kova-cart-panel__footer" id="kova-cart-footer">
+              <div class="kova-cart-panel__total">
+                <span class="kova-cart-panel__total-label">Total:</span>
+                <span class="kova-cart-panel__total-price" id="kova-cart-total">$0</span>
               </div>
-              <button class="naay-cart-panel__checkout" id="naay-cart-checkout">
+              <button class="kova-cart-panel__checkout" id="kova-cart-checkout">
                 <span>Ir al Checkout</span>
                 <svg viewBox="0 0 24 24" fill="none">
                   <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -208,76 +209,76 @@
           </div>
           
           <!-- Chat Container -->
-          <div class="naay-chat-container" id="naay-chat-container">
-            <div class="naay-widget__promotional-message" id="naay-promotional-message" role="dialog" aria-label="Mensaje promocional">
-              <div class="naay-widget__promotional-content">
-                <div class="naay-widget__promotional-text">
+          <div class="kova-chat-container" id="kova-chat-container">
+            <div class="kova-widget__promotional-message" id="kova-promotional-message" role="dialog" aria-label="Mensaje promocional">
+              <div class="kova-widget__promotional-content">
+                <div class="kova-widget__promotional-text">
                   ¿Necesitas ayuda? 🌿
-                  <span class="naay-widget__promotional-subtitle">Te guiamos en tu compra</span>
+                  <span class="kova-widget__promotional-subtitle">Te guiamos en tu compra</span>
                 </div>
               </div>
-              <div class="naay-widget__promotional-arrow"></div>
+              <div class="kova-widget__promotional-arrow"></div>
             </div>
             
-            <button class="naay-widget__button" id="naay-widget-button" aria-label="Abrir chat de Naay" aria-expanded="false">
-              <div class="naay-widget__button-content">
-                <svg class="naay-widget__chat-icon" viewBox="0 0 24 24" fill="none">
+            <button class="kova-widget__button" id="kova-widget-button" aria-label="Abrir chat de Kova" aria-expanded="false">
+              <div class="kova-widget__button-content">
+                <svg class="kova-widget__chat-icon" viewBox="0 0 24 24" fill="none">
                   <path d="M12 3C17.5 3 21 6.58 21 11C21 15.42 17.5 19 12 19C10.76 19 9.57 18.82 8.47 18.5C5.55 21 2 21 2 21C4.33 18.67 4.7 17.1 4.75 16.5C3.05 15.07 2 13.13 2 11C2 6.58 5.5 3 10 3H12Z" fill="currentColor"/>
                 </svg>
-                <svg class="naay-widget__close-icon" viewBox="0 0 24 24" fill="none">
+                <svg class="kova-widget__close-icon" viewBox="0 0 24 24" fill="none">
                   <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/>
                 </svg>
               </div>
-              <div class="naay-widget__button-pulse"></div>
+              <div class="kova-widget__button-pulse"></div>
             </button>
             
-            <div class="naay-widget__chat" id="naay-widget-chat" role="dialog" aria-label="Chat de Naay">
-              <div class="naay-widget__simple-header">
+            <div class="kova-widget__chat" id="kova-widget-chat" role="dialog" aria-label="Chat de Kova">
+              <div class="kova-widget__simple-header">
                 <!-- Cart Toggle Button - Small in Top Left -->
-                <button class="naay-widget__cart-toggle-btn" id="naay-widget-cart-toggle-btn" aria-label="Ver carrito">
-                  <svg class="naay-cart-toggle-icon" viewBox="0 0 24 24" fill="none">
+                <button class="kova-widget__cart-toggle-btn" id="kova-widget-cart-toggle-btn" aria-label="Ver carrito">
+                  <svg class="kova-cart-toggle-icon" viewBox="0 0 24 24" fill="none">
                     <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19C17 19.6 16.6 20 16 20H14C13.4 20 13 19.6 13 19V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
-                  <span class="naay-cart-toggle-count" id="naay-widget-cart-count">0</span>
+                  <span class="kova-cart-toggle-count" id="kova-widget-cart-count">0</span>
                 </button>
                 
-                <button class="naay-widget__back-btn" id="naay-widget-back-btn" aria-label="Volver">
+                <button class="kova-widget__back-btn" id="kova-widget-back-btn" aria-label="Volver">
                   <svg viewBox="0 0 24 24" fill="none">
                     <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                 </button>
                 
-                <button class="naay-widget__close" id="naay-widget-close" aria-label="Cerrar chat">
+                <button class="kova-widget__close" id="kova-widget-close" aria-label="Cerrar chat">
                   <svg viewBox="0 0 24 24" fill="none">
                     <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/>
                   </svg>
                 </button>
               </div>
               
-              <main class="naay-widget__messages" id="naay-widget-messages" role="main">
+              <main class="kova-widget__messages" id="kova-widget-messages" role="main">
                 
-                <div class="naay-widget__welcome">
-                  <div class="naay-widget__welcome-header">
-                    <h4 class="naay-widget__welcome-title">
-                      ¡Hola! Soy tu asesora personal de Naay.
-                      <span class="naay-widget__welcome-subtitle">¿En qué puedo ayudarte? ✨🌿</span>
+                <div class="kova-widget__welcome">
+                  <div class="kova-widget__welcome-header">
+                    <h4 class="kova-widget__welcome-title">
+                      ¡Hola! Soy tu asesora personal de Kova.
+                      <span class="kova-widget__welcome-subtitle">¿En qué puedo ayudarte? ✨🌿</span>
                     </h4>
                   </div>
-                  <div class="naay-widget__welcome-features">
-                    <div class="naay-widget__feature" data-message="¿Qué productos recomiendas para mi tipo de piel?">
-                      <svg class="naay-feature-icon" viewBox="0 0 24 24" fill="none">
+                  <div class="kova-widget__welcome-features">
+                    <div class="kova-widget__feature" data-message="¿Qué productos recomiendas para mi tipo de piel?">
+                      <svg class="kova-feature-icon" viewBox="0 0 24 24" fill="none">
                         <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                       </svg>
                       <span>Recomendaciones personalizadas para tu piel</span>
                     </div>
-                    <div class="naay-widget__feature" data-message="¿Me ayudas a conocer mi tipo de piel?">
-                      <svg class="naay-feature-icon" viewBox="0 0 24 24" fill="none">
+                    <div class="kova-widget__feature" data-message="¿Me ayudas a conocer mi tipo de piel?">
+                      <svg class="kova-feature-icon" viewBox="0 0 24 24" fill="none">
                         <path d="M13 10V3L4 14H11L11 21L20 10H13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                       </svg>
                       <span>Test rápido para conocer tu tipo de piel</span>
                     </div>
-                    <div class="naay-widget__feature" data-message="¿Puedes ayudarme a elegir productos para mi rutina?">
-                      <svg class="naay-feature-icon" viewBox="0 0 24 24" fill="none">
+                    <div class="kova-widget__feature" data-message="¿Puedes ayudarme a elegir productos para mi rutina?">
+                      <svg class="kova-feature-icon" viewBox="0 0 24 24" fill="none">
                         <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19C17 19.6 16.6 20 16 20H14C13.4 20 13 19.6 13 19V13M17 13H13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                       </svg>
                       <span>Ayuda con tu compra</span>
@@ -286,18 +287,18 @@
                 </div>
               </main>
               
-              <div class="naay-widget__input-container">
-                <div class="naay-widget__input-wrapper">
+              <div class="kova-widget__input-container">
+                <div class="kova-widget__input-wrapper">
                   <input 
                     type="text" 
-                    class="naay-widget__input" 
-                    id="naay-widget-input" 
+                    class="kova-widget__input" 
+                    id="kova-widget-input" 
                     placeholder="Pregúntanos sobre tu compra..."
                     aria-label="Campo de mensaje"
                   />
                   <button 
-                    class="naay-widget__send" 
-                    id="naay-widget-send" 
+                    class="kova-widget__send" 
+                    id="kova-widget-send" 
                     aria-label="Enviar mensaje"
                     disabled
                   >
@@ -320,33 +321,33 @@
 
       // Add initial fade-in animation
       setTimeout(() => {
-        this.container.classList.add('naay-widget--loaded');
+        this.container.classList.add('kova-widget--loaded');
       }, 100);
     }
 
     setupElements() {
       // Wait for DOM to be ready, then get elements using container context
-      this.button = this.container.querySelector('#naay-widget-button');
-      this.promotionalMessage = this.container.querySelector('#naay-promotional-message');
-      this.chat = this.container.querySelector('#naay-widget-chat');
-      this.messagesContainer = this.container.querySelector('#naay-widget-messages');
-      this.input = this.container.querySelector('#naay-widget-input');
-      this.sendButton = this.container.querySelector('#naay-widget-send');
-      this.resetButton = this.container.querySelector('#naay-widget-reset');
-      this.closeButton = this.container.querySelector('#naay-widget-close');
-      this.backButton = this.container.querySelector('#naay-widget-back-btn');
+      this.button = this.container.querySelector('#kova-widget-button');
+      this.promotionalMessage = this.container.querySelector('#kova-promotional-message');
+      this.chat = this.container.querySelector('#kova-widget-chat');
+      this.messagesContainer = this.container.querySelector('#kova-widget-messages');
+      this.input = this.container.querySelector('#kova-widget-input');
+      this.sendButton = this.container.querySelector('#kova-widget-send');
+      this.resetButton = this.container.querySelector('#kova-widget-reset');
+      this.closeButton = this.container.querySelector('#kova-widget-close');
+      this.backButton = this.container.querySelector('#kova-widget-back-btn');
 
       // Cart elements - new layout structure
-      this.cartSmallToggle = this.container.querySelector('#naay-widget-cart-toggle-btn'); // Small cart button in chat
-      this.cartSmallCount = this.container.querySelector('#naay-widget-cart-count'); // Count badge for small button
-      this.cartPanel = this.container.querySelector('#naay-cart-panel');
-      this.cartContent = this.container.querySelector('#naay-cart-content');
-      this.cartEmpty = this.container.querySelector('#naay-cart-empty');
-      this.cartItems = this.container.querySelector('#naay-cart-items');
-      this.cartFooter = this.container.querySelector('#naay-cart-footer');
-      this.cartTotal = this.container.querySelector('#naay-cart-total');
-      this.cartCheckout = this.container.querySelector('#naay-cart-checkout');
-      this.cartClose = this.container.querySelector('#naay-cart-close');
+      this.cartSmallToggle = this.container.querySelector('#kova-widget-cart-toggle-btn'); // Small cart button in chat
+      this.cartSmallCount = this.container.querySelector('#kova-widget-cart-count'); // Count badge for small button
+      this.cartPanel = this.container.querySelector('#kova-cart-panel');
+      this.cartContent = this.container.querySelector('#kova-cart-content');
+      this.cartEmpty = this.container.querySelector('#kova-cart-empty');
+      this.cartItems = this.container.querySelector('#kova-cart-items');
+      this.cartFooter = this.container.querySelector('#kova-cart-footer');
+      this.cartTotal = this.container.querySelector('#kova-cart-total');
+      this.cartCheckout = this.container.querySelector('#kova-cart-checkout');
+      this.cartClose = this.container.querySelector('#kova-cart-close');
 
       console.log('✨ Luxury DOM Elements found:', {
         button: !!this.button,
@@ -366,167 +367,167 @@
     addLuxuryStyles() {
       const style = document.createElement('style');
       style.textContent = `
-        /* Naay Luxury Widget - Ultra-Modern Minimalist Design */
+        /* Kova Luxury Widget - Ultra-Modern Minimalist Design */
         
         :root {
-          /* Naay Brand Color Palette */
-          --naay-everyday: #cec8ae;
-          --naay-fresh: #90a284;
-          --naay-delicate: #c3ab79;
-          --naay-forever: #a59457;
-          --naay-hydra: #A8C4C4;
-          --naay-deep: #D4B82C;
-          --naay-rich: #B8943C;
-          --naay-radiant: #A68A3C;
-          --naay-perfect: #a59457;
-          --naay-sage: #F8F9F8;
-          --naay-dark: #212120;
-          --naay-terracotta: #cf795e;
-          --naay-white: #FFFFFF;
-          --naay-black: #212120;
+          /* Kova Brand Color Palette */
+          --kova-everyday: #cec8ae;
+          --kova-fresh: #90a284;
+          --kova-delicate: #c3ab79;
+          --kova-forever: #a59457;
+          --kova-hydra: #A8C4C4;
+          --kova-deep: #D4B82C;
+          --kova-rich: #B8943C;
+          --kova-radiant: #A68A3C;
+          --kova-perfect: #a59457;
+          --kova-sage: #F8F9F8;
+          --kova-dark: #212120;
+          --kova-terracotta: #cf795e;
+          --kova-white: #FFFFFF;
+          --kova-black: #212120;
           
           /* Semantic Color Aliases - Updated */
-          --naay-primary: var(--naay-perfect);     /* #a59457 - Primary actions */
-          --naay-secondary: var(--naay-dark);      /* #212120 - Secondary elements */
-          --naay-accent: var(--naay-terracotta);   /* #cf795e - Accent elements */
-          --naay-tertiary: var(--naay-delicate);   /* #c3ab79 - Tertiary elements */
-          --naay-highlight: var(--naay-perfect);   /* #a59457 - Highlights */
-          --naay-surface: var(--naay-sage);        /* #F8F9F8 - Background surfaces */
-          --naay-text-primary: var(--naay-black);  /* #212120 - Primary text */
-          --naay-text-secondary: var(--naay-perfect); /* #a59457 - Secondary text */
+          --kova-primary: var(--kova-perfect);     /* #a59457 - Primary actions */
+          --kova-secondary: var(--kova-dark);      /* #212120 - Secondary elements */
+          --kova-accent: var(--kova-terracotta);   /* #cf795e - Accent elements */
+          --kova-tertiary: var(--kova-delicate);   /* #c3ab79 - Tertiary elements */
+          --kova-highlight: var(--kova-perfect);   /* #a59457 - Highlights */
+          --kova-surface: var(--kova-sage);        /* #F8F9F8 - Background surfaces */
+          --kova-text-primary: var(--kova-black);  /* #212120 - Primary text */
+          --kova-text-secondary: var(--kova-perfect); /* #a59457 - Secondary text */
           
           /* Typography */
-          --naay-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-          --naay-font-weight-regular: 400;
-          --naay-font-weight-medium: 500;
-          --naay-font-weight-semibold: 600;
+          --kova-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+          --kova-font-weight-regular: 400;
+          --kova-font-weight-medium: 500;
+          --kova-font-weight-semibold: 600;
           
           /* Shadows & Effects */
-          --naay-shadow-soft: 0 4px 24px rgba(165, 148, 87, 0.08);
-          --naay-shadow-medium: 0 8px 32px rgba(165, 148, 87, 0.12);
-          --naay-shadow-strong: 0 16px 48px rgba(165, 148, 87, 0.16);
-          --naay-blur: backdrop-filter: blur(16px);
+          --kova-shadow-soft: 0 4px 24px rgba(165, 148, 87, 0.08);
+          --kova-shadow-medium: 0 8px 32px rgba(165, 148, 87, 0.12);
+          --kova-shadow-strong: 0 16px 48px rgba(165, 148, 87, 0.16);
+          --kova-blur: backdrop-filter: blur(16px);
           
           /* Transitions */
-          --naay-transition: cubic-bezier(0.4, 0, 0.2, 1);
-          --naay-duration: 400ms;
+          --kova-transition: cubic-bezier(0.4, 0, 0.2, 1);
+          --kova-duration: 400ms;
         }
 
-        .naay-widget {
+        .kova-widget {
           position: fixed !important;
           bottom: 20px !important;
           right: 20px !important;
           z-index: 999999 !important;
-          font-family: var(--naay-font) !important;
+          font-family: var(--kova-font) !important;
           font-feature-settings: 'cv11', 'cv02', 'cv03', 'cv04' !important;
           -webkit-font-smoothing: antialiased !important;
           -moz-osx-font-smoothing: grayscale !important;
           opacity: 0 !important;
           transform: translateY(20px) !important;
-          transition: all 600ms var(--naay-transition) !important;
+          transition: all 600ms var(--kova-transition) !important;
           overflow: visible !important;
         }
 
-        .naay-widget--loaded {
+        .kova-widget--loaded {
           opacity: 1 !important;
           transform: translateY(0) !important;
         }
 
-        .naay-widget--bottom-right {
+        .kova-widget--bottom-right {
           bottom: 32px !important;
           right: 32px !important;
         }
 
-        .naay-widget--bottom-left {
+        .kova-widget--bottom-left {
           bottom: 32px !important;
           left: 32px !important;
         }
 
-        .naay-widget--top-right {
+        .kova-widget--top-right {
           top: 32px !important;
           right: 32px !important;
         }
 
-        .naay-widget--top-left {
+        .kova-widget--top-left {
           top: 32px !important;
           left: 32px !important;
         }
 
         /* Ultra-Modern Promotional Message */
-        .naay-widget__promotional-message {
+        .kova-widget__promotional-message {
           position: absolute !important;
           bottom: 24px !important;
           right: 96px !important;
-          background: var(--naay-white) !important;
+          background: var(--kova-white) !important;
           backdrop-filter: blur(20px) !important;
           -webkit-backdrop-filter: blur(20px) !important;
-          border: 1px solid var(--naay-secondary) !important;
+          border: 1px solid var(--kova-secondary) !important;
           border-radius: 8px !important;
           padding: 20px 24px !important;
           max-width: 380px !important;
           width: 380px !important;
-          box-shadow: var(--naay-shadow-medium) !important;
+          box-shadow: var(--kova-shadow-medium) !important;
           cursor: pointer !important;
-          transition: all var(--naay-duration) var(--naay-transition) !important;
+          transition: all var(--kova-duration) var(--kova-transition) !important;
           opacity: 1 !important;
           visibility: visible !important;
           transform: translateY(0) scale(1) !important;
         }
 
-        .naay-widget__promotional-message:hover {
+        .kova-widget__promotional-message:hover {
           transform: translateY(-4px) scale(1.02) !important;
-          box-shadow: var(--naay-shadow-strong) !important;
-          border-color: var(--naay-secondary) !important;
+          box-shadow: var(--kova-shadow-strong) !important;
+          border-color: var(--kova-secondary) !important;
         }
 
-        .naay-widget__promotional-content {
+        .kova-widget__promotional-content {
           display: block !important;
         }
 
 
 
 
-        .naay-widget__promotional-text {
+        .kova-widget__promotional-text {
           flex: 1 !important;
         }
 
-        .naay-widget__promotional-text {
-          color: var(--naay-perfect) !important;
+        .kova-widget__promotional-text {
+          color: var(--kova-perfect) !important;
           font-size: 13px !important;
-          font-weight: var(--naay-font-weight-semibold) !important;
+          font-weight: var(--kova-font-weight-semibold) !important;
           line-height: 1.3 !important;
           margin: 0 !important;
         }
 
-        .naay-widget__promotional-subtitle {
+        .kova-widget__promotional-subtitle {
           display: block !important;
-          color: var(--naay-secondary) !important;
+          color: var(--kova-secondary) !important;
           font-size: 11px !important;
-          font-weight: var(--naay-font-weight-regular) !important;
+          font-weight: var(--kova-font-weight-regular) !important;
           margin-top: 2px !important;
         }
 
-        .naay-widget__promotional-arrow {
+        .kova-widget__promotional-arrow {
           position: absolute !important;
           top: 50% !important;
           left: -8px !important;
           transform: translateY(-50%) !important;
           width: 0 !important;
           height: 0 !important;
-          border-right: 8px solid var(--naay-white) !important;
+          border-right: 8px solid var(--kova-white) !important;
           border-top: 8px solid transparent !important;
           border-bottom: 8px solid transparent !important;
           filter: drop-shadow(-2px 0 4px rgba(165, 148, 87, 0.1)) !important;
         }
         
-        .naay-widget--bottom-left .naay-widget__promotional-arrow {
+        .kova-widget--bottom-left .kova-widget__promotional-arrow {
           right: auto !important;
           left: -8px !important;
           border-left: 8px solid transparent !important;
-          border-right: 8px solid var(--naay-white) !important;
+          border-right: 8px solid var(--kova-white) !important;
         }
 
-        .naay-widget--open .naay-widget__promotional-message {
+        .kova-widget--open .kova-widget__promotional-message {
           opacity: 0 !important;
           visibility: hidden !important;
           pointer-events: none !important;
@@ -534,29 +535,29 @@
         }
 
         /* Ultra-Luxury Chat Button */
-        .naay-widget__button {
+        .kova-widget__button {
           width: 72px !important;
           height: 72px !important;
           border-radius: 50% !important;
-          background: var(--naay-perfect) !important;
+          background: var(--kova-perfect) !important;
           border: none !important;
           cursor: pointer !important;
           position: relative !important;
-          box-shadow: var(--naay-shadow-medium) !important;
-          transition: all var(--naay-duration) var(--naay-transition) !important;
+          box-shadow: var(--kova-shadow-medium) !important;
+          transition: all var(--kova-duration) var(--kova-transition) !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
           overflow: hidden !important;
         }
 
-        .naay-widget__button:hover {
+        .kova-widget__button:hover {
           transform: translateY(-6px) scale(1.08) !important;
-          box-shadow: var(--naay-shadow-strong) !important;
-          background: var(--naay-rich) !important;
+          box-shadow: var(--kova-shadow-strong) !important;
+          background: var(--kova-rich) !important;
         }
 
-        .naay-widget__button-content {
+        .kova-widget__button-content {
           position: relative !important;
           z-index: 3 !important;
           width: 24px !important;
@@ -566,59 +567,59 @@
           justify-content: center !important;
         }
 
-        .naay-widget__chat-icon,
-        .naay-widget__close-icon {
+        .kova-widget__chat-icon,
+        .kova-widget__close-icon {
           width: 24px !important;
           height: 24px !important;
-          color: var(--naay-white) !important;
+          color: var(--kova-white) !important;
           position: absolute !important;
-          transition: all var(--naay-duration) var(--naay-transition) !important;
+          transition: all var(--kova-duration) var(--kova-transition) !important;
         }
 
-        .naay-widget__chat-icon {
+        .kova-widget__chat-icon {
           opacity: 1 !important;
           transform: rotate(0deg) scale(1) !important;
         }
 
-        .naay-widget__close-icon {
+        .kova-widget__close-icon {
           opacity: 0 !important;
           transform: rotate(90deg) scale(0.8) !important;
         }
 
-        .naay-widget--open .naay-widget__chat-icon {
+        .kova-widget--open .kova-widget__chat-icon {
           opacity: 0 !important;
           transform: rotate(-90deg) scale(0.8) !important;
         }
 
-        .naay-widget--open .naay-widget__close-icon {
+        .kova-widget--open .kova-widget__close-icon {
           opacity: 1 !important;
           transform: rotate(0deg) scale(1) !important;
         }
 
-        .naay-widget__button-pulse {
+        .kova-widget__button-pulse {
           position: absolute !important;
           top: 0 !important;
           left: 0 !important;
           width: 100% !important;
           height: 100% !important;
           border-radius: 50% !important;
-          background: var(--naay-perfect) !important;
-          animation: naayPulse 2s infinite !important;
+          background: var(--kova-perfect) !important;
+          animation: kovaPulse 2s infinite !important;
           z-index: 1 !important;
         }
 
-        @keyframes naayPulse {
+        @keyframes kovaPulse {
           0% { transform: scale(1); opacity: 1; }
           50% { transform: scale(1.15); opacity: 0.6; }
           100% { transform: scale(1.3); opacity: 0; }
         }
 
-        .naay-widget--open .naay-widget__button-pulse {
+        .kova-widget--open .kova-widget__button-pulse {
           animation: none !important;
         }
 
         /* Ultra-Modern Chat Window */
-        .naay-widget__chat {
+        .kova-widget__chat {
           position: absolute !important;
           bottom: 88px !important;
           left: 0 !important;
@@ -629,42 +630,42 @@
           -webkit-backdrop-filter: blur(20px) !important;
           border-radius: 12px !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
-          box-shadow: var(--naay-shadow-strong) !important;
+          box-shadow: var(--kova-shadow-strong) !important;
           display: none !important;
           flex-direction: column !important;
           overflow: hidden !important;
           transform: translateY(32px) scale(0.9) !important;
           opacity: 0 !important;
           visibility: hidden !important;
-          transition: all var(--naay-duration) var(--naay-transition) !important;
+          transition: all var(--kova-duration) var(--kova-transition) !important;
         }
 
-        .naay-widget--bottom-right .naay-widget__chat {
+        .kova-widget--bottom-right .kova-widget__chat {
           left: auto !important;
           right: 0 !important;
         }
 
-        .naay-widget--top-right .naay-widget__chat,
-        .naay-widget--top-left .naay-widget__chat {
+        .kova-widget--top-right .kova-widget__chat,
+        .kova-widget--top-left .kova-widget__chat {
           bottom: auto !important;
           top: 88px !important;
         }
 
-        .naay-widget--open .naay-widget__chat {
+        .kova-widget--open .kova-widget__chat {
           display: flex !important;
           transform: translateY(0) scale(1) !important;
           opacity: 1 !important;
           visibility: visible !important;
         }
 
-        .naay-widget--closing .naay-widget__chat {
+        .kova-widget--closing .kova-widget__chat {
           transform: translateY(16px) scale(0.95) !important;
           opacity: 0 !important;
           visibility: hidden !important;
         }
 
         /* Cart Modal - Slide from left inside chat */
-        .naay-cart__modal {
+        .kova-cart__modal {
           position: absolute !important;
           top: 0 !important;
           left: 0 !important;
@@ -677,13 +678,13 @@
           visibility: hidden !important;
           transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
         }
-        .naay-cart__modal--open {
+        .kova-cart__modal--open {
           display: block !important;
           opacity: 1 !important;
           visibility: visible !important;
           pointer-events: auto !important;
         }
-        .naay-cart__backdrop {
+        .kova-cart__backdrop {
           position: absolute !important;
           top: 0 !important;
           left: 0 !important;
@@ -693,7 +694,7 @@
           backdrop-filter: blur(2px) !important;
           cursor: pointer !important;
         }
-        .naay-cart__slide {
+        .kova-cart__slide {
           position: absolute !important;
           top: 0 !important;
           left: 0 !important;
@@ -714,29 +715,29 @@
           transform: translateX(-100%) !important;
           transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
         }
-        .naay-cart__modal--open .naay-cart__slide {
+        .kova-cart__modal--open .kova-cart__slide {
           transform: translateX(0) !important;
         }
-        .naay-cart__close {
+        .kova-cart__close {
           background: rgba(255, 255, 255, 0.15) !important;
           border: none !important;
           border-radius: 8px !important;
           padding: 8px !important;
-          color: var(--naay-white) !important;
+          color: var(--kova-white) !important;
           cursor: pointer !important;
-          transition: all 0.2s var(--naay-transition) !important;
+          transition: all 0.2s var(--kova-transition) !important;
         }
-        .naay-cart__close:hover {
+        .kova-cart__close:hover {
           background: rgba(255, 255, 255, 0.25) !important;
           transform: scale(1.1) !important;
         }
-        .naay-cart__close svg {
+        .kova-cart__close svg {
           width: 14px !important;
           height: 14px !important;
         }
         
         /* Legacy cart panel styles - to be removed */
-        .naay-widget__cart-panel {
+        .kova-widget__cart-panel {
           position: absolute !important;
           bottom: 88px !important;
           right: calc(100% + 420px) !important; /* Position to left of chat (400px chat width + 20px gap) */
@@ -763,33 +764,33 @@
           z-index: 999997 !important;
         }
 
-        .naay-widget--bottom-left .naay-widget__cart-panel {
+        .kova-widget--bottom-left .kova-widget__cart-panel {
           right: auto !important;
           left: calc(100% + 420px) !important; /* Position to right of chat for left-positioned widget */
           transform: translateX(32px) translateY(24px) scale(0.92) !important;
         }
 
         /* Cart panel minimized state */
-        .naay-widget__cart-panel--minimized {
+        .kova-widget__cart-panel--minimized {
           height: 60px !important;
           overflow: hidden !important;
         }
         
-        .naay-widget__cart-panel--minimized .naay-cart__content,
-        .naay-widget__cart-panel--minimized .naay-cart__footer {
+        .kova-widget__cart-panel--minimized .kova-cart__content,
+        .kova-widget__cart-panel--minimized .kova-cart__footer {
           display: none !important;
         }
 
-        .naay-widget--cart-open .naay-widget__cart-panel {
+        .kova-widget--cart-open .kova-widget__cart-panel {
           display: flex !important;
           transform: translateX(0) translateY(0) scale(1) !important;
           opacity: 1 !important;
           visibility: visible !important;
         }
 
-        .naay-cart__header {
+        .kova-cart__header {
           background: transparent !important;
-          color: var(--naay-black) !important;
+          color: var(--kova-black) !important;
           padding: 20px 24px !important;
           display: flex !important;
           align-items: center !important;
@@ -798,78 +799,78 @@
           border-top-right-radius: 20px !important;
         }
 
-        .naay-cart__title {
+        .kova-cart__title {
           font-size: 16px !important;
-          font-weight: var(--naay-font-weight-semibold) !important;
+          font-weight: var(--kova-font-weight-semibold) !important;
           margin: 0 !important;
           display: flex !important;
           align-items: center !important;
           gap: 8px !important;
         }
 
-        .naay-cart__icon {
+        .kova-cart__icon {
           width: 18px !important;
           height: 18px !important;
         }
 
-        .naay-cart__toggle {
+        .kova-cart__toggle {
           background: rgba(255, 255, 255, 0.15) !important;
           border: none !important;
           border-radius: 8px !important;
           padding: 8px !important;
-          color: var(--naay-white) !important;
+          color: var(--kova-white) !important;
           cursor: pointer !important;
-          transition: all 0.2s var(--naay-transition) !important;
+          transition: all 0.2s var(--kova-transition) !important;
         }
 
-        .naay-cart__toggle:hover {
+        .kova-cart__toggle:hover {
           background: rgba(255, 255, 255, 0.25) !important;
           transform: scale(1.1) !important;
         }
 
-        .naay-cart__toggle svg {
+        .kova-cart__toggle svg {
           width: 14px !important;
           height: 14px !important;
         }
 
-        .naay-cart__actions {
+        .kova-cart__actions {
           display: flex !important;
           align-items: center !important;
           gap: 8px !important;
         }
 
-        .naay-cart__minimize {
+        .kova-cart__minimize {
           background: rgba(255, 255, 255, 0.15) !important;
           border: none !important;
           border-radius: 8px !important;
           padding: 8px !important;
-          color: var(--naay-white) !important;
+          color: var(--kova-white) !important;
           cursor: pointer !important;
-          transition: all 0.2s var(--naay-transition) !important;
+          transition: all 0.2s var(--kova-transition) !important;
         }
 
-        .naay-cart__minimize:hover {
+        .kova-cart__minimize:hover {
           background: rgba(255, 255, 255, 0.25) !important;
           transform: scale(1.1) !important;
         }
 
-        .naay-cart__minimize svg {
+        .kova-cart__minimize svg {
           width: 14px !important;
           height: 14px !important;
-          transition: transform 0.2s var(--naay-transition) !important;
+          transition: transform 0.2s var(--kova-transition) !important;
         }
 
-        .naay-widget__cart-panel--minimized .naay-cart__minimize svg {
+        .kova-widget__cart-panel--minimized .kova-cart__minimize svg {
           transform: rotate(180deg) !important;
         }
 
-        .naay-cart__content {
+        .kova-cart__content {
           flex: 1 !important;
           overflow-y: auto !important;
           padding: 0 !important;
         }
 
-        .naay-cart__empty {
+        .kova-cart__empty {
           display: flex !important;
           flex-direction: column !important;
           align-items: center !important;
@@ -877,100 +878,100 @@
           height: 100% !important;
           padding: 40px 24px !important;
           text-align: center !important;
-          color: var(--naay-perfect) !important;
+          color: var(--kova-perfect) !important;
         }
 
-        .naay-cart__empty-icon {
+        .kova-cart__empty-icon {
           width: 48px !important;
           height: 48px !important;
           opacity: 0.6 !important;
           margin-bottom: 16px !important;
         }
 
-        .naay-cart__empty-text {
+        .kova-cart__empty-text {
           font-size: 16px !important;
-          font-weight: var(--naay-font-weight-medium) !important;
+          font-weight: var(--kova-font-weight-medium) !important;
           margin: 0 0 8px 0 !important;
-          color: var(--naay-black) !important;
+          color: var(--kova-black) !important;
         }
 
-        .naay-cart__empty-subtitle {
+        .kova-cart__empty-subtitle {
           font-size: 13px !important;
           opacity: 0.7 !important;
-          color: var(--naay-perfect) !important;
+          color: var(--kova-perfect) !important;
         }
 
-        .naay-cart__items {
+        .kova-cart__items {
           padding: 16px !important;
           display: flex !important;
           flex-direction: column !important;
           gap: 12px !important;
         }
 
-        .naay-cart__item {
-          background: var(--naay-white) !important;
+        .kova-cart__item {
+          background: var(--kova-white) !important;
           border-radius: 12px !important;
           padding: 16px !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
           box-shadow: 0 2px 8px rgba(165, 148, 87, 0.05) !important;
-          transition: all 0.2s var(--naay-transition) !important;
+          transition: all 0.2s var(--kova-transition) !important;
         }
 
-        .naay-cart__item:hover {
+        .kova-cart__item:hover {
           box-shadow: 0 4px 12px rgba(165, 148, 87, 0.1) !important;
           transform: translateY(-1px) !important;
         }
 
-        .naay-cart__item-header {
+        .kova-cart__item-header {
           display: flex !important;
           justify-content: space-between !important;
           align-items: flex-start !important;
           margin-bottom: 8px !important;
         }
 
-        .naay-cart__item-title {
+        .kova-cart__item-title {
           font-size: 14px !important;
-          font-weight: var(--naay-font-weight-medium) !important;
+          font-weight: var(--kova-font-weight-medium) !important;
           line-height: 1.3 !important;
           margin: 0 !important;
           flex: 1 !important;
           margin-right: 8px !important;
-          color: var(--naay-black) !important;
+          color: var(--kova-black) !important;
         }
 
-        .naay-cart__item-remove {
+        .kova-cart__item-remove {
           background: rgba(220, 38, 38, 0.1) !important;
           border: none !important;
           border-radius: 6px !important;
           padding: 4px !important;
           color: #dc2626 !important;
           cursor: pointer !important;
-          transition: all 0.2s var(--naay-transition) !important;
+          transition: all 0.2s var(--kova-transition) !important;
         }
 
-        .naay-cart__item-remove:hover {
+        .kova-cart__item-remove:hover {
           background: rgba(220, 38, 38, 0.2) !important;
         }
 
-        .naay-cart__item-remove svg {
+        .kova-cart__item-remove svg {
           width: 12px !important;
           height: 12px !important;
         }
 
-        .naay-cart__item-details {
+        .kova-cart__item-details {
           display: flex !important;
           justify-content: space-between !important;
           align-items: center !important;
         }
 
-        .naay-cart__item-quantity {
+        .kova-cart__item-quantity {
           display: flex !important;
           align-items: center !important;
           gap: 8px !important;
         }
 
-        .naay-cart__quantity-btn {
-          background: var(--naay-delicate) !important;
+        .kova-cart__quantity-btn {
+          background: var(--kova-delicate) !important;
           border: none !important;
           border-radius: 6px !important;
           width: 24px !important;
@@ -980,38 +981,38 @@
           justify-content: center !important;
           cursor: pointer !important;
           font-size: 14px !important;
-          font-weight: var(--naay-font-weight-medium) !important;
-          color: var(--naay-perfect) !important;
-          transition: all 0.2s var(--naay-transition) !important;
+          font-weight: var(--kova-font-weight-medium) !important;
+          color: var(--kova-perfect) !important;
+          transition: all 0.2s var(--kova-transition) !important;
         }
 
-        .naay-cart__quantity-btn:hover {
-          background: var(--naay-perfect) !important;
-          color: var(--naay-white) !important;
+        .kova-cart__quantity-btn:hover {
+          background: var(--kova-perfect) !important;
+          color: var(--kova-white) !important;
           transform: scale(1.1) !important;
         }
 
-        .naay-cart__quantity-value {
+        .kova-cart__quantity-value {
           font-size: 14px !important;
-          font-weight: var(--naay-font-weight-medium) !important;
+          font-weight: var(--kova-font-weight-medium) !important;
           min-width: 20px !important;
           text-align: center !important;
-          color: var(--naay-black) !important;
+          color: var(--kova-black) !important;
         }
 
-        .naay-cart__item-price {
+        .kova-cart__item-price {
           font-size: 14px !important;
-          font-weight: var(--naay-font-weight-semibold) !important;
-          color: var(--naay-perfect) !important;
+          font-weight: var(--kova-font-weight-semibold) !important;
+          color: var(--kova-perfect) !important;
         }
 
-        .naay-cart__footer {
-          background: var(--naay-white) !important;
+        .kova-cart__footer {
+          background: var(--kova-white) !important;
           border-top: 1px solid rgba(212, 196, 184, 0.2) !important;
           padding: 20px 24px !important;
         }
 
-        .naay-cart__total {
+        .kova-cart__total {
           display: flex !important;
           justify-content: space-between !important;
           align-items: center !important;
@@ -1020,27 +1021,27 @@
           border-top: 1px solid rgba(212, 196, 184, 0.2) !important;
         }
 
-        .naay-cart__total-label {
+        .kova-cart__total-label {
           font-size: 16px !important;
-          font-weight: var(--naay-font-weight-medium) !important;
-          color: var(--naay-black) !important;
+          font-weight: var(--kova-font-weight-medium) !important;
+          color: var(--kova-black) !important;
         }
 
-        .naay-cart__total-amount {
+        .kova-cart__total-amount {
           font-size: 18px !important;
-          font-weight: var(--naay-font-weight-bold) !important;
-          color: var(--naay-perfect) !important;
+          font-weight: var(--kova-font-weight-bold) !important;
+          color: var(--kova-perfect) !important;
         }
 
-        .naay-cart__checkout {
+        .kova-cart__checkout {
           width: 100% !important;
-          background: linear-gradient(135deg, var(--naay-perfect) 0%, var(--naay-rich) 100%) !important;
-          color: var(--naay-white) !important;
+          background: linear-gradient(135deg, var(--kova-perfect) 0%, var(--kova-rich) 100%) !important;
+          color: var(--kova-white) !important;
           border: none !important;
           border-radius: 12px !important;
           padding: 16px 20px !important;
           font-size: 15px !important;
-          font-weight: var(--naay-font-weight-semibold) !important;
+          font-weight: var(--kova-font-weight-semibold) !important;
           cursor: pointer !important;
           transition: none !important;
           display: flex !important;
@@ -1050,24 +1051,24 @@
           box-shadow: 0 4px 16px rgba(165, 148, 87, 0.3) !important;
         }
 
-        .naay-cart__checkout:hover {
+        .kova-cart__checkout:hover {
           transform: translateY(-2px) !important;
           box-shadow: 0 6px 20px rgba(165, 148, 87, 0.4) !important;
         }
 
-        .naay-cart__checkout svg {
+        .kova-cart__checkout svg {
           width: 16px !important;
           height: 16px !important;
         }
 
         /* ======= PRODUCT RECOMMENDATION WIDGET STYLES ======= */
 
-        .naay-recommendations-container {
+        .kova-recommendations-container {
           width: 100% !important;
           margin: 8px 0 !important;
         }
 
-        .naay-recommendations-grid {
+        .kova-recommendations-grid {
           display: flex !important;
           flex-direction: column !important;
           gap: 12px !important;
@@ -1075,8 +1076,8 @@
         }
 
 
-        .naay-product-card {
-          background: var(--naay-white) !important;
+        .kova-product-card {
+          background: var(--kova-white) !important;
           border-radius: 16px !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
           overflow: hidden !important;
@@ -1093,7 +1094,7 @@
 
         /* Hover effects removed */
 
-        .naay-product-card__header {
+        .kova-product-card__header {
           display: flex !important;
           justify-content: space-between !important;
           align-items: flex-start !important;
@@ -1101,34 +1102,34 @@
           position: relative !important;
         }
 
-        .naay-product-card__vendor {
+        .kova-product-card__vendor {
           background: rgba(248, 249, 248, 0.95) !important;
           backdrop-filter: blur(10px) !important;
-          color: var(--naay-perfect) !important;
+          color: var(--kova-perfect) !important;
           font-size: 12px !important;
-          font-weight: var(--naay-font-weight-medium) !important;
+          font-weight: var(--kova-font-weight-medium) !important;
           padding: 4px 8px !important;
           border-radius: 6px !important;
           border: 1px solid rgba(212, 196, 184, 0.3) !important;
         }
 
-        .naay-product-card__discount {
+        .kova-product-card__discount {
           background: linear-gradient(135deg, #dc2626, #ef4444) !important;
-          color: var(--naay-white) !important;
+          color: var(--kova-white) !important;
           font-size: 12px !important;
-          font-weight: var(--naay-font-weight-semibold) !important;
+          font-weight: var(--kova-font-weight-semibold) !important;
           padding: 4px 8px !important;
           border-radius: 6px !important;
           box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3) !important;
         }
 
-        .naay-product-card__media {
+        .kova-product-card__media {
           position: relative !important;
           width: 100px !important;
           height: 100px !important;
           flex-shrink: 0 !important;
           overflow: hidden !important;
-          background: var(--naay-sage) !important;
+          background: var(--kova-sage) !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
@@ -1136,7 +1137,7 @@
           margin: 0 !important;
         }
 
-        .naay-product-card__image {
+        .kova-product-card__image {
           width: 100% !important;
           height: 100% !important;
           object-fit: cover !important;
@@ -1146,22 +1147,22 @@
 
         /* Image hover effect removed */
 
-        .naay-product-card__placeholder {
+        .kova-product-card__placeholder {
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
           width: 64px !important;
           height: 64px !important;
-          color: var(--naay-perfect) !important;
+          color: var(--kova-perfect) !important;
           opacity: 0.5 !important;
         }
 
-        .naay-product-card__placeholder svg {
+        .kova-product-card__placeholder svg {
           width: 100% !important;
           height: 100% !important;
         }
 
-        .naay-product-card__overlay {
+        .kova-product-card__overlay {
           position: absolute !important;
           top: 0 !important;
           left: 0 !important;
@@ -1172,21 +1173,21 @@
           align-items: center !important;
           justify-content: center !important;
           opacity: 0 !important;
-          transition: opacity 0.3s var(--naay-transition) !important;
+          transition: opacity 0.3s var(--kova-transition) !important;
         }
 
         /* Overlay hover effect removed */
 
-        .naay-product-card__quick-view {
+        .kova-product-card__quick-view {
           background: rgba(248, 249, 248, 0.95) !important;
           backdrop-filter: blur(10px) !important;
           border: none !important;
           border-radius: 50% !important;
           width: 48px !important;
           height: 48px !important;
-          color: var(--naay-perfect) !important;
+          color: var(--kova-perfect) !important;
           cursor: pointer !important;
-          transition: all 0.2s var(--naay-transition) !important;
+          transition: all 0.2s var(--kova-transition) !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
@@ -1194,12 +1195,12 @@
 
         /* Quick view hover effect removed */
 
-        .naay-product-card__quick-view svg {
+        .kova-product-card__quick-view svg {
           width: 20px !important;
           height: 20px !important;
         }
 
-        .naay-product-card__content {
+        .kova-product-card__content {
           padding: 12px !important;
           margin-left: 12px !important;
           flex: 1 !important;
@@ -1208,22 +1209,22 @@
           justify-content: space-between !important;
         }
 
-        .naay-product-card__title {
+        .kova-product-card__title {
           font-size: 14px !important;
-          font-weight: var(--naay-font-weight-semibold) !important;
+          font-weight: var(--kova-font-weight-semibold) !important;
           line-height: 1.3 !important;
           margin: 0 0 4px 0 !important;
-          color: var(--naay-black) !important;
+          color: var(--kova-black) !important;
           display: -webkit-box !important;
           -webkit-line-clamp: 2 !important;
           -webkit-box-orient: vertical !important;
           overflow: hidden !important;
         }
 
-        .naay-product-card__description {
+        .kova-product-card__description {
           font-size: 12px !important;
           line-height: 1.4 !important;
-          color: var(--naay-perfect) !important;
+          color: var(--kova-perfect) !important;
           margin: 0 0 8px 0 !important;
           opacity: 0.8 !important;
           display: -webkit-box !important;
@@ -1232,60 +1233,60 @@
           overflow: hidden !important;
         }
 
-        .naay-product-card__price-section {
+        .kova-product-card__price-section {
           display: flex !important;
           justify-content: space-between !important;
           align-items: flex-start !important;
           margin-bottom: 16px !important;
         }
 
-        .naay-product-card__pricing {
+        .kova-product-card__pricing {
           display: flex !important;
           align-items: center !important;
           gap: 8px !important;
         }
 
-        .naay-product-card__price {
+        .kova-product-card__price {
           font-size: 18px !important;
-          font-weight: var(--naay-font-weight-bold) !important;
-          color: var(--naay-perfect) !important;
+          font-weight: var(--kova-font-weight-bold) !important;
+          color: var(--kova-perfect) !important;
         }
 
-        .naay-product-card__compare-price {
+        .kova-product-card__compare-price {
           font-size: 14px !important;
-          font-weight: var(--naay-font-weight-medium) !important;
-          color: var(--naay-perfect) !important;
+          font-weight: var(--kova-font-weight-medium) !important;
+          color: var(--kova-perfect) !important;
           opacity: 0.6 !important;
           text-decoration: line-through !important;
         }
 
-        .naay-product-card__tags {
+        .kova-product-card__tags {
           display: flex !important;
           gap: 6px !important;
           flex-wrap: wrap !important;
         }
 
-        .naay-product-card__tag {
-          background: var(--naay-delicate) !important;
-          color: var(--naay-perfect) !important;
+        .kova-product-card__tag {
+          background: var(--kova-delicate) !important;
+          color: var(--kova-perfect) !important;
           font-size: 11px !important;
-          font-weight: var(--naay-font-weight-medium) !important;
+          font-weight: var(--kova-font-weight-medium) !important;
           padding: 2px 6px !important;
           border-radius: 4px !important;
           text-transform: uppercase !important;
           letter-spacing: 0.5px !important;
         }
 
-        .naay-product-card__actions {
+        .kova-product-card__actions {
           display: flex !important;
           gap: 6px !important;
           margin-top: 8px !important;
         }
 
-        .naay-product-card__add-btn {
+        .kova-product-card__add-btn {
           flex: 1 !important;
-          background: var(--naay-perfect) !important;
-          color: var(--naay-white) !important;
+          background: var(--kova-perfect) !important;
+          color: var(--kova-white) !important;
           border: none !important;
           border-radius: 6px !important;
           padding: 8px 12px !important;
@@ -1302,41 +1303,41 @@
 
         /* Add button hover effect removed */
 
-        .naay-product-card__add-btn--disabled {
+        .kova-product-card__add-btn--disabled {
           background: rgba(165, 148, 87, 0.3) !important;
           cursor: not-allowed !important;
           transform: none !important;
           box-shadow: none !important;
         }
 
-        .naay-product-card__add-btn--success {
+        .kova-product-card__add-btn--success {
           background: #10b981 !important;
         }
 
-        .naay-product-card__add-btn svg {
+        .kova-product-card__add-btn svg {
           width: 10px !important;
           height: 10px !important;
         }
 
-        .naay-spinner {
-          animation: naaySpinner 1s linear infinite !important;
+        .kova-spinner {
+          animation: kovaSpinner 1s linear infinite !important;
         }
 
-        @keyframes naaySpinner {
+        @keyframes kovaSpinner {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
 
-        .naay-product-card__details-btn {
+        .kova-product-card__details-btn {
           background: rgba(165, 148, 87, 0.1) !important;
-          color: var(--naay-perfect) !important;
+          color: var(--kova-perfect) !important;
           border: 1px solid rgba(165, 148, 87, 0.3) !important;
           border-radius: 4px !important;
           padding: 6px 10px !important;
           font-size: 11px !important;
-          font-weight: var(--naay-font-weight-medium) !important;
+          font-weight: var(--kova-font-weight-medium) !important;
           cursor: pointer !important;
-          transition: all 0.2s var(--naay-transition) !important;
+          transition: all 0.2s var(--kova-transition) !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
@@ -1346,14 +1347,14 @@
 
         /* Details button hover effect removed */
 
-        .naay-product-card__details-btn svg {
+        .kova-product-card__details-btn svg {
           width: 10px !important;
           height: 10px !important;
         }
 
         /* ======= PRODUCT MODAL STYLES ======= */
 
-        .naay-product-modal {
+        .kova-product-modal {
           position: fixed !important;
           top: 0 !important;
           left: 0 !important;
@@ -1368,12 +1369,12 @@
           transition: none !important;
         }
 
-        .naay-product-modal--visible {
+        .kova-product-modal--visible {
           opacity: 1 !important;
           visibility: visible !important;
         }
 
-        .naay-product-modal__backdrop {
+        .kova-product-modal__backdrop {
           position: absolute !important;
           top: 0 !important;
           left: 0 !important;
@@ -1383,9 +1384,9 @@
           backdrop-filter: blur(4px) !important;
         }
 
-        .naay-product-modal__content {
+        .kova-product-modal__content {
           position: relative !important;
-          background: var(--naay-white) !important;
+          background: var(--kova-white) !important;
           border-radius: 20px !important;
           max-width: 500px !important;
           width: 90vw !important;
@@ -1394,94 +1395,94 @@
           box-shadow: 0 20px 40px rgba(165, 148, 87, 0.2) !important;
         }
 
-        .naay-product-modal__header {
+        .kova-product-modal__header {
           display: flex !important;
           justify-content: space-between !important;
           align-items: center !important;
           padding: 20px 24px !important;
           border-bottom: 1px solid rgba(212, 196, 184, 0.2) !important;
-          background: var(--naay-sage) !important;
+          background: var(--kova-sage) !important;
         }
 
-        .naay-product-modal__header h2 {
+        .kova-product-modal__header h2 {
           font-size: 18px !important;
-          font-weight: var(--naay-font-weight-semibold) !important;
+          font-weight: var(--kova-font-weight-semibold) !important;
           margin: 0 !important;
-          color: var(--naay-black) !important;
+          color: var(--kova-black) !important;
         }
 
-        .naay-product-modal__close {
+        .kova-product-modal__close {
           background: none !important;
           border: none !important;
           cursor: pointer !important;
           padding: 8px !important;
           border-radius: 8px !important;
-          transition: background 0.2s var(--naay-transition) !important;
-          color: var(--naay-perfect) !important;
+          transition: background 0.2s var(--kova-transition) !important;
+          color: var(--kova-perfect) !important;
         }
 
-        .naay-product-modal__close:hover {
+        .kova-product-modal__close:hover {
           background: rgba(165, 148, 87, 0.1) !important;
         }
 
-        .naay-product-modal__close svg {
+        .kova-product-modal__close svg {
           width: 20px !important;
           height: 20px !important;
         }
 
-        .naay-product-modal__body {
+        .kova-product-modal__body {
           padding: 24px !important;
           display: flex !important;
           flex-direction: column !important;
           gap: 20px !important;
         }
 
-        .naay-product-modal__body img {
+        .kova-product-modal__body img {
           width: 100% !important;
           height: 200px !important;
           object-fit: cover !important;
           border-radius: 12px !important;
         }
 
-        .naay-product-modal__info {
+        .kova-product-modal__info {
           display: flex !important;
           flex-direction: column !important;
           gap: 16px !important;
         }
 
-        .naay-product-modal__description {
+        .kova-product-modal__description {
           font-size: 14px !important;
           line-height: 1.6 !important;
-          color: var(--naay-perfect) !important;
+          color: var(--kova-perfect) !important;
           margin: 0 !important;
         }
 
-        .naay-product-modal__price {
+        .kova-product-modal__price {
           font-size: 24px !important;
-          font-weight: var(--naay-font-weight-bold) !important;
-          color: var(--naay-perfect) !important;
+          font-weight: var(--kova-font-weight-bold) !important;
+          color: var(--kova-perfect) !important;
         }
 
-        .naay-product-modal__add-btn {
-          background: linear-gradient(135deg, var(--naay-perfect) 0%, var(--naay-rich) 100%) !important;
-          color: var(--naay-white) !important;
+        .kova-product-modal__add-btn {
+          background: linear-gradient(135deg, var(--kova-perfect) 0%, var(--kova-rich) 100%) !important;
+          color: var(--kova-white) !important;
           border: none !important;
           border-radius: 12px !important;
           padding: 16px 24px !important;
           font-size: 16px !important;
-          font-weight: var(--naay-font-weight-semibold) !important;
+          font-weight: var(--kova-font-weight-semibold) !important;
           cursor: pointer !important;
           transition: none !important;
           box-shadow: 0 4px 16px rgba(165, 148, 87, 0.3) !important;
         }
 
-        .naay-product-modal__add-btn:hover {
+        .kova-product-modal__add-btn:hover {
           transform: translateY(-2px) !important;
           box-shadow: 0 6px 20px rgba(165, 148, 87, 0.4) !important;
         }
 
         /* Simple Header */
-        .naay-widget__simple-header {
+        .kova-widget__simple-header {
           position: absolute !important;
           top: 0 !important;
           left: 0 !important;
@@ -1494,38 +1495,38 @@
           z-index: 10 !important;
         }
 
-        .naay-widget__cart-button {
+        .kova-widget__cart-button {
           position: relative !important;
           background: rgba(255, 255, 255, 0.9) !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
           border-radius: 8px !important;
           padding: 8px !important;
-          color: var(--naay-perfect) !important;
+          color: var(--kova-perfect) !important;
           cursor: pointer !important;
-          transition: all 0.2s var(--naay-transition) !important;
+          transition: all 0.2s var(--kova-transition) !important;
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
         }
 
-        .naay-widget__cart-button:hover {
-          background: var(--naay-white) !important;
+        .kova-widget__cart-button:hover {
+          background: var(--kova-white) !important;
           transform: scale(1.05) !important;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
         }
 
-        .naay-widget__cart-button svg {
+        .kova-widget__cart-button svg {
           width: 16px !important;
           height: 16px !important;
         }
 
-        .naay-widget__cart-count {
+        .kova-widget__cart-count {
           position: absolute !important;
           top: -4px !important;
           right: -4px !important;
-          background: var(--naay-perfect) !important;
-          color: var(--naay-white) !important;
+          background: var(--kova-perfect) !important;
+          color: var(--kova-white) !important;
           border-radius: 50% !important;
           font-size: 10px !important;
-          font-weight: var(--naay-font-weight-bold) !important;
+          font-weight: var(--kova-font-weight-bold) !important;
           min-width: 16px !important;
           height: 16px !important;
           display: flex !important;
@@ -1534,41 +1535,41 @@
           line-height: 1 !important;
         }
 
-        .naay-widget__close {
+        .kova-widget__close {
           background: rgba(255, 255, 255, 0.9) !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
-          color: var(--naay-perfect) !important;
+          color: var(--kova-perfect) !important;
           cursor: pointer !important;
           padding: 8px !important;
           border-radius: 8px !important;
-          transition: all 0.2s var(--naay-transition) !important;
+          transition: all 0.2s var(--kova-transition) !important;
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
         }
 
-        .naay-widget__close:hover {
-          background: var(--naay-white) !important;
+        .kova-widget__close:hover {
+          background: var(--kova-white) !important;
           transform: scale(1.05) !important;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
         }
 
-        .naay-widget__close svg {
+        .kova-widget__close svg {
           width: 16px !important;
           height: 16px !important;
         }
 
         /* Luxury Messages Area */
-        .naay-widget__messages {
+        .kova-widget__messages {
           flex: 1 !important;
           padding: 64px 32px 32px 32px !important;
           overflow-y: auto !important;
           background: transparent !important;
           scrollbar-width: thin !important;
-          scrollbar-color: var(--naay-delicate) transparent !important;
+          scrollbar-color: var(--kova-delicate) transparent !important;
           position: relative !important;
         }
 
         /* Cart Toggle Button in Conversation */
-        .naay-widget__cart-toggle-btn {
+        .kova-widget__cart-toggle-btn {
           position: relative !important;
           background: rgba(255, 255, 255, 0.95) !important;
           border: 1px solid rgba(212, 196, 184, 0.3) !important;
@@ -1584,15 +1585,15 @@
           height: 28px !important;
         }
 
-        .naay-widget__cart-toggle-btn:hover {
-          background: var(--naay-white) !important;
-          border-color: var(--naay-perfect) !important;
+        .kova-widget__cart-toggle-btn:hover {
+          background: var(--kova-white) !important;
+          border-color: var(--kova-perfect) !important;
           transform: translateY(-2px) !important;
           box-shadow: 0 4px 16px rgba(165, 148, 87, 0.2) !important;
         }
 
         /* Back Button in Conversation */
-        .naay-widget__back-btn {
+        .kova-widget__back-btn {
           position: relative !important;
           background: rgba(255, 255, 255, 0.95) !important;
           border: 1px solid rgba(212, 196, 184, 0.3) !important;
@@ -1608,145 +1609,145 @@
           height: 28px !important;
         }
 
-        .naay-widget__back-btn:hover {
-          background: var(--naay-white) !important;
-          border-color: var(--naay-perfect) !important;
+        .kova-widget__back-btn:hover {
+          background: var(--kova-white) !important;
+          border-color: var(--kova-perfect) !important;
           transform: translateY(-2px) !important;
           box-shadow: 0 4px 16px rgba(165, 148, 87, 0.2) !important;
         }
 
-        .naay-widget__back-btn svg {
+        .kova-widget__back-btn svg {
           width: 14px !important;
           height: 14px !important;
-          color: var(--naay-perfect) !important;
+          color: var(--kova-perfect) !important;
         }
 
-        .naay-cart-toggle-icon {
+        .kova-cart-toggle-icon {
           width: 16px !important;
           height: 16px !important;
-          color: var(--naay-perfect) !important;
+          color: var(--kova-perfect) !important;
         }
 
-        .naay-cart-toggle-count {
+        .kova-cart-toggle-count {
           position: absolute !important;
           top: -4px !important;
           right: -4px !important;
-          background: var(--naay-perfect) !important;
-          color: var(--naay-white) !important;
+          background: var(--kova-perfect) !important;
+          color: var(--kova-white) !important;
           border-radius: 50% !important;
           font-size: 8px !important;
-          font-weight: var(--naay-font-weight-bold) !important;
+          font-weight: var(--kova-font-weight-bold) !important;
           width: 14px !important;
           height: 14px !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
           line-height: 1 !important;
-          border: 1px solid var(--naay-white) !important;
+          border: 1px solid var(--kova-white) !important;
         }
 
-        .naay-cart-toggle-count:empty {
+        .kova-cart-toggle-count:empty {
           display: none !important;
         }
 
-        .naay-widget__messages::-webkit-scrollbar {
+        .kova-widget__messages::-webkit-scrollbar {
           width: 6px !important;
         }
 
-        .naay-widget__messages::-webkit-scrollbar-track {
+        .kova-widget__messages::-webkit-scrollbar-track {
           background: transparent !important;
         }
 
-        .naay-widget__messages::-webkit-scrollbar-thumb {
-          background: var(--naay-delicate) !important;
+        .kova-widget__messages::-webkit-scrollbar-thumb {
+          background: var(--kova-delicate) !important;
           border-radius: 3px !important;
         }
 
-        .naay-widget__welcome {
+        .kova-widget__welcome {
           text-align: center !important;
         }
 
-        .naay-widget__welcome-header {
+        .kova-widget__welcome-header {
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
           margin-bottom: 24px !important;
         }
 
-        .naay-widget__welcome-avatar {
+        .kova-widget__welcome-avatar {
           width: 56px !important;
           height: 56px !important;
-          background: var(--naay-hydra) !important;
+          background: var(--kova-hydra) !important;
           border-radius: 12px !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
         }
 
-        .naay-welcome-icon {
+        .kova-welcome-icon {
           width: 28px !important;
           height: 28px !important;
-          color: var(--naay-white) !important;
+          color: var(--kova-white) !important;
         }
 
-        .naay-widget__welcome-title {
+        .kova-widget__welcome-title {
           font-size: 20px !important;
-          font-weight: var(--naay-font-weight-semibold) !important;
-          color: var(--naay-perfect) !important;
+          font-weight: var(--kova-font-weight-semibold) !important;
+          color: var(--kova-perfect) !important;
           margin: 0 !important;
           letter-spacing: -0.02em !important;
           line-height: 1.4 !important;
         }
 
-        .naay-widget__welcome-subtitle {
+        .kova-widget__welcome-subtitle {
           display: block !important;
-          color: var(--naay-secondary) !important;
+          color: var(--kova-secondary) !important;
           font-size: 16px !important;
-          font-weight: var(--naay-font-weight-regular) !important;
+          font-weight: var(--kova-font-weight-regular) !important;
           margin-top: 8px !important;
         }
 
-        .naay-widget__welcome-message {
-          color: var(--naay-black) !important;
+        .kova-widget__welcome-message {
+          color: var(--kova-black) !important;
           font-size: 14px !important;
-          font-weight: var(--naay-font-weight-regular) !important;
+          font-weight: var(--kova-font-weight-regular) !important;
           line-height: 1.5 !important;
           margin: 0 0 24px 0 !important;
           opacity: 0.8 !important;
         }
 
-        .naay-widget__welcome-features {
+        .kova-widget__welcome-features {
           display: flex !important;
           flex-direction: column !important;
           gap: 20px !important;
           text-align: left !important;
         }
 
-        .naay-widget__feature {
+        .kova-widget__feature {
           display: flex !important;
           align-items: center !important;
           gap: 12px !important;
           padding: 16px !important;
-          background: var(--naay-white) !important;
+          background: var(--kova-white) !important;
           border-radius: 12px !important;
           border: 1px solid rgba(165, 148, 87, 0.15) !important;
-          transition: all 0.2s var(--naay-transition) !important;
+          transition: all 0.2s var(--kova-transition) !important;
           cursor: pointer !important;
         }
 
-        .naay-widget__feature:hover {
-          background: var(--naay-sage) !important;
-          border-color: var(--naay-perfect) !important;
+        .kova-widget__feature:hover {
+          background: var(--kova-sage) !important;
+          border-color: var(--kova-perfect) !important;
           transform: translateY(-2px) !important;
           box-shadow: 0 4px 12px rgba(165, 148, 87, 0.12) !important;
         }
 
-        .naay-feature-icon {
+        .kova-feature-icon {
           width: 20px !important;
           height: 20px !important;
           min-width: 20px !important;
           min-height: 20px !important;
-          color: var(--naay-perfect) !important;
+          color: var(--kova-perfect) !important;
           flex-shrink: 0 !important;
           display: block !important;
           stroke: currentColor !important;
@@ -1754,22 +1755,22 @@
           overflow: visible !important;
         }
 
-        .naay-widget__feature span {
-          color: var(--naay-text-primary) !important;
+        .kova-widget__feature span {
+          color: var(--kova-text-primary) !important;
           font-size: 13px !important;
           font-weight: 500 !important;
           line-height: 1.3 !important;
         }
 
         /* Ultra-Modern Input Area */
-        .naay-widget__input-area {
+        .kova-widget__input-area {
           padding: 24px 32px !important;
           background: rgba(255, 255, 255, 0.8) !important;
           backdrop-filter: blur(10px) !important;
           border-top: 1px solid rgba(212, 196, 184, 0.2) !important;
         }
 
-        .naay-widget__input-container {
+        .kova-widget__input-container {
           display: flex !important;
           gap: 12px !important;
           margin-bottom: 12px !important;
@@ -1777,44 +1778,44 @@
           width: 100% !important;
         }
 
-        .naay-widget__input-wrapper {
+        .kova-widget__input-wrapper {
           flex: 1 !important;
           display: flex !important;
           width: 100% !important;
         }
 
-        .naay-widget__input {
+        .kova-widget__input {
           flex: 1 !important;
           width: 100% !important;
           min-width: 0 !important;
           padding: 10px 14px !important;
           border: 1px solid rgba(212, 196, 184, 0.3) !important;
           border-radius: 28px !important;
-          font-family: var(--naay-font) !important;
+          font-family: var(--kova-font) !important;
           font-size: 13px !important;
-          font-weight: var(--naay-font-weight-regular) !important;
-          background: var(--naay-white) !important;
-          color: var(--naay-black) !important;
+          font-weight: var(--kova-font-weight-regular) !important;
+          background: var(--kova-white) !important;
+          color: var(--kova-black) !important;
           outline: none !important;
           transition: none !important;
           box-sizing: border-box !important;
         }
 
-        .naay-widget__input:focus {
-          border-color: var(--naay-perfect) !important;
+        .kova-widget__input:focus {
+          border-color: var(--kova-perfect) !important;
           box-shadow: 0 0 0 3px rgba(165, 148, 87, 0.1) !important;
           transform: translateY(-1px) !important;
         }
 
-        .naay-widget__input::placeholder {
-          color: var(--naay-delicate) !important;
+        .kova-widget__input::placeholder {
+          color: var(--kova-delicate) !important;
         }
 
-        .naay-widget__send {
+        .kova-widget__send {
           width: 44px !important;
           height: 44px !important;
-          background: var(--naay-perfect) !important;
-          color: var(--naay-white) !important;
+          background: var(--kova-perfect) !important;
+          color: var(--kova-white) !important;
           border: none !important;
           border-radius: 12px !important;
           cursor: pointer !important;
@@ -1824,29 +1825,29 @@
           justify-content: center !important;
         }
 
-        .naay-widget__send:hover {
+        .kova-widget__send:hover {
           transform: translateY(-2px) scale(1.05) !important;
-          box-shadow: var(--naay-shadow-medium) !important;
-          background: var(--naay-rich) !important;
+          box-shadow: var(--kova-shadow-medium) !important;
+          background: var(--kova-rich) !important;
         }
 
-        .naay-widget__send:disabled {
+        .kova-widget__send:disabled {
           opacity: 0.6 !important;
           cursor: not-allowed !important;
           transform: none !important;
         }
 
-        .naay-widget__send svg {
+        .kova-widget__send svg {
           width: 20px !important;
           height: 20px !important;
         }
 
         /* Reset Button */
-        .naay-widget__reset {
+        .kova-widget__reset {
           width: 36px !important;
           height: 36px !important;
           background: rgba(212, 196, 184, 0.1) !important;
-          color: var(--naay-forever) !important;
+          color: var(--kova-forever) !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
           border-radius: 8px !important;
           cursor: pointer !important;
@@ -1857,27 +1858,27 @@
           flex-shrink: 0 !important;
         }
 
-        .naay-widget__reset:hover {
+        .kova-widget__reset:hover {
           background: rgba(212, 196, 184, 0.2) !important;
           transform: translateY(-1px) !important;
           border-color: rgba(212, 196, 184, 0.4) !important;
         }
 
-        .naay-widget__reset svg {
+        .kova-widget__reset svg {
           width: 16px !important;
           height: 16px !important;
         }
 
-        .naay-widget__powered {
+        .kova-widget__powered {
           text-align: center !important;
           font-size: 12px !important;
-          font-weight: var(--naay-font-weight-medium) !important;
-          color: var(--naay-forever) !important;
+          font-weight: var(--kova-font-weight-medium) !important;
+          color: var(--kova-forever) !important;
           opacity: 0.7 !important;
         }
 
         /* Message Styles */
-        .naay-widget__message {
+        .kova-widget__message {
           margin: 12px 0 !important;
           padding: 12px 16px !important;
           border-radius: 8px !important;
@@ -1886,67 +1887,67 @@
           max-width: 85% !important;
         }
 
-        .naay-widget__message--user {
-          background: var(--naay-perfect) !important;
-          color: var(--naay-white) !important;
+        .kova-widget__message--user {
+          background: var(--kova-perfect) !important;
+          color: var(--kova-white) !important;
           margin-left: auto !important;
           border-bottom-right-radius: 6px !important;
         }
 
-        .naay-widget__message--assistant {
+        .kova-widget__message--assistant {
           background: rgba(255, 255, 255, 0.9) !important;
-          color: var(--naay-black) !important;
+          color: var(--kova-black) !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
           border-bottom-left-radius: 6px !important;
         }
 
-        .naay-widget__message .list-item {
+        .kova-widget__message .list-item {
           margin: 8px 0 !important;
           padding-left: 8px !important;
         }
 
-        .naay-widget__message .bullet-item {
+        .kova-widget__message .bullet-item {
           margin: 6px 0 !important;
           padding-left: 8px !important;
         }
 
-        .naay-widget__message strong {
+        .kova-widget__message strong {
           font-weight: 600 !important;
-          color: var(--naay-perfect) !important;
+          color: var(--kova-perfect) !important;
         }
 
         /* Typing Indicator */
-        .naay-widget__typing {
+        .kova-widget__typing {
           max-width: 75% !important;
         }
 
-        .naay-typing-indicator {
+        .kova-typing-indicator {
           display: flex !important;
           align-items: center !important;
           gap: 8px !important;
-          color: var(--naay-forever) !important;
+          color: var(--kova-forever) !important;
           font-size: 13px !important;
           font-style: italic !important;
         }
 
-        .naay-typing-dots {
+        .kova-typing-dots {
           display: flex !important;
           gap: 4px !important;
           align-items: center !important;
         }
 
-        .naay-dot {
+        .kova-dot {
           width: 6px !important;
           height: 6px !important;
-          background: var(--naay-forever) !important;
+          background: var(--kova-forever) !important;
           border-radius: 50% !important;
-          animation: naay-typing-bounce 1.4s infinite ease-in-out both !important;
+          animation: kova-typing-bounce 1.4s infinite ease-in-out both !important;
         }
 
-        .naay-dot:nth-child(1) { animation-delay: -0.32s !important; }
-        .naay-dot:nth-child(2) { animation-delay: -0.16s !important; }
+        .kova-dot:nth-child(1) { animation-delay: -0.32s !important; }
+        .kova-dot:nth-child(2) { animation-delay: -0.16s !important; }
 
-        @keyframes naay-typing-bounce {
+        @keyframes kova-typing-bounce {
           0%, 80%, 100% {
             transform: scale(0.8) !important;
             opacity: 0.6 !important;
@@ -1959,14 +1960,14 @@
 
         /* Responsive Design */
         @media (max-width: 1200px) {
-          .naay-widget__chat {
+          .kova-widget__chat {
             width: 60vw !important;
           }
         }
 
         @media (min-width: 481px) and (max-width: 768px) {
           /* Tablet responsive enhancements */
-          .naay-widget__chat {
+          .kova-widget__chat {
             width: calc(100vw - 24px) !important;
             height: calc(100vh - 120px) !important;
             left: 12px !important;
@@ -1976,77 +1977,77 @@
           }
           
           /* Widget button tablet optimization */
-          .naay-widget__button {
+          .kova-widget__button {
             width: 64px !important;
             height: 64px !important;
           }
           
-          .naay-widget__button-content {
+          .kova-widget__button-content {
             width: 22px !important;
             height: 22px !important;
           }
           
-          .naay-widget__chat-icon,
-          .naay-widget__close-icon {
+          .kova-widget__chat-icon,
+          .kova-widget__close-icon {
             width: 22px !important;
             height: 22px !important;
           }
           
           /* Chat interface tablet */
-          .naay-widget__header {
+          .kova-widget__header {
             padding: 24px 28px !important;
           }
           
-          .naay-widget__title {
+          .kova-widget__title {
             font-size: 19px !important;
           }
           
-          .naay-widget__messages {
+          .kova-widget__messages {
             padding: 20px 24px !important;
             gap: 18px !important;
           }
           
-          .naay-widget__message {
+          .kova-widget__message {
             max-width: 85% !important;
             padding: 14px 18px !important;
             font-size: 15px !important;
           }
           
           /* Welcome screen tablet */
-          .naay-widget__welcome {
+          .kova-widget__welcome {
             padding: 24px 28px !important;
           }
           
-          .naay-widget__welcome-title {
+          .kova-widget__welcome-title {
             font-size: 22px !important;
           }
           
-          .naay-widget__welcome-subtitle {
+          .kova-widget__welcome-subtitle {
             font-size: 15px !important;
           }
           
-          .naay-widget__feature {
+          .kova-widget__feature {
             padding: 16px 18px !important;
             border-radius: 16px !important;
           }
           
           /* Input area tablet */
-          .naay-widget__input-area {
+          .kova-widget__input-area {
             padding: 24px 28px !important;
           }
           
-          .naay-widget__input {
+          .kova-widget__input {
             padding: 14px 18px !important;
             font-size: 15px !important;
           }
           
-          .naay-widget__send {
+          .kova-widget__send {
             width: 48px !important;
             height: 48px !important;
           }
           
           /* Cart panel as bottom drawer on tablet */
-          .naay-cart-panel {
+          .kova-cart-panel {
             bottom: -100vh !important; /* Hidden below screen */
             left: 12px !important;
             right: auto !important;
@@ -2060,43 +2061,43 @@
             transition: bottom 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
           }
           
-          .naay-cart-panel--open {
+          .kova-cart-panel--open {
             bottom: 0 !important; /* Slide up from bottom */
           }
           
           /* Product cards tablet */
-          .naay-product-card {
+          .kova-product-card {
             min-height: 130px !important;
             padding: 18px !important;
             border-radius: 18px !important;
           }
           
-          .naay-product-card__media {
+          .kova-product-card__media {
             width: 85px !important;
             height: 85px !important;
             border-radius: 14px !important;
           }
           
-          .naay-product-card__content {
+          .kova-product-card__content {
             margin-left: 16px !important;
           }
           
-          .naay-product-card__title {
+          .kova-product-card__title {
             font-size: 16px !important;
           }
           
-          .naay-product-card__description {
+          .kova-product-card__description {
             font-size: 13px !important;
           }
           
-          .naay-product-card__add-btn {
+          .kova-product-card__add-btn {
             padding: 12px 16px !important;
             font-size: 13px !important;
             min-height: 44px !important;
             border-radius: 14px !important;
           }
           
-          .naay-widget__promotional-message {
+          .kova-widget__promotional-message {
             right: 12px !important;
             bottom: 100px !important;
             max-width: calc(100vw - 100px) !important;
@@ -2108,7 +2109,7 @@
 
         @media (max-width: 480px) {
           /* Enhanced mobile widget responsiveness */
-          .naay-widget__chat {
+          .kova-widget__chat {
             width: calc(100vw - 32px) !important;
             height: calc(100dvh - 120px) !important; /* Use dvh for better mobile support */
             left: 16px !important;
@@ -2121,7 +2122,7 @@
           }
           
           /* Widget button mobile optimization */
-          .naay-widget__button {
+          .kova-widget__button {
             width: 56px !important;
             height: 56px !important;
             box-shadow: 0 6px 20px rgba(165, 148, 87, 0.3) !important;
@@ -2131,40 +2132,40 @@
             z-index: 9999 !important;
           }
           
-          .naay-widget__button-content {
+          .kova-widget__button-content {
             width: 20px !important;
             height: 20px !important;
           }
           
-          .naay-widget__chat-icon,
-          .naay-widget__close-icon {
+          .kova-widget__chat-icon,
+          .kova-widget__close-icon {
             width: 20px !important;
             height: 20px !important;
           }
           
           /* Chat header mobile */
-          .naay-widget__header {
+          .kova-widget__header {
             padding: 20px 24px !important;
             border-bottom: 2px solid rgba(212, 196, 184, 0.15) !important;
           }
           
-          .naay-widget__title {
+          .kova-widget__title {
             font-size: 18px !important;
             line-height: 1.3 !important;
           }
           
-          .naay-widget__subtitle {
+          .kova-widget__subtitle {
             font-size: 13px !important;
             margin-top: 2px !important;
           }
           
           /* Chat messages mobile */
-          .naay-widget__messages {
+          .kova-widget__messages {
             padding: 16px 20px !important;
             gap: 20px !important;
           }
           
-          .naay-widget__message {
+          .kova-widget__message {
             max-width: 90% !important;
             padding: 12px 16px !important;
             font-size: 14px !important;
@@ -2172,52 +2173,52 @@
           }
           
           /* Welcome screen mobile */
-          .naay-widget__welcome {
+          .kova-widget__welcome {
             padding: 20px 24px !important;
           }
           
-          .naay-widget__welcome-title {
+          .kova-widget__welcome-title {
             font-size: 20px !important;
             margin-bottom: 8px !important;
           }
           
-          .naay-widget__welcome-subtitle {
+          .kova-widget__welcome-subtitle {
             font-size: 14px !important;
             margin-bottom: 24px !important;
           }
           
-          .naay-widget__welcome-features {
+          .kova-widget__welcome-features {
             gap: 16px !important;
           }
           
-          .naay-widget__feature {
+          .kova-widget__feature {
             padding: 14px 16px !important;
             border-radius: 14px !important;
           }
           
-          .naay-widget__feature span {
+          .kova-widget__feature span {
             font-size: 14px !important;
             line-height: 1.4 !important;
           }
           
           /* Input area mobile */
-          .naay-widget__input-area {
+          .kova-widget__input-area {
             padding: 20px 24px !important;
           }
           
-          .naay-widget__input-container {
+          .kova-widget__input-container {
             gap: 10px !important;
             margin-bottom: 8px !important;
             padding: 0 !important;
           }
           
-          .naay-widget__input {
+          .kova-widget__input {
             padding: 12px 16px !important;
             font-size: 16px !important; /* Prevent iOS zoom */
             border-radius: 20px !important;
           }
           
-          .naay-widget__send {
+          .kova-widget__send {
             width: 40px !important;
             height: 40px !important;
             border-radius: 20px !important;
@@ -2225,9 +2226,9 @@
           }
           
           /* Cart panel mobile positioning - maintain original design, only adjust position */
-          .naay-widget .naay-cart-panel,
-          html .naay-widget .naay-cart-panel,
-          .naay-cart-panel {
+          .kova-widget .kova-cart-panel,
+          html .kova-widget .kova-cart-panel,
+          .kova-cart-panel {
             position: fixed !important;
             top: 50% !important;
             left: 50% !important;
@@ -2251,16 +2252,16 @@
             box-shadow: 0 8px 32px rgba(207, 121, 94, 0.15) !important;
           }
           
-          .naay-widget .naay-cart-panel--open,
-          html .naay-widget .naay-cart-panel--open,
-          .naay-cart-panel--open {
+          .kova-widget .kova-cart-panel--open,
+          html .kova-widget .kova-cart-panel--open,
+          .kova-cart-panel--open {
             transform: translate(-50%, -50%) scale(1) !important;
             opacity: 1 !important;
             visibility: visible !important;
           }
           
           /* Add backdrop when cart is open on mobile */
-          .naay-cart-panel--open::before {
+          .kova-cart-panel--open::before {
             content: '' !important;
             position: fixed !important;
             top: 0 !important;
@@ -2273,7 +2274,7 @@
             z-index: -1 !important;
           }
           
-          .naay-widget__promotional-message {
+          .kova-widget__promotional-message {
             right: 8px !important;
             bottom: 88px !important;
             max-width: calc(100vw - 88px) !important;
@@ -2283,59 +2284,59 @@
             box-shadow: 0 8px 24px rgba(165, 148, 87, 0.2) !important;
           }
           
-          .naay-widget__promotional-text {
+          .kova-widget__promotional-text {
             font-size: 13px !important;
             line-height: 1.4 !important;
           }
           
-          .naay-widget__promotional-subtitle {
+          .kova-widget__promotional-subtitle {
             font-size: 11px !important;
           }
           
           /* Enhanced scrolling for mobile */
-          .naay-widget__messages {
+          .kova-widget__messages {
             -webkit-overflow-scrolling: touch !important;
             scroll-behavior: smooth !important;
           }
           
           /* Better touch targets for mobile */
-          .naay-widget__feature {
+          .kova-widget__feature {
             min-height: 48px !important;
             touch-action: manipulation !important;
           }
           
-          .naay-widget__send {
+          .kova-widget__send {
             touch-action: manipulation !important;
           }
           
           /* Loading states mobile */
-          .naay-widget__typing {
+          .kova-widget__typing {
             padding: 8px 16px !important;
             margin: 8px 0 !important;
           }
           
           /* Error states mobile */
-          .naay-widget__error {
+          .kova-widget__error {
             padding: 12px 16px !important;
             margin: 8px 0 !important;
             font-size: 13px !important;
             border-radius: 12px !important;
           }
 
-          .naay-widget__button {
+          .kova-widget__button {
             width: 60px !important;
             height: 60px !important;
           }
           
           /* Mobile optimizations for cart panel header */
-          .naay-cart-panel__header {
+          .kova-cart-panel__header {
             padding: 20px 24px !important;
             border-bottom: 2px solid rgba(212, 196, 184, 0.2) !important;
             position: relative !important;
           }
           
           /* Add drag handle for mobile */
-          .naay-cart-panel__header::before {
+          .kova-cart-panel__header::before {
             content: '' !important;
             position: absolute !important;
             top: -12px !important;
@@ -2347,33 +2348,33 @@
             border-radius: 2px !important;
           }
           
-          .naay-cart-panel__close {
+          .kova-cart-panel__close {
             padding: 12px !important;
             min-width: 44px !important;
             min-height: 44px !important;
           }
           
           /* Mobile cart items optimization */
-          .naay-cart-panel__item {
+          .kova-cart-panel__item {
             padding: 20px !important;
             margin-bottom: 16px !important;
           }
           
-          .naay-cart-panel__item-image-container {
+          .kova-cart-panel__item-image-container {
             width: 100px !important;
             height: 100px !important;
           }
           
           /* Mobile checkout button */
-          .naay-cart-panel__checkout {
+          .kova-cart-panel__checkout {
             padding: 20px 24px !important;
             font-size: 18px !important;
-            font-weight: var(--naay-font-weight-bold) !important;
+            font-weight: var(--kova-font-weight-bold) !important;
             min-height: 56px !important;
             border-radius: 16px !important;
           }
 
-          .naay-widget__feature {
+          .kova-widget__feature {
             padding: 20px !important;
             flex-direction: row !important;
             align-items: center !important;
@@ -2382,50 +2383,50 @@
             border-radius: 16px !important;
           }
 
-          .naay-widget__feature span {
+          .kova-widget__feature span {
             font-size: 15px !important;
             line-height: 1.4 !important;
             font-weight: 500 !important;
           }
           
-          .naay-feature-icon {
+          .kova-feature-icon {
             width: 24px !important;
             height: 24px !important;
             min-width: 24px !important;
             min-height: 24px !important;
           }
 
-          .naay-widget__welcome-title {
+          .kova-widget__welcome-title {
             font-size: 18px !important;
           }
 
-          .naay-widget__welcome-message {
+          .kova-widget__welcome-message {
             font-size: 14px !important;
           }
 
-          .naay-widget__input {
+          .kova-widget__input {
             font-size: 16px !important;
           }
 
-          .naay-widget__input-container {
+          .kova-widget__input-container {
             padding: 16px !important;
             width: 100% !important;
           }
 
-          .naay-widget__input-wrapper {
+          .kova-widget__input-wrapper {
             flex: 1 !important;
             width: 100% !important;
           }
         }
 
         @media (max-width: 360px) {
-          .naay-widget__chat {
+          .kova-widget__chat {
             width: calc(100vw - 24px) !important;
             left: 12px !important;
             max-width: 360px !important;
           }
           
-          .naay-widget__promotional-message {
+          .kova-widget__promotional-message {
             right: 6px !important;
             bottom: 82px !important;
             max-width: calc(100vw - 82px) !important;
@@ -2433,94 +2434,94 @@
             padding: 12px 16px !important;
           }
 
-          .naay-widget__button {
+          .kova-widget__button {
             width: 56px !important;
             height: 56px !important;
           }
 
-          .naay-widget__feature {
+          .kova-widget__feature {
             padding: 18px !important;
             min-height: 60px !important;
             border-radius: 14px !important;
           }
           
-          .naay-widget__feature span {
+          .kova-widget__feature span {
             font-size: 14px !important;
             font-weight: 500 !important;
           }
           
-          .naay-feature-icon {
+          .kova-feature-icon {
             width: 22px !important;
             height: 22px !important;
           }
           
           /* Mobile input area optimizations */
-          .naay-widget__input-area {
+          .kova-widget__input-area {
             padding: 20px !important;
           }
           
-          .naay-widget__input {
+          .kova-widget__input {
             padding: 16px 20px !important;
             font-size: 16px !important; /* Prevents zoom on iOS */
             border-radius: 14px !important;
           }
           
-          .naay-widget__send-btn {
+          .kova-widget__send-btn {
             width: 48px !important;
             height: 48px !important;
             border-radius: 14px !important;
           }
           
           /* Mobile message optimizations */
-          .naay-widget__message {
+          .kova-widget__message {
             font-size: 15px !important;
             line-height: 1.5 !important;
           }
           
           /* Mobile cart toggle button */
-          .naay-widget__cart-toggle-btn {
+          .kova-widget__cart-toggle-btn {
             padding: 10px !important;
             min-width: 44px !important;
             min-height: 44px !important;
           }
           
           /* Add safe area for notched devices */
-          .naay-cart-panel {
+          .kova-cart-panel {
             padding-bottom: env(safe-area-inset-bottom) !important;
           }
           
           /* Improve touch targets */
-          .naay-cart-panel__quantity-btn,
-          .naay-cart-panel__item-remove {
+          .kova-cart-panel__quantity-btn,
+          .kova-cart-panel__item-remove {
             min-width: 44px !important;
             min-height: 44px !important;
           }
           
           /* Optimize scrolling for mobile */
-          .naay-cart-panel__items {
+          .kova-cart-panel__items {
             -webkit-overflow-scrolling: touch !important;
           }
           
-          .naay-widget__messages {
+          .kova-widget__messages {
             -webkit-overflow-scrolling: touch !important;
           }
 
-          .naay-widget__promotional-text {
+          .kova-widget__promotional-text {
             font-size: 13px !important;
           }
 
-          .naay-widget__promotional-subtitle {
+          .kova-widget__promotional-subtitle {
             font-size: 11px !important;
           }
 
-          .naay-widget__welcome-title {
+          .kova-widget__welcome-title {
             font-size: 16px !important;
           }
         }
 
         /* Accessibility & Motion */
         @media (prefers-reduced-motion: reduce) {
-          .naay-widget * {
+          .kova-widget * {
             animation-duration: 0.01ms !important;
             animation-iteration-count: 1 !important;
             transition-duration: 0.01ms !important;
@@ -2528,16 +2529,16 @@
         }
 
         @media (prefers-color-scheme: dark) {
-          .naay-widget__chat {
+          .kova-widget__chat {
             background: rgba(26, 26, 26, 0.95) !important;
             border-color: rgba(212, 196, 184, 0.1) !important;
           }
           
-          .naay-widget__welcome-message {
-            color: var(--naay-sage) !important;
+          .kova-widget__welcome-message {
+            color: var(--kova-sage) !important;
           }
           
-          .naay-widget__feature {
+          .kova-widget__feature {
             background: rgba(255, 255, 255, 0.05) !important;
             border-color: rgba(212, 196, 184, 0.1) !important;
           }
@@ -2546,7 +2547,7 @@
         /* ===== NEW LAYOUT STYLES ===== */
         
         /* Main Widget Layout Container */
-        .naay-widget-layout {
+        .kova-widget-layout {
           display: flex !important;
           align-items: end !important;
           gap: 0 !important;
@@ -2554,7 +2555,7 @@
         }
 
         /* Cart Toggle Button - Vertical Left */
-        .naay-cart-toggle {
+        .kova-cart-toggle {
           width: 60px !important;
           height: 620px !important;
           background: rgba(248, 249, 248, 0.95) !important;
@@ -2562,15 +2563,15 @@
           -webkit-backdrop-filter: blur(20px) !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
           border-radius: 12px 0 0 12px !important;
-          color: var(--naay-perfect) !important;
+          color: var(--kova-perfect) !important;
           cursor: pointer !important;
-          transition: all var(--naay-duration) var(--naay-transition) !important;
+          transition: all var(--kova-duration) var(--kova-transition) !important;
           display: flex !important;
           flex-direction: column !important;
           align-items: center !important;
           justify-content: center !important;
           gap: 8px !important;
-          box-shadow: var(--naay-shadow-strong) !important;
+          box-shadow: var(--kova-shadow-strong) !important;
           position: absolute !important;
           left: -60px !important;
           bottom: 0 !important;
@@ -2583,45 +2584,45 @@
         }
 
         /* Show cart button only when widget is open */
-        .naay-widget--open .naay-cart-toggle {
+        .kova-widget--open .kova-cart-toggle {
           opacity: 1 !important;
           visibility: visible !important;
           pointer-events: auto !important;
         }
 
-        .naay-cart-toggle:hover {
+        .kova-cart-toggle:hover {
           transform: translateX(-2px) !important;
           box-shadow: 0 12px 28px rgba(207, 121, 94, 0.35), 0 4px 12px rgba(207, 121, 94, 0.2) !important;
           background: rgba(255, 255, 255, 0.98) !important;
         }
 
-        .naay-cart-toggle::before {
+        .kova-cart-toggle::before {
           content: '' !important;
           position: absolute !important;
           inset: 0 !important;
           border-radius: inherit !important;
-          background: var(--naay-perfect) !important;
+          background: var(--kova-perfect) !important;
           opacity: 0.1 !important;
-          animation: naayPulse 3s infinite !important;
+          animation: kovaPulse 3s infinite !important;
           z-index: -1 !important;
         }
 
-        .naay-cart-panel--open ~ .naay-cart-toggle::before {
+        .kova-cart-panel--open ~ .kova-cart-toggle::before {
           animation: none !important;
         }
 
-        .naay-cart-toggle__icon {
+        .kova-cart-toggle__icon {
           width: 24px !important;
           height: 24px !important;
           stroke-width: 2 !important;
         }
 
-        .naay-cart-toggle__badge {
+        .kova-cart-toggle__badge {
           position: absolute !important;
           top: 20px !important;
           right: -6px !important;
-          background: var(--naay-perfect) !important;
-          color: var(--naay-white) !important;
+          background: var(--kova-perfect) !important;
+          color: var(--kova-white) !important;
           border-radius: 50% !important;
           width: 20px !important;
           height: 20px !important;
@@ -2630,13 +2631,13 @@
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
-          border: 2px solid var(--naay-white) !important;
-          box-shadow: var(--naay-shadow-medium) !important;
-          transition: all 0.2s var(--naay-transition) !important;
+          border: 2px solid var(--kova-white) !important;
+          box-shadow: var(--kova-shadow-medium) !important;
+          transition: all 0.2s var(--kova-transition) !important;
         }
 
         /* Cart Panel - Left extension of the chat widget */
-        .naay-cart-panel {
+        .kova-cart-panel {
           position: absolute !important;
           bottom: 88px !important; /* Same as chat widget */
           right: calc(50vw - 100px) !important; /* Start closer, only 100px slide distance */
@@ -2656,10 +2657,10 @@
           visibility: hidden !important;
           pointer-events: none !important;
           z-index: 999997 !important;
-          transition: all 0.4s var(--naay-transition) !important;
+          transition: all 0.4s var(--kova-transition) !important;
         }
 
-        .naay-cart-panel--open {
+        .kova-cart-panel--open {
           right: 50vw !important; /* Slide from right to left, touching chat left edge */
           opacity: 1 !important;
           visibility: visible !important;
@@ -2667,16 +2668,16 @@
         }
 
         /* Cart panel positioning for bottom-right widget (default) */
-        .naay-widget--bottom-right .naay-cart-panel {
+        .kova-widget--bottom-right .kova-cart-panel {
           right: calc(50vw - 100px) !important; /* Start closer for shorter slide */
         }
 
-        .naay-widget--bottom-right .naay-cart-panel--open {
+        .kova-widget--bottom-right .kova-cart-panel--open {
           right: 50vw !important; /* Short 100px slide from right to left */
         }
 
         /* Cart panel positioning for bottom-left widget */
-        .naay-widget--bottom-left .naay-cart-panel {
+        .kova-widget--bottom-left .kova-cart-panel {
           left: calc(50vw + 20px) !important; /* Hidden to left of chat widget */
           right: auto !important;
           border-radius: 0 16px 16px 0 !important; /* Rounded only on right side */
@@ -2685,27 +2686,27 @@
           box-shadow: 4px 0 16px rgba(207, 121, 94, 0.1) !important; /* Shadow only on right */
         }
 
-        .naay-widget--bottom-left .naay-cart-panel--open {
+        .kova-widget--bottom-left .kova-cart-panel--open {
           left: 50vw !important; /* Position to right of chat widget */
           right: auto !important;
         }
 
         /* Connect chat widget with cart when cart is open */
-        .naay-cart-panel--open + .naay-chat-container .naay-widget__chat {
+        .kova-cart-panel--open + .kova-chat-container .kova-widget__chat {
           border-radius: 0 16px 16px 0 !important; /* Remove left border radius */
           border-left: none !important; /* Remove left border to connect with cart */
         }
         
-        .naay-widget--bottom-left .naay-cart-panel--open + .naay-chat-container .naay-widget__chat {
+        .kova-widget--bottom-left .kova-cart-panel--open + .kova-chat-container .kova-widget__chat {
           border-radius: 0 16px 16px 0 !important; /* Remove left border radius */
           border-left: none !important; /* Remove left border to connect with cart */
         }
 
         /* Cart Panel Header */
-        .naay-cart-panel__header {
+        .kova-cart-panel__header {
           padding: 16px 20px !important;
           background: transparent !important;
-          color: var(--naay-black) !important;
+          color: var(--kova-black) !important;
           display: flex !important;
           align-items: center !important;
           justify-content: space-between !important;
@@ -2714,43 +2715,43 @@
           flex-shrink: 0 !important;
         }
 
-        .naay-cart-panel__title {
+        .kova-cart-panel__title {
           font-size: 14px !important;
-          font-weight: var(--naay-font-weight-semibold) !important;
+          font-weight: var(--kova-font-weight-semibold) !important;
           margin: 0 !important;
           display: flex !important;
           align-items: center !important;
           gap: 8px !important;
         }
 
-        .naay-cart-panel__icon {
+        .kova-cart-panel__icon {
           width: 16px !important;
           height: 16px !important;
-          color: var(--naay-perfect) !important;
+          color: var(--kova-perfect) !important;
         }
 
-        .naay-cart-panel__close {
+        .kova-cart-panel__close {
           background: rgba(207, 121, 94, 0.1) !important;
           border: none !important;
           border-radius: 8px !important;
           padding: 8px !important;
-          color: var(--naay-perfect) !important;
+          color: var(--kova-perfect) !important;
           cursor: pointer !important;
-          transition: all 0.2s var(--naay-transition) !important;
+          transition: all 0.2s var(--kova-transition) !important;
         }
 
-        .naay-cart-panel__close:hover {
+        .kova-cart-panel__close:hover {
           background: rgba(207, 121, 94, 0.15) !important;
           transform: scale(1.05) !important;
         }
 
-        .naay-cart-panel__close svg {
+        .kova-cart-panel__close svg {
           width: 16px !important;
           height: 16px !important;
         }
 
         /* Cart Panel Content */
-        .naay-cart-panel__content {
+        .kova-cart-panel__content {
           flex: 1 !important;
           overflow-y: auto !important;
           padding: 0 !important;
@@ -2763,12 +2764,12 @@
           -ms-overflow-style: none !important;
         }
         
-        .naay-cart-panel__content::-webkit-scrollbar {
+        .kova-cart-panel__content::-webkit-scrollbar {
           display: none !important;
         }
 
         /* Empty State */
-        .naay-cart-panel__empty {
+        .kova-cart-panel__empty {
           display: flex !important;
           flex-direction: column !important;
           align-items: center !important;
@@ -2779,29 +2780,29 @@
           margin-top: 20px !important;
         }
 
-        .naay-cart-panel__empty-icon {
+        .kova-cart-panel__empty-icon {
           width: 48px !important;
           height: 48px !important;
-          color: var(--naay-perfect) !important;
+          color: var(--kova-perfect) !important;
           opacity: 0.6 !important;
           margin-bottom: 16px !important;
         }
 
-        .naay-cart-panel__empty-text {
+        .kova-cart-panel__empty-text {
           font-size: 16px !important;
-          font-weight: var(--naay-font-weight-semibold) !important;
-          color: var(--naay-text-primary) !important;
+          font-weight: var(--kova-font-weight-semibold) !important;
+          color: var(--kova-text-primary) !important;
           margin-bottom: 8px !important;
         }
 
-        .naay-cart-panel__empty-subtitle {
+        .kova-cart-panel__empty-subtitle {
           font-size: 14px !important;
-          color: var(--naay-text-secondary) !important;
+          color: var(--kova-text-secondary) !important;
         }
 
         /* FORCE HIDE empty state when there are items */
-        .naay-cart-panel__items--visible ~ .naay-cart-panel__empty,
-        .naay-cart-panel__empty[style*="display: none"] {
+        .kova-cart-panel__items--visible ~ .kova-cart-panel__empty,
+        .kova-cart-panel__empty[style*="display: none"] {
           display: none !important;
           visibility: hidden !important;
           opacity: 0 !important;
@@ -2810,7 +2811,7 @@
         }
 
         /* Items Container - Enhanced scrolling */
-        .naay-cart-panel__items {
+        .kova-cart-panel__items {
           padding: 20px 24px 0 24px !important;
           flex: 1 !important;
           overflow-y: auto !important;
@@ -2821,7 +2822,7 @@
           /* Enhanced scrolling properties */
           scroll-behavior: smooth !important;
           scrollbar-width: thin !important;
-          scrollbar-color: var(--naay-perfect) rgba(212, 196, 184, 0.2) !important;
+          scrollbar-color: var(--kova-perfect) rgba(212, 196, 184, 0.2) !important;
           /* Max height to ensure scroll is visible */
           max-height: calc(100% - 80px) !important;
           /* Better scroll performance */
@@ -2829,27 +2830,27 @@
         }
 
         /* Custom scrollbar for webkit browsers */
-        .naay-cart-panel__items::-webkit-scrollbar {
+        .kova-cart-panel__items::-webkit-scrollbar {
           width: 6px !important;
         }
 
-        .naay-cart-panel__items::-webkit-scrollbar-track {
+        .kova-cart-panel__items::-webkit-scrollbar-track {
           background: rgba(212, 196, 184, 0.1) !important;
           border-radius: 3px !important;
         }
 
-        .naay-cart-panel__items::-webkit-scrollbar-thumb {
-          background: var(--naay-perfect) !important;
+        .kova-cart-panel__items::-webkit-scrollbar-thumb {
+          background: var(--kova-perfect) !important;
           border-radius: 3px !important;
           transition: background 0.2s ease !important;
         }
 
-        .naay-cart-panel__items::-webkit-scrollbar-thumb:hover {
-          background: var(--naay-rich) !important;
+        .kova-cart-panel__items::-webkit-scrollbar-thumb:hover {
+          background: var(--kova-rich) !important;
         }
 
         /* Scroll shadow indicators */
-        .naay-cart-panel__items::before {
+        .kova-cart-panel__items::before {
           content: '' !important;
           position: sticky !important;
           top: 0 !important;
@@ -2860,7 +2861,7 @@
           margin: -20px -24px 0 -24px !important;
         }
 
-        .naay-cart-panel__items::after {
+        .kova-cart-panel__items::after {
           content: '' !important;
           position: sticky !important;
           bottom: 0 !important;
@@ -2871,11 +2872,11 @@
           margin: 0 -24px -20px -24px !important;
         }
 
-        .naay-cart-panel__items--visible {
-          animation: naay-fade-in 0.3s ease-in-out !important;
+        .kova-cart-panel__items--visible {
+          animation: kova-fade-in 0.3s ease-in-out !important;
         }
 
-        @keyframes naay-fade-in {
+        @keyframes kova-fade-in {
           from {
             opacity: 0 !important;
             transform: translateY(10px) !important;
@@ -2887,37 +2888,37 @@
         }
         
         /* FIXED: Improved cart item animations */
-        .naay-cart-panel__item {
+        .kova-cart-panel__item {
           opacity: 1 !important;
           transform: translateY(0) !important;
           transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
           will-change: transform, opacity !important;
         }
         
-        .naay-cart-panel__item--removing {
+        .kova-cart-panel__item--removing {
           opacity: 0 !important;
           transform: translateX(-100%) scale(0.8) !important;
           pointer-events: none !important;
         }
         
-        .naay-cart-panel__quantity-btn {
+        .kova-cart-panel__quantity-btn {
           transition: all 0.2s ease !important;
         }
         
-        .naay-cart-panel__quantity-btn:active {
+        .kova-cart-panel__quantity-btn:active {
           transform: scale(0.95) !important;
         }
         
-        .naay-cart-panel__quantity-value {
+        .kova-cart-panel__quantity-value {
           transition: transform 0.2s ease !important;
         }
         
-        .naay-cart-panel__quantity-value--updating {
+        .kova-cart-panel__quantity-value--updating {
           transform: scale(1.1) !important;
         }
 
         /* Cart Loading */
-        .naay-cart-loading {
+        .kova-cart-loading {
           display: flex !important;
           justify-content: center !important;
           align-items: center !important;
@@ -2925,32 +2926,32 @@
           flex: 1 !important;
         }
 
-        .naay-cart-loading__content {
+        .kova-cart-loading__content {
           display: flex !important;
           flex-direction: column !important;
           align-items: center !important;
           gap: 12px !important;
-          color: var(--naay-perfect) !important;
+          color: var(--kova-perfect) !important;
         }
 
-        .naay-cart-loading svg {
+        .kova-cart-loading svg {
           width: 32px !important;
           height: 32px !important;
-          color: var(--naay-perfect) !important;
+          color: var(--kova-perfect) !important;
         }
 
-        .naay-cart-loading span {
+        .kova-cart-loading span {
           font-size: 14px !important;
-          font-weight: var(--naay-font-weight-medium) !important;
+          font-weight: var(--kova-font-weight-medium) !important;
           opacity: 0.8 !important;
         }
 
         /* Cart Item */
-        .naay-cart-panel__item {
+        .kova-cart-panel__item {
           display: flex !important;
           gap: 16px !important;
           padding: 16px !important;
-          background: var(--naay-white) !important;
+          background: var(--kova-white) !important;
           border-radius: 12px !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
           box-shadow: 0 2px 8px rgba(165, 148, 87, 0.08) !important;
@@ -2959,28 +2960,28 @@
           transform-origin: center !important;
         }
         
-        .naay-cart-panel__item:hover {
+        .kova-cart-panel__item:hover {
           border-color: rgba(165, 148, 87, 0.3) !important;
           transform: translateY(-1px) !important;
           box-shadow: 0 4px 12px rgba(165, 148, 87, 0.12) !important;
         }
 
         /* Item Image */
-        .naay-cart-panel__item-image-container {
+        .kova-cart-panel__item-image-container {
           flex-shrink: 0 !important;
           width: 80px !important;
           height: 80px !important;
         }
 
-        .naay-cart-panel__item-image {
+        .kova-cart-panel__item-image {
           width: 100% !important;
           height: 100% !important;
           object-fit: cover !important;
           border-radius: 8px !important;
-          background: var(--naay-surface) !important;
+          background: var(--kova-surface) !important;
         }
 
-        .naay-cart-panel__item-image--placeholder {
+        .kova-cart-panel__item-image--placeholder {
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
@@ -2988,27 +2989,27 @@
           color: rgba(165, 148, 87, 0.5) !important;
         }
 
-        .naay-cart-panel__item-image--placeholder svg {
+        .kova-cart-panel__item-image--placeholder svg {
           width: 32px !important;
           height: 32px !important;
         }
 
         /* Item Details */
-        .naay-cart-panel__item-details {
+        .kova-cart-panel__item-details {
           flex: 1 !important;
           display: flex !important;
           flex-direction: column !important;
           justify-content: space-between !important;
         }
 
-        .naay-cart-panel__item-info {
+        .kova-cart-panel__item-info {
           margin-bottom: 12px !important;
         }
 
-        .naay-cart-panel__item-title {
+        .kova-cart-panel__item-title {
           font-size: 14px !important;
-          font-weight: var(--naay-font-weight-semibold) !important;
-          color: var(--naay-text-primary) !important;
+          font-weight: var(--kova-font-weight-semibold) !important;
+          color: var(--kova-text-primary) !important;
           margin: 0 0 4px 0 !important;
           line-height: 1.3 !important;
           display: -webkit-box !important;
@@ -3017,39 +3018,39 @@
           overflow: hidden !important;
         }
 
-        .naay-cart-panel__item-variant {
+        .kova-cart-panel__item-variant {
           font-size: 12px !important;
-          color: var(--naay-text-secondary) !important;
+          color: var(--kova-text-secondary) !important;
           margin: 0 0 8px 0 !important;
           opacity: 0.8 !important;
         }
 
-        .naay-cart-panel__item-price-info {
+        .kova-cart-panel__item-price-info {
           display: flex !important;
           align-items: center !important;
           gap: 8px !important;
         }
 
-        .naay-cart-panel__item-unit-price {
+        .kova-cart-panel__item-unit-price {
           font-size: 12px !important;
-          color: var(--naay-text-secondary) !important;
+          color: var(--kova-text-secondary) !important;
         }
 
-        .naay-cart-panel__item-total-price {
+        .kova-cart-panel__item-total-price {
           font-size: 16px !important;
-          font-weight: var(--naay-font-weight-bold) !important;
-          color: var(--naay-perfect) !important;
+          font-weight: var(--kova-font-weight-bold) !important;
+          color: var(--kova-perfect) !important;
         }
 
         /* Item Controls */
-        .naay-cart-panel__item-controls {
+        .kova-cart-panel__item-controls {
           display: flex !important;
           align-items: center !important;
           justify-content: space-between !important;
           gap: 12px !important;
         }
 
-        .naay-cart-panel__item-quantity {
+        .kova-cart-panel__item-quantity {
           display: flex !important;
           align-items: center !important;
           gap: 8px !important;
@@ -3058,63 +3059,63 @@
           padding: 4px !important;
         }
 
-        .naay-cart-panel__quantity-btn {
+        .kova-cart-panel__quantity-btn {
           width: 28px !important;
           height: 28px !important;
           border-radius: 6px !important;
           border: none !important;
-          background: var(--naay-perfect) !important;
-          color: var(--naay-white) !important;
+          background: var(--kova-perfect) !important;
+          color: var(--kova-white) !important;
           cursor: pointer !important;
-          transition: all 0.2s var(--naay-transition) !important;
+          transition: all 0.2s var(--kova-transition) !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
         }
 
-        .naay-cart-panel__quantity-btn:hover {
-          background: var(--naay-rich) !important;
+        .kova-cart-panel__quantity-btn:hover {
+          background: var(--kova-rich) !important;
           transform: scale(1.1) !important;
         }
 
-        .naay-cart-panel__quantity-btn svg {
+        .kova-cart-panel__quantity-btn svg {
           width: 14px !important;
           height: 14px !important;
         }
 
-        .naay-cart-panel__quantity-value {
+        .kova-cart-panel__quantity-value {
           font-size: 14px !important;
-          font-weight: var(--naay-font-weight-semibold) !important;
-          color: var(--naay-text-primary) !important;
+          font-weight: var(--kova-font-weight-semibold) !important;
+          color: var(--kova-text-primary) !important;
           min-width: 20px !important;
           text-align: center !important;
         }
 
-        .naay-cart-panel__item-remove {
+        .kova-cart-panel__item-remove {
           background: rgba(220, 53, 69, 0.1) !important;
           border: none !important;
           border-radius: 6px !important;
           padding: 6px !important;
           color: #dc3545 !important;
           cursor: pointer !important;
-          transition: all 0.2s var(--naay-transition) !important;
+          transition: all 0.2s var(--kova-transition) !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
         }
 
-        .naay-cart-panel__item-remove:hover {
+        .kova-cart-panel__item-remove:hover {
           background: rgba(220, 53, 69, 0.2) !important;
           transform: scale(1.1) !important;
         }
 
-        .naay-cart-panel__item-remove svg {
+        .kova-cart-panel__item-remove svg {
           width: 14px !important;
           height: 14px !important;
         }
 
         /* Cart Panel Footer */
-        .naay-cart-panel__footer {
+        .kova-cart-panel__footer {
           padding: 16px 20px !important;
           background: rgba(248, 249, 248, 0.98) !important;
           border-top: 1px solid rgba(212, 196, 184, 0.2) !important;
@@ -3126,7 +3127,7 @@
           flex-shrink: 0 !important;
         }
 
-        .naay-cart-panel__total {
+        .kova-cart-panel__total {
           display: flex !important;
           justify-content: space-between !important;
           align-items: center !important;
@@ -3135,28 +3136,28 @@
           border-top: 1px solid rgba(212, 196, 184, 0.2) !important;
         }
 
-        .naay-cart-panel__total-label {
+        .kova-cart-panel__total-label {
           font-size: 16px !important;
-          font-weight: var(--naay-font-weight-semibold) !important;
-          color: var(--naay-text-primary) !important;
+          font-weight: var(--kova-font-weight-semibold) !important;
+          color: var(--kova-text-primary) !important;
         }
 
-        .naay-cart-panel__total-price {
+        .kova-cart-panel__total-price {
           font-size: 20px !important;
-          font-weight: var(--naay-font-weight-bold) !important;
-          color: var(--naay-perfect) !important;
+          font-weight: var(--kova-font-weight-bold) !important;
+          color: var(--kova-perfect) !important;
         }
 
         /* Checkout Button - Black Background */
-        .naay-cart-panel__checkout {
+        .kova-cart-panel__checkout {
           width: 100% !important;
           background: #000000 !important;
-          color: var(--naay-white) !important;
+          color: var(--kova-white) !important;
           border: none !important;
           border-radius: 12px !important;
           padding: 16px 24px !important;
           font-size: 16px !important;
-          font-weight: var(--naay-font-weight-bold) !important;
+          font-weight: var(--kova-font-weight-bold) !important;
           cursor: pointer !important;
           transition: none !important;
           display: flex !important;
@@ -3167,19 +3168,19 @@
           letter-spacing: 0.5px !important;
         }
 
-        .naay-cart-panel__checkout:hover {
+        .kova-cart-panel__checkout:hover {
           background: #333333 !important;
           transform: translateY(-2px) !important;
           box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
         }
 
-        .naay-cart-panel__checkout svg {
+        .kova-cart-panel__checkout svg {
           width: 16px !important;
           height: 16px !important;
         }
 
         /* Chat Container positioning */
-        .naay-chat-container {
+        .kova-chat-container {
           position: relative !important;
           order: 2 !important;
           margin-left: 0 !important;
@@ -3187,7 +3188,7 @@
 
         /* Responsive Design for larger tablets - exclude mobile */
         @media (min-width: 481px) and (max-width: 1024px) {
-          .naay-cart-panel {
+          .kova-cart-panel {
             right: 380px !important; /* Closer to chat on smaller screens */
             width: 350px !important;
             height: 520px !important;
@@ -3196,18 +3197,18 @@
 
         /* Responsive Design - Tablet only (not mobile) */
         @media (min-width: 481px) and (max-width: 768px) {
-          .naay-widget {
+          .kova-widget {
             bottom: 10px !important;
             right: 10px !important;
           }
           
-          .naay-cart-panel {
+          .kova-cart-panel {
             right: auto !important;
             width: 300px !important;
             height: calc(100vh - 120px) !important;
           }
           
-          .naay-cart-toggle {
+          .kova-cart-toggle {
             width: 50px !important;
             height: 400px !important;
             left: -50px !important;
@@ -3216,11 +3217,11 @@
             pointer-events: none !important;
           }
           
-          .naay-cart-panel--open {
+          .kova-cart-panel--open {
             right: 60vw !important; /* Position to left of chat widget */
           }
           
-          .naay-widget--open .naay-cart-toggle {
+          .kova-widget--open .kova-cart-toggle {
             opacity: 1 !important;
             visibility: visible !important;
             pointer-events: auto !important;
@@ -3228,14 +3229,14 @@
         }
 
         @media (max-width: 480px) {
-          .naay-widget {
+          .kova-widget {
             bottom: 5px !important;
             right: 5px !important;
           }
           
           /* Cart panel uses centered modal on mobile (configured above) */
           
-          .naay-cart-toggle {
+          .kova-cart-toggle {
             width: 45px !important;
             height: 350px !important;
             left: -45px !important;
@@ -3244,37 +3245,37 @@
             pointer-events: none !important;
           }
           
-          .naay-widget--open .naay-cart-toggle {
+          .kova-widget--open .kova-cart-toggle {
             opacity: 1 !important;
             visibility: visible !important;
             pointer-events: auto !important;
           }
           
-          .naay-cart-toggle__icon {
+          .kova-cart-toggle__icon {
             width: 18px !important;
             height: 18px !important;
           }
 
           /* Mobile Product Recommendations */
           /* Enhanced mobile product cards */
-          .naay-product-card {
+          .kova-product-card {
             min-height: 140px !important;
             padding: 16px !important;
             margin-bottom: 12px !important;
             border-radius: 16px !important;
             box-shadow: 0 4px 16px rgba(165, 148, 87, 0.12) !important;
-            background: var(--naay-white) !important;
+            background: var(--kova-white) !important;
             border: 1px solid rgba(212, 196, 184, 0.25) !important;
             transition: all 0.3s ease !important;
           }
           
-          .naay-product-card:hover {
+          .kova-product-card:hover {
             transform: translateY(-2px) !important;
             box-shadow: 0 8px 24px rgba(165, 148, 87, 0.18) !important;
             border-color: rgba(165, 148, 87, 0.4) !important;
           }
           
-          .naay-product-card__media {
+          .kova-product-card__media {
             width: 90px !important;
             height: 90px !important;
             border-radius: 12px !important;
@@ -3283,15 +3284,15 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
           }
           
-          .naay-product-card__image {
+          .kova-product-card__image {
             transition: transform 0.3s ease !important;
           }
           
-          .naay-product-card__image:hover {
+          .kova-product-card__image:hover {
             transform: scale(1.05) !important;
           }
           
-          .naay-product-card__content {
+          .kova-product-card__content {
             padding: 0 !important;
             margin-left: 14px !important;
             flex: 1 !important;
@@ -3301,22 +3302,22 @@
             min-height: 90px !important;
           }
           
-          .naay-product-card__title {
+          .kova-product-card__title {
             font-size: 15px !important;
             font-weight: 600 !important;
             line-height: 1.3 !important;
             margin-bottom: 4px !important;
-            color: var(--naay-black) !important;
+            color: var(--kova-black) !important;
             display: -webkit-box !important;
             -webkit-line-clamp: 2 !important;
             -webkit-box-orient: vertical !important;
             overflow: hidden !important;
           }
           
-          .naay-product-card__description {
+          .kova-product-card__description {
             font-size: 12px !important;
             line-height: 1.4 !important;
-            color: var(--naay-perfect) !important;
+            color: var(--kova-perfect) !important;
             opacity: 0.8 !important;
             margin-bottom: 8px !important;
             display: -webkit-box !important;
@@ -3325,53 +3326,53 @@
             overflow: hidden !important;
           }
           
-          .naay-product-card__price-section {
+          .kova-product-card__price-section {
             margin-bottom: 12px !important;
           }
           
-          .naay-product-card__pricing {
+          .kova-product-card__pricing {
             gap: 6px !important;
             align-items: baseline !important;
           }
           
-          .naay-product-card__price {
+          .kova-product-card__price {
             font-size: 16px !important;
             font-weight: 700 !important;
-            color: var(--naay-perfect) !important;
+            color: var(--kova-perfect) !important;
           }
           
-          .naay-product-card__compare-price {
+          .kova-product-card__compare-price {
             font-size: 13px !important;
             color: rgba(165, 148, 87, 0.6) !important;
           }
           
-          .naay-product-card__tags {
+          .kova-product-card__tags {
             gap: 4px !important;
             margin-bottom: 8px !important;
           }
           
-          .naay-product-card__tag {
+          .kova-product-card__tag {
             font-size: 10px !important;
             padding: 2px 6px !important;
             border-radius: 8px !important;
             background: rgba(165, 148, 87, 0.1) !important;
-            color: var(--naay-perfect) !important;
+            color: var(--kova-perfect) !important;
           }
           
-          .naay-product-card__actions {
+          .kova-product-card__actions {
             gap: 8px !important;
             margin-top: auto !important;
           }
           
-          .naay-product-card__add-btn {
+          .kova-product-card__add-btn {
             padding: 10px 14px !important;
             font-size: 12px !important;
             font-weight: 600 !important;
             border-radius: 12px !important;
             min-height: 40px !important;
             flex: 1 !important;
-            background: var(--naay-perfect) !important;
-            color: var(--naay-white) !important;
+            background: var(--kova-perfect) !important;
+            color: var(--kova-white) !important;
             border: none !important;
             transition: all 0.2s ease !important;
             display: flex !important;
@@ -3380,95 +3381,95 @@
             gap: 6px !important;
           }
           
-          .naay-product-card__add-btn:hover {
-            background: var(--naay-rich) !important;
+          .kova-product-card__add-btn:hover {
+            background: var(--kova-rich) !important;
             transform: translateY(-1px) !important;
             box-shadow: 0 4px 12px rgba(165, 148, 87, 0.3) !important;
           }
           
-          .naay-product-card__add-btn--disabled {
+          .kova-product-card__add-btn--disabled {
             background: rgba(165, 148, 87, 0.3) !important;
             cursor: not-allowed !important;
             transform: none !important;
             box-shadow: none !important;
           }
           
-          .naay-product-card__add-btn--success {
+          .kova-product-card__add-btn--success {
             background: #10b981 !important;
           }
           
-          .naay-product-card__details-btn {
+          .kova-product-card__details-btn {
             padding: 8px !important;
             min-width: 40px !important;
             height: 40px !important;
             border-radius: 12px !important;
             background: rgba(165, 148, 87, 0.1) !important;
             border: 1px solid rgba(165, 148, 87, 0.3) !important;
-            color: var(--naay-perfect) !important;
+            color: var(--kova-perfect) !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
             flex-shrink: 0 !important;
           }
           
-          .naay-product-card__details-btn:hover {
+          .kova-product-card__details-btn:hover {
             background: rgba(165, 148, 87, 0.15) !important;
-            border-color: var(--naay-perfect) !important;
+            border-color: var(--kova-perfect) !important;
             transform: translateY(-1px) !important;
           }
           
-          .naay-product-card__header {
+          .kova-product-card__header {
             margin-bottom: 6px !important;
           }
           
-          .naay-product-card__discount {
+          .kova-product-card__discount {
             font-size: 11px !important;
             padding: 3px 6px !important;
             border-radius: 6px !important;
           }
           
-          .naay-product-card__quick-view {
+          .kova-product-card__quick-view {
             width: 40px !important;
             height: 40px !important;
             border-radius: 8px !important;
           }
           
-          .naay-product-card__quick-view svg,
-          .naay-product-card__details-btn svg,
-          .naay-product-card__add-btn svg {
+          .kova-product-card__quick-view svg,
+          .kova-product-card__details-btn svg,
+          .kova-product-card__add-btn svg {
             width: 14px !important;
             height: 14px !important;
           }
           
           /* Mobile Cart Items */
-          .naay-cart-panel__items {
+          .kova-cart-panel__items {
             padding: 16px 12px 0 12px !important;
             gap: 12px !important;
           }
 
-          .naay-cart-panel__item {
+          .kova-cart-panel__item {
             padding: 12px !important;
             gap: 12px !important;
           }
 
-          .naay-cart-panel__item-image-container {
+          .kova-cart-panel__item-image-container {
             width: 60px !important;
             height: 60px !important;
           }
 
-          .naay-cart-panel__item-title {
+          .kova-cart-panel__item-title {
             font-size: 13px !important;
           }
 
-          .naay-cart-panel__item-variant {
+          .kova-cart-panel__item-variant {
             font-size: 11px !important;
           }
 
-          .naay-cart-panel__item-total-price {
+          .kova-cart-panel__item-total-price {
             font-size: 14px !important;
           }
 
-          .naay-cart-panel__quantity-btn {
+          .kova-cart-panel__quantity-btn {
             width: 24px !important;
             height: 24px !important;
           }
@@ -3496,7 +3497,7 @@
           if (window.innerWidth > 480) return;
 
           const viewport = window.visualViewport;
-          const chatContainer = this.container.querySelector('.naay-widget__chat');
+          const chatContainer = this.container.querySelector('.kova-widget__chat');
 
           if (chatContainer) {
             // Adjust height to fit visible viewport
@@ -3603,7 +3604,7 @@
       }
 
       // Feature cards click
-      const featureCards = this.container.querySelectorAll('.naay-widget__feature[data-message]');
+      const featureCards = this.container.querySelectorAll('.kova-widget__feature[data-message]');
       featureCards.forEach(card => {
         card.addEventListener('click', (e) => {
           e.preventDefault();
@@ -3826,7 +3827,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             image: { src: "https://example.com/image1.jpg" },
             variant_id: 53019925709166,
             handle: "super-hero-balsam-multiusos-arnica",
-            vendor: "Naay"
+            vendor: "Kova"
           },
           {
             id: 14890558325102,
@@ -3835,7 +3836,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             image: { src: "https://example.com/image1.jpg" },
             variant_id: 53019925709166,
             handle: "super-hero-balsam-multiusos-arnica",
-            vendor: "Naay"
+            vendor: "Kova"
           },
           {
             id: 99999999999999,
@@ -3844,7 +3845,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             image: { src: "https://example.com/image2.jpg" },
             variant_id: 88888888888888,
             handle: "loving-touch-aceite-masaje",
-            vendor: "Naay"
+            vendor: "Kova"
           }
         ];
 
@@ -3951,7 +3952,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         widget.cartPanel.style.visibility = 'visible';
         widget.cartPanel.style.pointerEvents = 'auto';
         widget.cartPanel.style.transform = 'translateX(0) scale(1)';
-        widget.cartPanel.classList.add('naay-cart-panel--open');
+        widget.cartPanel.classList.add('kova-cart-panel--open');
         widget.cartVisible = true;
 
         // Update display
@@ -3982,8 +3983,8 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     open() {
       console.log('✨ Opening luxury chat...');
       this.isOpen = true;
-      this.container.classList.remove('naay-widget--closed', 'naay-widget--closing');
-      this.container.classList.add('naay-widget--open');
+      this.container.classList.remove('kova-widget--closed', 'kova-widget--closing');
+      this.container.classList.add('kova-widget--open');
       this.button.setAttribute('aria-expanded', 'true');
       console.log('✅ Classes after open:', this.container.className);
 
@@ -4008,14 +4009,14 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       }
 
       // Add closing animation class first
-      this.container.classList.add('naay-widget--closing');
-      this.container.classList.remove('naay-widget--open');
+      this.container.classList.add('kova-widget--closing');
+      this.container.classList.remove('kova-widget--open');
       this.button.setAttribute('aria-expanded', 'false');
 
       // After animation completes, add closed class and remove closing
       setTimeout(() => {
-        this.container.classList.remove('naay-widget--closing');
-        this.container.classList.add('naay-widget--closed');
+        this.container.classList.remove('kova-widget--closing');
+        this.container.classList.add('kova-widget--closed');
         console.log('✅ Classes after close:', this.container.className);
       }, 400); // Match transition duration
     }
@@ -4042,7 +4043,14 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       }
 
       try {
-        const apiUrl = 'https://n8n.dustkey.com/webhook/chat-naay';
+        // Use configured chat endpoint or fail gracefully
+        const apiUrl = this.config.chatEndpoint;
+        if (!apiUrl) {
+          console.error('❌ Kova Widget: chatEndpoint not configured');
+          this.addMessage('Error: Chat no configurado. Contacta al administrador.', 'assistant');
+          return;
+        }
+
         const payload = {
           message: text,
           shop: this.config.shopDomain,
@@ -4051,7 +4059,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           context: this.config.context || {}
         };
 
-        console.log('🌿 Naay Chat: Sending message to n8n webhook', {
+        console.log('🌿 Kova Chat: Sending message to chat endpoint', {
           url: apiUrl,
           payload: payload,
           shopDomain: this.config.shopDomain
@@ -4069,10 +4077,10 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           body: JSON.stringify(payload)
         });
 
-        console.log('🌿 Naay Chat: API Response status:', response.status, response.statusText);
+        console.log('🌿 Kova Chat: API Response status:', response.status, response.statusText);
 
         const data = await response.json();
-        console.log('🌿 Naay Chat: n8n Response data:', data);
+        console.log('🌿 Kova Chat: n8n Response data:', data);
 
         // Remove typing indicator
         this.removeTypingIndicator(typingIndicator);
@@ -4081,7 +4089,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         if (response.ok) {
           // Check for n8n workflow errors
           if (data && data.message === "Error in workflow") {
-            console.error('❌ Naay Chat: n8n workflow error', data);
+            console.error('❌ Kova Chat: n8n workflow error', data);
             this.addMessage('🔧 El asistente de IA está siendo actualizado. Por favor intenta en unos minutos. ¡Gracias por tu paciencia!', 'assistant');
             return;
           }
@@ -4173,9 +4181,9 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             this.storeConversationId(this.conversationId);
           }
 
-          console.log('✅ Naay Chat: Message processed successfully via n8n');
+          console.log('✅ Kova Chat: Message processed successfully via n8n');
         } else {
-          console.error('❌ Naay Chat: n8n API returned error', response.status, data);
+          console.error('❌ Kova Chat: n8n API returned error', response.status, data);
           if (response.status === 500) {
             this.addMessage('🔧 El asistente de IA está siendo actualizado. Por favor intenta en unos minutos. ¡Gracias por tu paciencia!', 'assistant');
           } else {
@@ -4183,7 +4191,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           }
         }
       } catch (error) {
-        console.error('❌ Naay Chat: Network error sending message:', error);
+        console.error('❌ Kova Chat: Network error sending message:', error);
 
         // Remove typing indicator on error
         this.removeTypingIndicator(typingIndicator);
@@ -4208,14 +4216,14 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
     addMessage(text, sender) {
       const messageDiv = document.createElement('div');
-      messageDiv.className = `naay-widget__message naay-widget__message--${sender}`;
+      messageDiv.className = `kova-widget__message kova-widget__message--${sender}`;
 
       // Format text with proper line breaks and structure
       const formattedText = this.formatMessage(text);
       messageDiv.innerHTML = formattedText;
 
       // Remove welcome message when first real message is added
-      const welcome = this.messagesContainer.querySelector('.naay-widget__welcome');
+      const welcome = this.messagesContainer.querySelector('.kova-widget__welcome');
       if (welcome && sender === 'user') {
         welcome.style.display = 'none';
       }
@@ -4228,14 +4236,14 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
     addTypingIndicator() {
       const typingDiv = document.createElement('div');
-      typingDiv.className = 'naay-widget__message naay-widget__message--assistant naay-widget__typing';
+      typingDiv.className = 'kova-widget__message kova-widget__message--assistant kova-widget__typing';
       typingDiv.innerHTML = `
-        <div class="naay-typing-indicator">
+        <div class="kova-typing-indicator">
           <span>Escribiendo</span>
-          <div class="naay-typing-dots">
-            <div class="naay-dot"></div>
-            <div class="naay-dot"></div>
-            <div class="naay-dot"></div>
+          <div class="kova-typing-dots">
+            <div class="kova-dot"></div>
+            <div class="kova-dot"></div>
+            <div class="kova-dot"></div>
           </div>
         </div>
       `;
@@ -4338,7 +4346,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
       // Create horizontal container for recommendations
       const recommendationsContainer = document.createElement('div');
-      recommendationsContainer.className = 'naay-widget__message naay-widget__message--assistant';
+      recommendationsContainer.className = 'kova-widget__message kova-widget__message--assistant';
 
       // Process products and store valid ones
       const validProducts = [];
@@ -4359,8 +4367,8 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       }).filter(html => html);
 
       const recommendationsHTML = `
-        <div class="naay-recommendations-container">
-          <div class="naay-recommendations-grid">
+        <div class="kova-recommendations-container">
+          <div class="kova-recommendations-grid">
             ${productsHTML.join('')}
           </div>
         </div>
@@ -4369,7 +4377,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       recommendationsContainer.innerHTML = recommendationsHTML;
 
       // Add event listeners for all product cards using valid products array
-      const productCards = recommendationsContainer.querySelectorAll('.naay-product-card');
+      const productCards = recommendationsContainer.querySelectorAll('.kova-product-card');
       productCards.forEach((card, index) => {
         const product = validProducts[index];
         if (product) {
@@ -4428,7 +4436,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         price: price,
         comparePrice: null, // Not provided in simplified format
         image: imageUrl,
-        vendor: shopifyProduct.vendor || 'Naay',
+        vendor: shopifyProduct.vendor || 'Kova',
         handle: shopifyProduct.handle || '',
         variantId: variantId,
         available: available
@@ -4445,7 +4453,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       console.log('🛍️ Adding product recommendation:', product);
 
       const productDiv = document.createElement('div');
-      productDiv.className = 'naay-widget__message naay-widget__message--assistant';
+      productDiv.className = 'kova-widget__message kova-widget__message--assistant';
 
       // Create product card HTML
       const productHTML = this.createProductCardHTML(product);
@@ -4478,22 +4486,22 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       const discountPercent = hasDiscount ? Math.round(((parseFloat(comparePrice) - parseFloat(price)) / parseFloat(comparePrice)) * 100) : 0;
 
       return `
-        <div class="naay-product-card" data-product-id="${id}">
-          ${hasDiscount ? `<div class="naay-product-card__header">
-            <div class="naay-product-card__discount">-${discountPercent}%</div>
+        <div class="kova-product-card" data-product-id="${id}">
+          ${hasDiscount ? `<div class="kova-product-card__header">
+            <div class="kova-product-card__discount">-${discountPercent}%</div>
           </div>` : ''}
           
-          <div class="naay-product-card__media">
+          <div class="kova-product-card__media">
             ${image ?
-          `<img class="naay-product-card__image" src="${image}" alt="${title}" loading="lazy">` :
-          `<div class="naay-product-card__placeholder">
+          `<img class="kova-product-card__image" src="${image}" alt="${title}" loading="lazy">` :
+          `<div class="kova-product-card__placeholder">
                 <svg viewBox="0 0 24 24" fill="none">
                   <path d="M21 16V8C21 6.9 20.1 6 19 6H5C3.9 6 3 6.9 3 8V16C3 17.1 3.9 18 5 18H19C20.1 18 21 17.1 21 16ZM5 16L8.5 11.5L11 14.5L14.5 10L19 16H5Z" fill="currentColor"/>
                 </svg>
               </div>`
         }
-            <div class="naay-product-card__overlay">
-              <button class="naay-product-card__quick-view" data-action="quick-view" title="Vista rápida">
+            <div class="kova-product-card__overlay">
+              <button class="kova-product-card__quick-view" data-action="quick-view" title="Vista rápida">
                 <svg viewBox="0 0 24 24" fill="none">
                   <path d="M1 12S5 4 12 4S23 12 23 12S19 20 12 20S1 12 1 12Z" stroke="currentColor" stroke-width="2"/>
                   <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
@@ -4502,38 +4510,38 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             </div>
           </div>
           
-          <div class="naay-product-card__content">
-            <h3 class="naay-product-card__title">${title}</h3>
-            ${description ? `<p class="naay-product-card__description">${description}</p>` : ''}
+          <div class="kova-product-card__content">
+            <h3 class="kova-product-card__title">${title}</h3>
+            ${description ? `<p class="kova-product-card__description">${description}</p>` : ''}
             
-            <div class="naay-product-card__price-section">
-              <div class="naay-product-card__pricing">
-                <span class="naay-product-card__price">${formatChileanPrice(price)}</span>
-                ${hasDiscount ? `<span class="naay-product-card__compare-price">${formatChileanPrice(comparePrice)}</span>` : ''}
+            <div class="kova-product-card__price-section">
+              <div class="kova-product-card__pricing">
+                <span class="kova-product-card__price">${formatChileanPrice(price)}</span>
+                ${hasDiscount ? `<span class="kova-product-card__compare-price">${formatChileanPrice(comparePrice)}</span>` : ''}
               </div>
               ${tags.length > 0 ? `
-                <div class="naay-product-card__tags">
-                  ${tags.slice(0, 2).map(tag => `<span class="naay-product-card__tag">${tag}</span>`).join('')}
+                <div class="kova-product-card__tags">
+                  ${tags.slice(0, 2).map(tag => `<span class="kova-product-card__tag">${tag}</span>`).join('')}
                 </div>
               ` : ''}
             </div>
             
-            <div class="naay-product-card__actions">
+            <div class="kova-product-card__actions">
               ${!available ?
-          `<button class="naay-product-card__add-btn naay-product-card__add-btn--disabled" disabled>
+          `<button class="kova-product-card__add-btn kova-product-card__add-btn--disabled" disabled>
                   <svg viewBox="0 0 24 24" fill="none">
                     <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2"/>
                   </svg>
                   Agotado
                 </button>` :
-          `<button class="naay-product-card__add-btn" data-action="add-to-cart" title="Agregar al carrito">
+          `<button class="kova-product-card__add-btn" data-action="add-to-cart" title="Agregar al carrito">
                   <svg viewBox="0 0 24 24" fill="none">
                     <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19C17 19.6 16.6 20 16 20H14C13.4 20 13 19.6 13 19V13" stroke="currentColor" stroke-width="2"/>
                   </svg>
                   Agregar al Carrito
                 </button>`
         }
-              <button class="naay-product-card__details-btn" data-action="go-checkout" title="Ir al checkout">
+              <button class="kova-product-card__details-btn" data-action="go-checkout" title="Ir al checkout">
                 <svg viewBox="0 0 24 24" fill="none">
                   <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19A2 2 0 01-2 2H9A2 2 0 017 19V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
@@ -4586,7 +4594,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
       // Update button state to loading
       buttonElement.innerHTML = `
-        <svg class="naay-spinner" viewBox="0 0 24 24" fill="none">
+        <svg class="kova-spinner" viewBox="0 0 24 24" fill="none">
           <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" opacity="0.3"/>
           <path d="M22 12C22 6.48 17.52 2 12 2V22C17.52 22 22 17.52 22 12Z" fill="currentColor"/>
         </svg>
@@ -4613,7 +4621,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           </svg>
           Producto en el carrito
         `;
-        buttonElement.classList.add('naay-product-card__add-btn--success');
+        buttonElement.classList.add('kova-product-card__add-btn--success');
         buttonElement.disabled = false; // Keep clickable for feedback
       }, 800);
     }
@@ -4623,24 +4631,24 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
       // Create quick view modal
       const modal = document.createElement('div');
-      modal.className = 'naay-product-modal';
+      modal.className = 'kova-product-modal';
       modal.innerHTML = `
-        <div class="naay-product-modal__backdrop"></div>
-        <div class="naay-product-modal__content">
-          <header class="naay-product-modal__header">
+        <div class="kova-product-modal__backdrop"></div>
+        <div class="kova-product-modal__content">
+          <header class="kova-product-modal__header">
             <h2>${product.title}</h2>
-            <button class="naay-product-modal__close">
+            <button class="kova-product-modal__close">
               <svg viewBox="0 0 24 24" fill="none">
                 <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2"/>
               </svg>
             </button>
           </header>
-          <div class="naay-product-modal__body">
+          <div class="kova-product-modal__body">
             ${product.image ? `<img src="${product.image}" alt="${product.title}">` : ''}
-            <div class="naay-product-modal__info">
-              <p class="naay-product-modal__description">${product.description || 'Producto de cosmética natural Naay.'}</p>
-              <div class="naay-product-modal__price">${formatChileanPrice(product.price)}</div>
-              <button class="naay-product-modal__add-btn">Agregar al Carrito</button>
+            <div class="kova-product-modal__info">
+              <p class="kova-product-modal__description">${product.description || 'Producto de cosmética natural Kova.'}</p>
+              <div class="kova-product-modal__price">${formatChileanPrice(product.price)}</div>
+              <button class="kova-product-modal__add-btn">Agregar al Carrito</button>
             </div>
           </div>
         </div>
@@ -4650,9 +4658,9 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       document.body.appendChild(modal);
 
       // Add event listeners
-      const closeBtn = modal.querySelector('.naay-product-modal__close');
-      const backdrop = modal.querySelector('.naay-product-modal__backdrop');
-      const addBtn = modal.querySelector('.naay-product-modal__add-btn');
+      const closeBtn = modal.querySelector('.kova-product-modal__close');
+      const backdrop = modal.querySelector('.kova-product-modal__backdrop');
+      const addBtn = modal.querySelector('.kova-product-modal__add-btn');
 
       const closeModal = () => {
         modal.remove();
@@ -4666,7 +4674,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       });
 
       // Animate in
-      setTimeout(() => modal.classList.add('naay-product-modal--visible'), 10);
+      setTimeout(() => modal.classList.add('kova-product-modal--visible'), 10);
     }
 
     showProductDetails(product) {
@@ -4698,11 +4706,11 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       // Clear all messages except welcome
       if (this.messagesContainer) {
         // Remove all messages
-        const messages = this.messagesContainer.querySelectorAll('.naay-widget__message:not(.naay-widget__welcome)');
+        const messages = this.messagesContainer.querySelectorAll('.kova-widget__message:not(.kova-widget__welcome)');
         messages.forEach(message => message.remove());
 
         // Show welcome message again
-        const welcome = this.messagesContainer.querySelector('.naay-widget__welcome');
+        const welcome = this.messagesContainer.querySelector('.kova-widget__welcome');
         if (welcome) {
           welcome.style.display = 'block';
         }
@@ -4726,7 +4734,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
     getStoredConversationId() {
       try {
-        const storageKey = `naay_conversation_${this.config.shopDomain}`;
+        const storageKey = `kova_conversation_${this.config.shopDomain}`;
         return localStorage.getItem(storageKey);
       } catch (error) {
         console.warn('Could not access localStorage for conversation ID:', error);
@@ -4736,7 +4744,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
     storeConversationId(conversationId) {
       try {
-        const storageKey = `naay_conversation_${this.config.shopDomain}`;
+        const storageKey = `kova_conversation_${this.config.shopDomain}`;
         localStorage.setItem(storageKey, conversationId);
         console.log('💾 Stored conversation ID:', conversationId);
       } catch (error) {
@@ -4746,7 +4754,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
     getOrCreateSessionId() {
       try {
-        const storageKey = `naay_session_${this.config.shopDomain}`;
+        const storageKey = `kova_session_${this.config.shopDomain}`;
         let sessionId = localStorage.getItem(storageKey);
         
         if (!sessionId) {
@@ -4761,7 +4769,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           // Create a fingerprint hash (simple version)
           const fingerprint = btoa(`${userAgent}_${screenSize}_${timezone}_${language}`).substring(0, 16).replace(/[^a-zA-Z0-9]/g, '');
           
-          sessionId = `naay_${timestamp}_${random}_${fingerprint}`;
+          sessionId = `kova_${timestamp}_${random}_${fingerprint}`;
           
           localStorage.setItem(storageKey, sessionId);
           console.log('🆔 Generated new session ID:', sessionId);
@@ -4778,7 +4786,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         console.warn('Could not access localStorage for session ID, using fallback:', error);
         const timestamp = Date.now();
         const random = Math.random().toString(36).substring(2, 15);
-        return `naay_${timestamp}_${random}_fallback`;
+        return `kova_${timestamp}_${random}_fallback`;
       }
     }
 
@@ -4797,7 +4805,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           console.log('🌐 Enhanced session with IP info (hashed):', ipHash);
           
           // Store enhanced session info for analytics (optional)
-          const storageKey = `naay_session_enhanced_${this.config.shopDomain}`;
+          const storageKey = `kova_session_enhanced_${this.config.shopDomain}`;
           localStorage.setItem(storageKey, JSON.stringify({
             sessionId: sessionId,
             ipHash: ipHash,
@@ -4812,7 +4820,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
     clearStoredConversationId() {
       try {
-        const storageKey = `naay_conversation_${this.config.shopDomain}`;
+        const storageKey = `kova_conversation_${this.config.shopDomain}`;
         localStorage.removeItem(storageKey);
         console.log('🗑️ Cleared stored conversation ID');
       } catch (error) {
@@ -4834,7 +4842,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     testCart() {
       const sampleProduct = {
         id: 'test-product-1',
-        title: 'Crema Hidratante Naay Aloe Vera',
+        title: 'Crema Hidratante Kova Aloe Vera',
         price: '24.99',
         quantity: 1,
         image: '',
@@ -4865,12 +4873,12 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         const sampleProducts = [
           {
             id: 'product-1',
-            title: 'Crema Hidratante Naay con Aloe Vera',
+            title: 'Crema Hidratante Kova con Aloe Vera',
             description: 'Crema hidratante natural con aloe vera orgánico para todo tipo de pieles.',
             price: '24.99',
             comparePrice: '29.99',
             image: 'https://picsum.photos/300/200?random=1',
-            vendor: 'Naay',
+            vendor: 'Kova',
             tags: ['hidratante', 'aloe vera', 'natural'],
             available: true,
             handle: 'crema-hidratante-aloe-vera',
@@ -4882,7 +4890,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             description: 'Sérum antioxidante con vitamina C para iluminar y proteger la piel.',
             price: '32.50',
             image: 'https://picsum.photos/300/200?random=2',
-            vendor: 'Naay',
+            vendor: 'Kova',
             tags: ['sérum', 'vitamina c', 'antioxidante'],
             available: true,
             handle: 'serum-facial-vitamina-c',
@@ -4941,7 +4949,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
         // Method 3: Delayed verification and re-application
         setTimeout(() => {
-          const panel = this.cartPanel || document.querySelector('.naay-cart-panel');
+          const panel = this.cartPanel || document.querySelector('.kova-cart-panel');
           if (panel && window.innerWidth <= 480) {
             const rect = panel.getBoundingClientRect();
             console.log('🔍 DELAYED CHECK: Cart position verification');
@@ -4990,7 +4998,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
       this.cartVisible = true;
       if (this.cartPanel) {
-        this.cartPanel.classList.add('naay-cart-panel--open');
+        this.cartPanel.classList.add('kova-cart-panel--open');
         this.cartPanel.setAttribute('aria-hidden', 'false');
       }
       // Update cart display to show latest items
@@ -5002,7 +5010,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       console.log('🛒 Hiding cart panel...');
       this.cartVisible = false;
       if (this.cartPanel) {
-        this.cartPanel.classList.remove('naay-cart-panel--open');
+        this.cartPanel.classList.remove('kova-cart-panel--open');
         this.cartPanel.setAttribute('aria-hidden', 'true');
       }
       console.log('✅ Cart panel hidden');
@@ -5020,13 +5028,13 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       const isShopifyDomain = window.location.hostname.includes('myshopify.com') ||
         window.location.hostname.includes('shopify.com');
 
-      // Always check window.NaayConfig for the most up-to-date configuration
-      const currentShopDomain = (window.NaayConfig && window.NaayConfig.shopDomain) || this.config.shopDomain;
+      // Always check window.KovaConfig for the most up-to-date configuration
+      const currentShopDomain = (window.KovaConfig && window.KovaConfig.shopDomain) || this.config.shopDomain;
       const hasShopConfig = currentShopDomain && currentShopDomain.trim() !== '';
       const isShopifyStore = isShopifyDomain || hasShopConfig;
 
       console.log('🏪 Is Shopify store?', isShopifyStore, 'Hostname:', window.location.hostname, 'Shop config:', currentShopDomain);
-      console.log('🔧 Config sources - this.config.shopDomain:', this.config.shopDomain, 'window.NaayConfig.shopDomain:', window.NaayConfig?.shopDomain);
+      console.log('🔧 Config sources - this.config.shopDomain:', this.config.shopDomain, 'window.KovaConfig.shopDomain:', window.KovaConfig?.shopDomain);
 
       if (isShopifyStore && hasShopConfig) {
         addedToShopify = await this.addToShopifyNativeCart(product.variantId, product.quantity || 1);
@@ -5288,8 +5296,8 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       const isShopifyDomain = window.location.hostname.includes('myshopify.com') ||
         window.location.hostname.includes('shopify.com');
 
-      // Always check window.NaayConfig for the most up-to-date configuration
-      const currentShopDomain = (window.NaayConfig && window.NaayConfig.shopDomain) || this.config.shopDomain;
+      // Always check window.KovaConfig for the most up-to-date configuration
+      const currentShopDomain = (window.KovaConfig && window.KovaConfig.shopDomain) || this.config.shopDomain;
       const hasShopConfig = currentShopDomain && currentShopDomain.trim() !== '';
       const isShopifyStore = isShopifyDomain || hasShopConfig;
 
@@ -5342,8 +5350,8 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       const isShopifyDomain = window.location.hostname.includes('myshopify.com') ||
         window.location.hostname.includes('shopify.com');
 
-      // Always check window.NaayConfig for the most up-to-date configuration
-      const currentShopDomain = (window.NaayConfig && window.NaayConfig.shopDomain) || this.config.shopDomain;
+      // Always check window.KovaConfig for the most up-to-date configuration
+      const currentShopDomain = (window.KovaConfig && window.KovaConfig.shopDomain) || this.config.shopDomain;
       const hasShopConfig = currentShopDomain && currentShopDomain.trim() !== '';
       const isShopifyStore = isShopifyDomain || hasShopConfig;
 
@@ -5415,7 +5423,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           // Show empty state
           this.cartEmpty.style.display = 'flex';
           this.cartItems.style.display = 'none';
-          this.cartItems.classList.remove('naay-cart-panel__items--visible');
+          this.cartItems.classList.remove('kova-cart-panel__items--visible');
           this.cartFooter.style.display = 'none';
           console.log('📋 Showing empty cart state');
         } else {
@@ -5434,7 +5442,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           // Show items container
           if (this.cartItems) {
             this.cartItems.style.display = 'flex';
-            this.cartItems.classList.add('naay-cart-panel__items--visible');
+            this.cartItems.classList.add('kova-cart-panel__items--visible');
           }
 
           // Show footer
@@ -5496,7 +5504,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         }
         
         const itemElement = document.createElement('div');
-        itemElement.className = 'naay-cart-panel__item';
+        itemElement.className = 'kova-cart-panel__item';
 
         // Get product image (try different image properties)
         const imageUrl = item.image || item.featured_image || item.images?.[0] || item.product_image || null;
@@ -5505,40 +5513,40 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         const totalPrice = unitPrice * item.quantity;
 
         itemElement.innerHTML = `
-          <div class="naay-cart-panel__item-image-container">
+          <div class="kova-cart-panel__item-image-container">
             ${imageUrl ?
-            `<img src="${imageUrl}" alt="${item.title}" class="naay-cart-panel__item-image" loading="lazy">` :
-            `<div class="naay-cart-panel__item-image naay-cart-panel__item-image--placeholder">
+            `<img src="${imageUrl}" alt="${item.title}" class="kova-cart-panel__item-image" loading="lazy">` :
+            `<div class="kova-cart-panel__item-image kova-cart-panel__item-image--placeholder">
                 <svg viewBox="0 0 24 24" fill="none">
                   <path d="M21 19V5C21 3.9 20.1 3 19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19ZM8.5 13.5L11 16.51L14.5 12L19 18H5L8.5 13.5Z" fill="currentColor"/>
                 </svg>
               </div>`
           }
           </div>
-          <div class="naay-cart-panel__item-details">
-            <div class="naay-cart-panel__item-info">
-              <h4 class="naay-cart-panel__item-title">${item.title}</h4>
-              ${variantTitle ? `<p class="naay-cart-panel__item-variant">${variantTitle}</p>` : ''}
-              <div class="naay-cart-panel__item-price-info">
-                <span class="naay-cart-panel__item-unit-price">${formatChileanPrice(unitPrice)} c/u</span>
-                <span class="naay-cart-panel__item-total-price">${formatChileanPrice(totalPrice)}</span>
+          <div class="kova-cart-panel__item-details">
+            <div class="kova-cart-panel__item-info">
+              <h4 class="kova-cart-panel__item-title">${item.title}</h4>
+              ${variantTitle ? `<p class="kova-cart-panel__item-variant">${variantTitle}</p>` : ''}
+              <div class="kova-cart-panel__item-price-info">
+                <span class="kova-cart-panel__item-unit-price">${formatChileanPrice(unitPrice)} c/u</span>
+                <span class="kova-cart-panel__item-total-price">${formatChileanPrice(totalPrice)}</span>
               </div>
             </div>
-            <div class="naay-cart-panel__item-controls">
-              <div class="naay-cart-panel__item-quantity">
-                <button class="naay-cart-panel__quantity-btn naay-cart-panel__quantity-btn--decrease" data-action="decrease" data-cart-item-id="${item.cartItemId}" aria-label="Disminuir cantidad">
+            <div class="kova-cart-panel__item-controls">
+              <div class="kova-cart-panel__item-quantity">
+                <button class="kova-cart-panel__quantity-btn kova-cart-panel__quantity-btn--decrease" data-action="decrease" data-cart-item-id="${item.cartItemId}" aria-label="Disminuir cantidad">
                   <svg viewBox="0 0 24 24" fill="none">
                     <path d="M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                   </svg>
                 </button>
-                <span class="naay-cart-panel__quantity-value">${item.quantity}</span>
-                <button class="naay-cart-panel__quantity-btn naay-cart-panel__quantity-btn--increase" data-action="increase" data-cart-item-id="${item.cartItemId}" aria-label="Aumentar cantidad">
+                <span class="kova-cart-panel__quantity-value">${item.quantity}</span>
+                <button class="kova-cart-panel__quantity-btn kova-cart-panel__quantity-btn--increase" data-action="increase" data-cart-item-id="${item.cartItemId}" aria-label="Aumentar cantidad">
                   <svg viewBox="0 0 24 24" fill="none">
                     <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                   </svg>
                 </button>
               </div>
-              <button class="naay-cart-panel__item-remove" data-cart-item-id="${item.cartItemId}" aria-label="Eliminar producto">
+              <button class="kova-cart-panel__item-remove" data-cart-item-id="${item.cartItemId}" aria-label="Eliminar producto">
                 <svg viewBox="0 0 24 24" fill="none">
                   <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
@@ -5548,7 +5556,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         `;
 
         // Add event listeners for this item
-        const removeBtn = itemElement.querySelector('.naay-cart-panel__item-remove');
+        const removeBtn = itemElement.querySelector('.kova-cart-panel__item-remove');
         const decreaseBtn = itemElement.querySelector('[data-action="decrease"]');
         const increaseBtn = itemElement.querySelector('[data-action="increase"]');
 
@@ -5577,7 +5585,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
             try {
               // Apply removal animation class
-              itemElement.classList.add('naay-cart-panel__item--removing');
+              itemElement.classList.add('kova-cart-panel__item--removing');
               
               await this.removeFromCartByItemId(cartItemId);
 
@@ -5604,7 +5612,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           decreaseBtn.addEventListener('click', (e) => {
             e.preventDefault();
             const cartItemId = decreaseBtn.getAttribute('data-cart-item-id');
-            const quantityValue = itemElement.querySelector('.naay-cart-panel__quantity-value');
+            const quantityValue = itemElement.querySelector('.kova-cart-panel__quantity-value');
             
             // Visual feedback
             decreaseBtn.style.transform = 'scale(0.95)';
@@ -5613,9 +5621,9 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             }, 150);
             
             if (quantityValue) {
-              quantityValue.classList.add('naay-cart-panel__quantity-value--updating');
+              quantityValue.classList.add('kova-cart-panel__quantity-value--updating');
               setTimeout(() => {
-                quantityValue.classList.remove('naay-cart-panel__quantity-value--updating');
+                quantityValue.classList.remove('kova-cart-panel__quantity-value--updating');
               }, 200);
             }
             
@@ -5627,7 +5635,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           increaseBtn.addEventListener('click', (e) => {
             e.preventDefault();
             const cartItemId = increaseBtn.getAttribute('data-cart-item-id');
-            const quantityValue = itemElement.querySelector('.naay-cart-panel__quantity-value');
+            const quantityValue = itemElement.querySelector('.kova-cart-panel__quantity-value');
             
             // Visual feedback
             increaseBtn.style.transform = 'scale(0.95)';
@@ -5636,9 +5644,9 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             }, 150);
             
             if (quantityValue) {
-              quantityValue.classList.add('naay-cart-panel__quantity-value--updating');
+              quantityValue.classList.add('kova-cart-panel__quantity-value--updating');
               setTimeout(() => {
-                quantityValue.classList.remove('naay-cart-panel__quantity-value--updating');
+                quantityValue.classList.remove('kova-cart-panel__quantity-value--updating');
               }, 200);
             }
             
@@ -5695,9 +5703,9 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       // Show loading state
       this.cartItems.style.display = 'flex';
       this.cartItems.innerHTML = `
-        <div class="naay-cart-loading">
-          <div class="naay-cart-loading__content">
-            <svg class="naay-spinner" viewBox="0 0 24 24" fill="none">
+        <div class="kova-cart-loading">
+          <div class="kova-cart-loading__content">
+            <svg class="kova-spinner" viewBox="0 0 24 24" fill="none">
               <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" opacity="0.3"/>
               <path d="M22 12C22 6.48 17.52 2 12 2V22C17.52 22 22 17.52 22 12Z" fill="currentColor"/>
             </svg>
@@ -5731,7 +5739,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         }
 
         // Fallback: construct checkout URL based on shop domain
-        const shopDomain = (window.NaayConfig && window.NaayConfig.shopDomain) || this.config.shopDomain;
+        const shopDomain = (window.KovaConfig && window.KovaConfig.shopDomain) || this.config.shopDomain;
         console.log('🔍 Using shop domain for checkout:', shopDomain);
         if (!shopDomain) {
           console.error('❌ No shop domain configured');
@@ -5766,7 +5774,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     // Process cart actions - Simplified for n8n integration
     // n8n will handle all cart actions directly, so this is now a no-op
     processCartActions(actions) {
-      console.log('🌿 Naay Chat: Cart actions are now handled by n8n workflow', actions);
+      console.log('🌿 Kova Chat: Cart actions are now handled by n8n workflow', actions);
       // All cart functionality is delegated to n8n
       return;
     }
@@ -6025,7 +6033,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
     // Cleanup function
     destroy() {
-      console.log('🧹 Cleaning up Naay Widget...');
+      console.log('🧹 Cleaning up Kova Widget...');
 
       // Clear cart sync interval
       if (this.cartSyncInterval) {
@@ -6037,12 +6045,12 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       document.removeEventListener('cart:updated', this.cartUpdateHandler);
       document.removeEventListener('visibilitychange', this.visibilityChangeHandler);
 
-      console.log('✅ Naay Widget cleanup completed');
+      console.log('✅ Kova Widget cleanup completed');
     }
   }
 
   // Expose class for constructor access
-  window.NaayWidget = NaayWidget;
+  window.KovaWidget = KovaWidget;
 
   // EMERGENCY DEBUGGING AND CART POSITIONING SYSTEM
   function emergencyDebugCartPosition() {
@@ -6057,8 +6065,8 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         isMobile: window.innerWidth <= 480
       },
       script: {
-        src: document.querySelector('script[src*="naay-widget.js"]')?.src || 'NOT_FOUND',
-        size: document.querySelector('script[src*="naay-widget.js"]')?.getAttribute('data-size') || 'UNKNOWN'
+        src: document.querySelector('script[src*="kova-widget.js"]')?.src || 'NOT_FOUND',
+        size: document.querySelector('script[src*="kova-widget.js"]')?.getAttribute('data-size') || 'UNKNOWN'
       }
     };
 
@@ -6072,11 +6080,11 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     });
 
     // Check for existing style elements
-    const existingStyles = document.querySelectorAll('#naay-mobile-cart-override, style[data-naay-mobile]');
+    const existingStyles = document.querySelectorAll('#kova-mobile-cart-override, style[data-kova-mobile]');
     console.log('📄 Existing style elements:', existingStyles.length, Array.from(existingStyles));
 
     // Check for cart panel element
-    const cartPanel = document.querySelector('.naay-cart-panel');
+    const cartPanel = document.querySelector('.kova-cart-panel');
     if (cartPanel) {
       const computedStyles = window.getComputedStyle(cartPanel);
       const rect = cartPanel.getBoundingClientRect();
@@ -6117,9 +6125,9 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     const debugInfo = emergencyDebugCartPosition();
 
     // Remove existing mobile styles if they exist
-    const existingStyles = document.querySelectorAll('#naay-mobile-cart-override, style[data-naay-mobile]');
+    const existingStyles = document.querySelectorAll('#kova-mobile-cart-override, style[data-kova-mobile]');
     existingStyles.forEach(style => {
-      console.log('🗑️ Removing existing style:', style.id || style.getAttribute('data-naay-mobile'));
+      console.log('🗑️ Removing existing style:', style.id || style.getAttribute('data-kova-mobile'));
       style.remove();
     });
 
@@ -6128,11 +6136,11 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       /* EMERGENCY MOBILE CART PANEL - MAXIMUM OVERRIDE PRIORITY */
       @media (max-width: 480px) {
         /* Ultra high specificity selectors */
-        html body div.naay-widget div.naay-cart-panel,
-        html body .naay-widget .naay-cart-panel,
-        html body .naay-cart-panel,
-        .naay-cart-panel,
-        *[class*="naay-cart-panel"] {
+        html body div.kova-widget div.kova-cart-panel,
+        html body .kova-widget .kova-cart-panel,
+        html body .kova-cart-panel,
+        .kova-cart-panel,
+        *[class*="kova-cart-panel"] {
           /* FORCED POSITIONING - ABSOLUTE OVERRIDE */
           position: fixed !important;
           top: 50% !important;
@@ -6182,8 +6190,8 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         }
         
         /* OPEN STATE */
-        .naay-cart-panel.naay-cart-panel--open,
-        html body .naay-cart-panel.naay-cart-panel--open {
+        .kova-cart-panel.kova-cart-panel--open,
+        html body .kova-cart-panel.kova-cart-panel--open {
           opacity: 1 !important;
           visibility: visible !important;
           transform: translate(-50%, -50%) !important;
@@ -6191,7 +6199,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         }
         
         /* BACKDROP */
-        .naay-cart-panel--open::before {
+        .kova-cart-panel--open::before {
           content: '' !important;
           position: fixed !important;
           top: 0 !important;
@@ -6205,8 +6213,8 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     `;
 
     const styleSheet = document.createElement('style');
-    styleSheet.id = 'naay-mobile-cart-override';
-    styleSheet.setAttribute('data-naay-mobile', 'emergency-override');
+    styleSheet.id = 'kova-mobile-cart-override';
+    styleSheet.setAttribute('data-kova-mobile', 'emergency-override');
     styleSheet.textContent = mobileCartStyles;
     document.head.appendChild(styleSheet);
     console.log('✅ CSS INJECTION: Mobile cart styles injected');
@@ -6257,7 +6265,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         mutations.forEach((mutation) => {
           mutation.addedNodes.forEach((node) => {
             if (node.nodeType === 1) {
-              if (node.classList && node.classList.contains('naay-cart-panel')) {
+              if (node.classList && node.classList.contains('kova-cart-panel')) {
                 console.log('🎯 MUTATION OBSERVER: Cart panel detected, applying emergency styling');
                 if (window.innerWidth <= 480) {
                   applyDirectStyling(node);
@@ -6265,7 +6273,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
               }
 
               // Check children too
-              const cartPanels = node.querySelectorAll && node.querySelectorAll('.naay-cart-panel');
+              const cartPanels = node.querySelectorAll && node.querySelectorAll('.kova-cart-panel');
               if (cartPanels) {
                 cartPanels.forEach(panel => {
                   console.log('🎯 MUTATION OBSERVER: Cart panel child detected, applying emergency styling');
@@ -6293,7 +6301,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       console.log('⏰ PERIODIC CHECK: Setting up aggressive cart styling checks');
 
       const checkInterval = setInterval(() => {
-        const cartPanel = document.querySelector('.naay-cart-panel');
+        const cartPanel = document.querySelector('.kova-cart-panel');
         if (cartPanel && window.innerWidth <= 480) {
           const computedStyles = window.getComputedStyle(cartPanel);
           const rect = cartPanel.getBoundingClientRect();
@@ -6317,7 +6325,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     }
 
     // Apply existing cart panel styling immediately
-    const existingCartPanel = document.querySelector('.naay-cart-panel');
+    const existingCartPanel = document.querySelector('.kova-cart-panel');
     if (existingCartPanel && window.innerWidth <= 480) {
       console.log('🎯 IMMEDIATE: Found existing cart panel, applying direct styling');
       applyDirectStyling(existingCartPanel);
@@ -6343,8 +6351,8 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
   // GLOBAL EMERGENCY FUNCTIONS - Available before widget initialization
   // Quick cart position check
-  window.NAAY_WHERE_IS_CART = function() {
-    const cartPanel = document.querySelector('.naay-cart-panel');
+  window.KOVA_WHERE_IS_CART = function() {
+    const cartPanel = document.querySelector('.kova-cart-panel');
     if (!cartPanel) {
       console.log('❌ NO CART PANEL FOUND');
       return 'No cart panel found';
@@ -6378,12 +6386,12 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     };
   };
 
-  window.NAAY_EMERGENCY_DEBUG = function () {
+  window.KOVA_EMERGENCY_DEBUG = function () {
     console.log('🚨 GLOBAL EMERGENCY DEBUG CALLED');
     console.log('Current viewport:', window.innerWidth + 'x' + window.innerHeight);
     console.log('Is mobile:', window.innerWidth <= 480);
 
-    const cartPanel = document.querySelector('.naay-cart-panel');
+    const cartPanel = document.querySelector('.kova-cart-panel');
     if (cartPanel) {
       console.log('Cart panel found:', cartPanel);
       console.log('Cart classes:', Array.from(cartPanel.classList));
@@ -6395,9 +6403,9 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     }
   };
 
-  window.NAAY_FORCE_CENTER = function () {
+  window.KOVA_FORCE_CENTER = function () {
     console.log('🎯 GENTLE FORCE CENTER CALLED');
-    const cartPanel = document.querySelector('.naay-cart-panel');
+    const cartPanel = document.querySelector('.kova-cart-panel');
     if (cartPanel && window.innerWidth <= 480) {
       console.log('Applying gentle emergency centering...');
 
@@ -6416,7 +6424,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       cartPanel.style.setProperty('z-index', '10002', 'important');
 
       // Show if hidden
-      if (cartPanel.classList.contains('naay-cart-panel--open')) {
+      if (cartPanel.classList.contains('kova-cart-panel--open')) {
         cartPanel.style.setProperty('opacity', '1', 'important');
         cartPanel.style.setProperty('visibility', 'visible', 'important');
       }
@@ -6432,7 +6440,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     }
   };
 
-  window.NAAY_REAPPLY_STYLES = function () {
+  window.KOVA_REAPPLY_STYLES = function () {
     console.log('🔄 GLOBAL STYLE REAPPLICATION');
     if (typeof applyMobileCartStyles === 'function') {
       applyMobileCartStyles();
@@ -6445,41 +6453,42 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
   // Initialize widget function
   function initializeWidget() {
-    if (window.naayWidget) {
-      console.log('🔒 Naay Widget: Already initialized, skipping');
+    if (window.kovaWidget) {
+      console.log('🔒 Kova Widget: Already initialized, skipping');
       return;
     }
 
-    console.log('🚀 Launching Naay Luxury Widget v2.1...');
-    const widget = new NaayWidget();
-    window.naayWidget = widget;
+    console.log('🚀 Launching Kova Luxury Widget v2.1...');
+    // Use window.KovaConfig if available (set by Shopify Liquid template)
+    const widget = new KovaWidget(window.KovaConfig || {});
+    window.kovaWidget = widget;
 
     // Mark as fully initialized
-    window.__NAAY_WIDGET_INITIALIZED__ = true;
-    window.__NAAY_WIDGET_LOADING__ = false;
+    window.__KOVA_WIDGET_INITIALIZED__ = true;
+    window.__KOVA_WIDGET_LOADING__ = false;
 
     // Expose testing functions for development
-    window.testNaayCart = () => {
-      console.log('🧪 Testing Naay Cart functionality...');
+    window.testKovaCart = () => {
+      console.log('🧪 Testing Kova Cart functionality...');
       widget.testCart();
       return 'Cart test completed! Check the widget.';
     };
 
-    window.testNaayProduct = () => {
-      console.log('🧪 Testing Naay Product Recommendations...');
+    window.testKovaProduct = () => {
+      console.log('🧪 Testing Kova Product Recommendations...');
       widget.testProductRecommendation();
       return 'Product recommendations test completed! Check the widget.';
     };
 
     // Additional cart testing functions
-    window.showNaayCart = () => {
-      console.log('🛒 Showing Naay Cart...');
+    window.showKovaCart = () => {
+      console.log('🛒 Showing Kova Cart...');
       widget.showCart();
       return 'Cart is now visible!';
     };
 
-    window.hideNaayCart = () => {
-      console.log('🛒 Hiding Naay Cart...');
+    window.hideKovaCart = () => {
+      console.log('🛒 Hiding Kova Cart...');
       widget.hideCart();
       return 'Cart is now hidden!';
     };
@@ -6503,8 +6512,8 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       return 'New cart design test completed! Check the sidebar cart.';
     };
 
-    window.clearNaayCart = () => {
-      console.log('🗑️ Clearing Naay Cart...');
+    window.clearKovaCart = () => {
+      console.log('🗑️ Clearing Kova Cart...');
       widget.cartData.items = [];
       widget.updateCartDisplay();
       return 'Cart cleared successfully!';
@@ -6518,7 +6527,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
     window.forceCartCenter = () => {
       console.log('🎯 FORCING CART CENTER MANUALLY');
-      const cartPanel = document.querySelector('.naay-cart-panel');
+      const cartPanel = document.querySelector('.kova-cart-panel');
       if (cartPanel) {
         // Apply direct inline styling with highest priority
         cartPanel.style.setProperty('position', 'fixed', 'important');
@@ -6547,7 +6556,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     };
 
     window.inspectCartStyles = () => {
-      const cartPanel = document.querySelector('.naay-cart-panel');
+      const cartPanel = document.querySelector('.kova-cart-panel');
       if (cartPanel) {
         const computedStyles = window.getComputedStyle(cartPanel);
         const rect = cartPanel.getBoundingClientRect();
@@ -6586,10 +6595,10 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       }
     };
 
-    console.log('✨ Naay Widget initialized! New cart features ready:');
+    console.log('✨ Kova Widget initialized! New cart features ready:');
     console.log('🛒 Use window.testNewCartDesign() to test the new sidebar cart');
-    console.log('📋 Use window.clearNaayCart() to clear cart items');
-    console.log('🔄 Use window.showNaayCart() / window.hideNaayCart() to control visibility');
+    console.log('📋 Use window.clearKovaCart() to clear cart items');
+    console.log('🔄 Use window.showKovaCart() / window.hideKovaCart() to control visibility');
     console.log('🚨 EMERGENCY DEBUG FUNCTIONS:');
     console.log('   📊 window.emergencyDebugCart() - Full cart debug information');
     console.log('   🎯 window.forceCartCenter() - Force cart to center with inline styles');
@@ -6604,12 +6613,12 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     initializeWidget();
   }
 
-  console.log('✨ Naay Luxury Chat: Widget script loaded successfully');
+  console.log('✨ Kova Luxury Chat: Widget script loaded successfully');
   console.log('🚨 EMERGENCY MOBILE CART DEBUGGING SYSTEM ACTIVE');
   console.log('📋 Available Emergency Functions:');
-  console.log('   🚨 NAAY_EMERGENCY_DEBUG() - Full diagnostic information');
-  console.log('   🎯 NAAY_FORCE_CENTER() - Nuclear cart centering');
-  console.log('   🔄 NAAY_REAPPLY_STYLES() - Reapply mobile styles');
+  console.log('   🚨 KOVA_EMERGENCY_DEBUG() - Full diagnostic information');
+  console.log('   🎯 KOVA_FORCE_CENTER() - Nuclear cart centering');
+  console.log('   🔄 KOVA_REAPPLY_STYLES() - Reapply mobile styles');
   console.log('📊 Emergency system will automatically apply multiple fallbacks on mobile devices');
   console.log('⚡ Mobile cart positioning will be enforced with 4 different methods simultaneously');
 })();

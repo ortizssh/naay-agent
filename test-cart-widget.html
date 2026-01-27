@@ -106,7 +106,7 @@
     </div>
 
     <!-- Include the enhanced widget -->
-    <script src="/backend/public/naay-widget.js"></script>
+    <script src="/backend/public/kova-widget.js"></script>
     
     <script>
         // Initialize widget after DOM loads
@@ -114,7 +114,7 @@
             console.log('🧪 Initializing Naay Widget for testing...');
             
             // Initialize widget with test configuration
-            window.naayWidget = new window.NaayWidget({
+            window.kovaWidget = new window.KovaWidget({
                 shopDomain: 'test-shop.myshopify.com',
                 apiEndpoint: 'http://localhost:3000',
                 position: 'bottom-right',
@@ -137,16 +137,16 @@
             // Add the same product 5 times
             for (let i = 0; i < 5; i++) {
                 console.log(`🧪 Adding product ${i + 1}/5`);
-                if (window.naayWidget) {
-                    window.naayWidget.addToCartLocal(testProduct);
+                if (window.kovaWidget) {
+                    window.kovaWidget.addToCartLocal(testProduct);
                 }
                 
                 // Small delay between additions
                 setTimeout(() => {
                     if (i === 4) {
                         console.log('✅ Multiple additions test completed!');
-                        if (window.naayWidget) {
-                            window.naayWidget.showCart();
+                        if (window.kovaWidget) {
+                            window.kovaWidget.showCart();
                         }
                     }
                 }, i * 100);
@@ -184,14 +184,14 @@
 
             products.forEach((product, index) => {
                 setTimeout(() => {
-                    if (window.naayWidget) {
-                        window.naayWidget.addToCartLocal(product);
+                    if (window.kovaWidget) {
+                        window.kovaWidget.addToCartLocal(product);
                     }
                     if (index === products.length - 1) {
                         console.log('✅ Different products added!');
                         setTimeout(() => {
-                            if (window.naayWidget) {
-                                window.naayWidget.showCart();
+                            if (window.kovaWidget) {
+                                window.kovaWidget.showCart();
                             }
                         }, 200);
                     }
@@ -201,23 +201,23 @@
 
         function openCart() {
             console.log('🛒 Opening cart...');
-            if (window.naayWidget) {
-                window.naayWidget.showCart();
+            if (window.kovaWidget) {
+                window.kovaWidget.showCart();
             }
         }
 
         function closeCart() {
             console.log('🛒 Closing cart...');
-            if (window.naayWidget) {
-                window.naayWidget.hideCart();
+            if (window.kovaWidget) {
+                window.kovaWidget.hideCart();
             }
         }
 
         function clearCart() {
             console.log('🗑️ Clearing cart...');
-            if (window.naayWidget && window.naayWidget.cartData) {
-                window.naayWidget.cartData.items = [];
-                window.naayWidget.updateCartDisplay();
+            if (window.kovaWidget && window.kovaWidget.cartData) {
+                window.kovaWidget.cartData.items = [];
+                window.kovaWidget.updateCartDisplay();
                 console.log('✅ Cart cleared!');
             }
         }
@@ -245,15 +245,15 @@
                 };
 
                 setTimeout(() => {
-                    if (window.naayWidget) {
-                        window.naayWidget.addToCartLocal(testProduct);
+                    if (window.kovaWidget) {
+                        window.kovaWidget.addToCartLocal(testProduct);
                     }
                     
                     if (i === count - 1) {
                         console.log(`✅ ${count} items added for scroll test!`);
                         setTimeout(() => {
-                            if (window.naayWidget) {
-                                window.naayWidget.showCart();
+                            if (window.kovaWidget) {
+                                window.kovaWidget.showCart();
                             }
                         }, 200);
                     }
@@ -263,10 +263,10 @@
 
         // Debug helper
         window.debugCart = function() {
-            if (window.naayWidget && window.naayWidget.cartData) {
-                console.log('🛒 Current cart state:', window.naayWidget.cartData);
-                console.log('📊 Total items:', window.naayWidget.cartData.items.length);
-                console.log('💰 Total value:', window.naayWidget.cartData.total);
+            if (window.kovaWidget && window.kovaWidget.cartData) {
+                console.log('🛒 Current cart state:', window.kovaWidget.cartData);
+                console.log('📊 Total items:', window.kovaWidget.cartData.items.length);
+                console.log('💰 Total value:', window.kovaWidget.cartData.total);
             } else {
                 console.log('⚠️ Widget not found or not initialized');
             }

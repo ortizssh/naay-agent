@@ -5,9 +5,9 @@ import fs from 'fs';
 const router = Router();
 
 // Serve widget script with complete CORS freedom
-router.get('/naay-widget.js', (req: Request, res: Response) => {
+router.get('/kova-widget.js', (req: Request, res: Response) => {
   try {
-    const widgetPath = path.join(__dirname, '..', 'public', 'naay-widget.js');
+    const widgetPath = path.join(__dirname, '..', 'public', 'kova-widget.js');
 
     if (!fs.existsSync(widgetPath)) {
       return res.status(404).json({ error: 'Widget not found' });
@@ -59,7 +59,7 @@ router.get('/naay-widget.js', (req: Request, res: Response) => {
 });
 
 // Handle OPTIONS for CORS preflight
-router.options('/naay-widget.js', (req: Request, res: Response) => {
+router.options('/kova-widget.js', (req: Request, res: Response) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', '*');

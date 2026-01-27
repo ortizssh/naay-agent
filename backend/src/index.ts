@@ -34,6 +34,7 @@ import realConversionAnalyzerRoutes from '@/controllers/real-conversion-analyzer
 import tenantAdminRoutes from '@/controllers/tenant-admin.controller';
 import adminAuthRoutes from '@/controllers/admin-auth.controller';
 import clientRoutes from '@/controllers/client.controller';
+import shopifyEmbeddedRoutes from '@/controllers/shopify-embedded.controller';
 
 async function startServer() {
   try {
@@ -51,7 +52,7 @@ async function startServer() {
 
     // Widget-specific middleware BEFORE other security middleware
     app.use('/static', (req, res, next) => {
-      if (req.path.includes('naay-widget.js')) {
+      if (req.path.includes('kova-widget.js')) {
         // Completely override all security headers for widget script
         res.removeHeader('X-Frame-Options');
         res.removeHeader('Content-Security-Policy');
@@ -186,7 +187,7 @@ async function startServer() {
 
     // Security middleware - allow iframe embedding for Shopify (but not for widget files)
     app.use((req, res, next) => {
-      if (!req.path.includes('naay-widget.js')) {
+      if (!req.path.includes('kova-widget.js')) {
         helmet({
           contentSecurityPolicy: {
             directives: {
@@ -205,6 +206,23 @@ async function startServer() {
         next();
       }
     });
+    // Shopify Embedded API CORS middleware
+    app.use('/api/shopify/embedded', (req, res, next) => {
+      // Allow all origins for embedded Shopify context
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+      res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization'
+      );
+      res.setHeader('Access-Control-Max-Age', '86400');
+
+      if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+      }
+      next();
+    });
+
     // Client API CORS middleware
     app.use('/api/client', (req, res, next) => {
       const origin = req.get('Origin');
@@ -403,7 +421,7 @@ async function startServer() {
     app.use(
       '/static',
       (req, res, next) => {
-        if (req.path.includes('naay-widget.js')) {
+        if (req.path.includes('kova-widget.js')) {
           // Force no caching for widget file
           res.setHeader(
             'Cache-Control',
@@ -420,7 +438,7 @@ async function startServer() {
     );
 
     // Public widget endpoint (direct route with CORS)
-    app.get('/widget/naay-widget.js', (req, res) => {
+    app.get('/widget/kova-widget.js', (req, res) => {
       try {
         // Set complete CORS headers
         res.setHeader('Access-Control-Allow-Origin', '*');
@@ -447,10 +465,10 @@ async function startServer() {
 
         // Try multiple paths until we find the file
         const possiblePaths = [
-          path.join(__dirname, '../public', 'naay-widget.js'),
-          path.join(__dirname, 'public', 'naay-widget.js'),
-          path.join(process.cwd(), 'public', 'naay-widget.js'),
-          path.join(process.cwd(), 'dist', 'public', 'naay-widget.js'),
+          path.join(__dirname, '../public', 'kova-widget.js'),
+          path.join(__dirname, 'public', 'kova-widget.js'),
+          path.join(process.cwd(), 'public', 'kova-widget.js'),
+          path.join(process.cwd(), 'dist', 'public', 'kova-widget.js'),
         ];
 
         let foundPath = null;
@@ -707,6 +725,7 @@ async function startServer() {
     app.use('/api/admin/tenants', tenantAdminRoutes);
     app.use('/api/auth', adminAuthRoutes);
     app.use('/api/client', clientRoutes);
+    app.use('/api/shopify/embedded', shopifyEmbeddedRoutes);
     app.use('/api/admin-bypass', adminBypassRoutes);
 
     // Conversion Analytics Routes

@@ -64,7 +64,7 @@ router.get(
     try {
       const user = (req as any).user;
 
-      // Get client's stores
+      // Get client's stores from client_stores (new flow)
       const { data: stores, error: storesError } = await (
         supabaseService as any
       ).serviceClient
@@ -76,18 +76,53 @@ router.get(
         throw new AppError('Error al obtener tiendas', 500);
       }
 
-      const activeStores =
-        stores?.filter((s: any) => s.status === 'active') || [];
-      const totalProducts =
-        stores?.reduce(
+      let allStores = stores || [];
+      let totalProducts = 0;
+
+      // If user has a linked shop_domain but no client_stores, check legacy stores table
+      if (allStores.length === 0 && user.shop_domain) {
+        const { data: legacyStore } = await (
+          supabaseService as any
+        ).serviceClient
+          .from('stores')
+          .select('shop_domain, installed_at, widget_enabled')
+          .eq('shop_domain', user.shop_domain)
+          .single();
+
+        if (legacyStore) {
+          // Get product count
+          const { count: productCount } = await (
+            supabaseService as any
+          ).serviceClient
+            .from('products')
+            .select('*', { count: 'exact', head: true })
+            .eq('shop_domain', legacyStore.shop_domain);
+
+          allStores = [
+            {
+              shop_domain: legacyStore.shop_domain,
+              status: 'active',
+              products_synced: productCount || 0,
+              created_at: legacyStore.installed_at,
+            },
+          ];
+          totalProducts = productCount || 0;
+        }
+      } else {
+        totalProducts = allStores.reduce(
           (sum: number, s: any) => sum + (s.products_synced || 0),
           0
-        ) || 0;
+        );
+      }
+
+      const activeStores = allStores.filter(
+        (s: any) => s.status === 'active' || s.status === 'connected'
+      );
 
       res.json({
         success: true,
         data: {
-          totalStores: stores?.length || 0,
+          totalStores: allStores.length,
           activeStores: activeStores.length,
           totalProducts,
           onboardingCompleted: user.onboarding_completed,
@@ -536,16 +571,22 @@ router.get(
         throw new AppError('Tienda no encontrada', 404);
       }
 
-      const widgetCode = `<!-- Naay Chat Widget -->
+      const widgetCode = `<!-- Kova AI Chat Widget -->
 <script>
-  window.naayConfig = {
-    shop: "${store.shop_domain}",
+  window.KovaConfig = {
+    shopDomain: "${store.shop_domain}",
+    apiEndpoint: "${config.shopify.appUrl}",
+    chatEndpoint: "https://n8n.dustkey.com/webhook/chat-naay",
     position: "${store.widget_position}",
     primaryColor: "${store.widget_color}",
-    welcomeMessage: "${store.welcome_message}"
+    greeting: "${store.welcome_message}",
+    placeholder: "Preguntanos sobre tu compra...",
+    theme: "light",
+    avatar: "🌿",
+    enabled: true
   };
 </script>
-<script src="${config.shopify.appUrl}/widget/naay-widget.js" async></script>`;
+<script src="${config.shopify.appUrl}/widget/kova-widget.js" async></script>`;
 
       res.json({
         success: true,
@@ -563,7 +604,8 @@ router.get(
 
 /**
  * GET /api/client/analytics
- * Get basic analytics
+ * Get basic analytics for the client's store
+ * Optional query param: ?shop=domain.myshopify.com
  */
 router.get(
   '/analytics',
@@ -571,12 +613,80 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = (req as any).user;
+      const requestedShop = req.query.shop as string | undefined;
 
-      const { data: store } = await (supabaseService as any).serviceClient
-        .from('client_stores')
-        .select('shop_domain, products_synced, last_sync_at, created_at')
-        .eq('user_id', user.id)
-        .single();
+      let store: any = null;
+
+      // If admin user requests specific shop, allow it
+      if (requestedShop && user.role === 'admin') {
+        const { data: legacyStore } = await (
+          supabaseService as any
+        ).serviceClient
+          .from('stores')
+          .select('shop_domain, installed_at, updated_at')
+          .eq('shop_domain', requestedShop)
+          .single();
+
+        if (legacyStore) {
+          const { count: productCount } = await (
+            supabaseService as any
+          ).serviceClient
+            .from('products')
+            .select('*', { count: 'exact', head: true })
+            .eq('shop_domain', legacyStore.shop_domain);
+
+          store = {
+            shop_domain: legacyStore.shop_domain,
+            products_synced: productCount || 0,
+            last_sync_at: legacyStore.updated_at,
+            created_at: legacyStore.installed_at,
+          };
+        }
+      }
+
+      // First try to get store from client_stores (new flow)
+      if (!store) {
+        const { data: clientStore } = await (
+          supabaseService as any
+        ).serviceClient
+          .from('client_stores')
+          .select('shop_domain, products_synced, last_sync_at, created_at')
+          .eq('user_id', user.id)
+          .single();
+
+        if (clientStore) {
+          store = clientStore;
+        }
+      }
+
+      // If not found in client_stores, check if user has a linked shop_domain in their profile
+      if (!store && user.shop_domain) {
+        // Get store info from stores table (legacy OAuth flow)
+        const { data: legacyStore } = await (
+          supabaseService as any
+        ).serviceClient
+          .from('stores')
+          .select('shop_domain, installed_at, updated_at')
+          .eq('shop_domain', user.shop_domain)
+          .single();
+
+        if (legacyStore) {
+          // Get product count from products table
+          const { count: productCount } = await (
+            supabaseService as any
+          ).serviceClient
+            .from('products')
+            .select('*', { count: 'exact', head: true })
+            .eq('shop_domain', legacyStore.shop_domain);
+
+          store = {
+            shop_domain: legacyStore.shop_domain,
+            products_synced: productCount || 0,
+            last_sync_at: legacyStore.updated_at,
+            created_at: legacyStore.installed_at,
+          };
+        }
+      }
 
       if (!store) {
         return res.json({
@@ -585,23 +695,59 @@ router.get(
             conversations: 0,
             messages: 0,
             products: 0,
+            recommendations: 0,
+            conversions: 0,
+            lastSync: null,
+            storeCreated: null,
           },
         });
       }
 
-      // Get conversation count
-      const { count: conversationCount } = await (
+      // Get unique sessions count (conversations) from chat_messages
+      const { data: sessionsData } = await (
         supabaseService as any
       ).serviceClient
-        .from('conversations')
+        .from('chat_messages')
+        .select('session_id')
+        .eq('shop_domain', store.shop_domain);
+
+      const uniqueSessions = new Set(
+        sessionsData?.map((m: any) => m.session_id) || []
+      );
+      const conversationCount = uniqueSessions.size;
+
+      // Get total messages count
+      const { count: messageCount } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('chat_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('shop_domain', store.shop_domain);
+
+      // Get recommendations count
+      const { count: recommendationCount } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('simple_recommendations')
+        .select('*', { count: 'exact', head: true })
+        .eq('shop_domain', store.shop_domain);
+
+      // Get conversions count
+      const { count: conversionCount } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('simple_conversions')
         .select('*', { count: 'exact', head: true })
         .eq('shop_domain', store.shop_domain);
 
       return res.json({
         success: true,
         data: {
-          conversations: conversationCount || 0,
+          conversations: conversationCount,
+          messages: messageCount || 0,
           products: store.products_synced || 0,
+          recommendations: recommendationCount || 0,
+          conversions: conversionCount || 0,
           lastSync: store.last_sync_at,
           storeCreated: store.created_at,
         },

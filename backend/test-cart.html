@@ -87,13 +87,13 @@
     <!-- Naay Widget Script -->
     <script>
         // Initialize Naay Widget
-        window.NaayWidget = {
+        window.KovaWidget = {
             init: function(config) {
                 console.log('🚀 Initializing Naay Widget with config:', config);
                 
                 // Load the widget script
                 const script = document.createElement('script');
-                script.src = 'http://localhost:3000/widget/naay-widget.js';
+                script.src = 'http://localhost:3000/widget/kova-widget.js';
                 script.async = true;
                 script.onload = function() {
                     console.log('✅ Naay Widget script loaded');
@@ -111,7 +111,7 @@
         function updateStatus() {
             setTimeout(() => {
                 try {
-                    const widget = window.naayWidget;
+                    const widget = window.kovaWidget;
                     if (widget) {
                         document.getElementById('widget-position').textContent = widget.config?.position || 'Unknown';
                         document.getElementById('cart-visible').textContent = widget.cartVisible ? 'Yes' : 'No';
@@ -174,7 +174,7 @@
         // Initialize when page loads
         window.addEventListener('DOMContentLoaded', function() {
             console.log('🔄 Initializing Naay Widget...');
-            window.NaayWidget.init({
+            window.KovaWidget.init({
                 shopDomain: 'test-shop.myshopify.com',
                 position: 'bottom-right',
                 apiEndpoint: 'http://localhost:3000'

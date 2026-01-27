@@ -169,10 +169,10 @@ router.get('/widget-debug', async (req: Request, res: Response) => {
 
     // Test widget paths
     const widgetPaths = [
-      path.join(__dirname, 'public', 'naay-widget.js'),
-      path.join(__dirname, '../public', 'naay-widget.js'),
-      path.join(process.cwd(), 'public', 'naay-widget.js'),
-      path.join(process.cwd(), 'dist', 'public', 'naay-widget.js'),
+      path.join(__dirname, 'public', 'kova-widget.js'),
+      path.join(__dirname, '../public', 'kova-widget.js'),
+      path.join(process.cwd(), 'public', 'kova-widget.js'),
+      path.join(process.cwd(), 'dist', 'public', 'kova-widget.js'),
     ];
 
     widgetPaths.forEach((testPath, index) => {

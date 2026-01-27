@@ -28,7 +28,7 @@ export class CorsMiddleware {
    */
   static widgetScript() {
     return (req: Request, res: Response, next: NextFunction) => {
-      if (req.path.includes('naay-widget.js')) {
+      if (req.path.includes('kova-widget.js')) {
         // Remove any existing restrictive headers
         res.removeHeader('X-Frame-Options');
         res.removeHeader('Content-Security-Policy');
@@ -197,7 +197,7 @@ export class CorsMiddleware {
   static frameOptions() {
     return (req: Request, res: Response, next: NextFunction) => {
       // Don't apply to widget files
-      if (!req.path.includes('naay-widget.js')) {
+      if (!req.path.includes('kova-widget.js')) {
         res.setHeader('X-Frame-Options', 'ALLOWALL');
         res.setHeader(
           'Content-Security-Policy',
