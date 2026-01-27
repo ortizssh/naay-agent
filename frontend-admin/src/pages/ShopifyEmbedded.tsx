@@ -34,11 +34,22 @@ function ShopifyEmbedded({ shop, host }: ShopifyEmbeddedProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Get API URL
+  // Get API URL - for embedded Shopify context, we need the app URL, not the iframe origin
   const getApiUrl = () => {
+    // Check for environment variable first
     if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+
+    // For localhost development
     if (window.location.hostname === 'localhost') return 'http://localhost:3000';
-    return window.location.origin;
+
+    // For embedded context, check if we're on the app's domain
+    const currentOrigin = window.location.origin;
+    if (currentOrigin.includes('naay-agent') || currentOrigin.includes('azurewebsites.net')) {
+      return currentOrigin;
+    }
+
+    // Fallback to production URL for Shopify embedded context
+    return 'https://naay-agent-app1763504937.azurewebsites.net';
   };
 
   useEffect(() => {
