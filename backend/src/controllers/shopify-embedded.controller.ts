@@ -251,8 +251,8 @@ router.put(
  * Helper function to get analytics for a shop with optional date filtering
  * Optimized with parallel queries for better performance
  *
- * NOTE: chat_messages doesn't have shop_domain column.
- * We need to get sessions from chat_sessions first, then fetch messages for those sessions.
+ * NOTE: The simple-chat controller uses in-memory storage and doesn't persist to chat_sessions/chat_messages.
+ * Instead, we derive conversation data from simple_recommendations which has session_id.
  */
 async function getAnalyticsForShop(
   shopDomain: string,
@@ -260,49 +260,23 @@ async function getAnalyticsForShop(
 ) {
   const client = (supabaseService as any).serviceClient;
 
-  // First, get all session IDs for this shop from chat_sessions
-  let sessionsQuery = client
-    .from('chat_sessions')
-    .select('id, started_at')
-    .eq('shop_domain', shopDomain);
-
-  // Apply date filters to sessions
-  if (dateFilters.start) {
-    sessionsQuery = sessionsQuery.gte('started_at', dateFilters.start);
-  }
-  if (dateFilters.end) {
-    sessionsQuery = sessionsQuery.lte('started_at', dateFilters.end);
-  }
-
-  const { data: sessions, error: sessionsError } = await sessionsQuery;
-
-  if (sessionsError) {
-    logger.error('Error fetching sessions:', sessionsError);
-  }
-
-  const sessionIds = sessions?.map((s: any) => s.id) || [];
-
-  // Build messages query - only if we have sessions
-  const buildMessagesQuery = async () => {
-    if (sessionIds.length === 0) {
-      return { data: [], error: null };
-    }
-
+  // Build recommendations query with session data for conversation counting
+  const buildRecommendationsWithSessionsQuery = () => {
     let query = client
-      .from('chat_messages')
-      .select('session_id, timestamp')
-      .in('session_id', sessionIds);
+      .from('simple_recommendations')
+      .select('session_id, created_at')
+      .eq('shop_domain', shopDomain);
 
     if (dateFilters.start) {
-      query = query.gte('timestamp', dateFilters.start);
+      query = query.gte('created_at', dateFilters.start);
     }
     if (dateFilters.end) {
-      query = query.lte('timestamp', dateFilters.end);
+      query = query.lte('created_at', dateFilters.end);
     }
     return query;
   };
 
-  const buildRecommendationsQuery = () => {
+  const buildRecommendationsCountQuery = () => {
     let query = client
       .from('simple_recommendations')
       .select('*', { count: 'exact', head: true })
@@ -332,20 +306,20 @@ async function getAnalyticsForShop(
     return query;
   };
 
-  // Execute remaining queries in parallel for better performance
+  // Execute all queries in parallel for better performance
   const [
-    messagesResult,
+    recommendationsWithSessionsResult,
     productCountResult,
-    recommendationsResult,
+    recommendationsCountResult,
     conversionsResult,
     storeInfoResult,
   ] = await Promise.all([
-    buildMessagesQuery(),
+    buildRecommendationsWithSessionsQuery(),
     client
       .from('products')
       .select('*', { count: 'exact', head: true })
       .eq('shop_domain', shopDomain),
-    buildRecommendationsQuery(),
+    buildRecommendationsCountQuery(),
     buildConversionsQuery(),
     client
       .from('stores')
@@ -354,30 +328,31 @@ async function getAnalyticsForShop(
       .single(),
   ]);
 
-  const messagesData = messagesResult.data;
+  const recommendationsData = recommendationsWithSessionsResult.data || [];
   const productCount = productCountResult.count;
-  const recommendationCount = recommendationsResult.count;
+  const recommendationCount = recommendationsCountResult.count;
   const conversionCount = conversionsResult.count;
   const storeInfo = storeInfoResult.data;
 
-  // Calculate unique sessions (conversations)
+  // Calculate unique sessions (conversations) from recommendations data
   const uniqueSessions = new Set(
-    messagesData?.map((m: any) => m.session_id) || []
+    recommendationsData.map((r: any) => r.session_id).filter(Boolean)
   );
   const conversationCount = uniqueSessions.size;
-  const messageCount = messagesData?.length || 0;
 
   // Calculate conversations by day for chart
   const conversationsByDay: { date: string; count: number }[] = [];
-  if (messagesData && messagesData.length > 0) {
+  if (recommendationsData.length > 0) {
     const sessionsByDay: Record<string, Set<string>> = {};
 
-    messagesData.forEach((msg: any) => {
-      const date = new Date(msg.timestamp).toISOString().split('T')[0];
+    recommendationsData.forEach((rec: any) => {
+      if (!rec.session_id || !rec.created_at) return;
+
+      const date = new Date(rec.created_at).toISOString().split('T')[0];
       if (!sessionsByDay[date]) {
         sessionsByDay[date] = new Set();
       }
-      sessionsByDay[date].add(msg.session_id);
+      sessionsByDay[date].add(rec.session_id);
     });
 
     Object.keys(sessionsByDay)
@@ -392,7 +367,7 @@ async function getAnalyticsForShop(
 
   return {
     conversations: conversationCount,
-    messages: messageCount,
+    messages: recommendationsData.length, // Use recommendations count as proxy for messages
     products: productCount || 0,
     recommendations: recommendationCount || 0,
     conversions: conversionCount || 0,
