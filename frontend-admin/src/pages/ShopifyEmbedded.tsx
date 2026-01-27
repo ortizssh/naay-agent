@@ -588,47 +588,6 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                 </div>
               )}
 
-              {/* Current Date Range Indicator */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: '1rem',
-                padding: '0.75rem 1rem',
-                background: 'var(--color-primary)',
-                borderRadius: '8px',
-                color: 'white',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                  </svg>
-                  <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>
-                    {new Date(startDate + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} - {new Date(endDate + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  </span>
-                </div>
-                <span style={{
-                  background: 'rgba(255,255,255,0.2)',
-                  padding: '0.25rem 0.6rem',
-                  borderRadius: '4px',
-                  fontSize: '0.8rem',
-                  fontWeight: '500',
-                }}>
-                  {selectedPreset === 'custom' ? 'Personalizado' :
-                   selectedPreset === 'today' ? 'Hoy' :
-                   selectedPreset === 'yesterday' ? 'Ayer' :
-                   selectedPreset === '3d' ? '3 dias' :
-                   selectedPreset === '7d' ? '7 dias' :
-                   selectedPreset === '14d' ? '14 dias' :
-                   selectedPreset === '30d' ? '30 dias' :
-                   selectedPreset === 'thisWeek' ? 'Esta semana' :
-                   selectedPreset === 'thisMonth' ? 'Este mes' : selectedPreset}
-                </span>
-              </div>
-
               {/* Quick Presets Row with Custom Dates */}
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                 {/* Presets */}
@@ -923,47 +882,6 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                   }} />
                 </div>
               )}
-
-              {/* Current Date Range Indicator */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: '1rem',
-                padding: '0.75rem 1rem',
-                background: 'var(--color-primary)',
-                borderRadius: '8px',
-                color: 'white',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                  </svg>
-                  <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>
-                    {new Date(startDate + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} - {new Date(endDate + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  </span>
-                </div>
-                <span style={{
-                  background: 'rgba(255,255,255,0.2)',
-                  padding: '0.25rem 0.6rem',
-                  borderRadius: '4px',
-                  fontSize: '0.8rem',
-                  fontWeight: '500',
-                }}>
-                  {selectedPreset === 'custom' ? 'Personalizado' :
-                   selectedPreset === 'today' ? 'Hoy' :
-                   selectedPreset === 'yesterday' ? 'Ayer' :
-                   selectedPreset === '3d' ? '3 dias' :
-                   selectedPreset === '7d' ? '7 dias' :
-                   selectedPreset === '14d' ? '14 dias' :
-                   selectedPreset === '30d' ? '30 dias' :
-                   selectedPreset === 'thisWeek' ? 'Esta semana' :
-                   selectedPreset === 'thisMonth' ? 'Este mes' : selectedPreset}
-                </span>
-              </div>
 
               {/* Quick Presets Row with Custom Dates */}
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>

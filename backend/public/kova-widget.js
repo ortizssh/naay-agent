@@ -2250,15 +2250,21 @@
             overflow: hidden !important;
           }
 
-          /* Cart panel visible when open - IMPORTANT: Keep centering transform */
+          /* Cart panel visible when open - IMPORTANT: Keep centering transform with High Specificity */
           .kova-widget .kova-cart-panel--open,
           html .kova-widget .kova-cart-panel--open,
-          .kova-cart-panel--open {
+          .kova-cart-panel--open,
+          .kova-widget--bottom-left .kova-cart-panel--open,
+          .kova-widget--bottom-right .kova-cart-panel--open,
+          .kova-widget--top-left .kova-cart-panel--open,
+          .kova-widget--top-right .kova-cart-panel--open {
             display: flex !important;
             transform: translate(-50%, -50%) scale(1) !important;
             opacity: 1 !important;
             visibility: visible !important;
             pointer-events: auto !important;
+            left: 50% !important;
+            top: 50% !important;
           }
 
           /* Mobile cart backdrop */
@@ -3599,12 +3605,21 @@
             transform: translate(-50%, -50%) scale(1) !important;
           }
           /* Cart panel mobile centering */
-          .kova-cart-panel--open {
+          /* Cart panel mobile centering - High Specificity */
+          .kova-widget .kova-cart-panel--open,
+          html .kova-widget .kova-cart-panel--open,
+          .kova-cart-panel--open,
+          .kova-widget--bottom-left .kova-cart-panel--open,
+          .kova-widget--bottom-right .kova-cart-panel--open,
+          .kova-widget--top-left .kova-cart-panel--open,
+          .kova-widget--top-right .kova-cart-panel--open {
             display: flex !important;
             transform: translate(-50%, -50%) scale(1) !important;
             opacity: 1 !important;
             visibility: visible !important;
             pointer-events: auto !important;
+            left: 50% !important;
+            top: 50% !important;
           }
         }
       `;
@@ -4645,13 +4660,13 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           <a href="${productUrl}" class="kova-product-card__image-link" data-action="view-product" target="_blank" rel="noopener">
             <div class="kova-product-card__media">
               ${image ?
-            `<img class="kova-product-card__image" src="${image}" alt="${title}" loading="lazy">` :
-            `<div class="kova-product-card__placeholder">
+          `<img class="kova-product-card__image" src="${image}" alt="${title}" loading="lazy">` :
+          `<div class="kova-product-card__placeholder">
                   <svg viewBox="0 0 24 24" fill="none">
                     <path d="M21 16V8C21 6.9 20.1 6 19 6H5C3.9 6 3 6.9 3 8V16C3 17.1 3.9 18 5 18H19C20.1 18 21 17.1 21 16ZM5 16L8.5 11.5L11 14.5L14.5 10L19 16H5Z" fill="currentColor"/>
                   </svg>
                 </div>`
-          }
+        }
             </div>
           </a>
 
@@ -4671,16 +4686,16 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
               <div class="kova-product-card__actions">
                 ${!available ?
-            `<button class="kova-product-card__add-btn kova-product-card__add-btn--disabled" disabled>
+          `<button class="kova-product-card__add-btn kova-product-card__add-btn--disabled" disabled>
                     Agotado
                   </button>` :
-            `<button class="kova-product-card__add-btn" data-action="add-to-cart" title="Agregar al carrito">
+          `<button class="kova-product-card__add-btn" data-action="add-to-cart" title="Agregar al carrito">
                     <svg viewBox="0 0 24 24" fill="none">
                       <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
                     </svg>
                     Agregar
                   </button>`
-          }
+        }
               </div>
             </div>
           </div>
@@ -5143,7 +5158,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     }
 
     // ENHANCED: Remove from cart by unique cart item ID
-    removeFromCartByItemId(cartItemId) {
+    async removeFromCartByItemId(cartItemId) {
       console.log('🛒 Removing cart item by ID:', cartItemId);
 
       // Find the specific cart item by unique ID only
@@ -5159,7 +5174,36 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       const item = this.cartData.items[itemIndex];
       console.log('🗑️ Found item to remove:', item);
 
-      // Remove the specific item from local cart immediately (no loading needed - instant operation)
+      // Try to remove from Shopify native cart if applicable
+      const isShopifyDomain = window.location.hostname.includes('myshopify.com') ||
+        window.location.hostname.includes('shopify.com');
+      const currentShopDomain = (window.KovaConfig && window.KovaConfig.shopDomain) || this.config.shopDomain;
+      const hasShopConfig = currentShopDomain && currentShopDomain.trim() !== '';
+      const isShopifyStore = isShopifyDomain || hasShopConfig;
+
+      if (isShopifyStore) {
+        try {
+          // Priority 1: Use Shopify key (most reliable)
+          if (item.shopifyKey) {
+            console.log('🗑️ Removing from Shopify by key:', item.shopifyKey);
+            await this.removeFromShopifyByKey(item.shopifyKey);
+          }
+          // Priority 2: Use line_index
+          else if (item.line_index !== undefined) {
+            console.log('🗑️ Removing from Shopify by line_index:', item.line_index);
+            await this.removeFromShopifyNativeCart(item.line_index);
+          }
+          // Priority 3: Use variant ID (fallback)
+          else if (item.variantId) {
+            console.log('🗑️ Removing from Shopify by variant ID:', item.variantId);
+            await this.removeFromShopifyByVariantId(item.variantId);
+          }
+        } catch (error) {
+          console.error('❌ Failed to remove from Shopify cart:', error);
+        }
+      }
+
+      // Remove the specific item from local cart immediately
       this.cartData.items.splice(itemIndex, 1);
 
       console.log('✅ Cart item removed successfully. Remaining items:', this.cartData.items.length);
@@ -5168,8 +5212,93 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       this.updateCartDisplay();
     }
 
+    // Remove item from Shopify cart by key (most reliable method)
+    async removeFromShopifyByKey(key) {
+      console.log('🛒 Removing from Shopify cart by key:', key);
+
+      try {
+        const response = await fetch('/cart/change.js', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            id: key,
+            quantity: 0
+          })
+        });
+
+        if (response.ok) {
+          console.log('✅ Removed from Shopify cart by key');
+          document.dispatchEvent(new CustomEvent('cart:updated'));
+          return true;
+        }
+
+        throw new Error(`HTTP ${response.status}`);
+      } catch (error) {
+        console.error('❌ Error removing from Shopify cart by key:', error);
+        return false;
+      }
+    }
+
+    // Remove item from Shopify cart by variant ID
+    async removeFromShopifyByVariantId(variantId) {
+      console.log('🛒 Removing from Shopify cart by variant ID:', variantId);
+
+      try {
+        // First get current cart to find the item
+        const cartResponse = await fetch('/cart.js', {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' }
+        });
+
+        if (!cartResponse.ok) {
+          throw new Error('Failed to fetch cart');
+        }
+
+        const cart = await cartResponse.json();
+
+        // Find the item with matching variant ID
+        const itemToRemove = cart.items.find(item => {
+          const itemVariantId = String(item.variant_id || item.id);
+          const targetVariantId = String(variantId).replace('gid://shopify/ProductVariant/', '');
+          return itemVariantId === targetVariantId || itemVariantId.includes(targetVariantId);
+        });
+
+        if (!itemToRemove) {
+          console.warn('⚠️ Item not found in Shopify cart for variant:', variantId);
+          return false;
+        }
+
+        // Remove using the key
+        const response = await fetch('/cart/change.js', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            id: itemToRemove.key,
+            quantity: 0
+          })
+        });
+
+        if (response.ok) {
+          console.log('✅ Removed from Shopify cart by variant ID');
+          document.dispatchEvent(new CustomEvent('cart:updated'));
+          return true;
+        }
+
+        throw new Error(`HTTP ${response.status}`);
+      } catch (error) {
+        console.error('❌ Error removing from Shopify cart by variant:', error);
+        return false;
+      }
+    }
+
     // ENHANCED: Update quantity by unique cart item ID
-    updateQuantityByItemId(cartItemId, newQuantity) {
+    async updateQuantityByItemId(cartItemId, newQuantity) {
       console.log('🛒 Updating cart item quantity:', cartItemId, 'to', newQuantity);
 
       // Find the specific cart item by unique ID only
@@ -5188,13 +5317,120 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         return;
       }
 
-      // Update the quantity immediately
+      // Update the quantity immediately in local cart
       item.quantity = newQuantity;
+
+      // Try to sync with Shopify
+      const isShopifyDomain = window.location.hostname.includes('myshopify.com') ||
+        window.location.hostname.includes('shopify.com');
+      const currentShopDomain = (window.KovaConfig && window.KovaConfig.shopDomain) || this.config.shopDomain;
+      const hasShopConfig = currentShopDomain && currentShopDomain.trim() !== '';
+      const isShopifyStore = isShopifyDomain || hasShopConfig;
+
+      if (isShopifyStore) {
+        try {
+          // Priority 1: Use Shopify key (most reliable)
+          if (item.shopifyKey) {
+            await this.updateShopifyQuantityByKey(item.shopifyKey, newQuantity);
+          }
+          // Priority 2: Use variant ID (fallback)
+          else if (item.variantId) {
+            await this.updateShopifyQuantityByVariantId(item.variantId, newQuantity);
+          }
+        } catch (error) {
+          console.error('❌ Failed to update Shopify cart quantity:', error);
+        }
+      }
 
       console.log('✅ Cart item quantity updated:', item);
 
       // Update cart display immediately to reflect changes
       this.updateCartDisplay();
+    }
+
+    // Update quantity in Shopify cart by key (most reliable method)
+    async updateShopifyQuantityByKey(key, newQuantity) {
+      console.log('🛒 Updating Shopify cart quantity by key:', key, 'to', newQuantity);
+
+      try {
+        const response = await fetch('/cart/change.js', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            id: key,
+            quantity: newQuantity
+          })
+        });
+
+        if (response.ok) {
+          console.log('✅ Updated Shopify cart quantity by key');
+          document.dispatchEvent(new CustomEvent('cart:updated'));
+          return true;
+        }
+
+        throw new Error(`HTTP ${response.status}`);
+      } catch (error) {
+        console.error('❌ Error updating Shopify cart quantity by key:', error);
+        return false;
+      }
+    }
+
+    // Update quantity in Shopify cart by variant ID (fallback)
+    async updateShopifyQuantityByVariantId(variantId, newQuantity) {
+      console.log('🛒 Updating Shopify cart quantity by variant ID:', variantId, 'to', newQuantity);
+
+      try {
+        // First get current cart to find the item
+        const cartResponse = await fetch('/cart.js', {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' }
+        });
+
+        if (!cartResponse.ok) {
+          throw new Error('Failed to fetch cart');
+        }
+
+        const cart = await cartResponse.json();
+
+        // Find the item with matching variant ID
+        const itemToUpdate = cart.items.find(item => {
+          const itemVariantId = String(item.variant_id || item.id);
+          const targetVariantId = String(variantId).replace('gid://shopify/ProductVariant/', '');
+          return itemVariantId === targetVariantId || itemVariantId.includes(targetVariantId);
+        });
+
+        if (!itemToUpdate) {
+          console.warn('⚠️ Item not found in Shopify cart for variant:', variantId);
+          return false;
+        }
+
+        // Update using the key
+        const response = await fetch('/cart/change.js', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            id: itemToUpdate.key,
+            quantity: newQuantity
+          })
+        });
+
+        if (response.ok) {
+          console.log('✅ Updated Shopify cart quantity by variant ID');
+          document.dispatchEvent(new CustomEvent('cart:updated'));
+          return true;
+        }
+
+        throw new Error(`HTTP ${response.status}`);
+      } catch (error) {
+        console.error('❌ Error updating Shopify cart quantity by variant:', error);
+        return false;
+      }
     }
 
 
@@ -5850,6 +6086,8 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       // Transform Shopify native cart to our format
       this.cartData.items = shopifyCart.items?.map((item, index) => ({
         id: item.variant_id.toString(),
+        cartItemId: `shopify_${item.key || item.variant_id}_${index}`, // Use Shopify's item key for consistency
+        shopifyKey: item.key, // Store the Shopify key for removal
         title: item.product_title,
         variantTitle: item.variant_title,
         price: (item.price / 100).toFixed(2), // Shopify prices are in cents
@@ -5865,7 +6103,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       this.cartData.total = shopifyCart.total_price / 100; // Convert from cents
       this.cartData.itemCount = shopifyCart.item_count || 0;
 
-      console.log('✅ Cart synced from Shopify native cart');
+      console.log('✅ Cart synced from Shopify native cart. Items:', this.cartData.items.length);
     }
 
     setupShopifyCartSync() {
