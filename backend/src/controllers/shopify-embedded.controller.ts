@@ -37,13 +37,13 @@ router.get(
         endDate,
       });
 
-      // Build date filters
+      // Build date filters - ensure end date includes the entire day
       const dateFilters = {
-        start: startDate ? new Date(startDate).toISOString() : null,
-        end: endDate
-          ? new Date(new Date(endDate).setHours(23, 59, 59, 999)).toISOString()
-          : null,
+        start: startDate ? `${startDate}T00:00:00.000Z` : null,
+        end: endDate ? `${endDate}T23:59:59.999Z` : null,
       };
+
+      logger.info('Date filters:', dateFilters);
 
       // Verify the shop exists in our system (security check)
       const { data: store, error: storeError } = await (
@@ -452,11 +452,45 @@ async function getAnalyticsForShop(
   const conversionCount = conversionsResult.count || 0;
   const storeInfo = storeInfoResult.data;
 
-  // Combine conversations and recommendations into chart data
-  const allDates = new Set([
-    ...conversationsByDayData.map((d: any) => d.date),
-    ...recommendationsByDayData.map((d: any) => d.date),
-  ]);
+  // Generate all dates in the range (including today even if no data)
+  const generateDateRange = (start: string | null, end: string | null): string[] => {
+    const dates: string[] = [];
+
+    // Get today's date in local format
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    // If no filters, use data dates + today
+    if (!start || !end) {
+      const dataDates = new Set([
+        ...conversationsByDayData.map((d: any) => d.date),
+        ...recommendationsByDayData.map((d: any) => d.date),
+        todayStr,
+      ]);
+      return Array.from(dataDates).sort();
+    }
+
+    // Generate all dates from start to end
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+
+    // Ensure we include today if it's in the range
+    const today = new Date(todayStr);
+    if (today <= endDate) {
+      endDate.setTime(Math.max(endDate.getTime(), today.getTime()));
+    }
+
+    const current = new Date(startDate);
+    while (current <= endDate) {
+      const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
+      dates.push(dateStr);
+      current.setDate(current.getDate() + 1);
+    }
+
+    return dates;
+  };
+
+  const allDatesInRange = generateDateRange(dateFilters.start, dateFilters.end);
 
   const convByDayMap = new Map(
     conversationsByDayData.map((d: any) => [d.date, d.count])
@@ -465,13 +499,14 @@ async function getAnalyticsForShop(
     recommendationsByDayData.map((d: any) => [d.date, d.count])
   );
 
-  const chartDataByDay = Array.from(allDates)
-    .sort()
-    .map(date => ({
-      date,
-      conversations: convByDayMap.get(date) || 0,
-      recommendations: recByDayMap.get(date) || 0,
-    }));
+  // Include all dates in range, even if they have 0 data
+  const chartDataByDay = allDatesInRange.map(date => ({
+    date,
+    conversations: convByDayMap.get(date) || 0,
+    recommendations: recByDayMap.get(date) || 0,
+  }));
+
+  logger.info(`Chart data includes ${chartDataByDay.length} days, last date: ${chartDataByDay[chartDataByDay.length - 1]?.date}`);
 
   return {
     conversations: conversationCount,
