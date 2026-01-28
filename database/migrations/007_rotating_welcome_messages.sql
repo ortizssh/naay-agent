@@ -7,7 +7,9 @@
 ALTER TABLE client_stores
 ADD COLUMN IF NOT EXISTS widget_rotating_messages_enabled BOOLEAN DEFAULT FALSE,
 ADD COLUMN IF NOT EXISTS widget_welcome_message_2 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS widget_subtitle_2 TEXT DEFAULT NULL,
 ADD COLUMN IF NOT EXISTS widget_welcome_message_3 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS widget_subtitle_3 TEXT DEFAULT NULL,
 ADD COLUMN IF NOT EXISTS widget_rotating_messages_interval INTEGER DEFAULT 5;
 
 -- Add constraint for interval range (2 to 15 seconds)

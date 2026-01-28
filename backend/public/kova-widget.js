@@ -76,7 +76,9 @@
         terracotta: '#cf795e',  // NEW Tertiary - Warm terracotta
         greeting: '',
         greeting2: '',
+        subtitle2: '',
         greeting3: '',
+        subtitle3: '',
         rotatingMessagesEnabled: false,
         rotatingMessagesInterval: 5,
         placeholder: 'Pregúntanos sobre tu compra...',
@@ -192,18 +194,30 @@
     }
 
     /**
-     * Get array of all configured greeting messages (non-empty only)
+     * Get array of all configured greeting messages with their subtitles (non-empty only)
+     * Returns array of { message, subtitle } objects
      */
     getRotatingMessages() {
       const messages = [];
+      const defaultSubtitle = this.config.subtitle || 'Asistente de compras con IA';
+
       if (this.config.greeting && this.config.greeting.trim()) {
-        messages.push(this.config.greeting.trim());
+        messages.push({
+          message: this.config.greeting.trim(),
+          subtitle: defaultSubtitle
+        });
       }
       if (this.config.greeting2 && this.config.greeting2.trim()) {
-        messages.push(this.config.greeting2.trim());
+        messages.push({
+          message: this.config.greeting2.trim(),
+          subtitle: (this.config.subtitle2 && this.config.subtitle2.trim()) || defaultSubtitle
+        });
       }
       if (this.config.greeting3 && this.config.greeting3.trim()) {
-        messages.push(this.config.greeting3.trim());
+        messages.push({
+          message: this.config.greeting3.trim(),
+          subtitle: (this.config.subtitle3 && this.config.subtitle3.trim()) || defaultSubtitle
+        });
       }
       return messages;
     }
@@ -217,17 +231,16 @@
 
       // Move to next message (loop back to start)
       this.currentMessageIndex = (this.currentMessageIndex + 1) % messages.length;
-      const currentMessage = messages[this.currentMessageIndex];
+      const current = messages[this.currentMessageIndex];
 
-      console.log(`🔄 Rotating to message ${this.currentMessageIndex + 1}: "${currentMessage.substring(0, 30)}..."`);
+      console.log(`🔄 Rotating to message ${this.currentMessageIndex + 1}: "${current.message.substring(0, 30)}..." with subtitle: "${current.subtitle}"`);
 
       // Update the welcome title in the chat
       const welcomeTitle = this.container.querySelector('.kova-widget__welcome-title');
       if (welcomeTitle) {
-        const subtitle = this.config.subtitle || 'Asistente de compras con IA';
         welcomeTitle.innerHTML = `
-          ${currentMessage}
-          <span class="kova-widget__welcome-subtitle">${subtitle}</span>
+          ${current.message}
+          <span class="kova-widget__welcome-subtitle">${current.subtitle}</span>
         `;
         // Add fade animation
         welcomeTitle.style.animation = 'none';
@@ -238,10 +251,9 @@
       // Update promotional message
       const promoText = this.container.querySelector('.kova-widget__promotional-text');
       if (promoText) {
-        const subtitle = this.config.subtitle || 'Asistente de compras con IA';
         promoText.innerHTML = `
-          ${currentMessage}
-          <span class="kova-widget__promotional-subtitle">${subtitle}</span>
+          ${current.message}
+          <span class="kova-widget__promotional-subtitle">${current.subtitle}</span>
         `;
         // Add fade animation
         promoText.style.animation = 'none';

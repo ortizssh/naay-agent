@@ -37,7 +37,9 @@ interface WidgetConfig {
   widget_color: string;
   welcome_message: string;
   welcome_message_2: string;
+  subtitle_2: string;
   welcome_message_3: string;
+  subtitle_3: string;
   rotating_messages_enabled: boolean;
   rotating_messages_interval: number;
   widget_enabled: boolean;
@@ -271,7 +273,9 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
     widget_color: '#a59457',
     welcome_message: '',
     welcome_message_2: '',
+    subtitle_2: '',
     welcome_message_3: '',
+    subtitle_3: '',
     rotating_messages_enabled: false,
     rotating_messages_interval: 5,
     widget_enabled: true,
@@ -457,7 +461,9 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
             widget_color: data.data.primaryColor || prev.widget_color,
             welcome_message: data.data.greeting || prev.welcome_message,
             welcome_message_2: data.data.greeting2 || prev.welcome_message_2,
+            subtitle_2: data.data.subtitle2 || prev.subtitle_2,
             welcome_message_3: data.data.greeting3 || prev.welcome_message_3,
+            subtitle_3: data.data.subtitle3 || prev.subtitle_3,
             rotating_messages_enabled: data.data.rotatingMessagesEnabled ?? prev.rotating_messages_enabled,
             rotating_messages_interval: data.data.rotatingMessagesInterval || prev.rotating_messages_interval,
             widget_enabled: data.data.enabled ?? prev.widget_enabled,
@@ -500,7 +506,9 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
             widgetColor: widgetConfig.widget_color,
             welcomeMessage: widgetConfig.welcome_message,
             welcomeMessage2: widgetConfig.welcome_message_2,
+            subtitle2: widgetConfig.subtitle_2,
             welcomeMessage3: widgetConfig.welcome_message_3,
+            subtitle3: widgetConfig.subtitle_3,
             rotatingMessagesEnabled: widgetConfig.rotating_messages_enabled,
             rotatingMessagesInterval: widgetConfig.rotating_messages_interval,
             widgetEnabled: widgetConfig.widget_enabled,
@@ -1442,25 +1450,43 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
 
                     {widgetConfig.rotating_messages_enabled && (
                       <>
-                        <div className="form-group">
-                          <label className="form-label" style={{ fontSize: '0.85rem' }}>Mensaje 2</label>
+                        <div style={{ padding: '0.75rem', background: 'rgba(var(--color-primary-rgb, 107, 92, 255), 0.05)', borderRadius: '8px', marginBottom: '0.75rem' }}>
+                          <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: '600' }}>Mensaje 2</label>
                           <textarea
                             className="form-input"
                             rows={2}
                             value={widgetConfig.welcome_message_2}
                             onChange={e => setWidgetConfig({ ...widgetConfig, welcome_message_2: e.target.value })}
                             placeholder="Segundo mensaje de bienvenida..."
+                            style={{ marginBottom: '0.5rem' }}
+                          />
+                          <label className="form-label" style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Subtitulo 2</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            value={widgetConfig.subtitle_2}
+                            onChange={e => setWidgetConfig({ ...widgetConfig, subtitle_2: e.target.value })}
+                            placeholder="Subtitulo para el mensaje 2..."
                           />
                         </div>
 
-                        <div className="form-group">
-                          <label className="form-label" style={{ fontSize: '0.85rem' }}>Mensaje 3</label>
+                        <div style={{ padding: '0.75rem', background: 'rgba(var(--color-primary-rgb, 107, 92, 255), 0.05)', borderRadius: '8px', marginBottom: '0.75rem' }}>
+                          <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: '600' }}>Mensaje 3</label>
                           <textarea
                             className="form-input"
                             rows={2}
                             value={widgetConfig.welcome_message_3}
                             onChange={e => setWidgetConfig({ ...widgetConfig, welcome_message_3: e.target.value })}
                             placeholder="Tercer mensaje de bienvenida..."
+                            style={{ marginBottom: '0.5rem' }}
+                          />
+                          <label className="form-label" style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Subtitulo 3</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            value={widgetConfig.subtitle_3}
+                            onChange={e => setWidgetConfig({ ...widgetConfig, subtitle_3: e.target.value })}
+                            placeholder="Subtitulo para el mensaje 3..."
                           />
                         </div>
 

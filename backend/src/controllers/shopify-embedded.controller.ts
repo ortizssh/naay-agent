@@ -167,8 +167,12 @@ router.put(
         updateData.welcome_message = config.welcomeMessage;
       if (config.welcomeMessage2 !== undefined)
         updateData.widget_welcome_message_2 = config.welcomeMessage2;
+      if (config.subtitle2 !== undefined)
+        updateData.widget_subtitle_2 = config.subtitle2;
       if (config.welcomeMessage3 !== undefined)
         updateData.widget_welcome_message_3 = config.welcomeMessage3;
+      if (config.subtitle3 !== undefined)
+        updateData.widget_subtitle_3 = config.subtitle3;
       if (config.rotatingMessagesEnabled !== undefined)
         updateData.widget_rotating_messages_enabled =
           config.rotatingMessagesEnabled;
@@ -478,7 +482,9 @@ async function getAnalyticsForShop(
 
     // Generate all dates from start to end using simple date math
     const dates: string[] = [];
-    const [startYear, startMonth, startDay] = startDateStr.split('-').map(Number);
+    const [startYear, startMonth, startDay] = startDateStr
+      .split('-')
+      .map(Number);
     const [endYear, endMonth, endDay] = endDateStr.split('-').map(Number);
 
     // Use UTC to avoid timezone issues
@@ -493,7 +499,9 @@ async function getAnalyticsForShop(
       current.setUTCDate(current.getUTCDate() + 1);
     }
 
-    logger.info(`Generated ${dates.length} dates, first: ${dates[0]}, last: ${dates[dates.length - 1]}`);
+    logger.info(
+      `Generated ${dates.length} dates, first: ${dates[0]}, last: ${dates[dates.length - 1]}`
+    );
 
     return dates;
   };

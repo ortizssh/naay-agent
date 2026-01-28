@@ -114,6 +114,8 @@ router.get(
         greeting: '',
         greeting2: '',
         greeting3: '',
+        subtitle2: '',
+        subtitle3: '',
         rotatingMessagesEnabled: false,
         rotatingMessagesInterval: 5,
         subtitle: 'Asistente de compras con IA',
@@ -151,7 +153,9 @@ router.get(
           widget_color,
           welcome_message,
           widget_welcome_message_2,
+          widget_subtitle_2,
           widget_welcome_message_3,
+          widget_subtitle_3,
           widget_rotating_messages_enabled,
           widget_rotating_messages_interval,
           widget_enabled,
@@ -192,8 +196,10 @@ router.get(
             greeting: clientStore.welcome_message || defaultConfig.greeting,
             greeting2:
               clientStore.widget_welcome_message_2 || defaultConfig.greeting2,
+            subtitle2: clientStore.widget_subtitle_2 || defaultConfig.subtitle2,
             greeting3:
               clientStore.widget_welcome_message_3 || defaultConfig.greeting3,
+            subtitle3: clientStore.widget_subtitle_3 || defaultConfig.subtitle3,
             rotatingMessagesEnabled:
               clientStore.widget_rotating_messages_enabled ??
               defaultConfig.rotatingMessagesEnabled,
