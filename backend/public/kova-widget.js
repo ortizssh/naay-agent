@@ -5633,12 +5633,13 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
       if (this.cartEmpty && this.cartItems && this.cartFooter) {
         if (!hasItems) {
-          // Show empty state
+          // Show empty state and clear items container
           this.cartEmpty.style.display = 'flex';
           this.cartItems.style.display = 'none';
+          this.cartItems.innerHTML = ''; // Clear the items container
           this.cartItems.classList.remove('kova-cart-panel__items--visible');
           this.cartFooter.style.display = 'none';
-          console.log('📋 Showing empty cart state');
+          console.log('📋 Showing empty cart state - cleared items container');
         } else {
           // Show items
           console.log('📋 HIDING EMPTY STATE - SHOWING ITEMS');
@@ -5774,7 +5775,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         const increaseBtn = itemElement.querySelector('[data-action="increase"]');
 
         if (removeBtn) {
-          removeBtn.addEventListener('click', (e) => {
+          removeBtn.addEventListener('click', async (e) => {
             e.preventDefault();
             e.stopPropagation();
 
@@ -5789,13 +5790,13 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             // Disable button immediately to prevent double clicks
             removeBtn.disabled = true;
 
-            // Remove item immediately - updateCartDisplay will re-render the cart
-            this.removeFromCartByItemId(cartItemId);
+            // Remove item and wait for completion - updateCartDisplay will re-render the cart
+            await this.removeFromCartByItemId(cartItemId);
           });
         }
 
         if (decreaseBtn) {
-          decreaseBtn.addEventListener('click', (e) => {
+          decreaseBtn.addEventListener('click', async (e) => {
             e.preventDefault();
             const cartItemId = decreaseBtn.getAttribute('data-cart-item-id');
             const quantityValue = itemElement.querySelector('.kova-cart-panel__quantity-value');
@@ -5813,12 +5814,12 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
               }, 200);
             }
 
-            this.updateQuantityByItemId(cartItemId, item.quantity - 1);
+            await this.updateQuantityByItemId(cartItemId, item.quantity - 1);
           });
         }
 
         if (increaseBtn) {
-          increaseBtn.addEventListener('click', (e) => {
+          increaseBtn.addEventListener('click', async (e) => {
             e.preventDefault();
             const cartItemId = increaseBtn.getAttribute('data-cart-item-id');
             const quantityValue = itemElement.querySelector('.kova-cart-panel__quantity-value');
@@ -5836,7 +5837,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
               }, 200);
             }
 
-            this.updateQuantityByItemId(cartItemId, item.quantity + 1);
+            await this.updateQuantityByItemId(cartItemId, item.quantity + 1);
           });
         }
 

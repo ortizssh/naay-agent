@@ -324,7 +324,7 @@ async function getAnalyticsForShop(
       .from('chat_messages')
       .select('session_id, timestamp')
       .eq('shop_domain', shopDomain)
-      .limit(10000);
+      .limit(100000);
 
     if (dateFilters.start)
       chatQuery = chatQuery.gte('timestamp', dateFilters.start);
@@ -361,7 +361,7 @@ async function getAnalyticsForShop(
       .from('simple_recommendations')
       .select('id, created_at')
       .eq('shop_domain', shopDomain)
-      .limit(10000);
+      .limit(100000);
 
     if (dateFilters.start)
       recQuery = recQuery.gte('created_at', dateFilters.start);

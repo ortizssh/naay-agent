@@ -795,7 +795,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                           <span style={{ color: '#20b2aa' }}>{item.recommendations}</span>
                         </div>
                         {/* Bars container */}
-                        <div style={{ display: 'flex', gap: '1px', width: '100%', maxWidth: '40px', justifyContent: 'center' }}>
+                        <div style={{ display: 'flex', gap: '1px', width: '100%', maxWidth: '40px', justifyContent: 'center', alignItems: 'flex-end', height: '90px' }}>
                           {/* Conversations bar */}
                           <div
                             style={{
