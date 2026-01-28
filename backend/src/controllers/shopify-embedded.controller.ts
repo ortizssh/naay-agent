@@ -258,6 +258,58 @@ router.put(
 );
 
 /**
+ * Helper function to fetch all records with pagination (bypasses 1000 row limit)
+ */
+async function fetchAllWithPagination(
+  client: any,
+  table: string,
+  selectFields: string,
+  filters: { column: string; value: any; operator?: string }[],
+  orderBy: string = 'created_at'
+): Promise<any[]> {
+  const PAGE_SIZE = 1000;
+  let allData: any[] = [];
+  let offset = 0;
+  let hasMore = true;
+
+  while (hasMore) {
+    let query = client
+      .from(table)
+      .select(selectFields)
+      .order(orderBy, { ascending: true })
+      .range(offset, offset + PAGE_SIZE - 1);
+
+    // Apply filters
+    for (const filter of filters) {
+      if (filter.operator === 'gte') {
+        query = query.gte(filter.column, filter.value);
+      } else if (filter.operator === 'lte') {
+        query = query.lte(filter.column, filter.value);
+      } else {
+        query = query.eq(filter.column, filter.value);
+      }
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      logger.error(`Pagination error for ${table}:`, error);
+      break;
+    }
+
+    if (data && data.length > 0) {
+      allData = allData.concat(data);
+      offset += PAGE_SIZE;
+      hasMore = data.length === PAGE_SIZE;
+    } else {
+      hasMore = false;
+    }
+  }
+
+  return allData;
+}
+
+/**
  * Helper function to get analytics for a shop with optional date filtering
  * Optimized with parallel queries for better performance
  *
@@ -270,10 +322,9 @@ async function getAnalyticsForShop(
 ) {
   const client = (supabaseService as any).serviceClient;
 
-  // Use direct queries with high limit instead of RPC functions (which may have internal limits)
-  logger.info('Fetching analytics with direct queries (limit: 100000)');
+  logger.info('Fetching analytics with pagination (bypassing 1000 row limit)');
 
-  // Run parallel queries for better performance
+  // Run parallel queries for counts and store info
   const [productCountResult, conversionsResult, storeInfoResult] =
     await Promise.all([
       // Product count
@@ -296,19 +347,33 @@ async function getAnalyticsForShop(
         .single(),
     ]);
 
-  // Fetch chat messages with high limit
-  let chatQuery = client
-    .from('chat_messages')
-    .select('session_id, timestamp')
-    .eq('shop_domain', shopDomain)
-    .limit(100000);
+  // Build filters for chat messages
+  const chatFilters: { column: string; value: any; operator?: string }[] = [
+    { column: 'shop_domain', value: shopDomain },
+  ];
+  if (dateFilters.start) {
+    chatFilters.push({
+      column: 'timestamp',
+      value: dateFilters.start,
+      operator: 'gte',
+    });
+  }
+  if (dateFilters.end) {
+    chatFilters.push({
+      column: 'timestamp',
+      value: dateFilters.end,
+      operator: 'lte',
+    });
+  }
 
-  if (dateFilters.start)
-    chatQuery = chatQuery.gte('timestamp', dateFilters.start);
-  if (dateFilters.end) chatQuery = chatQuery.lte('timestamp', dateFilters.end);
-
-  const chatResult = await chatQuery;
-  const chatMessagesData = chatResult.data || [];
+  // Fetch all chat messages with pagination
+  const chatMessagesData = await fetchAllWithPagination(
+    client,
+    'chat_messages',
+    'session_id, timestamp',
+    chatFilters,
+    'timestamp'
+  );
 
   const uniqueSessions = new Set(
     chatMessagesData.map((m: any) => m.session_id).filter(Boolean)
@@ -317,7 +382,7 @@ async function getAnalyticsForShop(
   const messageCount = chatMessagesData.length;
 
   logger.info(
-    `Analytics: Found ${messageCount} messages, ${conversationCount} conversations`
+    `Analytics: Found ${messageCount} messages, ${conversationCount} conversations (with pagination)`
   );
 
   // Group by day
@@ -336,22 +401,38 @@ async function getAnalyticsForShop(
     })
   );
 
-  // Fetch recommendations with high limit
-  let recQuery = client
-    .from('simple_recommendations')
-    .select('id, created_at')
-    .eq('shop_domain', shopDomain)
-    .limit(100000);
+  // Build filters for recommendations
+  const recFilters: { column: string; value: any; operator?: string }[] = [
+    { column: 'shop_domain', value: shopDomain },
+  ];
+  if (dateFilters.start) {
+    recFilters.push({
+      column: 'created_at',
+      value: dateFilters.start,
+      operator: 'gte',
+    });
+  }
+  if (dateFilters.end) {
+    recFilters.push({
+      column: 'created_at',
+      value: dateFilters.end,
+      operator: 'lte',
+    });
+  }
 
-  if (dateFilters.start)
-    recQuery = recQuery.gte('created_at', dateFilters.start);
-  if (dateFilters.end) recQuery = recQuery.lte('created_at', dateFilters.end);
-
-  const recResult = await recQuery;
-  const recommendationsData = recResult.data || [];
+  // Fetch all recommendations with pagination
+  const recommendationsData = await fetchAllWithPagination(
+    client,
+    'simple_recommendations',
+    'id, created_at',
+    recFilters,
+    'created_at'
+  );
   const recommendationCount = recommendationsData.length;
 
-  logger.info(`Analytics: Found ${recommendationCount} recommendations`);
+  logger.info(
+    `Analytics: Found ${recommendationCount} recommendations (with pagination)`
+  );
 
   const recByDay: Record<string, number> = {};
   recommendationsData.forEach((rec: any) => {
