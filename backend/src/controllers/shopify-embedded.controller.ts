@@ -453,39 +453,47 @@ async function getAnalyticsForShop(
   const storeInfo = storeInfoResult.data;
 
   // Generate all dates in the range (including today even if no data)
-  const generateDateRange = (start: string | null, end: string | null): string[] => {
-    const dates: string[] = [];
+  const generateDateRange = (
+    start: string | null,
+    end: string | null
+  ): string[] => {
+    // Extract YYYY-MM-DD from ISO strings or use directly
+    const extractDateStr = (isoOrDate: string): string => {
+      return isoOrDate.split('T')[0];
+    };
 
-    // Get today's date in local format
-    const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-
-    // If no filters, use data dates + today
+    // If no filters, use data dates only
     if (!start || !end) {
       const dataDates = new Set([
         ...conversationsByDayData.map((d: any) => d.date),
         ...recommendationsByDayData.map((d: any) => d.date),
-        todayStr,
       ]);
       return Array.from(dataDates).sort();
     }
 
-    // Generate all dates from start to end
-    const startDate = new Date(start);
-    const endDate = new Date(end);
+    const startDateStr = extractDateStr(start);
+    const endDateStr = extractDateStr(end);
 
-    // Ensure we include today if it's in the range
-    const today = new Date(todayStr);
-    if (today <= endDate) {
-      endDate.setTime(Math.max(endDate.getTime(), today.getTime()));
-    }
+    logger.info(`Generating date range from ${startDateStr} to ${endDateStr}`);
 
-    const current = new Date(startDate);
+    // Generate all dates from start to end using simple date math
+    const dates: string[] = [];
+    const [startYear, startMonth, startDay] = startDateStr.split('-').map(Number);
+    const [endYear, endMonth, endDay] = endDateStr.split('-').map(Number);
+
+    // Use UTC to avoid timezone issues
+    const current = new Date(Date.UTC(startYear, startMonth - 1, startDay));
+    const endDate = new Date(Date.UTC(endYear, endMonth - 1, endDay));
+
     while (current <= endDate) {
-      const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
-      dates.push(dateStr);
-      current.setDate(current.getDate() + 1);
+      const year = current.getUTCFullYear();
+      const month = String(current.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(current.getUTCDate()).padStart(2, '0');
+      dates.push(`${year}-${month}-${day}`);
+      current.setUTCDate(current.getUTCDate() + 1);
     }
+
+    logger.info(`Generated ${dates.length} dates, first: ${dates[0]}, last: ${dates[dates.length - 1]}`);
 
     return dates;
   };
@@ -506,7 +514,9 @@ async function getAnalyticsForShop(
     recommendations: recByDayMap.get(date) || 0,
   }));
 
-  logger.info(`Chart data includes ${chartDataByDay.length} days, last date: ${chartDataByDay[chartDataByDay.length - 1]?.date}`);
+  logger.info(
+    `Chart data includes ${chartDataByDay.length} days, last date: ${chartDataByDay[chartDataByDay.length - 1]?.date}`
+  );
 
   return {
     conversations: conversationCount,
