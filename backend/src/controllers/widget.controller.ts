@@ -112,6 +112,10 @@ router.get(
         secondaryColor: '#212120',
         accentColor: '#cf795e',
         greeting: '',
+        greeting2: '',
+        greeting3: '',
+        rotatingMessagesEnabled: false,
+        rotatingMessagesInterval: 5,
         subtitle: 'Asistente de compras con IA',
         placeholder: 'Escribe tu mensaje...',
         avatar: '🌿',
@@ -146,6 +150,10 @@ router.get(
           widget_position,
           widget_color,
           welcome_message,
+          widget_welcome_message_2,
+          widget_welcome_message_3,
+          widget_rotating_messages_enabled,
+          widget_rotating_messages_interval,
           widget_enabled,
           widget_secondary_color,
           widget_accent_color,
@@ -182,6 +190,16 @@ router.get(
             accentColor:
               clientStore.widget_accent_color || defaultConfig.accentColor,
             greeting: clientStore.welcome_message || defaultConfig.greeting,
+            greeting2:
+              clientStore.widget_welcome_message_2 || defaultConfig.greeting2,
+            greeting3:
+              clientStore.widget_welcome_message_3 || defaultConfig.greeting3,
+            rotatingMessagesEnabled:
+              clientStore.widget_rotating_messages_enabled ??
+              defaultConfig.rotatingMessagesEnabled,
+            rotatingMessagesInterval:
+              clientStore.widget_rotating_messages_interval ||
+              defaultConfig.rotatingMessagesInterval,
             subtitle: clientStore.widget_subtitle || defaultConfig.subtitle,
             placeholder:
               clientStore.widget_placeholder || defaultConfig.placeholder,

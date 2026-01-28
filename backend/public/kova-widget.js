@@ -75,6 +75,10 @@
         dark: '#212120',        // NEW Secondary - Dark charcoal
         terracotta: '#cf795e',  // NEW Tertiary - Warm terracotta
         greeting: '',
+        greeting2: '',
+        greeting3: '',
+        rotatingMessagesEnabled: false,
+        rotatingMessagesInterval: 5,
         placeholder: 'Pregúntanos sobre tu compra...',
         avatar: '🌿',
         brandName: 'Kova',
@@ -82,6 +86,10 @@
         enabled: true,
         ...config
       };
+
+      // Rotating messages state
+      this.currentMessageIndex = 0;
+      this.rotatingMessagesInterval = null;
 
       if (!this.config.enabled) {
         console.log('Kova Widget is disabled');
@@ -140,10 +148,116 @@
           if (data.success && data.data) {
             Object.assign(this.config, data.data);
             console.log('Loaded widget settings from server:', data.data);
+
+            // Start rotating messages if enabled
+            this.setupRotatingMessages();
           }
         }
       } catch (error) {
         console.warn('Could not load settings from server:', error);
+      }
+    }
+
+    /**
+     * Setup rotating welcome messages
+     * Cycles through up to 3 configured messages at a set interval
+     */
+    setupRotatingMessages() {
+      // Clear any existing interval
+      if (this.rotatingMessagesInterval) {
+        clearInterval(this.rotatingMessagesInterval);
+        this.rotatingMessagesInterval = null;
+      }
+
+      // Check if rotating messages is enabled
+      if (!this.config.rotatingMessagesEnabled) {
+        console.log('🔄 Rotating messages disabled');
+        return;
+      }
+
+      // Get all available messages
+      const messages = this.getRotatingMessages();
+      if (messages.length <= 1) {
+        console.log('🔄 Not enough messages for rotation');
+        return;
+      }
+
+      const intervalMs = (this.config.rotatingMessagesInterval || 5) * 1000;
+      console.log(`🔄 Starting rotating messages. ${messages.length} messages, ${intervalMs}ms interval`);
+
+      // Start the rotation
+      this.rotatingMessagesInterval = setInterval(() => {
+        this.rotateToNextMessage();
+      }, intervalMs);
+    }
+
+    /**
+     * Get array of all configured greeting messages (non-empty only)
+     */
+    getRotatingMessages() {
+      const messages = [];
+      if (this.config.greeting && this.config.greeting.trim()) {
+        messages.push(this.config.greeting.trim());
+      }
+      if (this.config.greeting2 && this.config.greeting2.trim()) {
+        messages.push(this.config.greeting2.trim());
+      }
+      if (this.config.greeting3 && this.config.greeting3.trim()) {
+        messages.push(this.config.greeting3.trim());
+      }
+      return messages;
+    }
+
+    /**
+     * Rotate to the next message in the sequence
+     */
+    rotateToNextMessage() {
+      const messages = this.getRotatingMessages();
+      if (messages.length <= 1) return;
+
+      // Move to next message (loop back to start)
+      this.currentMessageIndex = (this.currentMessageIndex + 1) % messages.length;
+      const currentMessage = messages[this.currentMessageIndex];
+
+      console.log(`🔄 Rotating to message ${this.currentMessageIndex + 1}: "${currentMessage.substring(0, 30)}..."`);
+
+      // Update the welcome title in the chat
+      const welcomeTitle = this.container.querySelector('.kova-widget__welcome-title');
+      if (welcomeTitle) {
+        const subtitle = this.config.subtitle || 'Asistente de compras con IA';
+        welcomeTitle.innerHTML = `
+          ${currentMessage}
+          <span class="kova-widget__welcome-subtitle">${subtitle}</span>
+        `;
+        // Add fade animation
+        welcomeTitle.style.animation = 'none';
+        welcomeTitle.offsetHeight; // Trigger reflow
+        welcomeTitle.style.animation = 'kovaFadeIn 0.5s ease-out';
+      }
+
+      // Update promotional message
+      const promoText = this.container.querySelector('.kova-widget__promotional-text');
+      if (promoText) {
+        const subtitle = this.config.subtitle || 'Asistente de compras con IA';
+        promoText.innerHTML = `
+          ${currentMessage}
+          <span class="kova-widget__promotional-subtitle">${subtitle}</span>
+        `;
+        // Add fade animation
+        promoText.style.animation = 'none';
+        promoText.offsetHeight; // Trigger reflow
+        promoText.style.animation = 'kovaFadeIn 0.5s ease-out';
+      }
+    }
+
+    /**
+     * Stop rotating messages (call when widget is destroyed or not needed)
+     */
+    stopRotatingMessages() {
+      if (this.rotatingMessagesInterval) {
+        clearInterval(this.rotatingMessagesInterval);
+        this.rotatingMessagesInterval = null;
+        console.log('🔄 Stopped rotating messages');
       }
     }
 
@@ -703,6 +817,17 @@
           0% { transform: scale(1); opacity: 1; }
           50% { transform: scale(1.15); opacity: 0.6; }
           100% { transform: scale(1.3); opacity: 0; }
+        }
+
+        @keyframes kovaFadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-5px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
 
         .kova-widget--open .kova-widget__button-pulse {

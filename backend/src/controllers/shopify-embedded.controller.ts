@@ -170,9 +170,11 @@ router.put(
       if (config.welcomeMessage3 !== undefined)
         updateData.widget_welcome_message_3 = config.welcomeMessage3;
       if (config.rotatingMessagesEnabled !== undefined)
-        updateData.widget_rotating_messages_enabled = config.rotatingMessagesEnabled;
+        updateData.widget_rotating_messages_enabled =
+          config.rotatingMessagesEnabled;
       if (config.rotatingMessagesInterval !== undefined)
-        updateData.widget_rotating_messages_interval = config.rotatingMessagesInterval;
+        updateData.widget_rotating_messages_interval =
+          config.rotatingMessagesInterval;
       if (config.widgetEnabled !== undefined)
         updateData.widget_enabled = config.widgetEnabled;
       if (config.widgetSecondaryColor)
@@ -314,7 +316,9 @@ async function getAnalyticsForShop(
   const conversationCount = uniqueSessions.size;
   const messageCount = chatMessagesData.length;
 
-  logger.info(`Analytics: Found ${messageCount} messages, ${conversationCount} conversations`);
+  logger.info(
+    `Analytics: Found ${messageCount} messages, ${conversationCount} conversations`
+  );
 
   // Group by day
   const sessionsByDay: Record<string, Set<string>> = {};
