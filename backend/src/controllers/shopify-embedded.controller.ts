@@ -165,6 +165,14 @@ router.put(
       if (config.widgetColor) updateData.widget_color = config.widgetColor;
       if (config.welcomeMessage !== undefined)
         updateData.welcome_message = config.welcomeMessage;
+      if (config.welcomeMessage2 !== undefined)
+        updateData.widget_welcome_message_2 = config.welcomeMessage2;
+      if (config.welcomeMessage3 !== undefined)
+        updateData.widget_welcome_message_3 = config.welcomeMessage3;
+      if (config.rotatingMessagesEnabled !== undefined)
+        updateData.widget_rotating_messages_enabled = config.rotatingMessagesEnabled;
+      if (config.rotatingMessagesInterval !== undefined)
+        updateData.widget_rotating_messages_interval = config.rotatingMessagesInterval;
       if (config.widgetEnabled !== undefined)
         updateData.widget_enabled = config.widgetEnabled;
       if (config.widgetSecondaryColor)
@@ -260,141 +268,100 @@ async function getAnalyticsForShop(
 ) {
   const client = (supabaseService as any).serviceClient;
 
-  // Try RPC functions first, then fallback to queries with higher limit
-  const [
-    conversationStatsResult,
-    conversationsByDayResult,
-    recommendationsByDayResult,
-    productCountResult,
-    conversionsResult,
-    storeInfoResult,
-  ] = await Promise.all([
-    // Get total conversations and messages count using aggregation
-    client
-      .rpc('get_chat_stats', {
-        p_shop_domain: shopDomain,
-        p_start_date: dateFilters.start,
-        p_end_date: dateFilters.end,
-      })
-      .single(),
-    // Get conversations by day
-    client.rpc('get_conversations_by_day', {
-      p_shop_domain: shopDomain,
-      p_start_date: dateFilters.start,
-      p_end_date: dateFilters.end,
-    }),
-    // Get recommendations by day
-    client.rpc('get_recommendations_by_day', {
-      p_shop_domain: shopDomain,
-      p_start_date: dateFilters.start,
-      p_end_date: dateFilters.end,
-    }),
-    // Product count
-    client
-      .from('products')
-      .select('*', { count: 'exact', head: true })
-      .eq('shop_domain', shopDomain),
-    // Conversions count
-    client
-      .from('simple_conversions')
-      .select('*', { count: 'exact', head: true })
-      .eq('shop_domain', shopDomain)
-      .gte('purchased_at', dateFilters.start || '1970-01-01')
-      .lte('purchased_at', dateFilters.end || '2100-01-01'),
-    // Store info
-    client
-      .from('stores')
-      .select('installed_at, updated_at')
-      .eq('shop_domain', shopDomain)
-      .single(),
-  ]);
+  // Use direct queries with high limit instead of RPC functions (which may have internal limits)
+  logger.info('Fetching analytics with direct queries (limit: 100000)');
 
-  // If RPC functions don't exist, fall back to regular queries with higher limit
-  let conversationCount = 0;
-  let messageCount = 0;
-  let conversationsByDayData: { date: string; count: number }[] = [];
-  let recommendationsByDayData: { date: string; count: number }[] = [];
-  let recommendationCount = 0;
+  // Run parallel queries for better performance
+  const [productCountResult, conversionsResult, storeInfoResult] =
+    await Promise.all([
+      // Product count
+      client
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+        .eq('shop_domain', shopDomain),
+      // Conversions count
+      client
+        .from('simple_conversions')
+        .select('*', { count: 'exact', head: true })
+        .eq('shop_domain', shopDomain)
+        .gte('purchased_at', dateFilters.start || '1970-01-01')
+        .lte('purchased_at', dateFilters.end || '2100-01-01'),
+      // Store info
+      client
+        .from('stores')
+        .select('installed_at, updated_at')
+        .eq('shop_domain', shopDomain)
+        .single(),
+    ]);
 
-  if (conversationStatsResult.error || conversationsByDayResult.error) {
-    // Fallback: use regular queries with explicit high limit
-    logger.info('RPC functions not available, using fallback queries');
+  // Fetch chat messages with high limit
+  let chatQuery = client
+    .from('chat_messages')
+    .select('session_id, timestamp')
+    .eq('shop_domain', shopDomain)
+    .limit(100000);
 
-    let chatQuery = client
-      .from('chat_messages')
-      .select('session_id, timestamp')
-      .eq('shop_domain', shopDomain)
-      .limit(100000);
+  if (dateFilters.start)
+    chatQuery = chatQuery.gte('timestamp', dateFilters.start);
+  if (dateFilters.end) chatQuery = chatQuery.lte('timestamp', dateFilters.end);
 
-    if (dateFilters.start)
-      chatQuery = chatQuery.gte('timestamp', dateFilters.start);
-    if (dateFilters.end)
-      chatQuery = chatQuery.lte('timestamp', dateFilters.end);
+  const chatResult = await chatQuery;
+  const chatMessagesData = chatResult.data || [];
 
-    const chatResult = await chatQuery;
-    const chatMessagesData = chatResult.data || [];
+  const uniqueSessions = new Set(
+    chatMessagesData.map((m: any) => m.session_id).filter(Boolean)
+  );
+  const conversationCount = uniqueSessions.size;
+  const messageCount = chatMessagesData.length;
 
-    const uniqueSessions = new Set(
-      chatMessagesData.map((m: any) => m.session_id).filter(Boolean)
-    );
-    conversationCount = uniqueSessions.size;
-    messageCount = chatMessagesData.length;
+  logger.info(`Analytics: Found ${messageCount} messages, ${conversationCount} conversations`);
 
-    // Group by day
-    const sessionsByDay: Record<string, Set<string>> = {};
-    chatMessagesData.forEach((msg: any) => {
-      if (!msg.session_id || !msg.timestamp) return;
-      const date = new Date(msg.timestamp).toISOString().split('T')[0];
-      if (!sessionsByDay[date]) sessionsByDay[date] = new Set();
-      sessionsByDay[date].add(msg.session_id);
-    });
+  // Group by day
+  const sessionsByDay: Record<string, Set<string>> = {};
+  chatMessagesData.forEach((msg: any) => {
+    if (!msg.session_id || !msg.timestamp) return;
+    const date = new Date(msg.timestamp).toISOString().split('T')[0];
+    if (!sessionsByDay[date]) sessionsByDay[date] = new Set();
+    sessionsByDay[date].add(msg.session_id);
+  });
 
-    conversationsByDayData = Object.entries(sessionsByDay).map(
-      ([date, sessions]) => ({
-        date,
-        count: sessions.size,
-      })
-    );
+  const conversationsByDayData = Object.entries(sessionsByDay).map(
+    ([date, sessions]) => ({
+      date,
+      count: sessions.size,
+    })
+  );
 
-    // Recommendations fallback
-    let recQuery = client
-      .from('simple_recommendations')
-      .select('id, created_at')
-      .eq('shop_domain', shopDomain)
-      .limit(100000);
+  // Fetch recommendations with high limit
+  let recQuery = client
+    .from('simple_recommendations')
+    .select('id, created_at')
+    .eq('shop_domain', shopDomain)
+    .limit(100000);
 
-    if (dateFilters.start)
-      recQuery = recQuery.gte('created_at', dateFilters.start);
-    if (dateFilters.end) recQuery = recQuery.lte('created_at', dateFilters.end);
+  if (dateFilters.start)
+    recQuery = recQuery.gte('created_at', dateFilters.start);
+  if (dateFilters.end) recQuery = recQuery.lte('created_at', dateFilters.end);
 
-    const recResult = await recQuery;
-    const recommendationsData = recResult.data || [];
-    recommendationCount = recommendationsData.length;
+  const recResult = await recQuery;
+  const recommendationsData = recResult.data || [];
+  const recommendationCount = recommendationsData.length;
 
-    const recByDay: Record<string, number> = {};
-    recommendationsData.forEach((rec: any) => {
-      if (!rec.created_at) return;
-      const date = new Date(rec.created_at).toISOString().split('T')[0];
-      recByDay[date] = (recByDay[date] || 0) + 1;
-    });
+  logger.info(`Analytics: Found ${recommendationCount} recommendations`);
 
-    recommendationsByDayData = Object.entries(recByDay).map(
-      ([date, count]) => ({
-        date,
-        count,
-      })
-    );
-  } else {
-    // Use RPC results
-    conversationCount = conversationStatsResult.data?.conversation_count || 0;
-    messageCount = conversationStatsResult.data?.message_count || 0;
-    conversationsByDayData = conversationsByDayResult.data || [];
-    recommendationsByDayData = recommendationsByDayResult.data || [];
-    recommendationCount = recommendationsByDayData.reduce(
-      (sum: number, r: any) => sum + (r.count || 0),
-      0
-    );
-  }
+  const recByDay: Record<string, number> = {};
+  recommendationsData.forEach((rec: any) => {
+    if (!rec.created_at) return;
+    const date = new Date(rec.created_at).toISOString().split('T')[0];
+    recByDay[date] = (recByDay[date] || 0) + 1;
+  });
+
+  const recommendationsByDayData = Object.entries(recByDay).map(
+    ([date, count]) => ({
+      date,
+      count,
+    })
+  );
 
   const productCount = productCountResult.count || 0;
   const conversionCount = conversionsResult.count || 0;
