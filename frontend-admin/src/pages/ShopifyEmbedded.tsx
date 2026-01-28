@@ -138,6 +138,130 @@ const getPresetDates = (preset: DatePreset): { start: string; end: string } => {
   }
 };
 
+// Helper function to parse and render product recommendations from message content
+interface ProductRecommendation {
+  id: number;
+  title: string;
+  image?: { src: string };
+  price: number;
+  handle: string;
+  variant_id?: number;
+}
+
+const parseProductRecommendations = (content: string): { text: string; products: ProductRecommendation[] } => {
+  // Try to find JSON in the content that contains product recommendations
+  const jsonMatch = content.match(/\{\s*"output"\s*:\s*\[[\s\S]*?\]\s*\}/);
+
+  if (!jsonMatch) {
+    return { text: content, products: [] };
+  }
+
+  try {
+    const jsonData = JSON.parse(jsonMatch[0]);
+    const products: ProductRecommendation[] = [];
+
+    if (jsonData.output && Array.isArray(jsonData.output)) {
+      for (const item of jsonData.output) {
+        if (item.product) {
+          products.push(item.product);
+        }
+      }
+    }
+
+    // Get the text before the JSON
+    const textBeforeJson = content.substring(0, content.indexOf(jsonMatch[0])).trim();
+
+    return { text: textBeforeJson, products };
+  } catch {
+    return { text: content, products: [] };
+  }
+};
+
+const formatPrice = (price: number): string => {
+  // Price comes in cents, convert to currency format
+  return new Intl.NumberFormat('es-CL', {
+    style: 'currency',
+    currency: 'CLP',
+    minimumFractionDigits: 0,
+  }).format(price);
+};
+
+const ProductCard = ({ product }: { product: ProductRecommendation }) => (
+  <div style={{
+    display: 'flex',
+    gap: '0.75rem',
+    padding: '0.75rem',
+    background: 'white',
+    borderRadius: '12px',
+    border: '1px solid #e5e5e5',
+    marginTop: '0.5rem',
+    maxWidth: '300px',
+  }}>
+    {product.image?.src && (
+      <img
+        src={product.image.src}
+        alt={product.title}
+        style={{
+          width: '60px',
+          height: '60px',
+          objectFit: 'cover',
+          borderRadius: '8px',
+          flexShrink: 0,
+        }}
+      />
+    )}
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      gap: '0.25rem',
+      overflow: 'hidden',
+    }}>
+      <div style={{
+        fontSize: '0.85rem',
+        fontWeight: 500,
+        color: '#333',
+        lineHeight: 1.3,
+        display: '-webkit-box',
+        WebkitLineClamp: 2,
+        WebkitBoxOrient: 'vertical',
+        overflow: 'hidden',
+      }}>
+        {product.title}
+      </div>
+      <div style={{
+        fontSize: '0.9rem',
+        fontWeight: 600,
+        color: 'var(--color-primary)',
+      }}>
+        {formatPrice(product.price)}
+      </div>
+    </div>
+  </div>
+);
+
+const MessageContent = ({ content, role }: { content: string; role: string }) => {
+  const { text, products } = parseProductRecommendations(content);
+
+  return (
+    <>
+      {text && <div>{text}</div>}
+      {products.length > 0 && (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.5rem',
+          marginTop: text ? '0.5rem' : 0,
+        }}>
+          {products.map((product, idx) => (
+            <ProductCard key={product.id || idx} product={product} />
+          ))}
+        </div>
+      )}
+    </>
+  );
+};
+
 function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
   const [currentTab, setCurrentTab] = useState<TabType>('dashboard');
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
@@ -1618,7 +1742,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                                     ? 'none'
                                     : '0 1px 3px rgba(0,0,0,0.1)',
                                 }}>
-                                  {msg.content}
+                                  <MessageContent content={msg.content} role={msg.role} />
                                 </div>
                                 <div style={{
                                   fontSize: '0.7rem',
