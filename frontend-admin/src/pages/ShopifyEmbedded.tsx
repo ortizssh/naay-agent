@@ -36,6 +36,10 @@ interface WidgetConfig {
   widget_position: string;
   widget_color: string;
   welcome_message: string;
+  welcome_message_2: string;
+  welcome_message_3: string;
+  rotating_messages_enabled: boolean;
+  rotating_messages_interval: number;
   widget_enabled: boolean;
   widget_secondary_color: string;
   widget_accent_color: string;
@@ -78,7 +82,12 @@ type TabType = 'dashboard' | 'analytics' | 'widget' | 'conversations';
 type DatePreset = 'today' | 'yesterday' | '3d' | '7d' | '14d' | '30d' | 'thisWeek' | 'thisMonth' | 'custom';
 
 // Helper functions for date calculations
-const getDateString = (date: Date) => date.toISOString().split('T')[0];
+const getDateString = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 const getPresetDates = (preset: DatePreset): { start: string; end: string } => {
   const today = new Date();
@@ -137,6 +146,10 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
     widget_position: 'bottom-right',
     widget_color: '#a59457',
     welcome_message: '',
+    welcome_message_2: '',
+    welcome_message_3: '',
+    rotating_messages_enabled: false,
+    rotating_messages_interval: 5,
     widget_enabled: true,
     widget_secondary_color: '#212120',
     widget_accent_color: '#cf795e',
@@ -319,6 +332,10 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
             widget_position: data.data.position || prev.widget_position,
             widget_color: data.data.primaryColor || prev.widget_color,
             welcome_message: data.data.greeting || prev.welcome_message,
+            welcome_message_2: data.data.greeting2 || prev.welcome_message_2,
+            welcome_message_3: data.data.greeting3 || prev.welcome_message_3,
+            rotating_messages_enabled: data.data.rotatingMessagesEnabled ?? prev.rotating_messages_enabled,
+            rotating_messages_interval: data.data.rotatingMessagesInterval || prev.rotating_messages_interval,
             widget_enabled: data.data.enabled ?? prev.widget_enabled,
             widget_secondary_color: data.data.secondaryColor || prev.widget_secondary_color,
             widget_accent_color: data.data.accentColor || prev.widget_accent_color,
@@ -358,6 +375,10 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
             widgetPosition: widgetConfig.widget_position,
             widgetColor: widgetConfig.widget_color,
             welcomeMessage: widgetConfig.welcome_message,
+            welcomeMessage2: widgetConfig.welcome_message_2,
+            welcomeMessage3: widgetConfig.welcome_message_3,
+            rotatingMessagesEnabled: widgetConfig.rotating_messages_enabled,
+            rotatingMessagesInterval: widgetConfig.rotating_messages_interval,
             widgetEnabled: widgetConfig.widget_enabled,
             widgetSecondaryColor: widgetConfig.widget_secondary_color,
             widgetAccentColor: widgetConfig.widget_accent_color,
@@ -1270,7 +1291,78 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                     />
                   </div>
 
-                  <div className="form-group">
+                  {/* Rotating Messages Section */}
+                  <div style={{
+                    marginTop: '1.5rem',
+                    padding: '1rem',
+                    background: 'var(--color-bg)',
+                    borderRadius: '10px',
+                    border: '1px solid var(--color-border)'
+                  }}>
+                    <div className="form-group" style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={widgetConfig.rotating_messages_enabled}
+                          onChange={e => setWidgetConfig({ ...widgetConfig, rotating_messages_enabled: e.target.checked })}
+                          style={{ width: '18px', height: '18px' }}
+                        />
+                        <div>
+                          <span style={{ fontWeight: '600', fontSize: '0.95rem' }}>Mensajes rotativos</span>
+                          <p style={{ margin: '0.15rem 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                            Alterna entre 3 mensajes de bienvenida automaticamente
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+
+                    {widgetConfig.rotating_messages_enabled && (
+                      <>
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontSize: '0.85rem' }}>Mensaje 2</label>
+                          <textarea
+                            className="form-input"
+                            rows={2}
+                            value={widgetConfig.welcome_message_2}
+                            onChange={e => setWidgetConfig({ ...widgetConfig, welcome_message_2: e.target.value })}
+                            placeholder="Segundo mensaje de bienvenida..."
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontSize: '0.85rem' }}>Mensaje 3</label>
+                          <textarea
+                            className="form-input"
+                            rows={2}
+                            value={widgetConfig.welcome_message_3}
+                            onChange={e => setWidgetConfig({ ...widgetConfig, welcome_message_3: e.target.value })}
+                            placeholder="Tercer mensaje de bienvenida..."
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontSize: '0.85rem' }}>
+                            Intervalo: {widgetConfig.rotating_messages_interval} segundos
+                          </label>
+                          <input
+                            type="range"
+                            min="2"
+                            max="15"
+                            step="1"
+                            value={widgetConfig.rotating_messages_interval}
+                            onChange={e => setWidgetConfig({ ...widgetConfig, rotating_messages_interval: parseInt(e.target.value) })}
+                            style={{ width: '100%' }}
+                          />
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
+                            <span>2s (rapido)</span>
+                            <span>15s (lento)</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="form-group" style={{ marginTop: '1.5rem' }}>
                     <label className="form-label">Subtitulo</label>
                     <input
                       type="text"
