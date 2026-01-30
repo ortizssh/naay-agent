@@ -578,6 +578,8 @@ export class SimpleConversionTracker {
           order_quantity: orderProduct.quantity,
           order_amount: orderProduct.price * orderProduct.quantity,
           total_order_amount: order.totalAmount,
+          // Use order date as created_at for proper historical reporting
+          created_at: order.createdAt.toISOString(),
         });
       }
 

@@ -6669,4 +6669,95 @@ router.get(
   }
 );
 
+// Fix conversion dates - set created_at to match purchased_at for historical accuracy
+router.post(
+  '/conversions/fix-dates',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop, dryRun = true } = req.body;
+      const shopDomain = shop || 'naaycl.myshopify.com';
+
+      // Get conversions where created_at doesn't match purchased_at date
+      const { data: conversions, error: fetchError } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('simple_conversions')
+        .select('id, created_at, purchased_at')
+        .eq('shop_domain', shopDomain);
+
+      if (fetchError) {
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to fetch conversions',
+          details: fetchError,
+        });
+      }
+
+      // Find records that need fixing
+      const needsFixing =
+        conversions?.filter((c: any) => {
+          const createdDate = new Date(c.created_at).toDateString();
+          const purchasedDate = new Date(c.purchased_at).toDateString();
+          return createdDate !== purchasedDate;
+        }) || [];
+
+      if (dryRun) {
+        return res.json({
+          success: true,
+          message: 'Dry run - no changes made',
+          data: {
+            total: conversions?.length || 0,
+            needsFixing: needsFixing.length,
+            sample: needsFixing.slice(0, 5).map((c: any) => ({
+              id: c.id,
+              created_at: c.created_at,
+              purchased_at: c.purchased_at,
+            })),
+          },
+        });
+      }
+
+      // Fix each record
+      let fixed = 0;
+      let errors: any[] = [];
+
+      for (const conv of needsFixing) {
+        const { error: updateError } = await (
+          supabaseService as any
+        ).serviceClient
+          .from('simple_conversions')
+          .update({ created_at: conv.purchased_at })
+          .eq('id', conv.id);
+
+        if (updateError) {
+          errors.push({ id: conv.id, error: updateError });
+        } else {
+          fixed++;
+        }
+      }
+
+      logger.info('Conversion dates fixed', {
+        shopDomain,
+        total: conversions?.length,
+        fixed,
+        errors: errors.length,
+      });
+
+      res.json({
+        success: true,
+        message: 'Conversion dates fixed',
+        data: {
+          total: conversions?.length || 0,
+          needsFixing: needsFixing.length,
+          fixed,
+          errors: errors.length > 0 ? errors.slice(0, 10) : [],
+        },
+      });
+    } catch (error) {
+      logger.error('Error fixing conversion dates:', error);
+      next(error);
+    }
+  }
+);
+
 export default router;
