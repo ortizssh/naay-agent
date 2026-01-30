@@ -42,8 +42,12 @@ const verifyWebhook = (req: Request, res: Response, next: NextFunction) => {
     // Add webhook data to request
     (req as any).shopDomain = shopDomain;
     (req as any).topic = topic;
-    (req as any).webhookData =
-      typeof body === 'string' ? JSON.parse(body) : body;
+    // Fix: Buffer from express.raw() must be parsed as JSON
+    (req as any).webhookData = Buffer.isBuffer(body)
+      ? JSON.parse(body.toString())
+      : typeof body === 'string'
+        ? JSON.parse(body)
+        : body;
 
     next();
   } catch (error) {
@@ -539,6 +543,8 @@ async function trackSimpleOrderCompletion(
       orderId,
       shopDomain,
       customerId: order.customer?.id?.toString(),
+      browserIp: order.browser_ip || order.client_details?.browser_ip, // IP for matching with chat sessions
+      userAgent: order.client_details?.user_agent, // User-agent for matching with chat sessions
       products: (order.line_items || [])
         .map((item: any) => ({
           productId: (item.product_id || item.variant?.product_id)?.toString(),
@@ -553,6 +559,7 @@ async function trackSimpleOrderCompletion(
     logger.info('Processing order for simple conversions', {
       shopDomain,
       orderId: order.id,
+      browserIp: orderEvent.browserIp,
       productsCount: orderEvent.products.length,
       totalAmount: orderEvent.totalAmount,
     });

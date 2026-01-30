@@ -3,6 +3,7 @@ import { SupabaseService } from '@/services/supabase.service';
 import { ShopifyService } from '@/services/shopify.service';
 import { QueueService } from '@/services/queue.service';
 import { ChatConversionsService } from '@/services/chat-conversions.service';
+import { SimpleConversionTracker } from '@/services/simple-conversion-tracker.service';
 import { logger } from '@/utils/logger';
 import { adminBypassRateLimit } from '@/middleware/rateLimiter';
 
@@ -6115,6 +6116,554 @@ router.post(
       });
     } catch (error) {
       logger.error('Error fixing shop domains:', error);
+      next(error);
+    }
+  }
+);
+
+// Reprocess corrupted order webhooks to recover conversions
+router.post(
+  '/webhooks/reprocess-orders',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop, dryRun = true, limit = 100 } = req.body;
+
+      logger.info('Starting webhook reprocessing', { shop, dryRun, limit });
+
+      const simpleConversionTracker = new SimpleConversionTracker();
+
+      // Fetch corrupted webhooks (where payload.data is an array of bytes)
+      let query = (supabaseService as any).serviceClient
+        .from('webhook_events')
+        .select('*')
+        .in('topic', ['orders/create', 'orders/paid'])
+        .eq('processed', false)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (shop) {
+        query = query.eq('shop_domain', shop);
+      }
+
+      const { data: webhooks, error: fetchError } = await query;
+
+      if (fetchError) {
+        logger.error('Error fetching webhooks:', fetchError);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to fetch webhooks',
+        });
+      }
+
+      if (!webhooks || webhooks.length === 0) {
+        return res.json({
+          success: true,
+          message: 'No pending webhooks to process',
+          data: { processed: 0, conversions: 0 },
+        });
+      }
+
+      const results = {
+        total: webhooks.length,
+        decoded: 0,
+        processed: 0,
+        conversions: 0,
+        errors: [] as string[],
+      };
+
+      for (const webhook of webhooks) {
+        try {
+          let orderData = null;
+
+          // Check if payload.data is an array of bytes (corrupted)
+          if (
+            webhook.payload?.data &&
+            Array.isArray(webhook.payload.data) &&
+            typeof webhook.payload.data[0] === 'number'
+          ) {
+            // Decode bytes array to string, then parse as JSON
+            const bytes = new Uint8Array(webhook.payload.data);
+            const jsonString = new TextDecoder().decode(bytes);
+            orderData = JSON.parse(jsonString);
+            results.decoded++;
+          } else if (webhook.payload?.id) {
+            // Already valid JSON
+            orderData = webhook.payload;
+          }
+
+          if (!orderData || !orderData.id) {
+            results.errors.push(
+              `Webhook ${webhook.id}: Could not extract order data`
+            );
+            continue;
+          }
+
+          // Skip if order already processed for conversions
+          const { data: existingConversion } = await (
+            supabaseService as any
+          ).serviceClient
+            .from('simple_conversions')
+            .select('id')
+            .eq('order_id', orderData.id.toString())
+            .eq('shop_domain', webhook.shop_domain)
+            .limit(1)
+            .single();
+
+          if (existingConversion) {
+            // Already processed, mark webhook as processed
+            if (!dryRun) {
+              await (supabaseService as any).serviceClient
+                .from('webhook_events')
+                .update({ processed: true })
+                .eq('id', webhook.id);
+            }
+            continue;
+          }
+
+          // Build order event for conversion tracking
+          const orderEvent = {
+            orderId: orderData.id.toString(),
+            shopDomain: webhook.shop_domain,
+            customerId: orderData.customer?.id?.toString(),
+            browserIp:
+              orderData.browser_ip || orderData.client_details?.browser_ip,
+            userAgent: orderData.client_details?.user_agent,
+            products: (orderData.line_items || [])
+              .map((item: any) => ({
+                productId: (
+                  item.product_id || item.variant?.product_id
+                )?.toString(),
+                quantity: parseInt(item.quantity) || 1,
+                price: parseFloat(item.price) || 0,
+              }))
+              .filter((p: any) => p.productId),
+            totalAmount: parseFloat(orderData.total_price) || 0,
+            createdAt: new Date(orderData.created_at),
+          };
+
+          // Process order for conversions (always run to count, but only save if not dry run)
+          const conversions =
+            await simpleConversionTracker.processOrderForConversions(
+              orderEvent,
+              dryRun // Pass dryRun flag to skip saving
+            );
+
+          if (conversions.length > 0) {
+            results.conversions += conversions.length;
+            logger.info('Recovered conversions from webhook', {
+              webhookId: webhook.id,
+              orderId: orderData.id,
+              conversionsCount: conversions.length,
+              dryRun,
+            });
+          }
+
+          if (!dryRun) {
+            // Mark webhook as processed
+            await (supabaseService as any).serviceClient
+              .from('webhook_events')
+              .update({ processed: true })
+              .eq('id', webhook.id);
+          }
+
+          results.processed++;
+        } catch (err: any) {
+          results.errors.push(`Webhook ${webhook.id}: ${err.message}`);
+          logger.error('Error processing webhook:', {
+            webhookId: webhook.id,
+            error: err.message,
+          });
+        }
+      }
+
+      // Also clean up expired recommendations
+      if (!dryRun) {
+        await simpleConversionTracker.cleanupExpiredRecommendations();
+      }
+
+      res.json({
+        success: true,
+        message: dryRun
+          ? 'Dry run completed - no changes made'
+          : 'Webhooks reprocessed successfully',
+        data: results,
+      });
+    } catch (error) {
+      logger.error('Error reprocessing webhooks:', error);
+      next(error);
+    }
+  }
+);
+
+// Diagnose why conversions aren't matching
+router.get(
+  '/webhooks/diagnose-conversions',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop, limit = 5 } = req.query;
+      const shopDomain = (shop as string) || 'naaycl.myshopify.com';
+
+      // Get recent webhooks and decode them
+      const { data: webhooks } = await (supabaseService as any).serviceClient
+        .from('webhook_events')
+        .select('*')
+        .eq('topic', 'orders/create')
+        .eq('shop_domain', shopDomain)
+        .eq('processed', false)
+        .order('created_at', { ascending: false })
+        .limit(Number(limit));
+
+      const diagnosis = [];
+
+      for (const webhook of webhooks || []) {
+        let orderData = null;
+
+        // Decode corrupted payload
+        if (
+          webhook.payload?.data &&
+          Array.isArray(webhook.payload.data) &&
+          typeof webhook.payload.data[0] === 'number'
+        ) {
+          const bytes = new Uint8Array(webhook.payload.data);
+          const jsonString = new TextDecoder().decode(bytes);
+          orderData = JSON.parse(jsonString);
+        }
+
+        if (!orderData) continue;
+
+        const orderTime = new Date(orderData.created_at);
+        const windowStart = new Date(orderTime.getTime() - 15 * 60 * 1000);
+        const browserIp =
+          orderData.browser_ip || orderData.client_details?.browser_ip;
+        const userAgent = orderData.client_details?.user_agent;
+
+        // Get products in this order
+        const orderProducts = (orderData.line_items || []).map((item: any) => ({
+          productId: item.product_id?.toString(),
+          title: item.title,
+        }));
+
+        // Find recommendations around this order time (time-based)
+        const { data: nearbyRecs } = await (
+          supabaseService as any
+        ).serviceClient
+          .from('simple_recommendations')
+          .select('product_id, product_title, recommended_at, expires_at')
+          .eq('shop_domain', shopDomain)
+          .gte('recommended_at', windowStart.toISOString())
+          .lte('recommended_at', orderTime.toISOString())
+          .limit(20);
+
+        // Find chat sessions with matching IP (IP-based)
+        let ipMatchingSessions: any[] = [];
+        let ipMatchingRecs: any[] = [];
+        if (browserIp) {
+          const sevenDaysAgo = new Date(
+            orderTime.getTime() - 7 * 24 * 60 * 1000
+          );
+          const { data: chatMsgs } = await (
+            supabaseService as any
+          ).serviceClient
+            .from('chat_messages')
+            .select('session_id, timestamp, metadata')
+            .eq('shop_domain', shopDomain)
+            .gte('timestamp', sevenDaysAgo.toISOString())
+            .lte('timestamp', orderTime.toISOString());
+
+          const matchingSessionIds = new Set<string>();
+          for (const msg of chatMsgs || []) {
+            const msgIp = msg.metadata?.['x-forwarded-for'];
+            if (msgIp === browserIp) {
+              matchingSessionIds.add(msg.session_id);
+            }
+          }
+          ipMatchingSessions = Array.from(matchingSessionIds);
+
+          if (ipMatchingSessions.length > 0) {
+            const { data: recs } = await (supabaseService as any).serviceClient
+              .from('simple_recommendations')
+              .select('session_id, product_id, product_title, recommended_at')
+              .eq('shop_domain', shopDomain)
+              .in('session_id', ipMatchingSessions);
+            ipMatchingRecs = recs || [];
+          }
+        }
+
+        // Find chat sessions with matching user-agent (user-agent-based)
+        let uaMatchingSessions: any[] = [];
+        let uaMatchingRecs: any[] = [];
+        if (userAgent) {
+          const sevenDaysAgo = new Date(
+            orderTime.getTime() - 7 * 24 * 60 * 1000
+          );
+          const { data: chatMsgs } = await (
+            supabaseService as any
+          ).serviceClient
+            .from('chat_messages')
+            .select('session_id, timestamp, metadata')
+            .eq('shop_domain', shopDomain)
+            .gte('timestamp', sevenDaysAgo.toISOString())
+            .lte('timestamp', orderTime.toISOString());
+
+          const matchingSessionIds = new Set<string>();
+          for (const msg of chatMsgs || []) {
+            const msgUserAgent = msg.metadata?.['user-agent'];
+            if (msgUserAgent === userAgent) {
+              matchingSessionIds.add(msg.session_id);
+            }
+          }
+          uaMatchingSessions = Array.from(matchingSessionIds);
+
+          if (uaMatchingSessions.length > 0) {
+            const { data: recs } = await (supabaseService as any).serviceClient
+              .from('simple_recommendations')
+              .select('session_id, product_id, product_title, recommended_at')
+              .eq('shop_domain', shopDomain)
+              .in('session_id', uaMatchingSessions);
+            uaMatchingRecs = recs || [];
+          }
+        }
+
+        diagnosis.push({
+          orderId: orderData.id,
+          orderTime: orderTime.toISOString(),
+          browserIp,
+          userAgent: userAgent?.substring(0, 80),
+          windowStart: windowStart.toISOString(),
+          orderProducts,
+          nearbyRecommendations: nearbyRecs || [],
+          ipMatching: {
+            sessionsFound: ipMatchingSessions.length,
+            sessionIds: ipMatchingSessions.slice(0, 3),
+            recommendations: ipMatchingRecs.slice(0, 5),
+            productMatches: orderProducts.filter((op: any) =>
+              ipMatchingRecs.some((r: any) => r.product_id === op.productId)
+            ),
+          },
+          userAgentMatching: {
+            sessionsFound: uaMatchingSessions.length,
+            sessionIds: uaMatchingSessions.slice(0, 3),
+            recommendations: uaMatchingRecs.slice(0, 5),
+            productMatches: orderProducts.filter((op: any) =>
+              uaMatchingRecs.some((r: any) => r.product_id === op.productId)
+            ),
+          },
+          potentialMatches: orderProducts.filter((op: any) =>
+            (nearbyRecs || []).some((r: any) => r.product_id === op.productId)
+          ),
+        });
+      }
+
+      res.json({
+        success: true,
+        data: {
+          shopDomain,
+          ordersAnalyzed: diagnosis.length,
+          diagnosis,
+        },
+      });
+    } catch (error) {
+      logger.error('Error diagnosing conversions:', error);
+      next(error);
+    }
+  }
+);
+
+// Analyze conversion opportunities with flexible matching
+router.get(
+  '/webhooks/analyze-conversions',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop, days = 30 } = req.query;
+      const shopDomain = (shop as string) || 'naaycl.myshopify.com';
+      const daysBack = Number(days);
+
+      // Get all recommendations
+      const { data: recommendations } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('simple_recommendations')
+        .select('product_id, product_title, session_id, recommended_at')
+        .eq('shop_domain', shopDomain)
+        .gte(
+          'recommended_at',
+          new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString()
+        );
+
+      // Get unique recommended product IDs
+      const recommendedProductIds = new Set(
+        recommendations?.map((r: any) => r.product_id) || []
+      );
+
+      // Get all order webhooks and decode them
+      const { data: webhooks } = await (supabaseService as any).serviceClient
+        .from('webhook_events')
+        .select('*')
+        .eq('topic', 'orders/create')
+        .eq('shop_domain', shopDomain)
+        .gte(
+          'created_at',
+          new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString()
+        );
+
+      // Decode and analyze orders
+      const ordersWithRecommendedProducts: any[] = [];
+      let totalOrders = 0;
+
+      for (const webhook of webhooks || []) {
+        let orderData = null;
+
+        // Decode corrupted payload
+        if (
+          webhook.payload?.data &&
+          Array.isArray(webhook.payload.data) &&
+          typeof webhook.payload.data[0] === 'number'
+        ) {
+          const bytes = new Uint8Array(webhook.payload.data);
+          const jsonString = new TextDecoder().decode(bytes);
+          orderData = JSON.parse(jsonString);
+        } else if (webhook.payload?.id) {
+          orderData = webhook.payload;
+        }
+
+        if (!orderData) continue;
+        totalOrders++;
+
+        // Check if order contains recommended products
+        const orderProducts = (orderData.line_items || []).map((item: any) => ({
+          productId: item.product_id?.toString(),
+          title: item.title,
+        }));
+
+        const matchingProducts = orderProducts.filter((p: any) =>
+          recommendedProductIds.has(p.productId)
+        );
+
+        if (matchingProducts.length > 0) {
+          ordersWithRecommendedProducts.push({
+            orderId: orderData.id,
+            orderTime: orderData.created_at,
+            totalPrice: orderData.total_price,
+            browserIp:
+              orderData.browser_ip || orderData.client_details?.browser_ip,
+            userAgent: orderData.client_details?.user_agent?.substring(0, 100),
+            matchingProducts,
+            allProducts: orderProducts,
+          });
+        }
+      }
+
+      // Analyze product conversion potential
+      const productStats = new Map<
+        string,
+        { title: string; recommended: number; purchased: number }
+      >();
+
+      for (const rec of recommendations || []) {
+        if (!productStats.has(rec.product_id)) {
+          productStats.set(rec.product_id, {
+            title: rec.product_title,
+            recommended: 0,
+            purchased: 0,
+          });
+        }
+        productStats.get(rec.product_id)!.recommended++;
+      }
+
+      for (const order of ordersWithRecommendedProducts) {
+        for (const product of order.matchingProducts) {
+          if (productStats.has(product.productId)) {
+            productStats.get(product.productId)!.purchased++;
+          }
+        }
+      }
+
+      const productAnalysis = Array.from(productStats.entries())
+        .map(([id, stats]) => ({
+          productId: id,
+          ...stats,
+          conversionPotential:
+            stats.recommended > 0
+              ? Math.round((stats.purchased / stats.recommended) * 100)
+              : 0,
+        }))
+        .sort((a, b) => b.purchased - a.purchased);
+
+      res.json({
+        success: true,
+        data: {
+          shopDomain,
+          daysAnalyzed: daysBack,
+          summary: {
+            totalRecommendations: recommendations?.length || 0,
+            uniqueProductsRecommended: recommendedProductIds.size,
+            totalOrders: totalOrders,
+            ordersWithRecommendedProducts: ordersWithRecommendedProducts.length,
+            potentialConversionRate:
+              totalOrders > 0
+                ? Math.round(
+                    (ordersWithRecommendedProducts.length / totalOrders) * 100
+                  )
+                : 0,
+          },
+          productAnalysis: productAnalysis.slice(0, 20),
+          recentOrdersWithRecommendedProducts:
+            ordersWithRecommendedProducts.slice(0, 10),
+        },
+      });
+    } catch (error) {
+      logger.error('Error analyzing conversions:', error);
+      next(error);
+    }
+  }
+);
+
+// Get webhook reprocessing status
+router.get(
+  '/webhooks/reprocess-status',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop } = req.query;
+
+      let query = (supabaseService as any).serviceClient
+        .from('webhook_events')
+        .select('topic, processed')
+        .in('topic', ['orders/create', 'orders/paid']);
+
+      if (shop) {
+        query = query.eq('shop_domain', shop);
+      }
+
+      const { data: webhooks, error } = await query;
+
+      if (error) {
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to fetch webhook status',
+        });
+      }
+
+      const stats = {
+        total: webhooks?.length || 0,
+        processed: webhooks?.filter((w: any) => w.processed).length || 0,
+        pending: webhooks?.filter((w: any) => !w.processed).length || 0,
+        byTopic: {} as Record<string, { total: number; processed: number }>,
+      };
+
+      webhooks?.forEach((w: any) => {
+        if (!stats.byTopic[w.topic]) {
+          stats.byTopic[w.topic] = { total: 0, processed: 0 };
+        }
+        stats.byTopic[w.topic].total++;
+        if (w.processed) stats.byTopic[w.topic].processed++;
+      });
+
+      res.json({
+        success: true,
+        data: stats,
+      });
+    } catch (error) {
+      logger.error('Error fetching webhook status:', error);
       next(error);
     }
   }

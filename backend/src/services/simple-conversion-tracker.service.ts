@@ -14,6 +14,8 @@ interface OrderEvent {
   orderId: string;
   shopDomain: string;
   customerId?: string;
+  browserIp?: string; // IP from Shopify order for matching with chat sessions
+  userAgent?: string; // User agent from Shopify order for matching with chat sessions
   products: Array<{
     productId: string;
     quantity: number;
@@ -34,8 +36,8 @@ interface ConversionResult {
 export class SimpleConversionTracker {
   private supabaseService: SupabaseService;
 
-  // Simplified: 10 minutes attribution window
-  private static readonly ATTRIBUTION_WINDOW_MINUTES = 10;
+  // Attribution window: 15 minutes
+  private static readonly ATTRIBUTION_WINDOW_MINUTES = 15;
 
   constructor() {
     this.supabaseService = new SupabaseService();
@@ -77,30 +79,60 @@ export class SimpleConversionTracker {
   }
 
   /**
-   * Process order and find conversions - simplified version
+   * Process order and find conversions - uses IP matching first, then time window as fallback
+   * @param order The order event to process
+   * @param dryRun If true, don't save conversions to database (for testing)
    */
   async processOrderForConversions(
-    order: OrderEvent
+    order: OrderEvent,
+    dryRun: boolean = false
   ): Promise<ConversionResult[]> {
     try {
       const conversions: ConversionResult[] = [];
       const orderTime = order.createdAt;
 
-      // Look for recommendations in the last 10 minutes
+      logger.info('Processing order for conversions', {
+        orderId: order.orderId,
+        shopDomain: order.shopDomain,
+        orderTime: orderTime.toISOString(),
+        browserIp: order.browserIp,
+        productsInOrder: order.products.length,
+      });
+
+      // Strategy 1: Try IP-based matching first (most accurate)
+      if (order.browserIp) {
+        const ipConversions = await this.findConversionsByIP(order, dryRun);
+        if (ipConversions.length > 0) {
+          logger.info('Found conversions via IP matching', {
+            orderId: order.orderId,
+            conversionsCount: ipConversions.length,
+          });
+          return ipConversions;
+        }
+      }
+
+      // Strategy 2: Try user-agent matching (good for mobile users with changing IPs)
+      if (order.userAgent) {
+        const uaConversions = await this.findConversionsByUserAgent(
+          order,
+          dryRun
+        );
+        if (uaConversions.length > 0) {
+          logger.info('Found conversions via user-agent matching', {
+            orderId: order.orderId,
+            conversionsCount: uaConversions.length,
+          });
+          return uaConversions;
+        }
+      }
+
+      // Strategy 3: Time-window matching (15 min, high confidence)
       const windowStart = new Date(
         orderTime.getTime() -
           SimpleConversionTracker.ATTRIBUTION_WINDOW_MINUTES * 60 * 1000
       );
 
-      logger.info('Processing order for conversions', {
-        orderId: order.orderId,
-        shopDomain: order.shopDomain,
-        orderTime: orderTime.toISOString(),
-        windowStart: windowStart.toISOString(),
-        productsInOrder: order.products.length,
-      });
-
-      // Get recent recommendations that haven't expired
+      // Get recent recommendations within time window
       const { data: recommendations, error } = await (
         this.supabaseService as any
       ).serviceClient
@@ -108,78 +140,127 @@ export class SimpleConversionTracker {
         .select('*')
         .eq('shop_domain', order.shopDomain)
         .gte('recommended_at', windowStart.toISOString())
-        .lte('recommended_at', orderTime.toISOString())
-        .gt('expires_at', orderTime.toISOString()); // Not expired yet
+        .lte('recommended_at', orderTime.toISOString());
 
       if (error) {
         logger.error('Error fetching recommendations for order:', error);
-        return conversions;
       }
 
-      if (!recommendations || recommendations.length === 0) {
-        logger.info('No recent recommendations found for order', {
+      if (recommendations && recommendations.length > 0) {
+        logger.info('Found recommendations via time window', {
           orderId: order.orderId,
-          windowStart: windowStart.toISOString(),
-          orderTime: orderTime.toISOString(),
+          recommendationsCount: recommendations.length,
+        });
+
+        // Check each product in the order against recommendations
+        for (const orderProduct of order.products) {
+          for (const rec of recommendations) {
+            if (rec.product_id === orderProduct.productId) {
+              const recommendedAt = new Date(rec.recommended_at);
+              const minutesToConversion = Math.round(
+                (orderTime.getTime() - recommendedAt.getTime()) / (1000 * 60)
+              );
+
+              const confidence = Math.max(
+                0.5,
+                1 -
+                  minutesToConversion /
+                    SimpleConversionTracker.ATTRIBUTION_WINDOW_MINUTES
+              );
+
+              const conversionResult = await this.createConversion(
+                order,
+                orderProduct,
+                rec,
+                minutesToConversion,
+                confidence,
+                'time_window',
+                dryRun
+              );
+              if (conversionResult) {
+                conversions.push(conversionResult);
+              }
+            }
+          }
+        }
+
+        if (conversions.length > 0) {
+          return conversions;
+        }
+      }
+
+      // Strategy 4: Product-based attribution (48h window, lower confidence)
+      // If a recommended product was purchased within 48h, attribute with lower confidence
+      const extendedWindowStart = new Date(
+        orderTime.getTime() - 48 * 60 * 60 * 1000
+      );
+
+      const { data: extendedRecs, error: extError } = await (
+        this.supabaseService as any
+      ).serviceClient
+        .from('simple_recommendations')
+        .select('*')
+        .eq('shop_domain', order.shopDomain)
+        .gte('recommended_at', extendedWindowStart.toISOString())
+        .lte('recommended_at', orderTime.toISOString());
+
+      if (extError || !extendedRecs || extendedRecs.length === 0) {
+        logger.info('No recommendations found for order', {
+          orderId: order.orderId,
+          method: 'product_attribution',
         });
         return conversions;
       }
 
-      logger.info('Found recent recommendations', {
-        orderId: order.orderId,
-        recommendationsCount: recommendations.length,
-        recommendations: recommendations.map(r => ({
-          sessionId: r.session_id,
-          productId: r.product_id,
-          recommendedAt: r.recommended_at,
-        })),
-      });
+      // Match products with lower confidence (product-based attribution)
+      // Track which products we've already attributed to avoid duplicates
+      const attributedProducts = new Set<string>();
 
-      // Check each product in the order against recommendations
       for (const orderProduct of order.products) {
-        for (const rec of recommendations) {
-          if (rec.product_id === orderProduct.productId) {
-            const recommendedAt = new Date(rec.recommended_at);
-            const minutesToConversion = Math.round(
-              (orderTime.getTime() - recommendedAt.getTime()) / (1000 * 60)
-            );
+        // Skip if we've already attributed this product in this order
+        if (attributedProducts.has(orderProduct.productId)) {
+          continue;
+        }
 
-            // Simple confidence: closer to recommendation = higher confidence
-            const confidence = Math.max(
-              0.1,
-              1 -
-                minutesToConversion /
-                  SimpleConversionTracker.ATTRIBUTION_WINDOW_MINUTES
-            );
+        // Find the most recent recommendation for this product
+        const matchingRecs = extendedRecs
+          .filter((r: any) => r.product_id === orderProduct.productId)
+          .sort(
+            (a: any, b: any) =>
+              new Date(b.recommended_at).getTime() -
+              new Date(a.recommended_at).getTime()
+          );
 
-            conversions.push({
-              sessionId: rec.session_id,
+        if (matchingRecs.length > 0) {
+          attributedProducts.add(orderProduct.productId);
+          const rec = matchingRecs[0]; // Most recent
+          const recommendedAt = new Date(rec.recommended_at);
+          const minutesToConversion = Math.round(
+            (orderTime.getTime() - recommendedAt.getTime()) / (1000 * 60)
+          );
+
+          // Lower confidence for product-based attribution (0.2-0.4 based on time)
+          const hoursToConversion = minutesToConversion / 60;
+          const confidence = Math.max(
+            0.2,
+            0.4 - (hoursToConversion / 48) * 0.2
+          );
+
+          const conversionResult = await this.createConversion(
+            order,
+            orderProduct,
+            rec,
+            minutesToConversion,
+            confidence,
+            'product_attribution',
+            dryRun
+          );
+          if (conversionResult) {
+            conversions.push(conversionResult);
+            logger.info('Product-based attribution conversion', {
               orderId: order.orderId,
               productId: orderProduct.productId,
-              minutesToConversion,
-              confidence: Math.round(confidence * 100) / 100,
-            });
-
-            // Save the conversion
-            await this.saveConversion({
-              session_id: rec.session_id,
-              order_id: order.orderId,
-              product_id: orderProduct.productId,
-              shop_domain: order.shopDomain,
-              recommended_at: rec.recommended_at,
-              purchased_at: orderTime.toISOString(),
-              minutes_to_conversion: minutesToConversion,
-              confidence: confidence,
-              order_quantity: orderProduct.quantity,
-              order_amount: orderProduct.price * orderProduct.quantity,
-              total_order_amount: order.totalAmount,
-            });
-
-            logger.info('Conversion detected and saved', {
-              sessionId: rec.session_id,
-              orderId: order.orderId,
-              productId: orderProduct.productId,
-              minutesToConversion,
+              hoursToConversion: Math.round(hoursToConversion),
               confidence,
             });
           }
@@ -190,6 +271,339 @@ export class SimpleConversionTracker {
     } catch (error) {
       logger.error('Error processing order for conversions:', error);
       return [];
+    }
+  }
+
+  /**
+   * Find conversions by matching browser IP with chat session IPs
+   */
+  private async findConversionsByIP(
+    order: OrderEvent,
+    dryRun: boolean = false
+  ): Promise<ConversionResult[]> {
+    const conversions: ConversionResult[] = [];
+
+    if (!order.browserIp) return conversions;
+
+    try {
+      // Find chat sessions from this IP (last 7 days)
+      const sevenDaysAgo = new Date(
+        order.createdAt.getTime() - 7 * 24 * 60 * 60 * 1000
+      );
+
+      const { data: chatMessages, error: chatError } = await (
+        this.supabaseService as any
+      ).serviceClient
+        .from('chat_messages')
+        .select('session_id, timestamp, metadata')
+        .eq('shop_domain', order.shopDomain)
+        .gte('timestamp', sevenDaysAgo.toISOString())
+        .lte('timestamp', order.createdAt.toISOString());
+
+      if (chatError || !chatMessages) {
+        logger.warn('Error fetching chat messages for IP matching:', chatError);
+        return conversions;
+      }
+
+      // Filter sessions that match the browser IP
+      const matchingSessionIds = new Set<string>();
+      for (const msg of chatMessages) {
+        const msgIp = msg.metadata?.['x-forwarded-for'] || msg.metadata?.ip;
+        if (msgIp === order.browserIp) {
+          matchingSessionIds.add(msg.session_id);
+        }
+      }
+
+      if (matchingSessionIds.size === 0) {
+        logger.info('No chat sessions found for IP', {
+          orderId: order.orderId,
+          browserIp: order.browserIp,
+        });
+        return conversions;
+      }
+
+      logger.info('Found chat sessions matching IP', {
+        orderId: order.orderId,
+        browserIp: order.browserIp,
+        sessionsCount: matchingSessionIds.size,
+      });
+
+      // Get recommendations from those sessions
+      const { data: recommendations, error: recError } = await (
+        this.supabaseService as any
+      ).serviceClient
+        .from('simple_recommendations')
+        .select('*')
+        .eq('shop_domain', order.shopDomain)
+        .in('session_id', Array.from(matchingSessionIds))
+        .gte('recommended_at', sevenDaysAgo.toISOString())
+        .lte('recommended_at', order.createdAt.toISOString());
+
+      if (recError || !recommendations || recommendations.length === 0) {
+        logger.info('No recommendations found for matching sessions', {
+          orderId: order.orderId,
+        });
+        return conversions;
+      }
+
+      // Match order products with recommendations
+      for (const orderProduct of order.products) {
+        for (const rec of recommendations) {
+          if (rec.product_id === orderProduct.productId) {
+            const recommendedAt = new Date(rec.recommended_at);
+            const minutesToConversion = Math.round(
+              (order.createdAt.getTime() - recommendedAt.getTime()) /
+                (1000 * 60)
+            );
+
+            // Higher confidence for IP-based matching (0.7-0.95 based on time)
+            const timeDecay = Math.min(1, minutesToConversion / (7 * 24 * 60)); // 7 days max
+            const confidence = Math.max(0.7, 0.95 - timeDecay * 0.25);
+
+            const conversionResult = await this.createConversion(
+              order,
+              orderProduct,
+              rec,
+              minutesToConversion,
+              confidence,
+              'ip_match',
+              dryRun
+            );
+            if (conversionResult) {
+              conversions.push(conversionResult);
+            }
+          }
+        }
+      }
+
+      return conversions;
+    } catch (error) {
+      logger.error('Error in IP-based conversion matching:', error);
+      return conversions;
+    }
+  }
+
+  /**
+   * Extract device fingerprint from user-agent for flexible matching
+   */
+  private extractDeviceFingerprint(userAgent: string): string | null {
+    if (!userAgent) return null;
+
+    // Extract key device characteristics
+    const patterns = {
+      // Mobile devices - extract model
+      samsungModel: /SM-[A-Z0-9]+/i,
+      xiaomiModel: /\d+[A-Z]+\d+[A-Z]+/i,
+      iphoneModel: /iPhone/i,
+      // OS info
+      androidVersion: /Android \d+/i,
+      iosVersion: /iPhone OS \d+_\d+/i,
+      windowsVersion: /Windows NT \d+\.\d+/i,
+      // Browser
+      chrome: /Chrome\/\d+/i,
+      safari: /Safari\/\d+/i,
+      edge: /Edg\/\d+/i,
+    };
+
+    const fingerprint: string[] = [];
+
+    // Extract device model if available
+    for (const [key, pattern] of Object.entries(patterns)) {
+      const match = userAgent.match(pattern);
+      if (match) {
+        fingerprint.push(match[0]);
+      }
+    }
+
+    return fingerprint.length > 0 ? fingerprint.join('|') : null;
+  }
+
+  /**
+   * Find conversions by matching user-agent with chat session user-agents
+   * Uses flexible matching based on device fingerprint
+   */
+  private async findConversionsByUserAgent(
+    order: OrderEvent,
+    dryRun: boolean = false
+  ): Promise<ConversionResult[]> {
+    const conversions: ConversionResult[] = [];
+
+    if (!order.userAgent) return conversions;
+
+    try {
+      // Find chat sessions (last 7 days)
+      const sevenDaysAgo = new Date(
+        order.createdAt.getTime() - 7 * 24 * 60 * 60 * 1000
+      );
+
+      const { data: chatMessages, error: chatError } = await (
+        this.supabaseService as any
+      ).serviceClient
+        .from('chat_messages')
+        .select('session_id, timestamp, metadata')
+        .eq('shop_domain', order.shopDomain)
+        .gte('timestamp', sevenDaysAgo.toISOString())
+        .lte('timestamp', order.createdAt.toISOString());
+
+      if (chatError || !chatMessages) {
+        logger.warn(
+          'Error fetching chat messages for user-agent matching:',
+          chatError
+        );
+        return conversions;
+      }
+
+      // Extract fingerprint from order user-agent
+      const orderFingerprint = this.extractDeviceFingerprint(order.userAgent);
+
+      // Filter sessions that match the user-agent (exact or fingerprint)
+      const matchingSessionIds = new Set<string>();
+      for (const msg of chatMessages) {
+        const msgUserAgent = msg.metadata?.['user-agent'];
+        if (!msgUserAgent) continue;
+
+        // Try exact match first
+        if (msgUserAgent === order.userAgent) {
+          matchingSessionIds.add(msg.session_id);
+          continue;
+        }
+
+        // Try fingerprint match for mobile devices
+        if (orderFingerprint) {
+          const msgFingerprint = this.extractDeviceFingerprint(msgUserAgent);
+          if (msgFingerprint && msgFingerprint === orderFingerprint) {
+            matchingSessionIds.add(msg.session_id);
+          }
+        }
+      }
+
+      if (matchingSessionIds.size === 0) {
+        logger.info('No chat sessions found for user-agent', {
+          orderId: order.orderId,
+          userAgent: order.userAgent?.substring(0, 50) + '...',
+        });
+        return conversions;
+      }
+
+      logger.info('Found chat sessions matching user-agent', {
+        orderId: order.orderId,
+        sessionsCount: matchingSessionIds.size,
+      });
+
+      // Get recommendations from those sessions
+      const { data: recommendations, error: recError } = await (
+        this.supabaseService as any
+      ).serviceClient
+        .from('simple_recommendations')
+        .select('*')
+        .eq('shop_domain', order.shopDomain)
+        .in('session_id', Array.from(matchingSessionIds))
+        .gte('recommended_at', sevenDaysAgo.toISOString())
+        .lte('recommended_at', order.createdAt.toISOString());
+
+      if (recError || !recommendations || recommendations.length === 0) {
+        logger.info(
+          'No recommendations found for user-agent matching sessions',
+          {
+            orderId: order.orderId,
+          }
+        );
+        return conversions;
+      }
+
+      // Match order products with recommendations
+      for (const orderProduct of order.products) {
+        for (const rec of recommendations) {
+          if (rec.product_id === orderProduct.productId) {
+            const recommendedAt = new Date(rec.recommended_at);
+            const minutesToConversion = Math.round(
+              (order.createdAt.getTime() - recommendedAt.getTime()) /
+                (1000 * 60)
+            );
+
+            // Confidence for user-agent matching (0.6-0.9 based on time)
+            const timeDecay = Math.min(1, minutesToConversion / (7 * 24 * 60)); // 7 days max
+            const confidence = Math.max(0.6, 0.9 - timeDecay * 0.3);
+
+            const conversionResult = await this.createConversion(
+              order,
+              orderProduct,
+              rec,
+              minutesToConversion,
+              confidence,
+              'user_agent_match',
+              dryRun
+            );
+            if (conversionResult) {
+              conversions.push(conversionResult);
+            }
+          }
+        }
+      }
+
+      return conversions;
+    } catch (error) {
+      logger.error('Error in user-agent-based conversion matching:', error);
+      return conversions;
+    }
+  }
+
+  /**
+   * Create and save a conversion record
+   */
+  private async createConversion(
+    order: OrderEvent,
+    orderProduct: { productId: string; quantity: number; price: number },
+    recommendation: any,
+    minutesToConversion: number,
+    confidence: number,
+    matchMethod:
+      | 'ip_match'
+      | 'user_agent_match'
+      | 'time_window'
+      | 'product_attribution',
+    dryRun: boolean = false
+  ): Promise<ConversionResult | null> {
+    try {
+      if (!dryRun) {
+        await this.saveConversion({
+          session_id: recommendation.session_id,
+          order_id: order.orderId,
+          product_id: orderProduct.productId,
+          shop_domain: order.shopDomain,
+          recommended_at: recommendation.recommended_at,
+          purchased_at: order.createdAt.toISOString(),
+          minutes_to_conversion: minutesToConversion,
+          confidence: confidence,
+          order_quantity: orderProduct.quantity,
+          order_amount: orderProduct.price * orderProduct.quantity,
+          total_order_amount: order.totalAmount,
+        });
+      }
+
+      logger.info(
+        `Conversion detected${dryRun ? ' (dry run)' : ' and saved'}`,
+        {
+          sessionId: recommendation.session_id,
+          orderId: order.orderId,
+          productId: orderProduct.productId,
+          minutesToConversion,
+          confidence,
+          matchMethod,
+          dryRun,
+        }
+      );
+
+      return {
+        sessionId: recommendation.session_id,
+        orderId: order.orderId,
+        productId: orderProduct.productId,
+        minutesToConversion,
+        confidence: Math.round(confidence * 100) / 100,
+      };
+    } catch (error) {
+      logger.error('Error creating conversion:', error);
+      return null;
     }
   }
 

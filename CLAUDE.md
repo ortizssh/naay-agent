@@ -70,19 +70,22 @@ naay-agent/
 
 ### Core Services (`backend/src/services/`)
 - `ai-agent.service.ts` - AI orchestration, intent detection, chat logic
-- `shopify.service.ts` - Shopify Admin & Storefront API interactions
+- `shopify.service.ts` / `modern-shopify.service.ts` - Shopify Admin & Storefront API interactions
 - `supabase.service.ts` - Database operations
 - `embedding.service.ts` - OpenAI embeddings generation
 - `queue.service.ts` - BullMQ background job management
 - `cart.service.ts` - Shopping cart operations via Storefront API
 - `cache.service.ts` - Redis caching with memory fallback
-- `*-analytics.service.ts` - Conversion tracking and analytics
+- `tenant.service.ts` - Multi-tenant shop isolation
+- `*-analytics.service.ts`, `*-conversion*.service.ts` - Conversion tracking and analytics
 
 ### Controllers (`backend/src/controllers/`)
-- `auth.controller.ts` - Shopify OAuth flow
+- `auth.controller.ts` / `modern-auth.controller.ts` - Shopify OAuth flow
 - `webhook.controller.ts` - Shopify webhook handlers
 - `chat.controller.ts` / `simple-chat.controller.ts` - AI chat endpoints
-- `product.controller.ts` - Product sync and search
+- `product.controller.ts` / `public-products.controller.ts` - Product sync and search
+- `public-cart.controller.ts` - Public cart API for widget
+- `widget.controller.ts` / `widget-public.controller.ts` - Widget endpoints
 - `admin-bypass.controller.ts` - Direct admin operations (testing/debugging)
 - `health.controller.ts` - Health check endpoints
 
