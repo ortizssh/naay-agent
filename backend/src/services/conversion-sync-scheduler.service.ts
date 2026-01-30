@@ -156,7 +156,7 @@ export class ConversionSyncScheduler {
       throw new Error(`Shopify API error: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as any;
     const orders = data.orders || [];
 
     let ordersProcessed = 0;

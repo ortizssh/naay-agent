@@ -6814,7 +6814,7 @@ router.post(
         });
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as any;
       const orders = data.orders || [];
 
       logger.info('Fetched orders from Shopify', { count: orders.length });

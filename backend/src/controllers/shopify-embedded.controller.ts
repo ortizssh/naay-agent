@@ -329,20 +329,13 @@ async function getAnalyticsForShop(
   logger.info('Fetching analytics with pagination (bypassing 1000 row limit)');
 
   // Run parallel queries for counts and store info
-  const [productCountResult, conversionsResult, storeInfoResult] =
+  const [productCountResult, storeInfoResult] =
     await Promise.all([
       // Product count
       client
         .from('products')
         .select('*', { count: 'exact', head: true })
         .eq('shop_domain', shopDomain),
-      // Conversions count
-      client
-        .from('simple_conversions')
-        .select('*', { count: 'exact', head: true })
-        .eq('shop_domain', shopDomain)
-        .gte('purchased_at', dateFilters.start || '1970-01-01')
-        .lte('purchased_at', dateFilters.end || '2100-01-01'),
       // Store info
       client
         .from('stores')
@@ -452,8 +445,53 @@ async function getAnalyticsForShop(
     })
   );
 
+  // Fetch all conversions with pagination
+  const convFilters: { column: string; value: any; operator?: string }[] = [
+    { column: 'shop_domain', value: shopDomain },
+  ];
+  if (dateFilters.start) {
+    convFilters.push({
+      column: 'purchased_at',
+      value: dateFilters.start,
+      operator: 'gte',
+    });
+  }
+  if (dateFilters.end) {
+    convFilters.push({
+      column: 'purchased_at',
+      value: dateFilters.end,
+      operator: 'lte',
+    });
+  }
+
+  const conversionsData = await fetchAllWithPagination(
+    client,
+    'simple_conversions',
+    'id, purchased_at',
+    convFilters,
+    'purchased_at'
+  );
+  const conversionCount = conversionsData.length;
+
+  logger.info(
+    `Analytics: Found ${conversionCount} conversions (with pagination)`
+  );
+
+  const convByDayData: Record<string, number> = {};
+  conversionsData.forEach((conv: any) => {
+    if (!conv.purchased_at) return;
+    const date = new Date(conv.purchased_at).toISOString().split('T')[0];
+    convByDayData[date] = (convByDayData[date] || 0) + 1;
+  });
+
+  const conversionsByDayData = Object.entries(convByDayData).map(
+    ([date, count]) => ({
+      date,
+      count,
+    })
+  );
+
   const productCount = productCountResult.count || 0;
-  const conversionCount = conversionsResult.count || 0;
   const storeInfo = storeInfoResult.data;
 
   // Generate all dates in the range (including today even if no data)
@@ -471,6 +509,7 @@ async function getAnalyticsForShop(
       const dataDates = new Set([
         ...conversationsByDayData.map((d: any) => d.date),
         ...recommendationsByDayData.map((d: any) => d.date),
+        ...conversionsByDayData.map((d: any) => d.date),
       ]);
       return Array.from(dataDates).sort();
     }
@@ -514,12 +553,16 @@ async function getAnalyticsForShop(
   const recByDayMap = new Map(
     recommendationsByDayData.map((d: any) => [d.date, d.count])
   );
+  const conversionByDayMap = new Map(
+    conversionsByDayData.map((d: any) => [d.date, d.count])
+  );
 
   // Include all dates in range, even if they have 0 data
   const chartDataByDay = allDatesInRange.map(date => ({
     date,
     conversations: convByDayMap.get(date) || 0,
     recommendations: recByDayMap.get(date) || 0,
+    conversions: conversionByDayMap.get(date) || 0,
   }));
 
   logger.info(

@@ -10,6 +10,7 @@ interface ChartDataByDay {
   date: string;
   conversations: number;
   recommendations: number;
+  conversions: number;
 }
 
 interface AnalyticsData {
@@ -554,25 +555,33 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
   };
 
   const formatShortDate = (dateString: string) => {
-    const date = new Date(dateString);
+    // Parse date string as local time to avoid timezone issues
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
     return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
   };
 
   const chartData = useMemo(() => {
     if (!analytics?.conversationsByDay) return [];
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    // Parse dates as local time to avoid timezone issues
+    const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
+    const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
+    const start = new Date(startYear, startMonth - 1, startDay);
+    const end = new Date(endYear, endMonth - 1, endDay);
     const dates: string[] = [];
 
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      dates.push(d.toISOString().split('T')[0]);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      dates.push(`${year}-${month}-${day}`);
     }
 
     const dataMap = new Map(
       analytics.conversationsByDay.map(item => [
         item.date,
-        { conversations: item.conversations, recommendations: item.recommendations }
+        { conversations: item.conversations, recommendations: item.recommendations, conversions: item.conversions }
       ])
     );
 
@@ -580,12 +589,13 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
       date,
       conversations: dataMap.get(date)?.conversations || 0,
       recommendations: dataMap.get(date)?.recommendations || 0,
+      conversions: dataMap.get(date)?.conversions || 0,
     }));
   }, [analytics?.conversationsByDay, startDate, endDate]);
 
   const maxCount = useMemo(() => {
     if (chartData.length === 0) return 1;
-    const max = Math.max(...chartData.map(d => Math.max(d.conversations, d.recommendations)));
+    const max = Math.max(...chartData.map(d => Math.max(d.conversations, d.recommendations, d.conversions)));
     return max > 0 ? max : 1;
   }, [chartData]);
 
@@ -923,6 +933,10 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                       <div style={{ width: '12px', height: '12px', background: '#20b2aa', borderRadius: '2px' }} />
                       <span>Recomendaciones</span>
                     </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <div style={{ width: '12px', height: '12px', background: '#f59e0b', borderRadius: '2px' }} />
+                      <span>Conversiones</span>
+                    </div>
                   </div>
                 </div>
                 <div style={{ padding: '0.5rem 0' }}>
@@ -946,13 +960,15 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                           <span style={{ color: 'var(--color-primary)' }}>{item.conversations}</span>
                           <span style={{ color: 'var(--color-text-muted)' }}>/</span>
                           <span style={{ color: '#20b2aa' }}>{item.recommendations}</span>
+                          <span style={{ color: 'var(--color-text-muted)' }}>/</span>
+                          <span style={{ color: '#f59e0b' }}>{item.conversions}</span>
                         </div>
                         {/* Bars container */}
-                        <div style={{ display: 'flex', gap: '1px', width: '100%', maxWidth: '40px', justifyContent: 'center', alignItems: 'flex-end', height: '90px' }}>
+                        <div style={{ display: 'flex', gap: '1px', width: '100%', maxWidth: '50px', justifyContent: 'center', alignItems: 'flex-end', height: '90px' }}>
                           {/* Conversations bar */}
                           <div
                             style={{
-                              width: '45%',
+                              width: '30%',
                               height: `${Math.max((item.conversations / maxCount) * 90, 3)}px`,
                               background: item.conversations > 0 ? 'var(--color-primary)' : 'var(--color-border)',
                               borderRadius: '2px 2px 0 0',
@@ -961,9 +977,18 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                           {/* Recommendations bar */}
                           <div
                             style={{
-                              width: '45%',
+                              width: '30%',
                               height: `${Math.max((item.recommendations / maxCount) * 90, 3)}px`,
                               background: item.recommendations > 0 ? '#20b2aa' : 'var(--color-border)',
+                              borderRadius: '2px 2px 0 0',
+                            }}
+                          />
+                          {/* Conversions bar */}
+                          <div
+                            style={{
+                              width: '30%',
+                              height: `${Math.max((item.conversions / maxCount) * 90, 3)}px`,
+                              background: item.conversions > 0 ? '#f59e0b' : 'var(--color-border)',
                               borderRadius: '2px 2px 0 0',
                             }}
                           />
