@@ -6760,4 +6760,155 @@ router.post(
   }
 );
 
+// Process historical orders from Shopify API
+router.post(
+  '/orders/process-historical',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shop, startDate, endDate, dryRun = true } = req.body;
+      const shopDomain = shop || 'naaycl.myshopify.com';
+
+      if (!startDate || !endDate) {
+        return res.status(400).json({
+          success: false,
+          error: 'startDate and endDate are required (YYYY-MM-DD format)',
+        });
+      }
+
+      logger.info('Processing historical orders from Shopify', {
+        shopDomain,
+        startDate,
+        endDate,
+        dryRun,
+      });
+
+      // Get store credentials
+      const store = await supabaseService.getStore(shopDomain);
+      if (!store || !store.access_token) {
+        return res.status(404).json({
+          success: false,
+          error: 'Store not found or no access token',
+        });
+      }
+
+      // Fetch orders from Shopify REST API directly
+      const apiVersion = '2024-01';
+      const ordersUrl = `https://${shopDomain}/admin/api/${apiVersion}/orders.json?status=any&created_at_min=${startDate}T00:00:00-00:00&created_at_max=${endDate}T23:59:59-00:00&limit=250`;
+
+      const response = await fetch(ordersUrl, {
+        headers: {
+          'X-Shopify-Access-Token': store.access_token,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        logger.error('Shopify API error', {
+          status: response.status,
+          error: errorText,
+        });
+        return res.status(500).json({
+          success: false,
+          error: `Shopify API error: ${response.status}`,
+        });
+      }
+
+      const data = await response.json();
+      const orders = data.orders || [];
+
+      logger.info('Fetched orders from Shopify', { count: orders.length });
+
+      const simpleConversionTracker = new SimpleConversionTracker();
+      const results = {
+        totalOrders: orders.length,
+        processedOrders: 0,
+        conversions: 0,
+        skipped: 0,
+        errors: [] as any[],
+      };
+
+      for (const order of orders) {
+        try {
+          const orderId = order.id.toString();
+
+          // Check if this order already has conversions
+          const { data: existingConversions } = await (
+            supabaseService as any
+          ).serviceClient
+            .from('simple_conversions')
+            .select('id')
+            .eq('order_id', orderId)
+            .eq('shop_domain', shopDomain)
+            .limit(1);
+
+          if (existingConversions && existingConversions.length > 0) {
+            results.skipped++;
+            continue;
+          }
+
+          // Build order event for conversion tracking (REST API format)
+          const orderEvent = {
+            orderId,
+            shopDomain,
+            customerId: order.customer?.id?.toString(),
+            browserIp: order.browser_ip || order.client_details?.browser_ip,
+            userAgent: order.client_details?.user_agent,
+            products: (order.line_items || [])
+              .map((item: any) => ({
+                productId: item.product_id?.toString(),
+                quantity: parseInt(item.quantity) || 1,
+                price: parseFloat(item.price) || 0,
+              }))
+              .filter((p: any) => p.productId),
+            totalAmount: parseFloat(order.total_price) || 0,
+            createdAt: new Date(order.created_at),
+          };
+
+          if (orderEvent.products.length === 0) {
+            results.skipped++;
+            continue;
+          }
+
+          // Process for conversions
+          const conversions =
+            await simpleConversionTracker.processOrderForConversions(
+              orderEvent,
+              dryRun
+            );
+
+          results.processedOrders++;
+          results.conversions += conversions.length;
+
+          if (conversions.length > 0) {
+            logger.info('Historical order conversion found', {
+              orderId,
+              conversionsCount: conversions.length,
+              dryRun,
+            });
+          }
+        } catch (orderError: any) {
+          results.errors.push({
+            orderId: order.id,
+            error: orderError.message,
+          });
+        }
+      }
+
+      logger.info('Historical orders processing complete', results);
+
+      res.json({
+        success: true,
+        message: dryRun
+          ? 'Dry run complete - no conversions saved'
+          : 'Historical orders processed',
+        data: results,
+      });
+    } catch (error) {
+      logger.error('Error processing historical orders:', error);
+      next(error);
+    }
+  }
+);
+
 export default router;
