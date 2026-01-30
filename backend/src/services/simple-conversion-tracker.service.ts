@@ -205,83 +205,12 @@ export class SimpleConversionTracker {
         }
       }
 
-      // Strategy 4: Product-based attribution (48h window, lower confidence)
-      // If a recommended product was purchased within 48h, attribute with lower confidence
-      const extendedWindowStart = new Date(
-        orderTime.getTime() - 48 * 60 * 60 * 1000
-      );
-
-      const { data: extendedRecs, error: extError } = await (
-        this.supabaseService as any
-      ).serviceClient
-        .from('simple_recommendations')
-        .select('*')
-        .eq('shop_domain', order.shopDomain)
-        .gte('recommended_at', extendedWindowStart.toISOString())
-        .lte('recommended_at', orderTime.toISOString());
-
-      if (extError || !extendedRecs || extendedRecs.length === 0) {
-        logger.info('No recommendations found for order', {
-          orderId: order.orderId,
-          method: 'product_attribution',
-        });
-        return conversions;
-      }
-
-      // Match products with lower confidence (product-based attribution)
-      // Track which products we've already attributed to avoid duplicates
-      const attributedProducts = new Set<string>();
-
-      for (const orderProduct of order.products) {
-        // Skip if we've already attributed this product in this order
-        if (attributedProducts.has(orderProduct.productId)) {
-          continue;
-        }
-
-        // Find the most recent recommendation for this product
-        const matchingRecs = extendedRecs
-          .filter((r: any) => r.product_id === orderProduct.productId)
-          .sort(
-            (a: any, b: any) =>
-              new Date(b.recommended_at).getTime() -
-              new Date(a.recommended_at).getTime()
-          );
-
-        if (matchingRecs.length > 0) {
-          attributedProducts.add(orderProduct.productId);
-          const rec = matchingRecs[0]; // Most recent
-          const recommendedAt = new Date(rec.recommended_at);
-          const minutesToConversion = Math.round(
-            (orderTime.getTime() - recommendedAt.getTime()) / (1000 * 60)
-          );
-
-          // Lower confidence for product-based attribution (0.2-0.4 based on time)
-          const hoursToConversion = minutesToConversion / 60;
-          const confidence = Math.max(
-            0.2,
-            0.4 - (hoursToConversion / 48) * 0.2
-          );
-
-          const conversionResult = await this.createConversion(
-            order,
-            orderProduct,
-            rec,
-            minutesToConversion,
-            confidence,
-            'product_attribution',
-            dryRun
-          );
-          if (conversionResult) {
-            conversions.push(conversionResult);
-            logger.info('Product-based attribution conversion', {
-              orderId: order.orderId,
-              productId: orderProduct.productId,
-              hoursToConversion: Math.round(hoursToConversion),
-              confidence,
-            });
-          }
-        }
-      }
+      // Strategy 4: DISABLED - Product-based attribution was too weak
+      // Only IP, User-Agent, and Time-Window matching are used for accurate attribution
+      logger.info('No conversion found with strong matching methods', {
+        orderId: order.orderId,
+        strategies: ['ip_match', 'user_agent_match', 'time_window'],
+      });
 
       return conversions;
     } catch (error) {
