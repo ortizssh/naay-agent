@@ -152,34 +152,50 @@ export class SimpleConversionTracker {
           recommendationsCount: recommendations.length,
         });
 
-        // Check each product in the order against recommendations
+        // Check each product in the order against recommendations (deduplicate by product)
+        const attributedProducts = new Set<string>();
+
         for (const orderProduct of order.products) {
-          for (const rec of recommendations) {
-            if (rec.product_id === orderProduct.productId) {
-              const recommendedAt = new Date(rec.recommended_at);
-              const minutesToConversion = Math.round(
-                (orderTime.getTime() - recommendedAt.getTime()) / (1000 * 60)
-              );
+          // Skip if already attributed this product
+          if (attributedProducts.has(orderProduct.productId)) {
+            continue;
+          }
 
-              const confidence = Math.max(
-                0.5,
-                1 -
-                  minutesToConversion /
-                    SimpleConversionTracker.ATTRIBUTION_WINDOW_MINUTES
-              );
+          // Find the most recent recommendation for this product within time window
+          const matchingRecs = recommendations
+            .filter((r: any) => r.product_id === orderProduct.productId)
+            .sort(
+              (a: any, b: any) =>
+                new Date(b.recommended_at).getTime() -
+                new Date(a.recommended_at).getTime()
+            );
 
-              const conversionResult = await this.createConversion(
-                order,
-                orderProduct,
-                rec,
-                minutesToConversion,
-                confidence,
-                'time_window',
-                dryRun
-              );
-              if (conversionResult) {
-                conversions.push(conversionResult);
-              }
+          if (matchingRecs.length > 0) {
+            attributedProducts.add(orderProduct.productId);
+            const rec = matchingRecs[0]; // Most recent
+            const recommendedAt = new Date(rec.recommended_at);
+            const minutesToConversion = Math.round(
+              (orderTime.getTime() - recommendedAt.getTime()) / (1000 * 60)
+            );
+
+            const confidence = Math.max(
+              0.5,
+              1 -
+                minutesToConversion /
+                  SimpleConversionTracker.ATTRIBUTION_WINDOW_MINUTES
+            );
+
+            const conversionResult = await this.createConversion(
+              order,
+              orderProduct,
+              rec,
+              minutesToConversion,
+              confidence,
+              'time_window',
+              dryRun
+            );
+            if (conversionResult) {
+              conversions.push(conversionResult);
             }
           }
         }
@@ -346,32 +362,47 @@ export class SimpleConversionTracker {
         return conversions;
       }
 
-      // Match order products with recommendations
+      // Match order products with recommendations (deduplicate by product)
+      const attributedProducts = new Set<string>();
+
       for (const orderProduct of order.products) {
-        for (const rec of recommendations) {
-          if (rec.product_id === orderProduct.productId) {
-            const recommendedAt = new Date(rec.recommended_at);
-            const minutesToConversion = Math.round(
-              (order.createdAt.getTime() - recommendedAt.getTime()) /
-                (1000 * 60)
-            );
+        // Skip if already attributed this product
+        if (attributedProducts.has(orderProduct.productId)) {
+          continue;
+        }
 
-            // Higher confidence for IP-based matching (0.7-0.95 based on time)
-            const timeDecay = Math.min(1, minutesToConversion / (7 * 24 * 60)); // 7 days max
-            const confidence = Math.max(0.7, 0.95 - timeDecay * 0.25);
+        // Find the most recent recommendation for this product
+        const matchingRecs = recommendations
+          .filter((r: any) => r.product_id === orderProduct.productId)
+          .sort(
+            (a: any, b: any) =>
+              new Date(b.recommended_at).getTime() -
+              new Date(a.recommended_at).getTime()
+          );
 
-            const conversionResult = await this.createConversion(
-              order,
-              orderProduct,
-              rec,
-              minutesToConversion,
-              confidence,
-              'ip_match',
-              dryRun
-            );
-            if (conversionResult) {
-              conversions.push(conversionResult);
-            }
+        if (matchingRecs.length > 0) {
+          attributedProducts.add(orderProduct.productId);
+          const rec = matchingRecs[0]; // Most recent
+          const recommendedAt = new Date(rec.recommended_at);
+          const minutesToConversion = Math.round(
+            (order.createdAt.getTime() - recommendedAt.getTime()) / (1000 * 60)
+          );
+
+          // Higher confidence for IP-based matching (0.7-0.95 based on time)
+          const timeDecay = Math.min(1, minutesToConversion / (7 * 24 * 60)); // 7 days max
+          const confidence = Math.max(0.7, 0.95 - timeDecay * 0.25);
+
+          const conversionResult = await this.createConversion(
+            order,
+            orderProduct,
+            rec,
+            minutesToConversion,
+            confidence,
+            'ip_match',
+            dryRun
+          );
+          if (conversionResult) {
+            conversions.push(conversionResult);
           }
         }
       }
@@ -511,32 +542,47 @@ export class SimpleConversionTracker {
         return conversions;
       }
 
-      // Match order products with recommendations
+      // Match order products with recommendations (deduplicate by product)
+      const attributedProducts = new Set<string>();
+
       for (const orderProduct of order.products) {
-        for (const rec of recommendations) {
-          if (rec.product_id === orderProduct.productId) {
-            const recommendedAt = new Date(rec.recommended_at);
-            const minutesToConversion = Math.round(
-              (order.createdAt.getTime() - recommendedAt.getTime()) /
-                (1000 * 60)
-            );
+        // Skip if already attributed this product
+        if (attributedProducts.has(orderProduct.productId)) {
+          continue;
+        }
 
-            // Confidence for user-agent matching (0.6-0.9 based on time)
-            const timeDecay = Math.min(1, minutesToConversion / (7 * 24 * 60)); // 7 days max
-            const confidence = Math.max(0.6, 0.9 - timeDecay * 0.3);
+        // Find the most recent recommendation for this product
+        const matchingRecs = recommendations
+          .filter((r: any) => r.product_id === orderProduct.productId)
+          .sort(
+            (a: any, b: any) =>
+              new Date(b.recommended_at).getTime() -
+              new Date(a.recommended_at).getTime()
+          );
 
-            const conversionResult = await this.createConversion(
-              order,
-              orderProduct,
-              rec,
-              minutesToConversion,
-              confidence,
-              'user_agent_match',
-              dryRun
-            );
-            if (conversionResult) {
-              conversions.push(conversionResult);
-            }
+        if (matchingRecs.length > 0) {
+          attributedProducts.add(orderProduct.productId);
+          const rec = matchingRecs[0]; // Most recent
+          const recommendedAt = new Date(rec.recommended_at);
+          const minutesToConversion = Math.round(
+            (order.createdAt.getTime() - recommendedAt.getTime()) / (1000 * 60)
+          );
+
+          // Confidence for user-agent matching (0.6-0.9 based on time)
+          const timeDecay = Math.min(1, minutesToConversion / (7 * 24 * 60)); // 7 days max
+          const confidence = Math.max(0.6, 0.9 - timeDecay * 0.3);
+
+          const conversionResult = await this.createConversion(
+            order,
+            orderProduct,
+            rec,
+            minutesToConversion,
+            confidence,
+            'user_agent_match',
+            dryRun
+          );
+          if (conversionResult) {
+            conversions.push(conversionResult);
           }
         }
       }
