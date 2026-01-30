@@ -329,20 +329,19 @@ async function getAnalyticsForShop(
   logger.info('Fetching analytics with pagination (bypassing 1000 row limit)');
 
   // Run parallel queries for counts and store info
-  const [productCountResult, storeInfoResult] =
-    await Promise.all([
-      // Product count
-      client
-        .from('products')
-        .select('*', { count: 'exact', head: true })
-        .eq('shop_domain', shopDomain),
-      // Store info
-      client
-        .from('stores')
-        .select('installed_at, updated_at')
-        .eq('shop_domain', shopDomain)
-        .single(),
-    ]);
+  const [productCountResult, storeInfoResult] = await Promise.all([
+    // Product count
+    client
+      .from('products')
+      .select('*', { count: 'exact', head: true })
+      .eq('shop_domain', shopDomain),
+    // Store info
+    client
+      .from('stores')
+      .select('installed_at, updated_at')
+      .eq('shop_domain', shopDomain)
+      .single(),
+  ]);
 
   // Build filters for chat messages
   const chatFilters: { column: string; value: any; operator?: string }[] = [
