@@ -35,6 +35,7 @@ import tenantAdminRoutes from '@/controllers/tenant-admin.controller';
 import adminAuthRoutes from '@/controllers/admin-auth.controller';
 import clientRoutes from '@/controllers/client.controller';
 import shopifyEmbeddedRoutes from '@/controllers/shopify-embedded.controller';
+import { getConversionSyncScheduler } from '@/services/conversion-sync-scheduler.service';
 
 async function startServer() {
   try {
@@ -792,6 +793,11 @@ async function startServer() {
         console.log('- Has Supabase URL:', !!process.env.SUPABASE_URL);
         console.log('- Has OpenAI Key:', !!process.env.OPENAI_API_KEY);
       }
+
+      // Start conversion sync scheduler (runs every 5 hours)
+      const conversionScheduler = getConversionSyncScheduler();
+      conversionScheduler.start();
+      logger.info('📊 Conversion sync scheduler started (every 5 hours)');
     });
 
     server.on('error', error => {
