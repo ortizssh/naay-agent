@@ -905,10 +905,6 @@
         }
 
         /* Promo Badge - positioned on promotional card */
-        .kova-widget__promotional-message {
-          position: relative !important;
-        }
-
         .kova-widget__promo-badge {
           position: absolute !important;
           top: -8px !important;
