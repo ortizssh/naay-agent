@@ -337,6 +337,9 @@
           <!-- Chat Container -->
           <div class="kova-chat-container" id="kova-chat-container">
             <div class="kova-widget__promotional-message" id="kova-promotional-message" role="dialog" aria-label="Mensaje promocional">
+              <div class="kova-widget__promo-badge" id="kova-widget-promo-badge">
+                <span class="kova-widget__promo-badge-text">-10% OFF</span>
+              </div>
               <div class="kova-widget__promotional-content">
                 <div class="kova-widget__promotional-text">
                   ¿Necesitas ayuda? 🌿
@@ -356,9 +359,6 @@
                 </svg>
               </div>
               <div class="kova-widget__button-pulse"></div>
-              <div class="kova-widget__promo-badge" id="kova-widget-promo-badge" style="display: none;">
-                <span class="kova-widget__promo-badge-text">-10%</span>
-              </div>
             </button>
             
             <div class="kova-widget__chat" id="kova-widget-chat" role="dialog" aria-label="Chat de Kova">
@@ -578,24 +578,51 @@
       // Update promo badge
       if (this.promoBadge) {
         const badgeText = this.promoBadge.querySelector('.kova-widget__promo-badge-text');
-        if (badgeText && this.config.promoBadgeEnabled) {
+
+        // Update badge text
+        if (badgeText) {
           const discount = this.config.promoBadgeDiscount || 10;
           const suffix = this.config.promoBadgeSuffix || '';
           badgeText.textContent = `-${discount}%${suffix ? ' ' + suffix : ''}`;
         }
+
+        // Show/hide badge based on config
+        if (this.config.promoBadgeEnabled) {
+          this.promoBadge.classList.add('kova-widget__promo-badge--enabled');
+        } else {
+          this.promoBadge.classList.remove('kova-widget__promo-badge--enabled');
+        }
+
         // Apply position class
         if (this.config.promoBadgePosition === 'left') {
           this.promoBadge.classList.add('kova-widget__promo-badge--left');
         } else {
           this.promoBadge.classList.remove('kova-widget__promo-badge--left');
         }
+
         // Apply shape class
-        this.promoBadge.classList.remove('kova-widget__promo-badge--rounded', 'kova-widget__promo-badge--square');
-        if (this.config.promoBadgeShape === 'rounded') {
+        this.promoBadge.classList.remove('kova-widget__promo-badge--circle', 'kova-widget__promo-badge--rounded', 'kova-widget__promo-badge--square');
+        if (this.config.promoBadgeShape === 'circle') {
+          this.promoBadge.classList.add('kova-widget__promo-badge--circle');
+        } else if (this.config.promoBadgeShape === 'rounded') {
           this.promoBadge.classList.add('kova-widget__promo-badge--rounded');
         } else if (this.config.promoBadgeShape === 'square') {
           this.promoBadge.classList.add('kova-widget__promo-badge--square');
         }
+
+        // Apply color
+        if (this.config.promoBadgeColor) {
+          this.promoBadge.style.background = this.config.promoBadgeColor;
+        }
+
+        console.log('🏷️ Promo badge updated:', {
+          enabled: this.config.promoBadgeEnabled,
+          discount: this.config.promoBadgeDiscount,
+          suffix: this.config.promoBadgeSuffix,
+          color: this.config.promoBadgeColor,
+          shape: this.config.promoBadgeShape,
+          position: this.config.promoBadgePosition
+        });
       }
 
       console.log('📝 Dynamic content applied:', {
@@ -877,43 +904,53 @@
           animation: none !important;
         }
 
-        /* Promo Badge */
+        /* Promo Badge - positioned on promotional card */
+        .kova-widget__promotional-message {
+          position: relative !important;
+        }
+
         .kova-widget__promo-badge {
           position: absolute !important;
-          top: -6px !important;
-          right: -6px !important;
+          top: -8px !important;
+          right: -8px !important;
           background: #ef4444 !important;
           color: white !important;
-          font-size: 0.65rem !important;
+          font-size: 0.6rem !important;
           font-weight: 700 !important;
-          padding: 4px 6px !important;
-          border-radius: 50% !important;
-          min-width: 28px !important;
-          height: 28px !important;
-          display: flex !important;
+          padding: 4px 8px !important;
+          border-radius: 20px !important;
+          display: none !important;
           align-items: center !important;
           justify-content: center !important;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
           border: 2px solid white !important;
           z-index: 10 !important;
           animation: kovaBadgePulse 2s ease-in-out infinite !important;
+          white-space: nowrap !important;
+        }
+
+        .kova-widget__promo-badge--enabled {
+          display: flex !important;
         }
 
         .kova-widget__promo-badge--left {
           right: auto !important;
-          left: -6px !important;
+          left: -8px !important;
+        }
+
+        .kova-widget__promo-badge--circle {
+          border-radius: 50% !important;
+          padding: 6px !important;
+          min-width: 32px !important;
+          min-height: 32px !important;
         }
 
         .kova-widget__promo-badge--rounded {
-          border-radius: 8px !important;
-          min-width: auto !important;
-          height: auto !important;
+          border-radius: 12px !important;
         }
 
         .kova-widget__promo-badge--square {
           border-radius: 4px !important;
-          min-width: auto !important;
-          height: auto !important;
         }
 
         .kova-widget__promo-badge-text {
@@ -923,7 +960,7 @@
 
         @keyframes kovaBadgePulse {
           0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.1); }
+          50% { transform: scale(1.05); }
         }
 
         .kova-widget--open .kova-widget__promo-badge {
@@ -3761,20 +3798,10 @@
           background: ${accentColor} !important;
         }
 
-        /* Promo badge dynamic styles */
-        ${this.config.promoBadgeEnabled ? `
-        .kova-widget__promo-badge {
-          display: flex !important;
+        /* Promo badge dynamic color */
+        .kova-widget__promo-badge--enabled {
           background: ${this.config.promoBadgeColor || '#ef4444'} !important;
-          ${this.config.promoBadgePosition === 'left' ? 'right: auto !important; left: -6px !important;' : ''}
-          ${this.config.promoBadgeShape === 'rounded' ? 'border-radius: 8px !important; min-width: auto !important; height: auto !important;' : ''}
-          ${this.config.promoBadgeShape === 'square' ? 'border-radius: 4px !important; min-width: auto !important; height: auto !important;' : ''}
         }
-        ` : `
-        .kova-widget__promo-badge {
-          display: none !important;
-        }
-        `}
 
         /* Theme-specific overrides */
         ${theme === 'dark' ? `

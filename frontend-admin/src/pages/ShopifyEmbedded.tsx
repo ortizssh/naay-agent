@@ -1937,24 +1937,17 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                       {/* Suffix */}
                       <div className="form-group">
                         <label className="form-label">Sufijo</label>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                          {[
-                            { value: 'OFF', label: 'OFF' },
-                            { value: 'DSTO', label: 'DSTO' },
-                            { value: '', label: 'Sin sufijo' },
-                          ].map(option => (
-                            <button
-                              key={option.value}
-                              className={`btn ${widgetConfig.promo_badge_suffix === option.value ? 'btn-primary' : 'btn-secondary'}`}
-                              onClick={() => setWidgetConfig({ ...widgetConfig, promo_badge_suffix: option.value })}
-                              style={{ flex: 1, fontSize: '0.85rem' }}
-                            >
-                              {option.label}
-                            </button>
-                          ))}
-                        </div>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={widgetConfig.promo_badge_suffix}
+                          onChange={e => setWidgetConfig({ ...widgetConfig, promo_badge_suffix: e.target.value })}
+                          placeholder="OFF, DSTO, etc."
+                          maxLength={10}
+                          style={{ width: '150px' }}
+                        />
                         <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                          Ejemplo: -{widgetConfig.promo_badge_discount}%{widgetConfig.promo_badge_suffix ? ` ${widgetConfig.promo_badge_suffix}` : ''}
+                          Resultado: <strong>-{widgetConfig.promo_badge_discount}%{widgetConfig.promo_badge_suffix ? ` ${widgetConfig.promo_badge_suffix}` : ''}</strong>
                         </p>
                       </div>
 
@@ -2039,52 +2032,70 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                         <label className="form-label">Vista previa</label>
                         <div style={{
                           display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
+                          alignItems: 'flex-end',
+                          justifyContent: 'flex-end',
                           padding: '2rem',
                           background: '#f5f5f5',
                           borderRadius: '12px',
+                          gap: '1rem',
                         }}>
-                          <div style={{ position: 'relative', display: 'inline-block' }}>
-                            {/* Simulated Widget Button */}
-                            <div style={{
-                              width: '60px',
-                              height: '60px',
-                              borderRadius: '50%',
-                              background: widgetConfig.widget_color,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                            }}>
-                              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-                                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-                              </svg>
-                            </div>
-                            {/* Promo Badge */}
+                          {/* Promotional Card with Badge */}
+                          <div style={{
+                            position: 'relative',
+                            background: 'white',
+                            padding: '0.75rem 1rem',
+                            borderRadius: '12px',
+                            boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
+                            maxWidth: '200px',
+                          }}>
+                            {/* Promo Badge on Card */}
                             <div style={{
                               position: 'absolute',
-                              top: '-4px',
-                              [widgetConfig.promo_badge_position === 'left' ? 'left' : 'right']: '-4px',
+                              top: '-8px',
+                              [widgetConfig.promo_badge_position === 'left' ? 'left' : 'right']: '-8px',
                               background: widgetConfig.promo_badge_color,
                               color: 'white',
-                              fontSize: '0.65rem',
+                              fontSize: '0.55rem',
                               fontWeight: '700',
-                              padding: '4px 6px',
+                              padding: widgetConfig.promo_badge_shape === 'circle' ? '5px' : '4px 8px',
                               borderRadius: widgetConfig.promo_badge_shape === 'circle'
                                 ? '50%'
                                 : widgetConfig.promo_badge_shape === 'rounded'
-                                  ? '8px'
-                                  : '2px',
-                              minWidth: widgetConfig.promo_badge_shape === 'circle' ? '28px' : 'auto',
-                              height: widgetConfig.promo_badge_shape === 'circle' ? '28px' : 'auto',
+                                  ? '12px'
+                                  : '4px',
+                              minWidth: widgetConfig.promo_badge_shape === 'circle' ? '32px' : 'auto',
+                              minHeight: widgetConfig.promo_badge_shape === 'circle' ? '32px' : 'auto',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+                              border: '2px solid white',
+                              whiteSpace: 'nowrap',
                             }}>
                               -{widgetConfig.promo_badge_discount}%{widgetConfig.promo_badge_suffix ? ` ${widgetConfig.promo_badge_suffix}` : ''}
                             </div>
+                            <div style={{ fontSize: '0.8rem', color: widgetConfig.widget_color, fontWeight: '500' }}>
+                              ¿Necesitas ayuda? {widgetConfig.widget_avatar}
+                            </div>
+                            <div style={{ fontSize: '0.65rem', color: '#666', marginTop: '2px' }}>
+                              Te guiamos en tu compra
+                            </div>
+                          </div>
+                          {/* Widget Button */}
+                          <div style={{
+                            width: '50px',
+                            height: '50px',
+                            borderRadius: '50%',
+                            background: widgetConfig.widget_color,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                            flexShrink: 0,
+                          }}>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                            </svg>
                           </div>
                         </div>
                       </div>
