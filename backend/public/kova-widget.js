@@ -338,7 +338,7 @@
           <div class="kova-chat-container" id="kova-chat-container">
             <div class="kova-widget__promotional-message" id="kova-promotional-message" role="dialog" aria-label="Mensaje promocional">
               <div class="kova-widget__promo-badge" id="kova-widget-promo-badge">
-                <span class="kova-widget__promo-badge-text">-10% OFF</span>
+                <span class="kova-widget__promo-badge-text">10% OFF</span>
               </div>
               <div class="kova-widget__promotional-content">
                 <div class="kova-widget__promotional-text">
@@ -584,7 +584,7 @@
           const discount = this.config.promoBadgeDiscount || 10;
           const suffix = this.config.promoBadgeSuffix || '';
           const prefix = this.config.promoBadgePrefix || '';
-          badgeText.textContent = `${prefix ? prefix + ' ' : ''}-${discount}%${suffix ? ' ' + suffix : ''}`;
+          badgeText.textContent = `${prefix ? prefix + ' ' : ''}${discount}%${suffix ? ' ' + suffix : ''}`;
         }
 
         // Show/hide badge based on config

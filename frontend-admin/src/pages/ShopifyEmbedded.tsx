@@ -1969,7 +1969,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                           style={{ width: '150px' }}
                         />
                         <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                          Resultado: <strong>{widgetConfig.promo_badge_prefix ? `${widgetConfig.promo_badge_prefix} ` : ''}-{widgetConfig.promo_badge_discount}%{widgetConfig.promo_badge_suffix ? ` ${widgetConfig.promo_badge_suffix}` : ''}</strong>
+                          Resultado: <strong>{widgetConfig.promo_badge_prefix ? `${widgetConfig.promo_badge_prefix} ` : ''}{widgetConfig.promo_badge_discount}%{widgetConfig.promo_badge_suffix ? ` ${widgetConfig.promo_badge_suffix}` : ''}</strong>
                         </p>
                       </div>
 
@@ -2112,7 +2112,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                               border: '2px solid white',
                               whiteSpace: 'nowrap',
                             }}>
-                              {widgetConfig.promo_badge_prefix ? `${widgetConfig.promo_badge_prefix} ` : ''}-{widgetConfig.promo_badge_discount}%{widgetConfig.promo_badge_suffix ? ` ${widgetConfig.promo_badge_suffix}` : ''}
+                              {widgetConfig.promo_badge_prefix ? `${widgetConfig.promo_badge_prefix} ` : ''}{widgetConfig.promo_badge_discount}%{widgetConfig.promo_badge_suffix ? ` ${widgetConfig.promo_badge_suffix}` : ''}
                             </div>
                             <div style={{ fontSize: '0.8rem', color: widgetConfig.widget_color, fontWeight: '500' }}>
                               ¿Necesitas ayuda? {widgetConfig.widget_avatar}
