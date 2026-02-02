@@ -1920,222 +1920,244 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                   {widgetConfig.promo_badge_enabled && (
                     <div style={{
                       marginTop: '1rem',
-                      padding: '1rem',
-                      background: 'var(--color-bg)',
-                      borderRadius: '10px',
-                      border: '1px solid var(--color-border)'
+                      display: 'flex',
+                      gap: '1.5rem',
                     }}>
-                      {/* Discount Percentage */}
-                      <div className="form-group">
-                        <label className="form-label">Porcentaje de descuento</label>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <input
-                            type="number"
-                            className="form-input"
-                            value={widgetConfig.promo_badge_discount}
-                            onChange={e => setWidgetConfig({ ...widgetConfig, promo_badge_discount: parseInt(e.target.value) || 0 })}
-                            min={1}
-                            max={99}
-                            style={{ width: '80px' }}
-                          />
-                          <span style={{ fontSize: '1rem', fontWeight: '500' }}>%</span>
+                      {/* Left Column - Controls */}
+                      <div style={{
+                        flex: 1,
+                        padding: '1rem',
+                        background: 'var(--color-bg)',
+                        borderRadius: '10px',
+                        border: '1px solid var(--color-border)'
+                      }}>
+                        {/* Discount Percentage */}
+                        <div className="form-group">
+                          <label className="form-label">Porcentaje de descuento</label>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <input
+                              type="number"
+                              className="form-input"
+                              value={widgetConfig.promo_badge_discount}
+                              onChange={e => setWidgetConfig({ ...widgetConfig, promo_badge_discount: parseInt(e.target.value) || 0 })}
+                              min={1}
+                              max={99}
+                              style={{ width: '80px' }}
+                            />
+                            <span style={{ fontSize: '1rem', fontWeight: '500' }}>%</span>
+                          </div>
                         </div>
-                      </div>
 
-                      {/* Prefix */}
-                      <div className="form-group">
-                        <label className="form-label">Prefijo</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          value={widgetConfig.promo_badge_prefix}
-                          onChange={e => setWidgetConfig({ ...widgetConfig, promo_badge_prefix: e.target.value })}
-                          placeholder="SALE, HOT, etc."
-                          maxLength={10}
-                          style={{ width: '150px' }}
-                        />
-                      </div>
-
-                      {/* Suffix */}
-                      <div className="form-group">
-                        <label className="form-label">Sufijo</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          value={widgetConfig.promo_badge_suffix}
-                          onChange={e => setWidgetConfig({ ...widgetConfig, promo_badge_suffix: e.target.value })}
-                          placeholder="OFF, DSTO, etc."
-                          maxLength={10}
-                          style={{ width: '150px' }}
-                        />
-                        <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                          Resultado: <strong>{widgetConfig.promo_badge_prefix ? `${widgetConfig.promo_badge_prefix} ` : ''}{widgetConfig.promo_badge_discount}%{widgetConfig.promo_badge_suffix ? ` ${widgetConfig.promo_badge_suffix}` : ''}</strong>
-                        </p>
-                      </div>
-
-                      {/* Font Size */}
-                      <div className="form-group">
-                        <label className="form-label">Tamaño de texto</label>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <input
-                            type="range"
-                            min="8"
-                            max="18"
-                            value={widgetConfig.promo_badge_font_size}
-                            onChange={e => setWidgetConfig({ ...widgetConfig, promo_badge_font_size: parseInt(e.target.value) })}
-                            style={{ width: '120px' }}
-                          />
-                          <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', minWidth: '40px' }}>
-                            {widgetConfig.promo_badge_font_size}px
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Description/Prompt */}
-                      <div className="form-group">
-                        <label className="form-label">Descripcion / Prompt</label>
-                        <textarea
-                          className="form-input"
-                          rows={2}
-                          value={widgetConfig.promo_badge_text}
-                          onChange={e => setWidgetConfig({ ...widgetConfig, promo_badge_text: e.target.value })}
-                          placeholder="Descuento especial para ti"
-                        />
-                        <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                          Texto que el agente usara al hablar de la promocion
-                        </p>
-                      </div>
-
-                      {/* Badge Color */}
-                      <div className="form-group">
-                        <label className="form-label">Color del badge</label>
-                        <div className="color-picker-wrapper">
-                          <input
-                            type="color"
-                            className="color-picker-input"
-                            value={widgetConfig.promo_badge_color}
-                            onChange={e => setWidgetConfig({ ...widgetConfig, promo_badge_color: e.target.value })}
-                          />
+                        {/* Prefix */}
+                        <div className="form-group">
+                          <label className="form-label">Prefijo</label>
                           <input
                             type="text"
                             className="form-input"
-                            value={widgetConfig.promo_badge_color}
-                            onChange={e => setWidgetConfig({ ...widgetConfig, promo_badge_color: e.target.value })}
-                            style={{ flex: 1 }}
+                            value={widgetConfig.promo_badge_prefix}
+                            onChange={e => setWidgetConfig({ ...widgetConfig, promo_badge_prefix: e.target.value })}
+                            placeholder="SALE, HOT, etc."
+                            maxLength={10}
+                            style={{ width: '150px' }}
                           />
                         </div>
-                      </div>
 
-                      {/* Badge Shape */}
-                      <div className="form-group">
-                        <label className="form-label">Forma del badge</label>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                          {[
-                            { value: 'circle', label: 'Circulo' },
-                            { value: 'rounded', label: 'Redondeado' },
-                            { value: 'square', label: 'Cuadrado' },
-                          ].map(shape => (
-                            <button
-                              key={shape.value}
-                              className={`btn ${widgetConfig.promo_badge_shape === shape.value ? 'btn-primary' : 'btn-secondary'}`}
-                              onClick={() => setWidgetConfig({ ...widgetConfig, promo_badge_shape: shape.value })}
-                              style={{ flex: 1, fontSize: '0.85rem' }}
-                            >
-                              {shape.label}
-                            </button>
-                          ))}
+                        {/* Suffix */}
+                        <div className="form-group">
+                          <label className="form-label">Sufijo</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            value={widgetConfig.promo_badge_suffix}
+                            onChange={e => setWidgetConfig({ ...widgetConfig, promo_badge_suffix: e.target.value })}
+                            placeholder="OFF, DSTO, etc."
+                            maxLength={10}
+                            style={{ width: '150px' }}
+                          />
+                          <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                            Resultado: <strong>{widgetConfig.promo_badge_prefix ? `${widgetConfig.promo_badge_prefix} ` : ''}{widgetConfig.promo_badge_discount}%{widgetConfig.promo_badge_suffix ? ` ${widgetConfig.promo_badge_suffix}` : ''}</strong>
+                          </p>
+                        </div>
+
+                        {/* Font Size */}
+                        <div className="form-group">
+                          <label className="form-label">Tamaño de texto</label>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <input
+                              type="range"
+                              min="8"
+                              max="18"
+                              value={widgetConfig.promo_badge_font_size}
+                              onChange={e => setWidgetConfig({ ...widgetConfig, promo_badge_font_size: parseInt(e.target.value) })}
+                              style={{ width: '120px' }}
+                            />
+                            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', minWidth: '40px' }}>
+                              {widgetConfig.promo_badge_font_size}px
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Description/Prompt */}
+                        <div className="form-group">
+                          <label className="form-label">Descripcion / Prompt</label>
+                          <textarea
+                            className="form-input"
+                            rows={2}
+                            value={widgetConfig.promo_badge_text}
+                            onChange={e => setWidgetConfig({ ...widgetConfig, promo_badge_text: e.target.value })}
+                            placeholder="Descuento especial para ti"
+                          />
+                          <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                            Texto que el agente usara al hablar de la promocion
+                          </p>
+                        </div>
+
+                        {/* Badge Color */}
+                        <div className="form-group">
+                          <label className="form-label">Color del badge</label>
+                          <div className="color-picker-wrapper">
+                            <input
+                              type="color"
+                              className="color-picker-input"
+                              value={widgetConfig.promo_badge_color}
+                              onChange={e => setWidgetConfig({ ...widgetConfig, promo_badge_color: e.target.value })}
+                            />
+                            <input
+                              type="text"
+                              className="form-input"
+                              value={widgetConfig.promo_badge_color}
+                              onChange={e => setWidgetConfig({ ...widgetConfig, promo_badge_color: e.target.value })}
+                              style={{ flex: 1 }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Badge Shape */}
+                        <div className="form-group">
+                          <label className="form-label">Forma del badge</label>
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            {[
+                              { value: 'circle', label: 'Circulo' },
+                              { value: 'rounded', label: 'Redondeado' },
+                              { value: 'square', label: 'Cuadrado' },
+                            ].map(shape => (
+                              <button
+                                key={shape.value}
+                                className={`btn ${widgetConfig.promo_badge_shape === shape.value ? 'btn-primary' : 'btn-secondary'}`}
+                                onClick={() => setWidgetConfig({ ...widgetConfig, promo_badge_shape: shape.value })}
+                                style={{ flex: 1, fontSize: '0.85rem' }}
+                              >
+                                {shape.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Badge Position */}
+                        <div className="form-group">
+                          <label className="form-label">Posicion del badge</label>
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            {[
+                              { value: 'left', label: 'Izquierda' },
+                              { value: 'right', label: 'Derecha' },
+                            ].map(pos => (
+                              <button
+                                key={pos.value}
+                                className={`btn ${widgetConfig.promo_badge_position === pos.value ? 'btn-primary' : 'btn-secondary'}`}
+                                onClick={() => setWidgetConfig({ ...widgetConfig, promo_badge_position: pos.value })}
+                                style={{ flex: 1, fontSize: '0.85rem' }}
+                              >
+                                {pos.label}
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       </div>
 
-                      {/* Badge Position */}
-                      <div className="form-group">
-                        <label className="form-label">Posicion del badge</label>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                          {[
-                            { value: 'left', label: 'Izquierda' },
-                            { value: 'right', label: 'Derecha' },
-                          ].map(pos => (
-                            <button
-                              key={pos.value}
-                              className={`btn ${widgetConfig.promo_badge_position === pos.value ? 'btn-primary' : 'btn-secondary'}`}
-                              onClick={() => setWidgetConfig({ ...widgetConfig, promo_badge_position: pos.value })}
-                              style={{ flex: 1, fontSize: '0.85rem' }}
-                            >
-                              {pos.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Preview */}
-                      <div className="form-group" style={{ marginTop: '1.5rem' }}>
-                        <label className="form-label">Vista previa</label>
+                      {/* Right Column - Preview */}
+                      <div style={{
+                        width: '280px',
+                        flexShrink: 0,
+                        padding: '1rem',
+                        background: 'var(--color-bg)',
+                        borderRadius: '10px',
+                        border: '1px solid var(--color-border)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                      }}>
+                        <label className="form-label" style={{ marginBottom: '1rem' }}>Vista previa</label>
                         <div style={{
+                          flex: 1,
                           display: 'flex',
-                          alignItems: 'flex-end',
-                          justifyContent: 'flex-end',
-                          padding: '2rem',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: '1.5rem',
                           background: '#f5f5f5',
                           borderRadius: '12px',
-                          gap: '1rem',
                         }}>
-                          {/* Promotional Card with Badge */}
                           <div style={{
-                            position: 'relative',
-                            background: 'white',
-                            padding: '0.75rem 1rem',
-                            borderRadius: '12px',
-                            boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
-                            maxWidth: '200px',
+                            display: 'flex',
+                            alignItems: 'flex-end',
+                            gap: '0.75rem',
                           }}>
-                            {/* Promo Badge on Card */}
+                            {/* Promotional Card with Badge */}
                             <div style={{
-                              position: 'absolute',
-                              top: '-8px',
-                              [widgetConfig.promo_badge_position === 'left' ? 'left' : 'right']: '-8px',
-                              background: widgetConfig.promo_badge_color,
-                              color: 'white',
-                              fontSize: `${widgetConfig.promo_badge_font_size}px`,
-                              fontWeight: '700',
-                              padding: widgetConfig.promo_badge_shape === 'circle' ? '5px' : '4px 8px',
-                              borderRadius: widgetConfig.promo_badge_shape === 'circle'
-                                ? '50%'
-                                : widgetConfig.promo_badge_shape === 'rounded'
-                                  ? '12px'
-                                  : '4px',
-                              minWidth: widgetConfig.promo_badge_shape === 'circle' ? '32px' : 'auto',
-                              minHeight: widgetConfig.promo_badge_shape === 'circle' ? '32px' : 'auto',
+                              position: 'relative',
+                              background: 'white',
+                              padding: '0.75rem 1rem',
+                              borderRadius: '12px',
+                              boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
+                              maxWidth: '160px',
+                            }}>
+                              {/* Promo Badge on Card */}
+                              <div style={{
+                                position: 'absolute',
+                                top: '-8px',
+                                [widgetConfig.promo_badge_position === 'left' ? 'left' : 'right']: '-8px',
+                                background: widgetConfig.promo_badge_color,
+                                color: 'white',
+                                fontSize: `${widgetConfig.promo_badge_font_size}px`,
+                                fontWeight: '700',
+                                padding: widgetConfig.promo_badge_shape === 'circle' ? '5px' : '4px 8px',
+                                borderRadius: widgetConfig.promo_badge_shape === 'circle'
+                                  ? '50%'
+                                  : widgetConfig.promo_badge_shape === 'rounded'
+                                    ? '12px'
+                                    : '4px',
+                                minWidth: widgetConfig.promo_badge_shape === 'circle' ? '32px' : 'auto',
+                                minHeight: widgetConfig.promo_badge_shape === 'circle' ? '32px' : 'auto',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+                                border: '2px solid white',
+                                whiteSpace: 'nowrap',
+                              }}>
+                                {widgetConfig.promo_badge_prefix ? `${widgetConfig.promo_badge_prefix} ` : ''}{widgetConfig.promo_badge_discount}%{widgetConfig.promo_badge_suffix ? ` ${widgetConfig.promo_badge_suffix}` : ''}
+                              </div>
+                              <div style={{ fontSize: '0.75rem', color: widgetConfig.widget_color, fontWeight: '500' }}>
+                                ¿Necesitas ayuda? {widgetConfig.widget_avatar}
+                              </div>
+                              <div style={{ fontSize: '0.6rem', color: '#666', marginTop: '2px' }}>
+                                Te guiamos en tu compra
+                              </div>
+                            </div>
+                            {/* Widget Button */}
+                            <div style={{
+                              width: '44px',
+                              height: '44px',
+                              borderRadius: '50%',
+                              background: widgetConfig.widget_color,
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
-                              border: '2px solid white',
-                              whiteSpace: 'nowrap',
+                              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                              flexShrink: 0,
                             }}>
-                              {widgetConfig.promo_badge_prefix ? `${widgetConfig.promo_badge_prefix} ` : ''}{widgetConfig.promo_badge_discount}%{widgetConfig.promo_badge_suffix ? ` ${widgetConfig.promo_badge_suffix}` : ''}
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                              </svg>
                             </div>
-                            <div style={{ fontSize: '0.8rem', color: widgetConfig.widget_color, fontWeight: '500' }}>
-                              ¿Necesitas ayuda? {widgetConfig.widget_avatar}
-                            </div>
-                            <div style={{ fontSize: '0.65rem', color: '#666', marginTop: '2px' }}>
-                              Te guiamos en tu compra
-                            </div>
-                          </div>
-                          {/* Widget Button */}
-                          <div style={{
-                            width: '50px',
-                            height: '50px',
-                            borderRadius: '50%',
-                            background: widgetConfig.widget_color,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                            flexShrink: 0,
-                          }}>
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-                              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-                            </svg>
                           </div>
                         </div>
                       </div>
