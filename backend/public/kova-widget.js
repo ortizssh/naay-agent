@@ -583,7 +583,8 @@
         if (badgeText) {
           const discount = this.config.promoBadgeDiscount || 10;
           const suffix = this.config.promoBadgeSuffix || '';
-          badgeText.textContent = `-${discount}%${suffix ? ' ' + suffix : ''}`;
+          const prefix = this.config.promoBadgePrefix || '';
+          badgeText.textContent = `${prefix ? prefix + ' ' : ''}-${discount}%${suffix ? ' ' + suffix : ''}`;
         }
 
         // Show/hide badge based on config
@@ -623,6 +624,7 @@
         console.log('🏷️ Promo badge updated:', {
           enabled: this.config.promoBadgeEnabled,
           discount: this.config.promoBadgeDiscount,
+          prefix: this.config.promoBadgePrefix,
           suffix: this.config.promoBadgeSuffix,
           color: this.config.promoBadgeColor,
           shape: this.config.promoBadgeShape,

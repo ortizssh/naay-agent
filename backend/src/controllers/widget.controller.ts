@@ -138,6 +138,7 @@ router.get(
         promoBadgeShape: 'circle',
         promoBadgePosition: 'right',
         promoBadgeSuffix: 'OFF',
+        promoBadgePrefix: '',
         promoBadgeFontSize: 12,
       };
 
@@ -189,6 +190,7 @@ router.get(
           promo_badge_shape,
           promo_badge_position,
           promo_badge_suffix,
+          promo_badge_prefix,
           promo_badge_font_size
         `
         )
@@ -260,8 +262,11 @@ router.get(
               defaultConfig.promoBadgePosition,
             promoBadgeSuffix:
               clientStore.promo_badge_suffix ?? defaultConfig.promoBadgeSuffix,
+            promoBadgePrefix:
+              clientStore.promo_badge_prefix ?? defaultConfig.promoBadgePrefix,
             promoBadgeFontSize:
-              clientStore.promo_badge_font_size || defaultConfig.promoBadgeFontSize,
+              clientStore.promo_badge_font_size ||
+              defaultConfig.promoBadgeFontSize,
           },
         });
       }

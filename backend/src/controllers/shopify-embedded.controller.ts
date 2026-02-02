@@ -225,6 +225,8 @@ router.put(
         updateData.promo_badge_position = config.promoBadgePosition;
       if (config.promoBadgeSuffix !== undefined)
         updateData.promo_badge_suffix = config.promoBadgeSuffix;
+      if (config.promoBadgePrefix !== undefined)
+        updateData.promo_badge_prefix = config.promoBadgePrefix;
       if (config.promoBadgeFontSize !== undefined)
         updateData.promo_badge_font_size = config.promoBadgeFontSize;
 

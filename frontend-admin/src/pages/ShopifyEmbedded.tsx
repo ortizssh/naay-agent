@@ -67,6 +67,7 @@ interface WidgetConfig {
   promo_badge_shape: string;
   promo_badge_position: string;
   promo_badge_suffix: string;
+  promo_badge_prefix: string;
   promo_badge_font_size: number;
 }
 
@@ -355,6 +356,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
     promo_badge_shape: 'circle',
     promo_badge_position: 'right',
     promo_badge_suffix: 'OFF',
+    promo_badge_prefix: '',
     promo_badge_font_size: 12,
   });
   const [loading, setLoading] = useState(true);
@@ -606,6 +608,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
             promo_badge_shape: data.data.promoBadgeShape || prev.promo_badge_shape,
             promo_badge_position: data.data.promoBadgePosition || prev.promo_badge_position,
             promo_badge_suffix: data.data.promoBadgeSuffix ?? prev.promo_badge_suffix,
+            promo_badge_prefix: data.data.promoBadgePrefix ?? prev.promo_badge_prefix,
             promo_badge_font_size: data.data.promoBadgeFontSize || prev.promo_badge_font_size,
           }));
         }
@@ -660,6 +663,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
             promoBadgeShape: widgetConfig.promo_badge_shape,
             promoBadgePosition: widgetConfig.promo_badge_position,
             promoBadgeSuffix: widgetConfig.promo_badge_suffix,
+            promoBadgePrefix: widgetConfig.promo_badge_prefix,
             promoBadgeFontSize: widgetConfig.promo_badge_font_size,
           },
         }),
@@ -1938,6 +1942,20 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                         </div>
                       </div>
 
+                      {/* Prefix */}
+                      <div className="form-group">
+                        <label className="form-label">Prefijo</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={widgetConfig.promo_badge_prefix}
+                          onChange={e => setWidgetConfig({ ...widgetConfig, promo_badge_prefix: e.target.value })}
+                          placeholder="SALE, HOT, etc."
+                          maxLength={10}
+                          style={{ width: '150px' }}
+                        />
+                      </div>
+
                       {/* Suffix */}
                       <div className="form-group">
                         <label className="form-label">Sufijo</label>
@@ -1951,7 +1969,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                           style={{ width: '150px' }}
                         />
                         <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                          Resultado: <strong>-{widgetConfig.promo_badge_discount}%{widgetConfig.promo_badge_suffix ? ` ${widgetConfig.promo_badge_suffix}` : ''}</strong>
+                          Resultado: <strong>{widgetConfig.promo_badge_prefix ? `${widgetConfig.promo_badge_prefix} ` : ''}-{widgetConfig.promo_badge_discount}%{widgetConfig.promo_badge_suffix ? ` ${widgetConfig.promo_badge_suffix}` : ''}</strong>
                         </p>
                       </div>
 
@@ -2094,7 +2112,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                               border: '2px solid white',
                               whiteSpace: 'nowrap',
                             }}>
-                              -{widgetConfig.promo_badge_discount}%{widgetConfig.promo_badge_suffix ? ` ${widgetConfig.promo_badge_suffix}` : ''}
+                              {widgetConfig.promo_badge_prefix ? `${widgetConfig.promo_badge_prefix} ` : ''}-{widgetConfig.promo_badge_discount}%{widgetConfig.promo_badge_suffix ? ` ${widgetConfig.promo_badge_suffix}` : ''}
                             </div>
                             <div style={{ fontSize: '0.8rem', color: widgetConfig.widget_color, fontWeight: '500' }}>
                               ¿Necesitas ayuda? {widgetConfig.widget_avatar}
