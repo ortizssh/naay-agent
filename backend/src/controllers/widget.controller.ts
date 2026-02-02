@@ -131,6 +131,13 @@ router.get(
         showCart: true,
         enableAnimations: true,
         theme: 'light',
+        promoBadgeEnabled: false,
+        promoBadgeDiscount: 10,
+        promoBadgeText: 'Descuento especial',
+        promoBadgeColor: '#ef4444',
+        promoBadgeShape: 'circle',
+        promoBadgePosition: 'right',
+        promoBadgeSuffix: 'OFF',
       };
 
       if (!shop || typeof shop !== 'string') {
@@ -173,7 +180,14 @@ router.get(
           widget_show_cart,
           widget_enable_animations,
           widget_theme,
-          widget_brand_name
+          widget_brand_name,
+          promo_badge_enabled,
+          promo_badge_discount,
+          promo_badge_text,
+          promo_badge_color,
+          promo_badge_shape,
+          promo_badge_position,
+          promo_badge_suffix
         `
         )
         .eq('shop_domain', shop)
@@ -227,6 +241,13 @@ router.get(
               clientStore.widget_enable_animations ??
               defaultConfig.enableAnimations,
             theme: clientStore.widget_theme || defaultConfig.theme,
+            promoBadgeEnabled: clientStore.promo_badge_enabled ?? defaultConfig.promoBadgeEnabled,
+            promoBadgeDiscount: clientStore.promo_badge_discount || defaultConfig.promoBadgeDiscount,
+            promoBadgeText: clientStore.promo_badge_text || defaultConfig.promoBadgeText,
+            promoBadgeColor: clientStore.promo_badge_color || defaultConfig.promoBadgeColor,
+            promoBadgeShape: clientStore.promo_badge_shape || defaultConfig.promoBadgeShape,
+            promoBadgePosition: clientStore.promo_badge_position || defaultConfig.promoBadgePosition,
+            promoBadgeSuffix: clientStore.promo_badge_suffix ?? defaultConfig.promoBadgeSuffix,
           },
         });
       }
