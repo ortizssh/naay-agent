@@ -42,7 +42,7 @@ router.get('/kova-widget.js', (req: Request, res: Response) => {
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     res.setHeader('Last-Modified', new Date().toUTCString());
-    res.setHeader('ETag', 'v2.1.0-' + Date.now());
+    res.setHeader('ETag', 'v2.2.0-promo-badge-' + Date.now());
 
     // Set content type
     res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
