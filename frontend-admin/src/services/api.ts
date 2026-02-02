@@ -273,6 +273,65 @@ class ClientApiClient {
     const query = searchParams.toString();
     return this.request(`/api/client/analytics${query ? `?${query}` : ''}`);
   }
+
+  // Conversion Dashboard
+  async getConversionDashboard(days: number = 7): Promise<{ success: boolean; data: ConversionDashboardData }> {
+    return this.request(`/api/client/conversions/dashboard?days=${days}`);
+  }
+
+  // Recent Conversions
+  async getRecentConversions(limit: number = 10): Promise<{ success: boolean; data: any[] }> {
+    return this.request(`/api/client/conversions/recent?limit=${limit}`);
+  }
+
+  // Conversion Stats
+  async getConversionStats(days: number = 7): Promise<{ success: boolean; data: any }> {
+    return this.request(`/api/client/conversions/stats?days=${days}`);
+  }
+}
+
+// Types for Conversion Dashboard
+export interface ConversionDashboardData {
+  overview: {
+    totalRecommendations: number;
+    totalConversions: number;
+    conversionRate: number;
+    totalRevenue: number;
+    averageOrderValue: number;
+    averageTimeToConversion: number;
+  };
+  timeline: Array<{
+    date: string;
+    recommendations: number;
+    conversions: number;
+    revenue: number;
+    conversionRate: number;
+  }>;
+  topProducts: Array<{
+    productId: string;
+    productTitle: string;
+    recommendations: number;
+    conversions: number;
+    conversionRate: number;
+    revenue: number;
+  }>;
+  recentActivity: Array<{
+    type: 'recommendation' | 'conversion';
+    timestamp: string;
+    productTitle: string;
+    sessionId: string;
+    amount?: number;
+  }>;
+  attributionBreakdown: {
+    direct: { count: number; revenue: number };
+    assisted: { count: number; revenue: number };
+    viewThrough: { count: number; revenue: number };
+  };
+  periodComparison: {
+    currentPeriod: { conversions: number; revenue: number; rate: number };
+    previousPeriod: { conversions: number; revenue: number; rate: number };
+    change: { conversions: number; revenue: number; rate: number };
+  };
 }
 
 export const clientApi = new ClientApiClient();

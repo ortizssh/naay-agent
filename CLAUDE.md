@@ -77,15 +77,19 @@ naay-agent/
 - `cart.service.ts` - Shopping cart operations via Storefront API
 - `cache.service.ts` - Redis caching with memory fallback
 - `tenant.service.ts` - Multi-tenant shop isolation
-- `*-analytics.service.ts`, `*-conversion*.service.ts` - Conversion tracking and analytics
+- `conversion-sync-scheduler.service.ts` - Scheduled conversion sync (every 5 hours)
+- `simple-conversion-tracker.service.ts` - Conversion attribution and tracking
+- `*-analytics.service.ts` - Analytics aggregation and reporting
 
 ### Controllers (`backend/src/controllers/`)
 - `auth.controller.ts` / `modern-auth.controller.ts` - Shopify OAuth flow
+- `shopify-embedded.controller.ts` - App Bridge embedded app endpoints
 - `webhook.controller.ts` - Shopify webhook handlers
 - `chat.controller.ts` / `simple-chat.controller.ts` - AI chat endpoints
 - `product.controller.ts` / `public-products.controller.ts` - Product sync and search
 - `public-cart.controller.ts` - Public cart API for widget
 - `widget.controller.ts` / `widget-public.controller.ts` - Widget endpoints
+- `tenant-admin.controller.ts` - Multi-tenant administration
 - `admin-bypass.controller.ts` - Direct admin operations (testing/debugging)
 - `health.controller.ts` - Health check endpoints
 
@@ -96,11 +100,13 @@ naay-agent/
 - Dual-layer caching: Redis primary, memory fallback
 
 ### Database (Supabase + pgvector)
-**Core Tables**: `shops`, `products`, `product_variants`, `product_embeddings`, `conversations`, `webhook_events`
+**Core Tables**: `shops`, `products`, `product_variants`, `product_embeddings`, `conversations`, `webhook_events`, `shopify_sessions`, `app_settings`
 
 - pgvector extension for semantic similarity search
 - Row-level security for multi-tenant isolation
 - Direct Supabase client calls (not abstracted through repositories)
+- Migrations in `database/migrations/` (001_initial_schema → 007_rotating_welcome_messages)
+- Semantic search function: `database/functions/search_products_semantic.sql`
 
 ## Environment Configuration
 
@@ -154,5 +160,6 @@ PORT=3000
 
 - **Hosting**: Azure App Service
 - **Config**: `azure-config/azure-deploy.json`, `startup.js`
-- **CI/CD**: `.github/workflows/`
+- **CI/CD**: `.github/workflows/azure-deploy-*.yml` (push to `main` triggers deploy)
 - **Build for Azure**: `npm run azure:setup`
+- **Entry point**: `startup.js` (loads `backend/dist/index.js`)
