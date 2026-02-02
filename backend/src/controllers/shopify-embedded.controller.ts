@@ -210,6 +210,19 @@ router.put(
       if (config.widgetTheme) updateData.widget_theme = config.widgetTheme;
       if (config.widgetBrandName !== undefined)
         updateData.widget_brand_name = config.widgetBrandName;
+      // Promotion badge settings
+      if (config.promoBadgeEnabled !== undefined)
+        updateData.promo_badge_enabled = config.promoBadgeEnabled;
+      if (config.promoBadgeDiscount !== undefined)
+        updateData.promo_badge_discount = config.promoBadgeDiscount;
+      if (config.promoBadgeText !== undefined)
+        updateData.promo_badge_text = config.promoBadgeText;
+      if (config.promoBadgeColor !== undefined)
+        updateData.promo_badge_color = config.promoBadgeColor;
+      if (config.promoBadgeShape !== undefined)
+        updateData.promo_badge_shape = config.promoBadgeShape;
+      if (config.promoBadgePosition !== undefined)
+        updateData.promo_badge_position = config.promoBadgePosition;
 
       // Try to update client_stores first
       const { data: clientStore, error: clientError } = await (

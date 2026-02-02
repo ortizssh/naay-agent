@@ -115,7 +115,19 @@ router.get('/config', async (req: Request, res: Response) => {
         widget_show_cart,
         widget_enable_animations,
         widget_theme,
-        widget_brand_name
+        widget_brand_name,
+        widget_welcome_message_2,
+        widget_subtitle_2,
+        widget_welcome_message_3,
+        widget_subtitle_3,
+        widget_rotating_messages_enabled,
+        widget_rotating_messages_interval,
+        promo_badge_enabled,
+        promo_badge_discount,
+        promo_badge_text,
+        promo_badge_color,
+        promo_badge_shape,
+        promo_badge_position
       `
       )
       .eq('shop_domain', shopDomain)
@@ -133,6 +145,12 @@ router.get('/config', async (req: Request, res: Response) => {
           secondaryColor: clientStore.widget_secondary_color || '#212120',
           accentColor: clientStore.widget_accent_color || '#cf795e',
           greeting: clientStore.welcome_message || '',
+          greeting2: clientStore.widget_welcome_message_2 || '',
+          subtitle2: clientStore.widget_subtitle_2 || '',
+          greeting3: clientStore.widget_welcome_message_3 || '',
+          subtitle3: clientStore.widget_subtitle_3 || '',
+          rotatingMessagesEnabled: clientStore.widget_rotating_messages_enabled ?? false,
+          rotatingMessagesInterval: clientStore.widget_rotating_messages_interval || 5,
           subtitle:
             clientStore.widget_subtitle || 'Asistente de compras con IA',
           placeholder:
@@ -148,6 +166,13 @@ router.get('/config', async (req: Request, res: Response) => {
           showCart: clientStore.widget_show_cart ?? true,
           enableAnimations: clientStore.widget_enable_animations ?? true,
           theme: clientStore.widget_theme || 'light',
+          // Promotion badge settings
+          promoBadgeEnabled: clientStore.promo_badge_enabled ?? false,
+          promoBadgeDiscount: clientStore.promo_badge_discount || 10,
+          promoBadgeText: clientStore.promo_badge_text || 'Descuento especial',
+          promoBadgeColor: clientStore.promo_badge_color || '#ef4444',
+          promoBadgeShape: clientStore.promo_badge_shape || 'circle',
+          promoBadgePosition: clientStore.promo_badge_position || 'right',
         },
       });
     }
