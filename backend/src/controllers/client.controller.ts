@@ -888,7 +888,9 @@ router.get(
       let shopDomain = user.shop_domain;
 
       if (!shopDomain) {
-        const { data: clientStore } = await (supabaseService as any).serviceClient
+        const { data: clientStore } = await (
+          supabaseService as any
+        ).serviceClient
           .from('client_stores')
           .select('shop_domain')
           .eq('user_id', user.id)
@@ -927,11 +929,17 @@ router.get(
 
       const conversionTracker = new SimpleConversionTracker();
       const endDate = new Date();
-      const startDate = new Date(endDate.getTime() - days * 24 * 60 * 60 * 1000);
-      const previousStartDate = new Date(startDate.getTime() - days * 24 * 60 * 60 * 1000);
+      const startDate = new Date(
+        endDate.getTime() - days * 24 * 60 * 60 * 1000
+      );
+      const previousStartDate = new Date(
+        startDate.getTime() - days * 24 * 60 * 60 * 1000
+      );
 
       // Get recommendations for the period
-      const { data: recommendations } = await (supabaseService as any).serviceClient
+      const { data: recommendations } = await (
+        supabaseService as any
+      ).serviceClient
         .from('simple_recommendations')
         .select('*')
         .eq('shop_domain', shopDomain)
@@ -949,14 +957,18 @@ router.get(
         .order('purchased_at', { ascending: false });
 
       // Get previous period conversions for comparison
-      const { data: previousConversions } = await (supabaseService as any).serviceClient
+      const { data: previousConversions } = await (
+        supabaseService as any
+      ).serviceClient
         .from('simple_conversions')
         .select('*')
         .eq('shop_domain', shopDomain)
         .gte('purchased_at', previousStartDate.toISOString())
         .lt('purchased_at', startDate.toISOString());
 
-      const { data: previousRecommendations } = await (supabaseService as any).serviceClient
+      const { data: previousRecommendations } = await (
+        supabaseService as any
+      ).serviceClient
         .from('simple_recommendations')
         .select('id')
         .eq('shop_domain', shopDomain)
@@ -966,22 +978,43 @@ router.get(
       // Calculate overview metrics
       const totalRecommendations = recommendations?.length || 0;
       const totalConversions = conversions?.length || 0;
-      const conversionRate = totalRecommendations > 0
-        ? (totalConversions / totalRecommendations) * 100
-        : 0;
-      const totalRevenue = conversions?.reduce((sum: number, c: any) => sum + (c.order_amount || 0), 0) || 0;
-      const averageOrderValue = totalConversions > 0 ? totalRevenue / totalConversions : 0;
-      const averageTimeToConversion = conversions && conversions.length > 0
-        ? conversions.reduce((sum: number, c: any) => sum + (c.minutes_to_conversion || 0), 0) / conversions.length
-        : 0;
+      const conversionRate =
+        totalRecommendations > 0
+          ? (totalConversions / totalRecommendations) * 100
+          : 0;
+      const totalRevenue =
+        conversions?.reduce(
+          (sum: number, c: any) => sum + (c.order_amount || 0),
+          0
+        ) || 0;
+      const averageOrderValue =
+        totalConversions > 0 ? totalRevenue / totalConversions : 0;
+      const averageTimeToConversion =
+        conversions && conversions.length > 0
+          ? conversions.reduce(
+              (sum: number, c: any) => sum + (c.minutes_to_conversion || 0),
+              0
+            ) / conversions.length
+          : 0;
 
       // Calculate timeline data (by day)
-      const timelineMap = new Map<string, { recommendations: number; conversions: number; revenue: number }>();
+      const timelineMap = new Map<
+        string,
+        { recommendations: number; conversions: number; revenue: number }
+      >();
 
       // Initialize all days in the range
-      for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      for (
+        let d = new Date(startDate);
+        d <= endDate;
+        d.setDate(d.getDate() + 1)
+      ) {
         const dateKey = d.toISOString().split('T')[0];
-        timelineMap.set(dateKey, { recommendations: 0, conversions: 0, revenue: 0 });
+        timelineMap.set(dateKey, {
+          recommendations: 0,
+          conversions: 0,
+          revenue: 0,
+        });
       }
 
       // Fill in recommendations
@@ -1009,20 +1042,26 @@ router.get(
           recommendations: data.recommendations,
           conversions: data.conversions,
           revenue: Math.round(data.revenue * 100) / 100,
-          conversionRate: data.recommendations > 0
-            ? Math.round((data.conversions / data.recommendations) * 100 * 100) / 100
-            : 0,
+          conversionRate:
+            data.recommendations > 0
+              ? Math.round(
+                  (data.conversions / data.recommendations) * 100 * 100
+                ) / 100
+              : 0,
         }))
         .sort((a, b) => a.date.localeCompare(b.date));
 
       // Calculate top products
-      const productStatsMap = new Map<string, {
-        productId: string;
-        productTitle: string;
-        recommendations: number;
-        conversions: number;
-        revenue: number
-      }>();
+      const productStatsMap = new Map<
+        string,
+        {
+          productId: string;
+          productTitle: string;
+          recommendations: number;
+          conversions: number;
+          revenue: number;
+        }
+      >();
 
       recommendations?.forEach((r: any) => {
         const key = r.product_id;
@@ -1058,9 +1097,11 @@ router.get(
         .filter(p => p.conversions > 0)
         .map(p => ({
           ...p,
-          conversionRate: p.recommendations > 0
-            ? Math.round((p.conversions / p.recommendations) * 100 * 100) / 100
-            : 0,
+          conversionRate:
+            p.recommendations > 0
+              ? Math.round((p.conversions / p.recommendations) * 100 * 100) /
+                100
+              : 0,
           revenue: Math.round(p.revenue * 100) / 100,
         }))
         .sort((a, b) => b.revenue - a.revenue)
@@ -1094,14 +1135,15 @@ router.get(
         });
       });
 
-      recentActivity.sort((a, b) =>
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      recentActivity.sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       );
 
       // Calculate attribution breakdown based on time to conversion
       const attributionBreakdown = {
-        direct: { count: 0, revenue: 0 },    // 0-30 min
-        assisted: { count: 0, revenue: 0 },   // 30min-24h
+        direct: { count: 0, revenue: 0 }, // 0-30 min
+        assisted: { count: 0, revenue: 0 }, // 30min-24h
         viewThrough: { count: 0, revenue: 0 }, // 24h-7d
       };
 
@@ -1112,7 +1154,8 @@ router.get(
         if (minutes <= 30) {
           attributionBreakdown.direct.count++;
           attributionBreakdown.direct.revenue += amount;
-        } else if (minutes <= 1440) { // 24 hours
+        } else if (minutes <= 1440) {
+          // 24 hours
           attributionBreakdown.assisted.count++;
           attributionBreakdown.assisted.revenue += amount;
         } else {
@@ -1122,17 +1165,25 @@ router.get(
       });
 
       // Round revenues
-      attributionBreakdown.direct.revenue = Math.round(attributionBreakdown.direct.revenue * 100) / 100;
-      attributionBreakdown.assisted.revenue = Math.round(attributionBreakdown.assisted.revenue * 100) / 100;
-      attributionBreakdown.viewThrough.revenue = Math.round(attributionBreakdown.viewThrough.revenue * 100) / 100;
+      attributionBreakdown.direct.revenue =
+        Math.round(attributionBreakdown.direct.revenue * 100) / 100;
+      attributionBreakdown.assisted.revenue =
+        Math.round(attributionBreakdown.assisted.revenue * 100) / 100;
+      attributionBreakdown.viewThrough.revenue =
+        Math.round(attributionBreakdown.viewThrough.revenue * 100) / 100;
 
       // Calculate period comparison
       const prevTotalConversions = previousConversions?.length || 0;
-      const prevTotalRevenue = previousConversions?.reduce((sum: number, c: any) => sum + (c.order_amount || 0), 0) || 0;
+      const prevTotalRevenue =
+        previousConversions?.reduce(
+          (sum: number, c: any) => sum + (c.order_amount || 0),
+          0
+        ) || 0;
       const prevTotalRecommendations = previousRecommendations?.length || 0;
-      const prevConversionRate = prevTotalRecommendations > 0
-        ? (prevTotalConversions / prevTotalRecommendations) * 100
-        : 0;
+      const prevConversionRate =
+        prevTotalRecommendations > 0
+          ? (prevTotalConversions / prevTotalRecommendations) * 100
+          : 0;
 
       const periodComparison = {
         currentPeriod: {
@@ -1161,7 +1212,8 @@ router.get(
             conversionRate: Math.round(conversionRate * 100) / 100,
             totalRevenue: Math.round(totalRevenue * 100) / 100,
             averageOrderValue: Math.round(averageOrderValue * 100) / 100,
-            averageTimeToConversion: Math.round(averageTimeToConversion * 100) / 100,
+            averageTimeToConversion:
+              Math.round(averageTimeToConversion * 100) / 100,
           },
           timeline,
           topProducts,
@@ -1192,7 +1244,9 @@ router.get(
       let shopDomain = user.shop_domain;
 
       if (!shopDomain) {
-        const { data: clientStore } = await (supabaseService as any).serviceClient
+        const { data: clientStore } = await (
+          supabaseService as any
+        ).serviceClient
           .from('client_stores')
           .select('shop_domain')
           .eq('user_id', user.id)
@@ -1215,7 +1269,10 @@ router.get(
       }
 
       const conversionTracker = new SimpleConversionTracker();
-      const stats = await conversionTracker.getConversionStats(shopDomain, days);
+      const stats = await conversionTracker.getConversionStats(
+        shopDomain,
+        days
+      );
 
       return res.json({
         success: true,
@@ -1243,7 +1300,9 @@ router.get(
       let shopDomain = user.shop_domain;
 
       if (!shopDomain) {
-        const { data: clientStore } = await (supabaseService as any).serviceClient
+        const { data: clientStore } = await (
+          supabaseService as any
+        ).serviceClient
           .from('client_stores')
           .select('shop_domain')
           .eq('user_id', user.id)
@@ -1258,7 +1317,9 @@ router.get(
         });
       }
 
-      const { data: conversions, error } = await (supabaseService as any).serviceClient
+      const { data: conversions, error } = await (
+        supabaseService as any
+      ).serviceClient
         .from('simple_conversions')
         .select('*')
         .eq('shop_domain', shopDomain)
