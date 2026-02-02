@@ -149,8 +149,10 @@ router.get('/config', async (req: Request, res: Response) => {
           subtitle2: clientStore.widget_subtitle_2 || '',
           greeting3: clientStore.widget_welcome_message_3 || '',
           subtitle3: clientStore.widget_subtitle_3 || '',
-          rotatingMessagesEnabled: clientStore.widget_rotating_messages_enabled ?? false,
-          rotatingMessagesInterval: clientStore.widget_rotating_messages_interval || 5,
+          rotatingMessagesEnabled:
+            clientStore.widget_rotating_messages_enabled ?? false,
+          rotatingMessagesInterval:
+            clientStore.widget_rotating_messages_interval || 5,
           subtitle:
             clientStore.widget_subtitle || 'Asistente de compras con IA',
           placeholder:
