@@ -66,6 +66,7 @@ interface WidgetConfig {
   promo_badge_color: string;
   promo_badge_shape: string;
   promo_badge_position: string;
+  promo_badge_suffix: string;
 }
 
 interface ChatMessage {
@@ -352,6 +353,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
     promo_badge_color: '#ef4444',
     promo_badge_shape: 'circle',
     promo_badge_position: 'right',
+    promo_badge_suffix: 'OFF',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -601,6 +603,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
             promo_badge_color: data.data.promoBadgeColor || prev.promo_badge_color,
             promo_badge_shape: data.data.promoBadgeShape || prev.promo_badge_shape,
             promo_badge_position: data.data.promoBadgePosition || prev.promo_badge_position,
+            promo_badge_suffix: data.data.promoBadgeSuffix ?? prev.promo_badge_suffix,
           }));
         }
       }
@@ -653,6 +656,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
             promoBadgeColor: widgetConfig.promo_badge_color,
             promoBadgeShape: widgetConfig.promo_badge_shape,
             promoBadgePosition: widgetConfig.promo_badge_position,
+            promoBadgeSuffix: widgetConfig.promo_badge_suffix,
           },
         }),
       });
@@ -1605,200 +1609,6 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
               ))}
             </div>
 
-            {/* Live Widget Preview */}
-            <div className="card" style={{ marginBottom: '1rem', padding: '1.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '600' }}>Vista previa del Widget</h3>
-                  <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                    Asi se vera el boton en tu tienda
-                  </p>
-                </div>
-                <div style={{
-                  fontSize: '0.7rem',
-                  padding: '0.25rem 0.5rem',
-                  background: 'var(--color-bg)',
-                  borderRadius: '4px',
-                  color: 'var(--color-text-muted)'
-                }}>
-                  {widgetConfig.widget_position.replace('-', ' ').replace('bottom', 'Abajo').replace('top', 'Arriba').replace('left', 'izquierda').replace('right', 'derecha')}
-                </div>
-              </div>
-
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '2rem',
-                background: widgetConfig.widget_theme === 'dark' ? '#1a1a1a' : '#f8f9fa',
-                borderRadius: '12px',
-                minHeight: '140px',
-                position: 'relative',
-              }}>
-                {/* Position indicator corners */}
-                <div style={{
-                  position: 'absolute',
-                  [widgetConfig.widget_position.includes('bottom') ? 'bottom' : 'top']: '12px',
-                  [widgetConfig.widget_position.includes('right') ? 'right' : 'left']: '12px',
-                }}>
-                  {/* Promo Message Preview */}
-                  {widgetConfig.widget_show_promo_message && (
-                    <div style={{
-                      position: 'absolute',
-                      bottom: widgetConfig.widget_button_size + 10,
-                      [widgetConfig.widget_position.includes('right') ? 'right' : 'left']: 0,
-                      background: 'white',
-                      padding: '0.5rem 0.75rem',
-                      borderRadius: '12px',
-                      boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
-                      fontSize: '0.75rem',
-                      whiteSpace: 'nowrap',
-                      color: '#333',
-                      maxWidth: '180px',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}>
-                      {widgetConfig.welcome_message || 'Hola! Necesitas ayuda?'}
-                    </div>
-                  )}
-
-                  {/* Widget Button */}
-                  <div style={{ position: 'relative', display: 'inline-block' }}>
-                    {/* Pulse Animation */}
-                    {widgetConfig.widget_show_pulse && (
-                      <div style={{
-                        position: 'absolute',
-                        inset: '-4px',
-                        borderRadius: widgetConfig.widget_button_style === 'circle'
-                          ? '50%'
-                          : widgetConfig.widget_button_style === 'rounded'
-                            ? '20px'
-                            : '8px',
-                        background: widgetConfig.widget_color,
-                        opacity: 0.3,
-                        animation: 'pulse 2s ease-in-out infinite',
-                      }} />
-                    )}
-
-                    {/* Main Button */}
-                    <div style={{
-                      width: `${widgetConfig.widget_button_size}px`,
-                      height: `${widgetConfig.widget_button_size}px`,
-                      borderRadius: widgetConfig.widget_button_style === 'circle'
-                        ? '50%'
-                        : widgetConfig.widget_button_style === 'rounded'
-                          ? '16px'
-                          : '8px',
-                      background: widgetConfig.widget_color,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
-                      position: 'relative',
-                      cursor: 'pointer',
-                      transition: 'transform 0.2s ease',
-                    }}>
-                      {/* Chat Icon or Avatar */}
-                      {widgetConfig.widget_avatar && widgetConfig.widget_avatar.length <= 2 ? (
-                        <span style={{ fontSize: `${widgetConfig.widget_button_size * 0.4}px` }}>
-                          {widgetConfig.widget_avatar}
-                        </span>
-                      ) : (
-                        <svg
-                          width={widgetConfig.widget_button_size * 0.45}
-                          height={widgetConfig.widget_button_size * 0.45}
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="white"
-                          strokeWidth="2"
-                        >
-                          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-                        </svg>
-                      )}
-                    </div>
-
-                    {/* Promo Badge */}
-                    {widgetConfig.promo_badge_enabled && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '-6px',
-                        [widgetConfig.promo_badge_position === 'left' ? 'left' : 'right']: '-6px',
-                        background: widgetConfig.promo_badge_color,
-                        color: 'white',
-                        fontSize: '0.6rem',
-                        fontWeight: '700',
-                        padding: widgetConfig.promo_badge_shape === 'circle' ? '5px' : '4px 6px',
-                        borderRadius: widgetConfig.promo_badge_shape === 'circle'
-                          ? '50%'
-                          : widgetConfig.promo_badge_shape === 'rounded'
-                            ? '8px'
-                            : '2px',
-                        minWidth: widgetConfig.promo_badge_shape === 'circle' ? '26px' : 'auto',
-                        height: widgetConfig.promo_badge_shape === 'circle' ? '26px' : 'auto',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
-                        border: '2px solid white',
-                      }}>
-                        -{widgetConfig.promo_badge_discount}%
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Corner position indicators */}
-                <div style={{
-                  position: 'absolute',
-                  inset: '8px',
-                  border: '1px dashed var(--color-border)',
-                  borderRadius: '8px',
-                  pointerEvents: 'none',
-                }}>
-                  {['top-left', 'top-right', 'bottom-left', 'bottom-right'].map(pos => (
-                    <div
-                      key={pos}
-                      style={{
-                        position: 'absolute',
-                        width: '8px',
-                        height: '8px',
-                        borderRadius: '50%',
-                        background: widgetConfig.widget_position === pos ? widgetConfig.widget_color : 'var(--color-border)',
-                        [pos.includes('top') ? 'top' : 'bottom']: '-4px',
-                        [pos.includes('left') ? 'left' : 'right']: '-4px',
-                        transition: 'background 0.2s ease',
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Preview info */}
-              <div style={{
-                display: 'flex',
-                gap: '1rem',
-                marginTop: '0.75rem',
-                fontSize: '0.7rem',
-                color: 'var(--color-text-muted)',
-                justifyContent: 'center',
-                flexWrap: 'wrap',
-              }}>
-                <span>Tamaño: {widgetConfig.widget_button_size}px</span>
-                <span>Estilo: {widgetConfig.widget_button_style === 'circle' ? 'Circulo' : widgetConfig.widget_button_style === 'rounded' ? 'Redondeado' : 'Cuadrado'}</span>
-                <span>Tema: {widgetConfig.widget_theme === 'light' ? 'Claro' : 'Oscuro'}</span>
-                {widgetConfig.widget_show_pulse && <span>Pulso activo</span>}
-                {widgetConfig.promo_badge_enabled && <span>Badge -{widgetConfig.promo_badge_discount}%</span>}
-              </div>
-            </div>
-
-            {/* Pulse animation keyframes */}
-            <style>{`
-              @keyframes pulse {
-                0%, 100% { transform: scale(1); opacity: 0.3; }
-                50% { transform: scale(1.15); opacity: 0.15; }
-              }
-            `}</style>
-
             <div className="card">
               {widgetTab === 'appearance' && (
                 <>
@@ -2122,8 +1932,29 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                           />
                           <span style={{ fontSize: '1rem', fontWeight: '500' }}>%</span>
                         </div>
+                      </div>
+
+                      {/* Suffix */}
+                      <div className="form-group">
+                        <label className="form-label">Sufijo</label>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          {[
+                            { value: 'OFF', label: 'OFF' },
+                            { value: 'DSTO', label: 'DSTO' },
+                            { value: '', label: 'Sin sufijo' },
+                          ].map(option => (
+                            <button
+                              key={option.value}
+                              className={`btn ${widgetConfig.promo_badge_suffix === option.value ? 'btn-primary' : 'btn-secondary'}`}
+                              onClick={() => setWidgetConfig({ ...widgetConfig, promo_badge_suffix: option.value })}
+                              style={{ flex: 1, fontSize: '0.85rem' }}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
                         <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                          Ejemplo: 10 mostrara "-10%" en el badge
+                          Ejemplo: -{widgetConfig.promo_badge_discount}%{widgetConfig.promo_badge_suffix ? ` ${widgetConfig.promo_badge_suffix}` : ''}
                         </p>
                       </div>
 
@@ -2252,7 +2083,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                               justifyContent: 'center',
                               boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
                             }}>
-                              -{widgetConfig.promo_badge_discount}%
+                              -{widgetConfig.promo_badge_discount}%{widgetConfig.promo_badge_suffix ? ` ${widgetConfig.promo_badge_suffix}` : ''}
                             </div>
                           </div>
                         </div>

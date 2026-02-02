@@ -127,7 +127,8 @@ router.get('/config', async (req: Request, res: Response) => {
         promo_badge_text,
         promo_badge_color,
         promo_badge_shape,
-        promo_badge_position
+        promo_badge_position,
+        promo_badge_suffix
       `
       )
       .eq('shop_domain', shopDomain)
@@ -175,6 +176,7 @@ router.get('/config', async (req: Request, res: Response) => {
           promoBadgeColor: clientStore.promo_badge_color || '#ef4444',
           promoBadgeShape: clientStore.promo_badge_shape || 'circle',
           promoBadgePosition: clientStore.promo_badge_position || 'right',
+          promoBadgeSuffix: clientStore.promo_badge_suffix ?? 'OFF',
         },
       });
     }

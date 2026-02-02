@@ -356,6 +356,9 @@
                 </svg>
               </div>
               <div class="kova-widget__button-pulse"></div>
+              <div class="kova-widget__promo-badge" id="kova-widget-promo-badge" style="display: none;">
+                <span class="kova-widget__promo-badge-text">-10%</span>
+              </div>
             </button>
             
             <div class="kova-widget__chat" id="kova-widget-chat" role="dialog" aria-label="Chat de Kova">
@@ -466,6 +469,9 @@
       this.closeButton = this.container.querySelector('#kova-widget-close');
       this.backButton = this.container.querySelector('#kova-widget-back-btn');
 
+      // Promo badge element
+      this.promoBadge = this.container.querySelector('#kova-widget-promo-badge');
+
       // Cart elements - new layout structure
       this.cartSmallToggle = this.container.querySelector('#kova-widget-cart-toggle-btn'); // Small cart button in chat
       this.cartSmallCount = this.container.querySelector('#kova-widget-cart-count'); // Count badge for small button
@@ -569,6 +575,29 @@
         this.container.classList.remove('kova-widget--no-animations');
       }
 
+      // Update promo badge
+      if (this.promoBadge) {
+        const badgeText = this.promoBadge.querySelector('.kova-widget__promo-badge-text');
+        if (badgeText && this.config.promoBadgeEnabled) {
+          const discount = this.config.promoBadgeDiscount || 10;
+          const suffix = this.config.promoBadgeSuffix || '';
+          badgeText.textContent = `-${discount}%${suffix ? ' ' + suffix : ''}`;
+        }
+        // Apply position class
+        if (this.config.promoBadgePosition === 'left') {
+          this.promoBadge.classList.add('kova-widget__promo-badge--left');
+        } else {
+          this.promoBadge.classList.remove('kova-widget__promo-badge--left');
+        }
+        // Apply shape class
+        this.promoBadge.classList.remove('kova-widget__promo-badge--rounded', 'kova-widget__promo-badge--square');
+        if (this.config.promoBadgeShape === 'rounded') {
+          this.promoBadge.classList.add('kova-widget__promo-badge--rounded');
+        } else if (this.config.promoBadgeShape === 'square') {
+          this.promoBadge.classList.add('kova-widget__promo-badge--square');
+        }
+      }
+
       console.log('📝 Dynamic content applied:', {
         brandName,
         placeholder: this.config.placeholder,
@@ -577,7 +606,9 @@
         avatar,
         showPromoMessage: this.config.showPromoMessage,
         showCart: this.config.showCart,
-        enableAnimations: this.config.enableAnimations
+        enableAnimations: this.config.enableAnimations,
+        promoBadgeEnabled: this.config.promoBadgeEnabled,
+        promoBadgeDiscount: this.config.promoBadgeDiscount
       });
     }
 
@@ -844,6 +875,59 @@
 
         .kova-widget--open .kova-widget__button-pulse {
           animation: none !important;
+        }
+
+        /* Promo Badge */
+        .kova-widget__promo-badge {
+          position: absolute !important;
+          top: -6px !important;
+          right: -6px !important;
+          background: #ef4444 !important;
+          color: white !important;
+          font-size: 0.65rem !important;
+          font-weight: 700 !important;
+          padding: 4px 6px !important;
+          border-radius: 50% !important;
+          min-width: 28px !important;
+          height: 28px !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+          border: 2px solid white !important;
+          z-index: 10 !important;
+          animation: kovaBadgePulse 2s ease-in-out infinite !important;
+        }
+
+        .kova-widget__promo-badge--left {
+          right: auto !important;
+          left: -6px !important;
+        }
+
+        .kova-widget__promo-badge--rounded {
+          border-radius: 8px !important;
+          min-width: auto !important;
+          height: auto !important;
+        }
+
+        .kova-widget__promo-badge--square {
+          border-radius: 4px !important;
+          min-width: auto !important;
+          height: auto !important;
+        }
+
+        .kova-widget__promo-badge-text {
+          line-height: 1 !important;
+          white-space: nowrap !important;
+        }
+
+        @keyframes kovaBadgePulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.1); }
+        }
+
+        .kova-widget--open .kova-widget__promo-badge {
+          display: none !important;
         }
 
         /* Ultra-Modern Chat Window */
@@ -3676,6 +3760,21 @@
         .kova-cart-toggle-count {
           background: ${accentColor} !important;
         }
+
+        /* Promo badge dynamic styles */
+        ${this.config.promoBadgeEnabled ? `
+        .kova-widget__promo-badge {
+          display: flex !important;
+          background: ${this.config.promoBadgeColor || '#ef4444'} !important;
+          ${this.config.promoBadgePosition === 'left' ? 'right: auto !important; left: -6px !important;' : ''}
+          ${this.config.promoBadgeShape === 'rounded' ? 'border-radius: 8px !important; min-width: auto !important; height: auto !important;' : ''}
+          ${this.config.promoBadgeShape === 'square' ? 'border-radius: 4px !important; min-width: auto !important; height: auto !important;' : ''}
+        }
+        ` : `
+        .kova-widget__promo-badge {
+          display: none !important;
+        }
+        `}
 
         /* Theme-specific overrides */
         ${theme === 'dark' ? `
