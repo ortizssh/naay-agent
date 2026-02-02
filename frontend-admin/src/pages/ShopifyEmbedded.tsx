@@ -81,6 +81,49 @@ interface ConversationsData {
   availableDates: string[];
 }
 
+interface ConversionDashboardData {
+  overview: {
+    totalRecommendations: number;
+    totalConversions: number;
+    conversionRate: number;
+    totalRevenue: number;
+    averageOrderValue: number;
+    averageTimeToConversion: number;
+  };
+  timeline: Array<{
+    date: string;
+    recommendations: number;
+    conversions: number;
+    revenue: number;
+    conversionRate: number;
+  }>;
+  topProducts: Array<{
+    productId: string;
+    productTitle: string;
+    recommendations: number;
+    conversions: number;
+    conversionRate: number;
+    revenue: number;
+  }>;
+  recentActivity: Array<{
+    type: 'recommendation' | 'conversion';
+    timestamp: string;
+    productTitle: string;
+    sessionId: string;
+    amount?: number;
+  }>;
+  attributionBreakdown: {
+    direct: { count: number; revenue: number };
+    assisted: { count: number; revenue: number };
+    viewThrough: { count: number; revenue: number };
+  };
+  periodComparison: {
+    currentPeriod: { conversions: number; revenue: number; rate: number };
+    previousPeriod: { conversions: number; revenue: number; rate: number };
+    change: { conversions: number; revenue: number; rate: number };
+  };
+}
+
 type TabType = 'dashboard' | 'analytics' | 'widget' | 'conversations';
 type DatePreset = 'today' | 'yesterday' | '3d' | '7d' | '14d' | '30d' | 'thisWeek' | 'thisMonth' | 'custom';
 
@@ -308,6 +351,11 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
   const [conversationsLoading, setConversationsLoading] = useState(false);
   const [expandedConversation, setExpandedConversation] = useState<string | null>(null);
 
+  // Conversion dashboard state
+  const [conversionDashboard, setConversionDashboard] = useState<ConversionDashboardData | null>(null);
+  const [conversionDays, setConversionDays] = useState(7);
+  const [conversionLoading, setConversionLoading] = useState(false);
+
   // Date filter state - optimized
   const [selectedPreset, setSelectedPreset] = useState<DatePreset>('7d');
   const initialDates = getPresetDates('7d');
@@ -426,6 +474,13 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
     }
   }, [currentTab, conversationsDate, shop]);
 
+  // Conversion dashboard load
+  useEffect(() => {
+    if (currentTab === 'analytics') {
+      loadConversionDashboard();
+    }
+  }, [currentTab, conversionDays, shop]);
+
   // Load conversations function
   const loadConversations = async (date: string) => {
     try {
@@ -446,6 +501,48 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
     } finally {
       setConversationsLoading(false);
     }
+  };
+
+  // Load conversion dashboard function
+  const loadConversionDashboard = async () => {
+    try {
+      setConversionLoading(true);
+      const apiUrl = getApiUrl();
+      const res = await fetch(
+        `${apiUrl}/api/shopify/embedded/conversions/dashboard?shop=${encodeURIComponent(shop)}&days=${conversionDays}`
+      );
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setConversionDashboard(data.data);
+        }
+      }
+    } catch (err) {
+      console.error('Error loading conversion dashboard:', err);
+    } finally {
+      setConversionLoading(false);
+    }
+  };
+
+  // Format currency helper
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('es-CL', {
+      style: 'currency',
+      currency: 'CLP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  // Format time helper
+  const formatMinutes = (minutes: number) => {
+    if (minutes < 60) return `${Math.round(minutes)} min`;
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.round(minutes % 60);
+    if (hours < 24) return `${hours}h ${mins}m`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ${hours % 24}h`;
   };
 
 
@@ -676,11 +773,10 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
           onClick={() => setCurrentTab('analytics')}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="18" y1="20" x2="18" y2="10" />
-            <line x1="12" y1="20" x2="12" y2="4" />
-            <line x1="6" y1="20" x2="6" y2="14" />
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+            <circle cx="12" cy="12" r="3" />
           </svg>
-          Estadisticas
+          Conversiones
         </button>
         <button
           className={`embedded-tab ${currentTab === 'widget' ? 'active' : ''}`}
@@ -1030,13 +1126,12 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
           </>
         )}
 
-        {/* Analytics Tab */}
-        {currentTab === 'analytics' && analytics && (
+        {/* Conversions Tab */}
+        {currentTab === 'analytics' && (
           <>
-            {/* Date Filter - Same optimized component */}
+            {/* Period Filter */}
             <div className="card" style={{ marginBottom: '1rem', position: 'relative' }}>
-              {/* Loading overlay */}
-              {isFilterLoading && (
+              {conversionLoading && (
                 <div style={{
                   position: 'absolute',
                   top: 0,
@@ -1060,198 +1155,371 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                   }} />
                 </div>
               )}
-
-              {/* Quick Presets Row with Custom Dates */}
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                {/* Presets */}
-                {([
-                  { key: 'today', label: 'Hoy' },
-                  { key: 'yesterday', label: 'Ayer' },
-                  { key: '3d', label: '3 dias' },
-                  { key: '7d', label: '7 dias' },
-                  { key: '14d', label: '14 dias' },
-                  { key: '30d', label: '30 dias' },
-                  { key: 'thisWeek', label: 'Esta semana' },
-                  { key: 'thisMonth', label: 'Este mes' },
-                ] as { key: DatePreset; label: string }[]).map(preset => (
+                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginRight: '0.25rem' }}>
+                  Periodo:
+                </span>
+                {[7, 14, 30, 90].map((period) => (
                   <button
-                    key={preset.key}
-                    onClick={() => applyPreset(preset.key)}
-                    disabled={isFilterLoading}
+                    key={period}
+                    onClick={() => setConversionDays(period)}
+                    disabled={conversionLoading}
                     style={{
-                      padding: '0.35rem 0.65rem',
+                      padding: '0.35rem 0.7rem',
                       fontSize: '0.8rem',
                       borderRadius: '6px',
-                      border: selectedPreset === preset.key
+                      border: conversionDays === period
                         ? '2px solid var(--color-primary)'
                         : '1px solid var(--color-border)',
-                      background: selectedPreset === preset.key
+                      background: conversionDays === period
                         ? 'var(--color-primary)'
                         : 'var(--color-bg)',
-                      color: selectedPreset === preset.key
+                      color: conversionDays === period
                         ? 'white'
                         : 'var(--color-text)',
-                      cursor: isFilterLoading ? 'not-allowed' : 'pointer',
-                      transition: 'all 0.2s ease',
-                      fontWeight: selectedPreset === preset.key ? '600' : '400',
-                      boxShadow: selectedPreset === preset.key ? '0 2px 8px rgba(107, 92, 255, 0.3)' : 'none',
+                      cursor: conversionLoading ? 'not-allowed' : 'pointer',
+                      fontWeight: conversionDays === period ? '600' : '400',
                     }}
                   >
-                    {preset.label}
+                    {period} dias
                   </button>
                 ))}
+              </div>
+            </div>
 
-                {/* Separator */}
-                <div style={{ width: '1px', height: '24px', background: 'var(--color-border)', margin: '0 0.25rem' }} />
+            {conversionDashboard && (
+              <>
+                {/* Overview Stats */}
+                <div className="stats-grid embedded-stats">
+                  <div className="stat-card">
+                    <div className="stat-icon primary">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                        <line x1="7" y1="7" x2="7.01" y2="7" />
+                      </svg>
+                    </div>
+                    <div className="stat-value">{conversionDashboard.overview.totalRecommendations.toLocaleString()}</div>
+                    <div className="stat-label">Recomendaciones</div>
+                  </div>
 
-                {/* Custom Date Inputs */}
-                <input
-                  type="date"
-                  value={startDate}
-                  max={endDate}
-                  onChange={e => handleCustomDateChange('start', e.target.value)}
-                  disabled={isFilterLoading}
-                  title="Fecha inicio"
-                  style={{
-                    padding: '0.35rem 0.5rem',
-                    borderRadius: '6px',
-                    border: selectedPreset === 'custom'
-                      ? '1px solid var(--color-primary)'
-                      : '1px solid var(--color-border)',
-                    background: 'var(--color-bg)',
-                    color: 'var(--color-text)',
-                    fontSize: '0.8rem',
-                    cursor: isFilterLoading ? 'not-allowed' : 'pointer',
-                  }}
-                />
-                <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>-</span>
-                <input
-                  type="date"
-                  value={endDate}
-                  min={startDate}
-                  max={getDateString(new Date())}
-                  onChange={e => handleCustomDateChange('end', e.target.value)}
-                  disabled={isFilterLoading}
-                  title="Fecha fin"
-                  style={{
-                    padding: '0.35rem 0.5rem',
-                    borderRadius: '6px',
-                    border: selectedPreset === 'custom'
-                      ? '1px solid var(--color-primary)'
-                      : '1px solid var(--color-border)',
-                    background: 'var(--color-bg)',
-                    color: 'var(--color-text)',
-                    fontSize: '0.8rem',
-                    cursor: isFilterLoading ? 'not-allowed' : 'pointer',
-                  }}
-                />
+                  <div className="stat-card">
+                    <div className="stat-icon success">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="9" cy="21" r="1" />
+                        <circle cx="20" cy="21" r="1" />
+                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                      </svg>
+                    </div>
+                    <div className="stat-value">{conversionDashboard.overview.totalConversions.toLocaleString()}</div>
+                    <div className="stat-label">Conversiones</div>
+                  </div>
 
-                {/* Apply Button - only show when custom dates are pending */}
-                {pendingFilter && (
-                  <button
-                    onClick={applyCustomFilter}
-                    disabled={isFilterLoading}
-                    style={{
-                      padding: '0.35rem 0.75rem',
-                      fontSize: '0.8rem',
-                      borderRadius: '6px',
-                      border: '1px solid var(--color-primary)',
-                      background: 'var(--color-primary)',
-                      color: 'white',
-                      cursor: isFilterLoading ? 'not-allowed' : 'pointer',
-                      fontWeight: '600',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.3rem',
-                    }}
-                  >
-                    Aplicar
-                  </button>
+                  <div className="stat-card">
+                    <div className="stat-icon warning">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <line x1="12" y1="1" x2="12" y2="23" />
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                      </svg>
+                    </div>
+                    <div className="stat-value">{formatCurrency(conversionDashboard.overview.totalRevenue)}</div>
+                    <div className="stat-label">Ingresos Atribuidos</div>
+                  </div>
+
+                  <div className="stat-card">
+                    <div className="stat-icon accent">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                        <polyline points="22 4 12 14.01 9 11.01" />
+                      </svg>
+                    </div>
+                    <div className="stat-value">{conversionDashboard.overview.conversionRate.toFixed(1)}%</div>
+                    <div className="stat-label">Tasa Conversion</div>
+                  </div>
+                </div>
+
+                {/* Secondary Metrics */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem', marginTop: '0.75rem' }}>
+                  <div className="card" style={{ padding: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '10px',
+                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                          <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                          <line x1="8" y1="21" x2="16" y2="21" />
+                          <line x1="12" y1="17" x2="12" y2="21" />
+                        </svg>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '1.25rem', fontWeight: '700' }}>
+                          {formatCurrency(conversionDashboard.overview.averageOrderValue)}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                          Ticket Promedio
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="card" style={{ padding: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '10px',
+                        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                          <circle cx="12" cy="12" r="10" />
+                          <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '1.25rem', fontWeight: '700' }}>
+                          {formatMinutes(conversionDashboard.overview.averageTimeToConversion)}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                          Tiempo a Conversion
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Attribution Breakdown */}
+                <div className="card" style={{ marginTop: '1rem' }}>
+                  <div className="card-header">
+                    <h3 className="card-title">Atribucion por Tiempo</h3>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+                    <div style={{ padding: '0.75rem', background: 'var(--color-bg)', borderRadius: '8px', borderLeft: '4px solid #10b981' }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Directa (0-30 min)</div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: '700', marginTop: '0.25rem' }}>
+                        {conversionDashboard.attributionBreakdown.direct.count} conv.
+                      </div>
+                      <div style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: '600' }}>
+                        {formatCurrency(conversionDashboard.attributionBreakdown.direct.revenue)}
+                      </div>
+                    </div>
+                    <div style={{ padding: '0.75rem', background: 'var(--color-bg)', borderRadius: '8px', borderLeft: '4px solid #f59e0b' }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Asistida (30min-24h)</div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: '700', marginTop: '0.25rem' }}>
+                        {conversionDashboard.attributionBreakdown.assisted.count} conv.
+                      </div>
+                      <div style={{ fontSize: '0.85rem', color: '#f59e0b', fontWeight: '600' }}>
+                        {formatCurrency(conversionDashboard.attributionBreakdown.assisted.revenue)}
+                      </div>
+                    </div>
+                    <div style={{ padding: '0.75rem', background: 'var(--color-bg)', borderRadius: '8px', borderLeft: '4px solid #6366f1' }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>View-Through (24h-7d)</div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: '700', marginTop: '0.25rem' }}>
+                        {conversionDashboard.attributionBreakdown.viewThrough.count} conv.
+                      </div>
+                      <div style={{ fontSize: '0.85rem', color: '#6366f1', fontWeight: '600' }}>
+                        {formatCurrency(conversionDashboard.attributionBreakdown.viewThrough.revenue)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Period Comparison */}
+                <div className="card" style={{ marginTop: '1rem' }}>
+                  <div className="card-header">
+                    <h3 className="card-title">vs Periodo Anterior</h3>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+                    <div style={{ padding: '0.75rem', background: 'var(--color-bg)', borderRadius: '8px' }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Conversiones</div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginTop: '0.25rem' }}>
+                        <span style={{ fontSize: '1.1rem', fontWeight: '700' }}>
+                          {conversionDashboard.periodComparison.currentPeriod.conversions}
+                        </span>
+                        <span style={{
+                          fontSize: '0.8rem',
+                          fontWeight: '600',
+                          color: conversionDashboard.periodComparison.change.conversions >= 0 ? '#10b981' : '#ef4444'
+                        }}>
+                          {conversionDashboard.periodComparison.change.conversions >= 0 ? '+' : ''}
+                          {conversionDashboard.periodComparison.change.conversions}
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ padding: '0.75rem', background: 'var(--color-bg)', borderRadius: '8px' }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Ingresos</div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginTop: '0.25rem' }}>
+                        <span style={{ fontSize: '1.1rem', fontWeight: '700' }}>
+                          {formatCurrency(conversionDashboard.periodComparison.currentPeriod.revenue)}
+                        </span>
+                        <span style={{
+                          fontSize: '0.75rem',
+                          fontWeight: '600',
+                          color: conversionDashboard.periodComparison.change.revenue >= 0 ? '#10b981' : '#ef4444'
+                        }}>
+                          {conversionDashboard.periodComparison.change.revenue >= 0 ? '+' : ''}
+                          {formatCurrency(conversionDashboard.periodComparison.change.revenue)}
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ padding: '0.75rem', background: 'var(--color-bg)', borderRadius: '8px' }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Tasa Conversion</div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginTop: '0.25rem' }}>
+                        <span style={{ fontSize: '1.1rem', fontWeight: '700' }}>
+                          {conversionDashboard.periodComparison.currentPeriod.rate.toFixed(1)}%
+                        </span>
+                        <span style={{
+                          fontSize: '0.8rem',
+                          fontWeight: '600',
+                          color: conversionDashboard.periodComparison.change.rate >= 0 ? '#10b981' : '#ef4444'
+                        }}>
+                          {conversionDashboard.periodComparison.change.rate >= 0 ? '+' : ''}
+                          {conversionDashboard.periodComparison.change.rate.toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Top Products */}
+                {conversionDashboard.topProducts.length > 0 && (
+                  <div className="card" style={{ marginTop: '1rem' }}>
+                    <div className="card-header">
+                      <h3 className="card-title">Top Productos por Conversion</h3>
+                    </div>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                            <th style={{ padding: '0.5rem', textAlign: 'left', fontWeight: '600', color: 'var(--color-text-muted)' }}>Producto</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'center', fontWeight: '600', color: 'var(--color-text-muted)' }}>Rec.</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'center', fontWeight: '600', color: 'var(--color-text-muted)' }}>Conv.</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'center', fontWeight: '600', color: 'var(--color-text-muted)' }}>Tasa</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'right', fontWeight: '600', color: 'var(--color-text-muted)' }}>Ingresos</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {conversionDashboard.topProducts.slice(0, 5).map((product, index) => (
+                            <tr key={product.productId} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                              <td style={{ padding: '0.5rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                  <span style={{
+                                    width: '22px',
+                                    height: '22px',
+                                    borderRadius: '4px',
+                                    background: 'var(--color-primary)',
+                                    color: 'white',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '0.7rem',
+                                    fontWeight: '600',
+                                  }}>
+                                    {index + 1}
+                                  </span>
+                                  <span style={{ fontWeight: '500', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {product.productTitle}
+                                  </span>
+                                </div>
+                              </td>
+                              <td style={{ padding: '0.5rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>{product.recommendations}</td>
+                              <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                                <span style={{ background: '#dcfce7', color: '#166534', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: '600' }}>
+                                  {product.conversions}
+                                </span>
+                              </td>
+                              <td style={{ padding: '0.5rem', textAlign: 'center', fontWeight: '600' }}>{product.conversionRate.toFixed(1)}%</td>
+                              <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: '700', color: '#10b981' }}>{formatCurrency(product.revenue)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 )}
-              </div>
-            </div>
 
-            <div className="stats-grid embedded-stats">
-              <div className="stat-card">
-                <div className="stat-value">{analytics.conversations.toLocaleString()}</div>
-                <div className="stat-label">Conversaciones Totales</div>
-                <div className="stat-change positive">{analytics.messages.toLocaleString()} mensajes</div>
-              </div>
-
-              <div className="stat-card">
-                <div className="stat-value">{analytics.recommendations.toLocaleString()}</div>
-                <div className="stat-label">Productos Recomendados</div>
-                <div className="stat-change positive">Por el asistente AI</div>
-              </div>
-
-              <div className="stat-card">
-                <div className="stat-value">{analytics.conversions.toLocaleString()}</div>
-                <div className="stat-label">Compras desde Chat</div>
-                <div className="stat-change positive">Conversiones atribuidas</div>
-              </div>
-
-              <div className="stat-card">
-                <div className="stat-value">{analytics.products}</div>
-                <div className="stat-label">Productos Indexados</div>
-                <div className="stat-change positive">Disponibles para AI</div>
-              </div>
-            </div>
-
-            {/* Conversion Metrics */}
-            {analytics.recommendations > 0 && (
-              <div className="card" style={{ marginTop: '1rem' }}>
-                <div className="card-header">
-                  <h3 className="card-title">Metricas de Conversion</h3>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
-                  <div
-                    style={{
-                      textAlign: 'center',
-                      padding: '1rem',
-                      background: 'var(--color-bg)',
-                      borderRadius: '10px',
-                    }}
-                  >
-                    <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--color-primary)' }}>
-                      {conversionRate}%
+                {/* Recent Activity */}
+                {conversionDashboard.recentActivity.length > 0 && (
+                  <div className="card" style={{ marginTop: '1rem' }}>
+                    <div className="card-header">
+                      <h3 className="card-title">Actividad Reciente</h3>
                     </div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
-                      Recomendacion a Compra
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      textAlign: 'center',
-                      padding: '1rem',
-                      background: 'var(--color-bg)',
-                      borderRadius: '10px',
-                    }}
-                  >
-                    <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--color-success)' }}>
-                      {analytics.conversations > 0 ? (analytics.recommendations / analytics.conversations).toFixed(1) : 0}
-                    </div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
-                      Recomendaciones por Chat
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {conversionDashboard.recentActivity.slice(0, 6).map((activity, index) => (
+                        <div
+                          key={index}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.75rem',
+                            padding: '0.5rem',
+                            background: 'var(--color-bg)',
+                            borderRadius: '8px',
+                          }}
+                        >
+                          <div style={{
+                            width: '28px',
+                            height: '28px',
+                            borderRadius: '50%',
+                            background: activity.type === 'conversion'
+                              ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+                              : 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary) 100%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}>
+                            {activity.type === 'conversion' ? (
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            ) : (
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                              </svg>
+                            )}
+                          </div>
+                          <div style={{ flex: 1, overflow: 'hidden' }}>
+                            <div style={{ fontSize: '0.8rem', fontWeight: '500' }}>
+                              {activity.type === 'conversion' ? 'Conversion' : 'Recomendacion'}
+                            </div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {activity.productTitle}
+                            </div>
+                          </div>
+                          {activity.type === 'conversion' && activity.amount && (
+                            <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#10b981' }}>
+                              {formatCurrency(activity.amount)}
+                            </div>
+                          )}
+                          <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
+                            {new Date(activity.timestamp).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
+                )}
+              </>
+            )}
 
-                  <div
-                    style={{
-                      textAlign: 'center',
-                      padding: '1rem',
-                      background: 'var(--color-bg)',
-                      borderRadius: '10px',
-                    }}
-                  >
-                    <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--color-warning)' }}>
-                      {analytics.conversations > 0 ? (analytics.messages / analytics.conversations).toFixed(1) : 0}
-                    </div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
-                      Mensajes por Chat
-                    </div>
-                  </div>
-                </div>
+            {/* Empty State */}
+            {!conversionLoading && !conversionDashboard?.overview?.totalRecommendations && (
+              <div className="card" style={{ textAlign: 'center', padding: '2rem' }}>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" strokeWidth="1.5" style={{ margin: '0 auto 1rem' }}>
+                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <h3 style={{ margin: '0 0 0.5rem', fontSize: '1rem', fontWeight: '600' }}>Sin datos de conversiones</h3>
+                <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+                  Los datos aparecerán cuando el asistente haga recomendaciones y los clientes compren
+                </p>
               </div>
             )}
           </>

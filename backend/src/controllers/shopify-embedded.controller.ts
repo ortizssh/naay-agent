@@ -710,4 +710,322 @@ router.get(
   }
 );
 
+/**
+ * GET /api/shopify/embedded/conversions/dashboard
+ * Get full conversion dashboard for a shop in embedded Shopify context
+ */
+router.get(
+  '/conversions/dashboard',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const shopDomain = req.query.shop as string;
+      const days = parseInt(req.query.days as string) || 7;
+
+      if (!shopDomain) {
+        return res.status(400).json({
+          success: false,
+          error: 'Shop domain is required',
+        });
+      }
+
+      // Normalize shop domain
+      let normalizedShop = shopDomain.toLowerCase().trim();
+      if (!normalizedShop.includes('.myshopify.com')) {
+        normalizedShop = `${normalizedShop}.myshopify.com`;
+      }
+
+      logger.info(
+        `Embedded conversions dashboard request for: ${normalizedShop}`,
+        { days }
+      );
+
+      const client = (supabaseService as any).serviceClient;
+      const endDate = new Date();
+      const startDate = new Date(
+        endDate.getTime() - days * 24 * 60 * 60 * 1000
+      );
+      const previousStartDate = new Date(
+        startDate.getTime() - days * 24 * 60 * 60 * 1000
+      );
+
+      // Get recommendations for the period
+      const { data: recommendations } = await client
+        .from('simple_recommendations')
+        .select('*')
+        .eq('shop_domain', normalizedShop)
+        .gte('recommended_at', startDate.toISOString())
+        .lte('recommended_at', endDate.toISOString())
+        .order('recommended_at', { ascending: false });
+
+      // Get conversions for the period
+      const { data: conversions } = await client
+        .from('simple_conversions')
+        .select('*')
+        .eq('shop_domain', normalizedShop)
+        .gte('purchased_at', startDate.toISOString())
+        .lte('purchased_at', endDate.toISOString())
+        .order('purchased_at', { ascending: false });
+
+      // Get previous period data for comparison
+      const { data: previousConversions } = await client
+        .from('simple_conversions')
+        .select('*')
+        .eq('shop_domain', normalizedShop)
+        .gte('purchased_at', previousStartDate.toISOString())
+        .lt('purchased_at', startDate.toISOString());
+
+      const { data: previousRecommendations } = await client
+        .from('simple_recommendations')
+        .select('id')
+        .eq('shop_domain', normalizedShop)
+        .gte('recommended_at', previousStartDate.toISOString())
+        .lt('recommended_at', startDate.toISOString());
+
+      // Calculate overview metrics
+      const totalRecommendations = recommendations?.length || 0;
+      const totalConversions = conversions?.length || 0;
+      const conversionRate =
+        totalRecommendations > 0
+          ? (totalConversions / totalRecommendations) * 100
+          : 0;
+      const totalRevenue =
+        conversions?.reduce(
+          (sum: number, c: any) => sum + (c.order_amount || 0),
+          0
+        ) || 0;
+      const averageOrderValue =
+        totalConversions > 0 ? totalRevenue / totalConversions : 0;
+      const averageTimeToConversion =
+        conversions && conversions.length > 0
+          ? conversions.reduce(
+              (sum: number, c: any) => sum + (c.minutes_to_conversion || 0),
+              0
+            ) / conversions.length
+          : 0;
+
+      // Calculate timeline data (by day)
+      const timelineMap = new Map<
+        string,
+        { recommendations: number; conversions: number; revenue: number }
+      >();
+
+      for (
+        let d = new Date(startDate);
+        d <= endDate;
+        d.setDate(d.getDate() + 1)
+      ) {
+        const dateKey = d.toISOString().split('T')[0];
+        timelineMap.set(dateKey, {
+          recommendations: 0,
+          conversions: 0,
+          revenue: 0,
+        });
+      }
+
+      recommendations?.forEach((r: any) => {
+        const dateKey = new Date(r.recommended_at).toISOString().split('T')[0];
+        const dayData = timelineMap.get(dateKey);
+        if (dayData) dayData.recommendations++;
+      });
+
+      conversions?.forEach((c: any) => {
+        const dateKey = new Date(c.purchased_at).toISOString().split('T')[0];
+        const dayData = timelineMap.get(dateKey);
+        if (dayData) {
+          dayData.conversions++;
+          dayData.revenue += c.order_amount || 0;
+        }
+      });
+
+      const timeline = Array.from(timelineMap.entries())
+        .map(([date, data]) => ({
+          date,
+          recommendations: data.recommendations,
+          conversions: data.conversions,
+          revenue: Math.round(data.revenue * 100) / 100,
+          conversionRate:
+            data.recommendations > 0
+              ? Math.round(
+                  (data.conversions / data.recommendations) * 100 * 100
+                ) / 100
+              : 0,
+        }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      // Calculate top products
+      const productStatsMap = new Map<
+        string,
+        {
+          productId: string;
+          productTitle: string;
+          recommendations: number;
+          conversions: number;
+          revenue: number;
+        }
+      >();
+
+      recommendations?.forEach((r: any) => {
+        const key = r.product_id;
+        if (!productStatsMap.has(key)) {
+          productStatsMap.set(key, {
+            productId: r.product_id,
+            productTitle: r.product_title || 'Producto',
+            recommendations: 0,
+            conversions: 0,
+            revenue: 0,
+          });
+        }
+        productStatsMap.get(key)!.recommendations++;
+      });
+
+      conversions?.forEach((c: any) => {
+        const key = c.product_id;
+        if (!productStatsMap.has(key)) {
+          productStatsMap.set(key, {
+            productId: c.product_id,
+            productTitle: 'Producto',
+            recommendations: 0,
+            conversions: 0,
+            revenue: 0,
+          });
+        }
+        const stats = productStatsMap.get(key)!;
+        stats.conversions++;
+        stats.revenue += c.order_amount || 0;
+      });
+
+      const topProducts = Array.from(productStatsMap.values())
+        .filter(p => p.conversions > 0)
+        .map(p => ({
+          ...p,
+          conversionRate:
+            p.recommendations > 0
+              ? Math.round((p.conversions / p.recommendations) * 100 * 100) /
+                100
+              : 0,
+          revenue: Math.round(p.revenue * 100) / 100,
+        }))
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 10);
+
+      // Recent activity
+      const recentActivity: Array<{
+        type: 'recommendation' | 'conversion';
+        timestamp: string;
+        productTitle: string;
+        sessionId: string;
+        amount?: number;
+      }> = [];
+
+      recommendations?.slice(0, 10).forEach((r: any) => {
+        recentActivity.push({
+          type: 'recommendation',
+          timestamp: r.recommended_at,
+          productTitle: r.product_title || 'Producto',
+          sessionId: r.session_id,
+        });
+      });
+
+      conversions?.slice(0, 10).forEach((c: any) => {
+        recentActivity.push({
+          type: 'conversion',
+          timestamp: c.purchased_at,
+          productTitle: c.product_id,
+          sessionId: c.session_id,
+          amount: c.order_amount,
+        });
+      });
+
+      recentActivity.sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+
+      // Attribution breakdown
+      const attributionBreakdown = {
+        direct: { count: 0, revenue: 0 },
+        assisted: { count: 0, revenue: 0 },
+        viewThrough: { count: 0, revenue: 0 },
+      };
+
+      conversions?.forEach((c: any) => {
+        const minutes = c.minutes_to_conversion || 0;
+        const amount = c.order_amount || 0;
+
+        if (minutes <= 30) {
+          attributionBreakdown.direct.count++;
+          attributionBreakdown.direct.revenue += amount;
+        } else if (minutes <= 1440) {
+          attributionBreakdown.assisted.count++;
+          attributionBreakdown.assisted.revenue += amount;
+        } else {
+          attributionBreakdown.viewThrough.count++;
+          attributionBreakdown.viewThrough.revenue += amount;
+        }
+      });
+
+      attributionBreakdown.direct.revenue =
+        Math.round(attributionBreakdown.direct.revenue * 100) / 100;
+      attributionBreakdown.assisted.revenue =
+        Math.round(attributionBreakdown.assisted.revenue * 100) / 100;
+      attributionBreakdown.viewThrough.revenue =
+        Math.round(attributionBreakdown.viewThrough.revenue * 100) / 100;
+
+      // Period comparison
+      const prevTotalConversions = previousConversions?.length || 0;
+      const prevTotalRevenue =
+        previousConversions?.reduce(
+          (sum: number, c: any) => sum + (c.order_amount || 0),
+          0
+        ) || 0;
+      const prevTotalRecommendations = previousRecommendations?.length || 0;
+      const prevConversionRate =
+        prevTotalRecommendations > 0
+          ? (prevTotalConversions / prevTotalRecommendations) * 100
+          : 0;
+
+      const periodComparison = {
+        currentPeriod: {
+          conversions: totalConversions,
+          revenue: Math.round(totalRevenue * 100) / 100,
+          rate: Math.round(conversionRate * 100) / 100,
+        },
+        previousPeriod: {
+          conversions: prevTotalConversions,
+          revenue: Math.round(prevTotalRevenue * 100) / 100,
+          rate: Math.round(prevConversionRate * 100) / 100,
+        },
+        change: {
+          conversions: totalConversions - prevTotalConversions,
+          revenue: Math.round((totalRevenue - prevTotalRevenue) * 100) / 100,
+          rate: Math.round((conversionRate - prevConversionRate) * 100) / 100,
+        },
+      };
+
+      return res.json({
+        success: true,
+        data: {
+          overview: {
+            totalRecommendations,
+            totalConversions,
+            conversionRate: Math.round(conversionRate * 100) / 100,
+            totalRevenue: Math.round(totalRevenue * 100) / 100,
+            averageOrderValue: Math.round(averageOrderValue * 100) / 100,
+            averageTimeToConversion:
+              Math.round(averageTimeToConversion * 100) / 100,
+          },
+          timeline,
+          topProducts,
+          recentActivity: recentActivity.slice(0, 20),
+          attributionBreakdown,
+          periodComparison,
+        },
+      });
+    } catch (error) {
+      logger.error('Embedded conversions dashboard error:', error);
+      next(error);
+    }
+  }
+);
+
 export default router;
