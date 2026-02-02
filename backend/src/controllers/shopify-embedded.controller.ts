@@ -225,6 +225,8 @@ router.put(
         updateData.promo_badge_position = config.promoBadgePosition;
       if (config.promoBadgeSuffix !== undefined)
         updateData.promo_badge_suffix = config.promoBadgeSuffix;
+      if (config.promoBadgeFontSize !== undefined)
+        updateData.promo_badge_font_size = config.promoBadgeFontSize;
 
       // Try to update client_stores first
       const { data: clientStore, error: clientError } = await (

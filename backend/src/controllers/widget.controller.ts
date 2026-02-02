@@ -138,6 +138,7 @@ router.get(
         promoBadgeShape: 'circle',
         promoBadgePosition: 'right',
         promoBadgeSuffix: 'OFF',
+        promoBadgeFontSize: 12,
       };
 
       if (!shop || typeof shop !== 'string') {
@@ -187,7 +188,8 @@ router.get(
           promo_badge_color,
           promo_badge_shape,
           promo_badge_position,
-          promo_badge_suffix
+          promo_badge_suffix,
+          promo_badge_font_size
         `
         )
         .eq('shop_domain', shop)
@@ -241,13 +243,25 @@ router.get(
               clientStore.widget_enable_animations ??
               defaultConfig.enableAnimations,
             theme: clientStore.widget_theme || defaultConfig.theme,
-            promoBadgeEnabled: clientStore.promo_badge_enabled ?? defaultConfig.promoBadgeEnabled,
-            promoBadgeDiscount: clientStore.promo_badge_discount || defaultConfig.promoBadgeDiscount,
-            promoBadgeText: clientStore.promo_badge_text || defaultConfig.promoBadgeText,
-            promoBadgeColor: clientStore.promo_badge_color || defaultConfig.promoBadgeColor,
-            promoBadgeShape: clientStore.promo_badge_shape || defaultConfig.promoBadgeShape,
-            promoBadgePosition: clientStore.promo_badge_position || defaultConfig.promoBadgePosition,
-            promoBadgeSuffix: clientStore.promo_badge_suffix ?? defaultConfig.promoBadgeSuffix,
+            promoBadgeEnabled:
+              clientStore.promo_badge_enabled ??
+              defaultConfig.promoBadgeEnabled,
+            promoBadgeDiscount:
+              clientStore.promo_badge_discount ||
+              defaultConfig.promoBadgeDiscount,
+            promoBadgeText:
+              clientStore.promo_badge_text || defaultConfig.promoBadgeText,
+            promoBadgeColor:
+              clientStore.promo_badge_color || defaultConfig.promoBadgeColor,
+            promoBadgeShape:
+              clientStore.promo_badge_shape || defaultConfig.promoBadgeShape,
+            promoBadgePosition:
+              clientStore.promo_badge_position ||
+              defaultConfig.promoBadgePosition,
+            promoBadgeSuffix:
+              clientStore.promo_badge_suffix ?? defaultConfig.promoBadgeSuffix,
+            promoBadgeFontSize:
+              clientStore.promo_badge_font_size || defaultConfig.promoBadgeFontSize,
           },
         });
       }

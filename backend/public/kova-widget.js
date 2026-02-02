@@ -615,13 +615,19 @@
           this.promoBadge.style.background = this.config.promoBadgeColor;
         }
 
+        // Apply font size
+        if (this.config.promoBadgeFontSize && badgeText) {
+          badgeText.style.fontSize = this.config.promoBadgeFontSize + 'px';
+        }
+
         console.log('🏷️ Promo badge updated:', {
           enabled: this.config.promoBadgeEnabled,
           discount: this.config.promoBadgeDiscount,
           suffix: this.config.promoBadgeSuffix,
           color: this.config.promoBadgeColor,
           shape: this.config.promoBadgeShape,
-          position: this.config.promoBadgePosition
+          position: this.config.promoBadgePosition,
+          fontSize: this.config.promoBadgeFontSize
         });
       }
 

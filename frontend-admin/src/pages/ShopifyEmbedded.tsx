@@ -67,6 +67,7 @@ interface WidgetConfig {
   promo_badge_shape: string;
   promo_badge_position: string;
   promo_badge_suffix: string;
+  promo_badge_font_size: number;
 }
 
 interface ChatMessage {
@@ -354,6 +355,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
     promo_badge_shape: 'circle',
     promo_badge_position: 'right',
     promo_badge_suffix: 'OFF',
+    promo_badge_font_size: 12,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -604,6 +606,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
             promo_badge_shape: data.data.promoBadgeShape || prev.promo_badge_shape,
             promo_badge_position: data.data.promoBadgePosition || prev.promo_badge_position,
             promo_badge_suffix: data.data.promoBadgeSuffix ?? prev.promo_badge_suffix,
+            promo_badge_font_size: data.data.promoBadgeFontSize || prev.promo_badge_font_size,
           }));
         }
       }
@@ -657,6 +660,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
             promoBadgeShape: widgetConfig.promo_badge_shape,
             promoBadgePosition: widgetConfig.promo_badge_position,
             promoBadgeSuffix: widgetConfig.promo_badge_suffix,
+            promoBadgeFontSize: widgetConfig.promo_badge_font_size,
           },
         }),
       });
@@ -1951,6 +1955,24 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                         </p>
                       </div>
 
+                      {/* Font Size */}
+                      <div className="form-group">
+                        <label className="form-label">Tamaño de texto</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <input
+                            type="range"
+                            min="8"
+                            max="18"
+                            value={widgetConfig.promo_badge_font_size}
+                            onChange={e => setWidgetConfig({ ...widgetConfig, promo_badge_font_size: parseInt(e.target.value) })}
+                            style={{ width: '120px' }}
+                          />
+                          <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', minWidth: '40px' }}>
+                            {widgetConfig.promo_badge_font_size}px
+                          </span>
+                        </div>
+                      </div>
+
                       {/* Description/Prompt */}
                       <div className="form-group">
                         <label className="form-label">Descripcion / Prompt</label>
@@ -2055,7 +2077,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                               [widgetConfig.promo_badge_position === 'left' ? 'left' : 'right']: '-8px',
                               background: widgetConfig.promo_badge_color,
                               color: 'white',
-                              fontSize: '0.55rem',
+                              fontSize: `${widgetConfig.promo_badge_font_size}px`,
                               fontWeight: '700',
                               padding: widgetConfig.promo_badge_shape === 'circle' ? '5px' : '4px 8px',
                               borderRadius: widgetConfig.promo_badge_shape === 'circle'
