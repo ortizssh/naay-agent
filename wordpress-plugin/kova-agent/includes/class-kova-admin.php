@@ -86,7 +86,7 @@ class Kova_Admin {
         // General settings (Settings tab)
         $sanitized['enabled'] = $get_checkbox('enabled', false);
         $sanitized['api_endpoint'] = sanitize_url($get_value('api_endpoint', 'https://naay-agent-app1763504937.azurewebsites.net'));
-        $sanitized['chat_endpoint'] = sanitize_url($get_value('chat_endpoint', ''));
+        $sanitized['chat_endpoint'] = sanitize_url($get_value('chat_endpoint', 'https://n8n.dustkey.com/webhook/chat-naay'));
         $sanitized['api_key'] = sanitize_text_field($get_value('api_key', ''));
         $sanitized['consumer_key'] = sanitize_text_field($get_value('consumer_key', ''));
         $sanitized['consumer_secret'] = sanitize_text_field($get_value('consumer_secret', ''));
@@ -1432,6 +1432,16 @@ class Kova_Admin {
                                        value="<?php echo esc_attr($settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net'); ?>"
                                        class="kova-form-input">
                                 <p class="kova-form-hint"><?php _e('The Kova Agent API endpoint URL.', 'kova-agent'); ?></p>
+                            </div>
+
+                            <div class="kova-form-group">
+                                <label class="kova-form-label" for="kova_chat_endpoint"><?php _e('Chat Endpoint', 'kova-agent'); ?></label>
+                                <input type="url"
+                                       id="kova_chat_endpoint"
+                                       name="kova_agent_settings[chat_endpoint]"
+                                       value="<?php echo esc_attr($settings['chat_endpoint'] ?? 'https://n8n.dustkey.com/webhook/chat-naay'); ?>"
+                                       class="kova-form-input">
+                                <p class="kova-form-hint"><?php _e('The chat webhook URL for processing messages (e.g., n8n webhook).', 'kova-agent'); ?></p>
                             </div>
                         </div>
 

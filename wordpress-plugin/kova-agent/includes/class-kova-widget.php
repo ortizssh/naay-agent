@@ -155,7 +155,7 @@ class Kova_Widget {
         }
 
         $api_endpoint = $this->settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
-        $chat_endpoint = $this->settings['chat_endpoint'] ?? '';
+        $chat_endpoint = $this->settings['chat_endpoint'] ?? 'https://n8n.dustkey.com/webhook/chat-naay';
         $page_context = $this->get_page_context();
         $customer = $this->get_customer_info();
         $nonce = $this->get_store_api_nonce();
