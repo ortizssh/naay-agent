@@ -2,6 +2,7 @@
 /**
  * Kova Agent Admin Class
  * Handles the admin settings page and configuration
+ * Modern Design matching Shopify Embedded Admin
  */
 
 if (!defined('ABSPATH')) {
@@ -9,6 +10,11 @@ if (!defined('ABSPATH')) {
 }
 
 class Kova_Admin {
+
+    /**
+     * Current page/tab
+     */
+    private $current_page = 'settings';
 
     /**
      * Constructor
@@ -20,6 +26,9 @@ class Kova_Admin {
         add_action('wp_ajax_kova_test_connection', array($this, 'ajax_test_connection'));
         add_action('wp_ajax_kova_sync_products', array($this, 'ajax_sync_products'));
         add_action('wp_ajax_kova_setup_webhooks', array($this, 'ajax_setup_webhooks'));
+        add_action('wp_ajax_kova_get_analytics', array($this, 'ajax_get_analytics'));
+        add_action('wp_ajax_kova_get_conversations', array($this, 'ajax_get_conversations'));
+        add_action('wp_ajax_kova_get_conversions', array($this, 'ajax_get_conversions'));
     }
 
     /**
@@ -31,7 +40,7 @@ class Kova_Admin {
             __('Kova Agent', 'kova-agent'),
             'manage_woocommerce',
             'kova-agent',
-            array($this, 'render_settings_page'),
+            array($this, 'render_admin_page'),
             'dashicons-format-chat',
             56
         );
@@ -61,9 +70,10 @@ class Kova_Admin {
         $sanitized['consumer_secret'] = sanitize_text_field($input['consumer_secret'] ?? '');
         $sanitized['webhook_secret'] = sanitize_text_field($input['webhook_secret'] ?? '');
         $sanitized['widget_position'] = sanitize_text_field($input['widget_position'] ?? 'bottom-right');
-        $sanitized['widget_color'] = sanitize_hex_color($input['widget_color'] ?? '#6366f1');
+        $sanitized['widget_color'] = sanitize_hex_color($input['widget_color'] ?? '#6d5cff');
         $sanitized['welcome_message'] = sanitize_textarea_field($input['welcome_message'] ?? '');
         $sanitized['widget_title'] = sanitize_text_field($input['widget_title'] ?? 'Kova Assistant');
+        $sanitized['widget_placeholder'] = sanitize_text_field($input['widget_placeholder'] ?? '');
         $sanitized['show_on_mobile'] = isset($input['show_on_mobile']) ? (bool) $input['show_on_mobile'] : true;
         $sanitized['show_on_product_pages'] = isset($input['show_on_product_pages']) ? (bool) $input['show_on_product_pages'] : true;
         $sanitized['show_on_cart_page'] = isset($input['show_on_cart_page']) ? (bool) $input['show_on_cart_page'] : true;
@@ -76,301 +86,840 @@ class Kova_Admin {
      * Enqueue admin scripts and styles
      */
     public function enqueue_admin_scripts($hook) {
-        if ('toplevel_page_kova-agent' !== $hook) {
+        if (strpos($hook, 'kova-agent') === false) {
             return;
         }
 
-        wp_enqueue_style('wp-color-picker');
-        wp_enqueue_script('wp-color-picker');
+        // Modern CSS
         wp_enqueue_style(
-            'kova-admin-css',
-            KOVA_AGENT_PLUGIN_URL . 'assets/css/admin.css',
+            'kova-admin-modern-css',
+            KOVA_AGENT_PLUGIN_URL . 'assets/css/admin-modern.css',
             array(),
             KOVA_AGENT_VERSION
         );
+
+        // Chart.js for analytics charts
+        wp_enqueue_script(
+            'chartjs',
+            'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js',
+            array(),
+            '4.4.1',
+            true
+        );
+
         wp_enqueue_script(
             'kova-admin-js',
             KOVA_AGENT_PLUGIN_URL . 'assets/js/admin.js',
-            array('jquery', 'wp-color-picker'),
+            array('jquery', 'chartjs'),
             KOVA_AGENT_VERSION,
             true
         );
+
+        $settings = get_option('kova_agent_settings', array());
+
         wp_localize_script('kova-admin-js', 'kovaAdmin', array(
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('kova_admin_nonce'),
+            'siteUrl' => site_url(),
+            'apiEndpoint' => $settings['api_endpoint'] ?? 'https://api.kova.ai',
             'strings' => array(
                 'testing' => __('Testing connection...', 'kova-agent'),
                 'syncing' => __('Syncing products...', 'kova-agent'),
                 'setting_up_webhooks' => __('Setting up webhooks...', 'kova-agent'),
                 'success' => __('Success!', 'kova-agent'),
                 'error' => __('Error', 'kova-agent'),
+                'loading' => __('Loading...', 'kova-agent'),
+                'no_data' => __('No data available', 'kova-agent'),
+                'conversations' => __('Conversations', 'kova-agent'),
+                'recommendations' => __('Recommendations', 'kova-agent'),
+                'conversions' => __('Conversions', 'kova-agent'),
             ),
         ));
     }
 
     /**
-     * Render settings page
+     * Get current tab
      */
-    public function render_settings_page() {
+    private function get_current_tab() {
+        return isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'dashboard';
+    }
+
+    /**
+     * Render SVG icons
+     */
+    private function render_icon($icon) {
+        $icons = array(
+            'dashboard' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>',
+            'settings' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>',
+            'widget' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>',
+            'analytics' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>',
+            'conversations' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/></svg>',
+            'conversions' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>',
+            'help' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+            'chat' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>',
+            'messages' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>',
+            'star' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>',
+            'cart' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>',
+            'products' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>',
+        );
+
+        return isset($icons[$icon]) ? $icons[$icon] : '';
+    }
+
+    /**
+     * Render main admin page
+     */
+    public function render_admin_page() {
+        $current_tab = $this->get_current_tab();
         $settings = get_option('kova_agent_settings', array());
+        $store_name = get_bloginfo('name');
+        $store_url = parse_url(site_url(), PHP_URL_HOST);
+        $store_initials = strtoupper(substr($store_name, 0, 2));
         ?>
-        <div class="wrap kova-admin-wrap">
-            <h1>
-                <span class="dashicons dashicons-format-chat"></span>
-                <?php _e('Kova Agent Settings', 'kova-agent'); ?>
-            </h1>
-
-            <div class="kova-admin-container">
-                <div class="kova-admin-main">
-                    <form method="post" action="options.php">
-                        <?php settings_fields('kova_agent_settings_group'); ?>
-
-                        <!-- Connection Section -->
-                        <div class="kova-section">
-                            <h2><?php _e('Connection Settings', 'kova-agent'); ?></h2>
-
-                            <table class="form-table">
-                                <tr>
-                                    <th scope="row">
-                                        <label for="kova_enabled"><?php _e('Enable Widget', 'kova-agent'); ?></label>
-                                    </th>
-                                    <td>
-                                        <label class="kova-toggle">
-                                            <input type="checkbox"
-                                                   id="kova_enabled"
-                                                   name="kova_agent_settings[enabled]"
-                                                   value="1"
-                                                   <?php checked(!empty($settings['enabled'])); ?>>
-                                            <span class="kova-toggle-slider"></span>
-                                        </label>
-                                        <p class="description"><?php _e('Enable or disable the chat widget on your store.', 'kova-agent'); ?></p>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th scope="row">
-                                        <label for="kova_api_endpoint"><?php _e('API Endpoint', 'kova-agent'); ?></label>
-                                    </th>
-                                    <td>
-                                        <input type="url"
-                                               id="kova_api_endpoint"
-                                               name="kova_agent_settings[api_endpoint]"
-                                               value="<?php echo esc_attr($settings['api_endpoint'] ?? 'https://api.kova.ai'); ?>"
-                                               class="regular-text">
-                                        <p class="description"><?php _e('The Kova Agent API endpoint URL.', 'kova-agent'); ?></p>
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
-
-                        <!-- WooCommerce API Credentials -->
-                        <div class="kova-section">
-                            <h2><?php _e('WooCommerce API Credentials', 'kova-agent'); ?></h2>
-                            <p class="description">
-                                <?php _e('Generate API keys in WooCommerce > Settings > Advanced > REST API. Required permissions: Read/Write.', 'kova-agent'); ?>
-                            </p>
-
-                            <table class="form-table">
-                                <tr>
-                                    <th scope="row">
-                                        <label for="kova_consumer_key"><?php _e('Consumer Key', 'kova-agent'); ?></label>
-                                    </th>
-                                    <td>
-                                        <input type="text"
-                                               id="kova_consumer_key"
-                                               name="kova_agent_settings[consumer_key]"
-                                               value="<?php echo esc_attr($settings['consumer_key'] ?? ''); ?>"
-                                               class="regular-text"
-                                               placeholder="ck_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th scope="row">
-                                        <label for="kova_consumer_secret"><?php _e('Consumer Secret', 'kova-agent'); ?></label>
-                                    </th>
-                                    <td>
-                                        <input type="password"
-                                               id="kova_consumer_secret"
-                                               name="kova_agent_settings[consumer_secret]"
-                                               value="<?php echo esc_attr($settings['consumer_secret'] ?? ''); ?>"
-                                               class="regular-text"
-                                               placeholder="cs_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th scope="row">
-                                        <label for="kova_webhook_secret"><?php _e('Webhook Secret', 'kova-agent'); ?></label>
-                                    </th>
-                                    <td>
-                                        <input type="text"
-                                               id="kova_webhook_secret"
-                                               name="kova_agent_settings[webhook_secret]"
-                                               value="<?php echo esc_attr($settings['webhook_secret'] ?? ''); ?>"
-                                               class="regular-text"
-                                               readonly>
-                                        <p class="description"><?php _e('This will be set automatically when you connect to Kova.', 'kova-agent'); ?></p>
-                                    </td>
-                                </tr>
-                            </table>
-
-                            <div class="kova-actions">
-                                <button type="button" id="kova-test-connection" class="button">
-                                    <?php _e('Test Connection', 'kova-agent'); ?>
-                                </button>
-                                <button type="button" id="kova-sync-products" class="button">
-                                    <?php _e('Sync Products', 'kova-agent'); ?>
-                                </button>
-                                <button type="button" id="kova-setup-webhooks" class="button">
-                                    <?php _e('Setup Webhooks', 'kova-agent'); ?>
-                                </button>
-                                <span id="kova-action-status"></span>
-                            </div>
-                        </div>
-
-                        <!-- Widget Appearance -->
-                        <div class="kova-section">
-                            <h2><?php _e('Widget Appearance', 'kova-agent'); ?></h2>
-
-                            <table class="form-table">
-                                <tr>
-                                    <th scope="row">
-                                        <label for="kova_widget_title"><?php _e('Widget Title', 'kova-agent'); ?></label>
-                                    </th>
-                                    <td>
-                                        <input type="text"
-                                               id="kova_widget_title"
-                                               name="kova_agent_settings[widget_title]"
-                                               value="<?php echo esc_attr($settings['widget_title'] ?? 'Kova Assistant'); ?>"
-                                               class="regular-text">
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th scope="row">
-                                        <label for="kova_welcome_message"><?php _e('Welcome Message', 'kova-agent'); ?></label>
-                                    </th>
-                                    <td>
-                                        <textarea id="kova_welcome_message"
-                                                  name="kova_agent_settings[welcome_message]"
-                                                  rows="3"
-                                                  class="large-text"><?php echo esc_textarea($settings['welcome_message'] ?? ''); ?></textarea>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th scope="row">
-                                        <label for="kova_widget_color"><?php _e('Widget Color', 'kova-agent'); ?></label>
-                                    </th>
-                                    <td>
-                                        <input type="text"
-                                               id="kova_widget_color"
-                                               name="kova_agent_settings[widget_color]"
-                                               value="<?php echo esc_attr($settings['widget_color'] ?? '#6366f1'); ?>"
-                                               class="kova-color-picker">
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th scope="row">
-                                        <label for="kova_widget_position"><?php _e('Widget Position', 'kova-agent'); ?></label>
-                                    </th>
-                                    <td>
-                                        <select id="kova_widget_position" name="kova_agent_settings[widget_position]">
-                                            <option value="bottom-right" <?php selected($settings['widget_position'] ?? '', 'bottom-right'); ?>><?php _e('Bottom Right', 'kova-agent'); ?></option>
-                                            <option value="bottom-left" <?php selected($settings['widget_position'] ?? '', 'bottom-left'); ?>><?php _e('Bottom Left', 'kova-agent'); ?></option>
-                                            <option value="top-right" <?php selected($settings['widget_position'] ?? '', 'top-right'); ?>><?php _e('Top Right', 'kova-agent'); ?></option>
-                                            <option value="top-left" <?php selected($settings['widget_position'] ?? '', 'top-left'); ?>><?php _e('Top Left', 'kova-agent'); ?></option>
-                                        </select>
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
-
-                        <!-- Display Settings -->
-                        <div class="kova-section">
-                            <h2><?php _e('Display Settings', 'kova-agent'); ?></h2>
-
-                            <table class="form-table">
-                                <tr>
-                                    <th scope="row"><?php _e('Show on Mobile', 'kova-agent'); ?></th>
-                                    <td>
-                                        <label>
-                                            <input type="checkbox"
-                                                   name="kova_agent_settings[show_on_mobile]"
-                                                   value="1"
-                                                   <?php checked(!empty($settings['show_on_mobile'])); ?>>
-                                            <?php _e('Display widget on mobile devices', 'kova-agent'); ?>
-                                        </label>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th scope="row"><?php _e('Show on Product Pages', 'kova-agent'); ?></th>
-                                    <td>
-                                        <label>
-                                            <input type="checkbox"
-                                                   name="kova_agent_settings[show_on_product_pages]"
-                                                   value="1"
-                                                   <?php checked(!empty($settings['show_on_product_pages'])); ?>>
-                                            <?php _e('Display widget on single product pages', 'kova-agent'); ?>
-                                        </label>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th scope="row"><?php _e('Show on Cart Page', 'kova-agent'); ?></th>
-                                    <td>
-                                        <label>
-                                            <input type="checkbox"
-                                                   name="kova_agent_settings[show_on_cart_page]"
-                                                   value="1"
-                                                   <?php checked(!empty($settings['show_on_cart_page'])); ?>>
-                                            <?php _e('Display widget on cart page', 'kova-agent'); ?>
-                                        </label>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th scope="row"><?php _e('Show on Checkout', 'kova-agent'); ?></th>
-                                    <td>
-                                        <label>
-                                            <input type="checkbox"
-                                                   name="kova_agent_settings[show_on_checkout]"
-                                                   value="1"
-                                                   <?php checked(!empty($settings['show_on_checkout'])); ?>>
-                                            <?php _e('Display widget on checkout page', 'kova-agent'); ?>
-                                        </label>
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
-
-                        <?php submit_button(); ?>
-                    </form>
-                </div>
-
-                <div class="kova-admin-sidebar">
-                    <div class="kova-info-box">
-                        <h3><?php _e('Quick Start', 'kova-agent'); ?></h3>
-                        <ol>
-                            <li><?php _e('Create WooCommerce API keys (Read/Write)', 'kova-agent'); ?></li>
-                            <li><?php _e('Enter your API credentials above', 'kova-agent'); ?></li>
-                            <li><?php _e('Click "Test Connection" to verify', 'kova-agent'); ?></li>
-                            <li><?php _e('Click "Sync Products" to import your catalog', 'kova-agent'); ?></li>
-                            <li><?php _e('Enable the widget and save settings', 'kova-agent'); ?></li>
-                        </ol>
-                    </div>
-
-                    <div class="kova-info-box">
-                        <h3><?php _e('Need Help?', 'kova-agent'); ?></h3>
-                        <p><?php _e('Check our documentation for detailed setup instructions.', 'kova-agent'); ?></p>
-                        <a href="https://docs.kova.ai" target="_blank" class="button button-secondary">
-                            <?php _e('View Documentation', 'kova-agent'); ?>
+        <div class="kova-modern-admin">
+            <div class="kova-admin-layout">
+                <!-- Sidebar -->
+                <aside class="kova-sidebar">
+                    <div class="kova-sidebar-header">
+                        <a href="<?php echo admin_url('admin.php?page=kova-agent'); ?>" class="kova-sidebar-logo">
+                            <div class="kova-sidebar-logo-icon">K</div>
+                            <span class="kova-sidebar-logo-text">Kova</span>
                         </a>
                     </div>
 
+                    <nav class="kova-sidebar-nav">
+                        <div class="kova-nav-section">
+                            <div class="kova-nav-section-title"><?php _e('Overview', 'kova-agent'); ?></div>
+                            <a href="<?php echo admin_url('admin.php?page=kova-agent&tab=dashboard'); ?>"
+                               class="kova-nav-item <?php echo $current_tab === 'dashboard' ? 'active' : ''; ?>">
+                                <?php echo $this->render_icon('dashboard'); ?>
+                                <?php _e('Dashboard', 'kova-agent'); ?>
+                            </a>
+                            <a href="<?php echo admin_url('admin.php?page=kova-agent&tab=analytics'); ?>"
+                               class="kova-nav-item <?php echo $current_tab === 'analytics' ? 'active' : ''; ?>">
+                                <?php echo $this->render_icon('analytics'); ?>
+                                <?php _e('Analytics', 'kova-agent'); ?>
+                            </a>
+                        </div>
+
+                        <div class="kova-nav-section">
+                            <div class="kova-nav-section-title"><?php _e('Chat', 'kova-agent'); ?></div>
+                            <a href="<?php echo admin_url('admin.php?page=kova-agent&tab=conversations'); ?>"
+                               class="kova-nav-item <?php echo $current_tab === 'conversations' ? 'active' : ''; ?>">
+                                <?php echo $this->render_icon('conversations'); ?>
+                                <?php _e('Conversations', 'kova-agent'); ?>
+                            </a>
+                            <a href="<?php echo admin_url('admin.php?page=kova-agent&tab=conversions'); ?>"
+                               class="kova-nav-item <?php echo $current_tab === 'conversions' ? 'active' : ''; ?>">
+                                <?php echo $this->render_icon('conversions'); ?>
+                                <?php _e('Conversions', 'kova-agent'); ?>
+                            </a>
+                        </div>
+
+                        <div class="kova-nav-section">
+                            <div class="kova-nav-section-title"><?php _e('Configuration', 'kova-agent'); ?></div>
+                            <a href="<?php echo admin_url('admin.php?page=kova-agent&tab=widget'); ?>"
+                               class="kova-nav-item <?php echo $current_tab === 'widget' ? 'active' : ''; ?>">
+                                <?php echo $this->render_icon('widget'); ?>
+                                <?php _e('Widget', 'kova-agent'); ?>
+                            </a>
+                            <a href="<?php echo admin_url('admin.php?page=kova-agent&tab=settings'); ?>"
+                               class="kova-nav-item <?php echo $current_tab === 'settings' ? 'active' : ''; ?>">
+                                <?php echo $this->render_icon('settings'); ?>
+                                <?php _e('Settings', 'kova-agent'); ?>
+                            </a>
+                        </div>
+
+                        <div class="kova-nav-section">
+                            <div class="kova-nav-section-title"><?php _e('Help', 'kova-agent'); ?></div>
+                            <a href="https://docs.kova.ai" target="_blank" class="kova-nav-item">
+                                <?php echo $this->render_icon('help'); ?>
+                                <?php _e('Documentation', 'kova-agent'); ?>
+                            </a>
+                        </div>
+                    </nav>
+
+                    <div class="kova-sidebar-footer">
+                        <div class="kova-store-info">
+                            <div class="kova-store-avatar"><?php echo esc_html($store_initials); ?></div>
+                            <div class="kova-store-details">
+                                <div class="kova-store-name"><?php echo esc_html($store_name); ?></div>
+                                <div class="kova-store-url"><?php echo esc_html($store_url); ?></div>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Main Content -->
+                <main class="kova-main-content">
+                    <?php
+                    switch ($current_tab) {
+                        case 'analytics':
+                            $this->render_analytics_tab();
+                            break;
+                        case 'conversations':
+                            $this->render_conversations_tab();
+                            break;
+                        case 'conversions':
+                            $this->render_conversions_tab();
+                            break;
+                        case 'widget':
+                            $this->render_widget_tab();
+                            break;
+                        case 'settings':
+                            $this->render_settings_tab();
+                            break;
+                        default:
+                            $this->render_dashboard_tab();
+                            break;
+                    }
+                    ?>
+                </main>
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render Dashboard Tab
+     */
+    private function render_dashboard_tab() {
+        $settings = get_option('kova_agent_settings', array());
+        $is_connected = !empty($settings['consumer_key']) && !empty($settings['consumer_secret']);
+        $is_enabled = !empty($settings['enabled']);
+        ?>
+        <div class="kova-page-header">
+            <div class="kova-page-header-content">
+                <div>
+                    <h1 class="kova-page-title"><?php _e('Dashboard', 'kova-agent'); ?></h1>
+                    <p class="kova-page-subtitle"><?php _e('Overview of your Kova Agent performance', 'kova-agent'); ?></p>
+                </div>
+                <div>
+                    <span class="kova-badge <?php echo $is_enabled ? 'kova-badge-success' : 'kova-badge-warning'; ?>">
+                        <?php echo $is_enabled ? __('Active', 'kova-agent') : __('Inactive', 'kova-agent'); ?>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="kova-page-content">
+            <?php if (!$is_connected): ?>
+            <div class="kova-quick-setup">
+                <h3><?php _e('Complete Your Setup', 'kova-agent'); ?></h3>
+                <p><?php _e('Connect your WooCommerce store to start using the AI assistant.', 'kova-agent'); ?></p>
+                <a href="<?php echo admin_url('admin.php?page=kova-agent&tab=settings'); ?>" class="kova-btn">
+                    <?php _e('Configure Settings', 'kova-agent'); ?>
+                </a>
+            </div>
+            <?php endif; ?>
+
+            <div class="kova-stats-grid" id="kova-dashboard-stats">
+                <div class="kova-stat-card">
+                    <div class="kova-stat-icon primary">
+                        <?php echo $this->render_icon('chat'); ?>
+                    </div>
+                    <div class="kova-stat-value" id="kova-dash-conversations">-</div>
+                    <div class="kova-stat-label"><?php _e('Conversations', 'kova-agent'); ?></div>
+                </div>
+                <div class="kova-stat-card">
+                    <div class="kova-stat-icon accent">
+                        <?php echo $this->render_icon('messages'); ?>
+                    </div>
+                    <div class="kova-stat-value" id="kova-dash-messages">-</div>
+                    <div class="kova-stat-label"><?php _e('Messages', 'kova-agent'); ?></div>
+                </div>
+                <div class="kova-stat-card">
+                    <div class="kova-stat-icon warning">
+                        <?php echo $this->render_icon('star'); ?>
+                    </div>
+                    <div class="kova-stat-value" id="kova-dash-recommendations">-</div>
+                    <div class="kova-stat-label"><?php _e('Recommendations', 'kova-agent'); ?></div>
+                </div>
+                <div class="kova-stat-card">
+                    <div class="kova-stat-icon success">
+                        <?php echo $this->render_icon('cart'); ?>
+                    </div>
+                    <div class="kova-stat-value" id="kova-dash-conversions">-</div>
+                    <div class="kova-stat-label"><?php _e('Conversions', 'kova-agent'); ?></div>
+                </div>
+            </div>
+
+            <div class="kova-two-columns">
+                <div class="kova-main-column">
+                    <div class="kova-chart-container">
+                        <h3 class="kova-chart-title"><?php _e('Activity Over Time', 'kova-agent'); ?></h3>
+                        <canvas id="kova-dashboard-chart"></canvas>
+                    </div>
+                </div>
+                <div class="kova-side-column">
                     <div class="kova-info-box">
                         <h3><?php _e('Store Info', 'kova-agent'); ?></h3>
-                        <p><strong><?php _e('Site URL:', 'kova-agent'); ?></strong><br><?php echo esc_html(site_url()); ?></p>
-                        <p><strong><?php _e('WooCommerce Version:', 'kova-agent'); ?></strong><br><?php echo esc_html(WC()->version ?? 'N/A'); ?></p>
-                        <p><strong><?php _e('Currency:', 'kova-agent'); ?></strong><br><?php echo esc_html(get_woocommerce_currency()); ?></p>
-                        <p><strong><?php _e('Products:', 'kova-agent'); ?></strong><br><?php echo esc_html(wp_count_posts('product')->publish); ?></p>
+                        <div class="kova-info-item">
+                            <span class="kova-info-label"><?php _e('WooCommerce', 'kova-agent'); ?></span>
+                            <span class="kova-info-value"><?php echo esc_html(WC()->version ?? 'N/A'); ?></span>
+                        </div>
+                        <div class="kova-info-item">
+                            <span class="kova-info-label"><?php _e('Currency', 'kova-agent'); ?></span>
+                            <span class="kova-info-value"><?php echo esc_html(get_woocommerce_currency()); ?></span>
+                        </div>
+                        <div class="kova-info-item">
+                            <span class="kova-info-label"><?php _e('Products', 'kova-agent'); ?></span>
+                            <span class="kova-info-value"><?php echo esc_html(wp_count_posts('product')->publish); ?></span>
+                        </div>
+                        <div class="kova-info-item">
+                            <span class="kova-info-label"><?php _e('Status', 'kova-agent'); ?></span>
+                            <span class="kova-badge <?php echo $is_connected ? 'kova-badge-success' : 'kova-badge-error'; ?>">
+                                <?php echo $is_connected ? __('Connected', 'kova-agent') : __('Not Connected', 'kova-agent'); ?>
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render Analytics Tab
+     */
+    private function render_analytics_tab() {
+        ?>
+        <div class="kova-page-header">
+            <div class="kova-page-header-content">
+                <div>
+                    <h1 class="kova-page-title"><?php _e('Analytics', 'kova-agent'); ?></h1>
+                    <p class="kova-page-subtitle"><?php _e('Track your chat performance and engagement', 'kova-agent'); ?></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="kova-page-content">
+            <div class="kova-analytics-container">
+                <div class="kova-filters-bar">
+                    <div class="kova-filter-group">
+                        <label class="kova-filter-label" for="kova-start-date"><?php _e('From:', 'kova-agent'); ?></label>
+                        <input type="date" id="kova-start-date" class="kova-filter-input" value="<?php echo date('Y-m-d', strtotime('-7 days')); ?>">
+                    </div>
+                    <div class="kova-filter-group">
+                        <label class="kova-filter-label" for="kova-end-date"><?php _e('To:', 'kova-agent'); ?></label>
+                        <input type="date" id="kova-end-date" class="kova-filter-input" value="<?php echo date('Y-m-d'); ?>">
+                    </div>
+                    <button type="button" id="kova-refresh-analytics" class="kova-btn kova-btn-primary">
+                        <?php _e('Refresh', 'kova-agent'); ?>
+                    </button>
+                </div>
+
+                <div class="kova-stats-grid">
+                    <div class="kova-stat-card">
+                        <div class="kova-stat-icon primary"><?php echo $this->render_icon('chat'); ?></div>
+                        <div class="kova-stat-value" id="kova-stat-conversations">-</div>
+                        <div class="kova-stat-label"><?php _e('Conversations', 'kova-agent'); ?></div>
+                    </div>
+                    <div class="kova-stat-card">
+                        <div class="kova-stat-icon accent"><?php echo $this->render_icon('messages'); ?></div>
+                        <div class="kova-stat-value" id="kova-stat-messages">-</div>
+                        <div class="kova-stat-label"><?php _e('Messages', 'kova-agent'); ?></div>
+                    </div>
+                    <div class="kova-stat-card">
+                        <div class="kova-stat-icon warning"><?php echo $this->render_icon('star'); ?></div>
+                        <div class="kova-stat-value" id="kova-stat-recommendations">-</div>
+                        <div class="kova-stat-label"><?php _e('Recommendations', 'kova-agent'); ?></div>
+                    </div>
+                    <div class="kova-stat-card">
+                        <div class="kova-stat-icon success"><?php echo $this->render_icon('products'); ?></div>
+                        <div class="kova-stat-value" id="kova-stat-products">-</div>
+                        <div class="kova-stat-label"><?php _e('Products Synced', 'kova-agent'); ?></div>
+                    </div>
+                </div>
+
+                <div class="kova-chart-container">
+                    <h3 class="kova-chart-title"><?php _e('Activity Over Time', 'kova-agent'); ?></h3>
+                    <canvas id="kova-analytics-chart"></canvas>
+                </div>
+
+                <div id="kova-analytics-loading" class="kova-loading" style="display: none;">
+                    <div class="kova-loading-spinner"></div>
+                    <p class="kova-loading-text"><?php _e('Loading analytics...', 'kova-agent'); ?></p>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render Conversations Tab
+     */
+    private function render_conversations_tab() {
+        ?>
+        <div class="kova-page-header">
+            <div class="kova-page-header-content">
+                <div>
+                    <h1 class="kova-page-title"><?php _e('Conversations', 'kova-agent'); ?></h1>
+                    <p class="kova-page-subtitle"><?php _e('Review chat history with your customers', 'kova-agent'); ?></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="kova-page-content">
+            <div class="kova-conversations-container">
+                <div class="kova-filters-bar">
+                    <div class="kova-filter-group">
+                        <label class="kova-filter-label" for="kova-conversation-date"><?php _e('Select Date:', 'kova-agent'); ?></label>
+                        <input type="date" id="kova-conversation-date" class="kova-filter-input" value="<?php echo date('Y-m-d'); ?>">
+                    </div>
+                    <button type="button" id="kova-load-conversations" class="kova-btn kova-btn-primary">
+                        <?php _e('Load Conversations', 'kova-agent'); ?>
+                    </button>
+                </div>
+
+                <div class="kova-card">
+                    <div class="kova-card-header">
+                        <h3 class="kova-card-title"><?php _e('Chat History', 'kova-agent'); ?></h3>
+                        <div class="kova-conversations-summary">
+                            <span><strong><?php _e('Total:', 'kova-agent'); ?></strong> <span id="kova-total-conversations">-</span></span>
+                            <span style="margin-left: 1rem;"><strong><?php _e('Messages:', 'kova-agent'); ?></strong> <span id="kova-total-messages">-</span></span>
+                        </div>
+                    </div>
+                    <div id="kova-conversations-list" class="kova-conversations-list">
+                        <div class="kova-empty-state">
+                            <div class="kova-empty-state-icon"><?php echo $this->render_icon('conversations'); ?></div>
+                            <h3 class="kova-empty-state-title"><?php _e('No conversations yet', 'kova-agent'); ?></h3>
+                            <p class="kova-empty-state-description"><?php _e('Select a date and click "Load Conversations" to view chat history.', 'kova-agent'); ?></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="kova-conversations-loading" class="kova-loading" style="display: none;">
+                    <div class="kova-loading-spinner"></div>
+                    <p class="kova-loading-text"><?php _e('Loading conversations...', 'kova-agent'); ?></p>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render Conversions Tab
+     */
+    private function render_conversions_tab() {
+        ?>
+        <div class="kova-page-header">
+            <div class="kova-page-header-content">
+                <div>
+                    <h1 class="kova-page-title"><?php _e('Conversions', 'kova-agent'); ?></h1>
+                    <p class="kova-page-subtitle"><?php _e('Track sales attributed to chat recommendations', 'kova-agent'); ?></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="kova-page-content">
+            <div class="kova-conversions-container">
+                <div class="kova-filters-bar">
+                    <div class="kova-filter-group">
+                        <label class="kova-filter-label" for="kova-conversion-days"><?php _e('Period:', 'kova-agent'); ?></label>
+                        <select id="kova-conversion-days" class="kova-filter-select">
+                            <option value="7"><?php _e('Last 7 days', 'kova-agent'); ?></option>
+                            <option value="14"><?php _e('Last 14 days', 'kova-agent'); ?></option>
+                            <option value="30" selected><?php _e('Last 30 days', 'kova-agent'); ?></option>
+                            <option value="90"><?php _e('Last 90 days', 'kova-agent'); ?></option>
+                        </select>
+                    </div>
+                    <button type="button" id="kova-load-conversions" class="kova-btn kova-btn-primary">
+                        <?php _e('Load Data', 'kova-agent'); ?>
+                    </button>
+                </div>
+
+                <div class="kova-stats-grid">
+                    <div class="kova-stat-card">
+                        <div class="kova-stat-icon success"><?php echo $this->render_icon('cart'); ?></div>
+                        <div class="kova-stat-value" id="kova-conv-total">-</div>
+                        <div class="kova-stat-label"><?php _e('Total Conversions', 'kova-agent'); ?></div>
+                    </div>
+                    <div class="kova-stat-card">
+                        <div class="kova-stat-icon primary"><?php echo $this->render_icon('analytics'); ?></div>
+                        <div class="kova-stat-value" id="kova-conv-rate">-</div>
+                        <div class="kova-stat-label"><?php _e('Conversion Rate', 'kova-agent'); ?></div>
+                    </div>
+                    <div class="kova-stat-card">
+                        <div class="kova-stat-icon accent"><?php echo $this->render_icon('star'); ?></div>
+                        <div class="kova-stat-value" id="kova-conv-revenue">-</div>
+                        <div class="kova-stat-label"><?php _e('Total Revenue', 'kova-agent'); ?></div>
+                    </div>
+                    <div class="kova-stat-card">
+                        <div class="kova-stat-icon warning"><?php echo $this->render_icon('products'); ?></div>
+                        <div class="kova-stat-value" id="kova-conv-aov">-</div>
+                        <div class="kova-stat-label"><?php _e('Average Order Value', 'kova-agent'); ?></div>
+                    </div>
+                </div>
+
+                <div class="kova-two-columns">
+                    <div class="kova-main-column">
+                        <div class="kova-chart-container">
+                            <h3 class="kova-chart-title"><?php _e('Conversions Over Time', 'kova-agent'); ?></h3>
+                            <canvas id="kova-conversions-chart"></canvas>
+                        </div>
+
+                        <div class="kova-table-container">
+                            <div class="kova-table-header">
+                                <h3 class="kova-table-title"><?php _e('Top Converting Products', 'kova-agent'); ?></h3>
+                            </div>
+                            <table class="kova-table">
+                                <thead>
+                                    <tr>
+                                        <th><?php _e('Product', 'kova-agent'); ?></th>
+                                        <th><?php _e('Recommendations', 'kova-agent'); ?></th>
+                                        <th><?php _e('Conversions', 'kova-agent'); ?></th>
+                                        <th><?php _e('Rate', 'kova-agent'); ?></th>
+                                        <th><?php _e('Revenue', 'kova-agent'); ?></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="kova-top-products-body">
+                                    <tr>
+                                        <td colspan="5" class="kova-empty-state-description"><?php _e('Click "Load Data" to view top products.', 'kova-agent'); ?></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="kova-side-column">
+                        <div class="kova-card">
+                            <div class="kova-card-header">
+                                <h3 class="kova-card-title"><?php _e('Recent Activity', 'kova-agent'); ?></h3>
+                            </div>
+                            <div id="kova-activity-list" class="kova-activity-list">
+                                <div class="kova-empty-state-description"><?php _e('Click "Load Data" to view recent activity.', 'kova-agent'); ?></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="kova-conversions-loading" class="kova-loading" style="display: none;">
+                    <div class="kova-loading-spinner"></div>
+                    <p class="kova-loading-text"><?php _e('Loading conversion data...', 'kova-agent'); ?></p>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render Widget Tab
+     */
+    private function render_widget_tab() {
+        $settings = get_option('kova_agent_settings', array());
+        $widget_color = $settings['widget_color'] ?? '#6d5cff';
+        $widget_position = $settings['widget_position'] ?? 'bottom-right';
+        $welcome_message = $settings['welcome_message'] ?? '';
+        $widget_title = $settings['widget_title'] ?? 'Kova Assistant';
+        ?>
+        <div class="kova-page-header">
+            <div class="kova-page-header-content">
+                <div>
+                    <h1 class="kova-page-title"><?php _e('Widget Configuration', 'kova-agent'); ?></h1>
+                    <p class="kova-page-subtitle"><?php _e('Customize the appearance and behavior of your chat widget', 'kova-agent'); ?></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="kova-page-content">
+            <form method="post" action="options.php">
+                <?php settings_fields('kova_agent_settings_group'); ?>
+
+                <div class="kova-two-columns">
+                    <div class="kova-main-column">
+                        <div class="kova-card">
+                            <div class="kova-card-header">
+                                <h3 class="kova-card-title"><?php _e('Appearance', 'kova-agent'); ?></h3>
+                            </div>
+
+                            <div class="kova-form-group">
+                                <label class="kova-form-label"><?php _e('Widget Color', 'kova-agent'); ?></label>
+                                <div class="kova-color-picker-wrapper">
+                                    <input type="color"
+                                           id="kova_widget_color"
+                                           name="kova_agent_settings[widget_color]"
+                                           value="<?php echo esc_attr($widget_color); ?>"
+                                           class="kova-color-preview">
+                                    <input type="text"
+                                           value="<?php echo esc_attr($widget_color); ?>"
+                                           class="kova-form-input"
+                                           style="max-width: 120px;"
+                                           id="kova_widget_color_text">
+                                </div>
+                            </div>
+
+                            <div class="kova-form-group">
+                                <label class="kova-form-label"><?php _e('Widget Position', 'kova-agent'); ?></label>
+                                <div class="kova-position-grid">
+                                    <div class="kova-position-option <?php echo $widget_position === 'top-left' ? 'selected' : ''; ?>" data-position="top-left">
+                                        <?php _e('Top Left', 'kova-agent'); ?>
+                                    </div>
+                                    <div class="kova-position-option <?php echo $widget_position === 'top-right' ? 'selected' : ''; ?>" data-position="top-right">
+                                        <?php _e('Top Right', 'kova-agent'); ?>
+                                    </div>
+                                    <div class="kova-position-option <?php echo $widget_position === 'bottom-left' ? 'selected' : ''; ?>" data-position="bottom-left">
+                                        <?php _e('Bottom Left', 'kova-agent'); ?>
+                                    </div>
+                                    <div class="kova-position-option <?php echo $widget_position === 'bottom-right' ? 'selected' : ''; ?>" data-position="bottom-right">
+                                        <?php _e('Bottom Right', 'kova-agent'); ?>
+                                    </div>
+                                </div>
+                                <input type="hidden" name="kova_agent_settings[widget_position]" id="kova_widget_position" value="<?php echo esc_attr($widget_position); ?>">
+                            </div>
+                        </div>
+
+                        <div class="kova-card">
+                            <div class="kova-card-header">
+                                <h3 class="kova-card-title"><?php _e('Content', 'kova-agent'); ?></h3>
+                            </div>
+
+                            <div class="kova-form-group">
+                                <label class="kova-form-label" for="kova_widget_title"><?php _e('Widget Title', 'kova-agent'); ?></label>
+                                <input type="text"
+                                       id="kova_widget_title"
+                                       name="kova_agent_settings[widget_title]"
+                                       value="<?php echo esc_attr($widget_title); ?>"
+                                       class="kova-form-input"
+                                       placeholder="Kova Assistant">
+                            </div>
+
+                            <div class="kova-form-group">
+                                <label class="kova-form-label" for="kova_welcome_message"><?php _e('Welcome Message', 'kova-agent'); ?></label>
+                                <textarea id="kova_welcome_message"
+                                          name="kova_agent_settings[welcome_message]"
+                                          class="kova-form-textarea"
+                                          placeholder="<?php _e('Hello! How can I help you today?', 'kova-agent'); ?>"><?php echo esc_textarea($welcome_message); ?></textarea>
+                            </div>
+
+                            <div class="kova-form-group">
+                                <label class="kova-form-label" for="kova_widget_placeholder"><?php _e('Input Placeholder', 'kova-agent'); ?></label>
+                                <input type="text"
+                                       id="kova_widget_placeholder"
+                                       name="kova_agent_settings[widget_placeholder]"
+                                       value="<?php echo esc_attr($settings['widget_placeholder'] ?? ''); ?>"
+                                       class="kova-form-input"
+                                       placeholder="<?php _e('Ask me about our products...', 'kova-agent'); ?>">
+                            </div>
+                        </div>
+
+                        <div class="kova-card">
+                            <div class="kova-card-header">
+                                <h3 class="kova-card-title"><?php _e('Display Settings', 'kova-agent'); ?></h3>
+                            </div>
+
+                            <div class="kova-form-group">
+                                <label class="kova-toggle">
+                                    <input type="checkbox"
+                                           name="kova_agent_settings[show_on_mobile]"
+                                           value="1"
+                                           <?php checked(!empty($settings['show_on_mobile'])); ?>>
+                                    <span class="kova-toggle-slider"></span>
+                                </label>
+                                <span style="margin-left: 0.75rem;"><?php _e('Show on Mobile', 'kova-agent'); ?></span>
+                            </div>
+
+                            <div class="kova-form-group">
+                                <label class="kova-toggle">
+                                    <input type="checkbox"
+                                           name="kova_agent_settings[show_on_product_pages]"
+                                           value="1"
+                                           <?php checked(!empty($settings['show_on_product_pages'])); ?>>
+                                    <span class="kova-toggle-slider"></span>
+                                </label>
+                                <span style="margin-left: 0.75rem;"><?php _e('Show on Product Pages', 'kova-agent'); ?></span>
+                            </div>
+
+                            <div class="kova-form-group">
+                                <label class="kova-toggle">
+                                    <input type="checkbox"
+                                           name="kova_agent_settings[show_on_cart_page]"
+                                           value="1"
+                                           <?php checked(!empty($settings['show_on_cart_page'])); ?>>
+                                    <span class="kova-toggle-slider"></span>
+                                </label>
+                                <span style="margin-left: 0.75rem;"><?php _e('Show on Cart Page', 'kova-agent'); ?></span>
+                            </div>
+
+                            <div class="kova-form-group">
+                                <label class="kova-toggle">
+                                    <input type="checkbox"
+                                           name="kova_agent_settings[show_on_checkout]"
+                                           value="1"
+                                           <?php checked(!empty($settings['show_on_checkout'])); ?>>
+                                    <span class="kova-toggle-slider"></span>
+                                </label>
+                                <span style="margin-left: 0.75rem;"><?php _e('Show on Checkout', 'kova-agent'); ?></span>
+                            </div>
+                        </div>
+
+                        <?php submit_button(__('Save Widget Settings', 'kova-agent'), 'kova-btn kova-btn-primary', 'submit', false); ?>
+                    </div>
+
+                    <div class="kova-side-column">
+                        <div class="kova-card">
+                            <div class="kova-card-header">
+                                <h3 class="kova-card-title"><?php _e('Preview', 'kova-agent'); ?></h3>
+                            </div>
+                            <div class="kova-widget-preview-container">
+                                <div class="kova-widget-preview">
+                                    <div class="kova-widget-preview-header" id="kova-preview-header" style="background: <?php echo esc_attr($widget_color); ?>;">
+                                        <div class="kova-widget-preview-avatar">K</div>
+                                        <div>
+                                            <div class="kova-widget-preview-title" id="kova-preview-title"><?php echo esc_html($widget_title); ?></div>
+                                            <div class="kova-widget-preview-status"><?php _e('Online', 'kova-agent'); ?></div>
+                                        </div>
+                                    </div>
+                                    <div class="kova-widget-preview-body">
+                                        <div class="kova-widget-preview-message" id="kova-preview-message">
+                                            <?php echo esc_html($welcome_message ?: __('Hello! How can I help you today?', 'kova-agent')); ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render Settings Tab
+     */
+    private function render_settings_tab() {
+        $settings = get_option('kova_agent_settings', array());
+        ?>
+        <div class="kova-page-header">
+            <div class="kova-page-header-content">
+                <div>
+                    <h1 class="kova-page-title"><?php _e('Settings', 'kova-agent'); ?></h1>
+                    <p class="kova-page-subtitle"><?php _e('Configure your Kova Agent connection and API settings', 'kova-agent'); ?></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="kova-page-content">
+            <form method="post" action="options.php">
+                <?php settings_fields('kova_agent_settings_group'); ?>
+
+                <div class="kova-two-columns">
+                    <div class="kova-main-column">
+                        <div class="kova-card">
+                            <div class="kova-card-header">
+                                <h3 class="kova-card-title"><?php _e('Enable Widget', 'kova-agent'); ?></h3>
+                            </div>
+
+                            <div class="kova-form-group">
+                                <label class="kova-toggle">
+                                    <input type="checkbox"
+                                           id="kova_enabled"
+                                           name="kova_agent_settings[enabled]"
+                                           value="1"
+                                           <?php checked(!empty($settings['enabled'])); ?>>
+                                    <span class="kova-toggle-slider"></span>
+                                </label>
+                                <span style="margin-left: 0.75rem; font-weight: 600;"><?php _e('Enable Chat Widget', 'kova-agent'); ?></span>
+                                <p class="kova-form-hint"><?php _e('Enable or disable the chat widget on your store.', 'kova-agent'); ?></p>
+                            </div>
+                        </div>
+
+                        <div class="kova-card">
+                            <div class="kova-card-header">
+                                <h3 class="kova-card-title"><?php _e('API Configuration', 'kova-agent'); ?></h3>
+                            </div>
+
+                            <div class="kova-form-group">
+                                <label class="kova-form-label" for="kova_api_endpoint"><?php _e('API Endpoint', 'kova-agent'); ?></label>
+                                <input type="url"
+                                       id="kova_api_endpoint"
+                                       name="kova_agent_settings[api_endpoint]"
+                                       value="<?php echo esc_attr($settings['api_endpoint'] ?? 'https://api.kova.ai'); ?>"
+                                       class="kova-form-input">
+                                <p class="kova-form-hint"><?php _e('The Kova Agent API endpoint URL.', 'kova-agent'); ?></p>
+                            </div>
+                        </div>
+
+                        <div class="kova-card">
+                            <div class="kova-card-header">
+                                <h3 class="kova-card-title"><?php _e('WooCommerce API Credentials', 'kova-agent'); ?></h3>
+                            </div>
+
+                            <p class="kova-form-hint" style="margin-bottom: 1rem;">
+                                <?php _e('Generate API keys in WooCommerce > Settings > Advanced > REST API. Required permissions: Read/Write.', 'kova-agent'); ?>
+                            </p>
+
+                            <div class="kova-form-group">
+                                <label class="kova-form-label" for="kova_consumer_key"><?php _e('Consumer Key', 'kova-agent'); ?></label>
+                                <input type="text"
+                                       id="kova_consumer_key"
+                                       name="kova_agent_settings[consumer_key]"
+                                       value="<?php echo esc_attr($settings['consumer_key'] ?? ''); ?>"
+                                       class="kova-form-input"
+                                       placeholder="ck_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                            </div>
+
+                            <div class="kova-form-group">
+                                <label class="kova-form-label" for="kova_consumer_secret"><?php _e('Consumer Secret', 'kova-agent'); ?></label>
+                                <input type="password"
+                                       id="kova_consumer_secret"
+                                       name="kova_agent_settings[consumer_secret]"
+                                       value="<?php echo esc_attr($settings['consumer_secret'] ?? ''); ?>"
+                                       class="kova-form-input"
+                                       placeholder="cs_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                            </div>
+
+                            <div class="kova-form-group">
+                                <label class="kova-form-label" for="kova_webhook_secret"><?php _e('Webhook Secret', 'kova-agent'); ?></label>
+                                <input type="text"
+                                       id="kova_webhook_secret"
+                                       name="kova_agent_settings[webhook_secret]"
+                                       value="<?php echo esc_attr($settings['webhook_secret'] ?? ''); ?>"
+                                       class="kova-form-input"
+                                       readonly>
+                                <p class="kova-form-hint"><?php _e('This will be set automatically when you connect to Kova.', 'kova-agent'); ?></p>
+                            </div>
+
+                            <div class="kova-actions-bar">
+                                <button type="button" id="kova-test-connection" class="kova-btn kova-btn-secondary">
+                                    <?php _e('Test Connection', 'kova-agent'); ?>
+                                </button>
+                                <button type="button" id="kova-sync-products" class="kova-btn kova-btn-secondary">
+                                    <?php _e('Sync Products', 'kova-agent'); ?>
+                                </button>
+                                <button type="button" id="kova-setup-webhooks" class="kova-btn kova-btn-secondary">
+                                    <?php _e('Setup Webhooks', 'kova-agent'); ?>
+                                </button>
+                                <span id="kova-action-status" class="kova-action-status"></span>
+                            </div>
+                        </div>
+
+                        <?php submit_button(__('Save Settings', 'kova-agent'), 'kova-btn kova-btn-primary', 'submit', false); ?>
+                    </div>
+
+                    <div class="kova-side-column">
+                        <div class="kova-info-box">
+                            <h3><?php _e('Quick Start', 'kova-agent'); ?></h3>
+                            <ol>
+                                <li><?php _e('Create WooCommerce API keys (Read/Write)', 'kova-agent'); ?></li>
+                                <li><?php _e('Enter your API credentials', 'kova-agent'); ?></li>
+                                <li><?php _e('Click "Test Connection" to verify', 'kova-agent'); ?></li>
+                                <li><?php _e('Click "Sync Products" to import your catalog', 'kova-agent'); ?></li>
+                                <li><?php _e('Enable the widget and save settings', 'kova-agent'); ?></li>
+                            </ol>
+                        </div>
+
+                        <div class="kova-info-box">
+                            <h3><?php _e('Need Help?', 'kova-agent'); ?></h3>
+                            <p><?php _e('Check our documentation for detailed setup instructions.', 'kova-agent'); ?></p>
+                            <a href="https://docs.kova.ai" target="_blank" class="kova-btn kova-btn-secondary" style="width: 100%; margin-top: 0.5rem;">
+                                <?php _e('View Documentation', 'kova-agent'); ?>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
         </div>
         <?php
     }
@@ -413,9 +962,8 @@ class Kova_Admin {
         if (!empty($body['success'])) {
             wp_send_json_success(array(
                 'message' => sprintf(
-                    __('Connected successfully! Store: %s, WooCommerce: %s', 'kova-agent'),
-                    $body['data']['storeName'] ?? 'Unknown',
-                    $body['data']['woocommerceVersion'] ?? 'Unknown'
+                    __('Connected successfully! Store: %s', 'kova-agent'),
+                    $body['data']['storeName'] ?? 'Unknown'
                 ),
             ));
         } else {
@@ -441,7 +989,7 @@ class Kova_Admin {
             'body' => json_encode(array(
                 'siteUrl' => site_url(),
             )),
-            'timeout' => 120, // Products sync can take a while
+            'timeout' => 120,
         ));
 
         if (is_wp_error($response)) {
@@ -497,6 +1045,110 @@ class Kova_Admin {
             ));
         } else {
             wp_send_json_error(array('message' => $body['error'] ?? __('Webhook setup failed.', 'kova-agent')));
+        }
+    }
+
+    /**
+     * AJAX: Get analytics data
+     */
+    public function ajax_get_analytics() {
+        check_ajax_referer('kova_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => __('Permission denied.', 'kova-agent')));
+        }
+
+        $settings = get_option('kova_agent_settings', array());
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://api.kova.ai';
+        $start_date = sanitize_text_field($_POST['startDate'] ?? '');
+        $end_date = sanitize_text_field($_POST['endDate'] ?? '');
+
+        $url = $api_endpoint . '/api/woo/embedded/analytics?' . http_build_query(array(
+            'siteUrl' => site_url(),
+            'startDate' => $start_date,
+            'endDate' => $end_date,
+        ));
+
+        $response = wp_remote_get($url, array('timeout' => 30));
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => $response->get_error_message()));
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+
+        if (!empty($body['success'])) {
+            wp_send_json_success($body['data']);
+        } else {
+            wp_send_json_error(array('message' => $body['error'] ?? __('Failed to load analytics.', 'kova-agent')));
+        }
+    }
+
+    /**
+     * AJAX: Get conversations
+     */
+    public function ajax_get_conversations() {
+        check_ajax_referer('kova_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => __('Permission denied.', 'kova-agent')));
+        }
+
+        $settings = get_option('kova_agent_settings', array());
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://api.kova.ai';
+        $date = sanitize_text_field($_POST['date'] ?? date('Y-m-d'));
+
+        $url = $api_endpoint . '/api/woo/embedded/conversations?' . http_build_query(array(
+            'siteUrl' => site_url(),
+            'date' => $date,
+        ));
+
+        $response = wp_remote_get($url, array('timeout' => 30));
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => $response->get_error_message()));
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+
+        if (!empty($body['success'])) {
+            wp_send_json_success($body['data']);
+        } else {
+            wp_send_json_error(array('message' => $body['error'] ?? __('Failed to load conversations.', 'kova-agent')));
+        }
+    }
+
+    /**
+     * AJAX: Get conversions dashboard
+     */
+    public function ajax_get_conversions() {
+        check_ajax_referer('kova_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => __('Permission denied.', 'kova-agent')));
+        }
+
+        $settings = get_option('kova_agent_settings', array());
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://api.kova.ai';
+        $days = intval($_POST['days'] ?? 30);
+
+        $url = $api_endpoint . '/api/woo/embedded/conversions/dashboard?' . http_build_query(array(
+            'siteUrl' => site_url(),
+            'days' => $days,
+        ));
+
+        $response = wp_remote_get($url, array('timeout' => 30));
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => $response->get_error_message()));
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+
+        if (!empty($body['success'])) {
+            wp_send_json_success($body['data']);
+        } else {
+            wp_send_json_error(array('message' => $body['error'] ?? __('Failed to load conversions.', 'kova-agent')));
         }
     }
 }

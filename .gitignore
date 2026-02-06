@@ -102,3 +102,7 @@ docker-compose.override.yml
 *.sqlite
 *.sqlite3
 *.db
+
+# WordPress Plugin builds (built during deployment)
+backend/public/downloads/*.zip
+!backend/public/downloads/.gitkeep

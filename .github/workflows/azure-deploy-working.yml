@@ -39,6 +39,11 @@ jobs:
         cd frontend-admin
         npm run build
 
+    - name: Build WordPress plugin
+      run: |
+        chmod +x ./scripts/build-wp-plugin.sh
+        ./scripts/build-wp-plugin.sh
+
     - name: Build backend
       run: |
         cd backend

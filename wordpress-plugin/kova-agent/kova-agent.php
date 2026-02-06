@@ -57,11 +57,13 @@ function kova_agent_init() {
     require_once KOVA_AGENT_PLUGIN_DIR . 'includes/class-kova-admin.php';
     require_once KOVA_AGENT_PLUGIN_DIR . 'includes/class-kova-widget.php';
     require_once KOVA_AGENT_PLUGIN_DIR . 'includes/class-kova-api.php';
+    require_once KOVA_AGENT_PLUGIN_DIR . 'includes/class-kova-updater.php';
 
     // Initialize components
     new Kova_Admin();
     new Kova_Widget();
     new Kova_API();
+    new Kova_Updater();
 }
 add_action('plugins_loaded', 'kova_agent_init');
 

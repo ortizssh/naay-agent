@@ -1,0 +1,1303 @@
+/* =====================================================
+   Kova Agent WooCommerce Admin - Modern Design
+   Matching Shopify Embedded Admin Design
+   ===================================================== */
+
+/* Import Google Font */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --kova-color-bg: #fafafa;
+  --kova-color-bg-warm: #f5f3f0;
+  --kova-color-bg-card: #ffffff;
+  --kova-color-primary: #6d5cff;
+  --kova-color-primary-dark: #5849e0;
+  --kova-color-primary-light: #8b7dff;
+  --kova-color-primary-soft: rgba(109, 92, 255, 0.1);
+  --kova-color-accent: #ff6b4a;
+  --kova-color-accent-soft: #fff0ed;
+  --kova-color-success: #10b981;
+  --kova-color-success-soft: rgba(16, 185, 129, 0.1);
+  --kova-color-warning: #f59e0b;
+  --kova-color-warning-soft: rgba(245, 158, 11, 0.1);
+  --kova-color-error: #ef4444;
+  --kova-color-error-soft: rgba(239, 68, 68, 0.1);
+  --kova-color-text: #1a1a2e;
+  --kova-color-text-secondary: #64648c;
+  --kova-color-text-muted: #9494b8;
+  --kova-color-border: #e8e8f0;
+  --kova-font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --kova-shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
+  --kova-shadow-md: 0 8px 30px rgba(0,0,0,0.06);
+  --kova-shadow-lg: 0 20px 60px rgba(0,0,0,0.08);
+  --kova-shadow-primary: 0 8px 30px rgba(109, 92, 255, 0.25);
+  --kova-sidebar-width: 220px;
+}
+
+/* Reset WP Admin Styles for Kova */
+.kova-modern-admin {
+  margin-left: -20px;
+  margin-right: 0;
+  margin-top: 0;
+  padding: 0;
+  font-family: var(--kova-font-main);
+  background: var(--kova-color-bg);
+  color: var(--kova-color-text);
+  line-height: 1.6;
+  min-height: calc(100vh - 32px);
+}
+
+.kova-modern-admin * {
+  box-sizing: border-box;
+}
+
+/* Layout */
+.kova-admin-layout {
+  display: flex;
+  min-height: calc(100vh - 32px);
+}
+
+/* Sidebar */
+.kova-sidebar {
+  width: var(--kova-sidebar-width);
+  background: var(--kova-color-bg-card);
+  border-right: 1px solid var(--kova-color-border);
+  position: fixed;
+  top: 32px;
+  left: 160px; /* WP admin sidebar width */
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+}
+
+.kova-sidebar-header {
+  padding: 1.25rem;
+  border-bottom: 1px solid var(--kova-color-border);
+}
+
+.kova-sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+}
+
+.kova-sidebar-logo-icon {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, var(--kova-color-primary), var(--kova-color-accent));
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+.kova-sidebar-logo-text {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--kova-color-primary);
+  letter-spacing: -0.02em;
+}
+
+.kova-sidebar-nav {
+  flex: 1;
+  padding: 0.75rem 0;
+  overflow-y: auto;
+}
+
+.kova-nav-section {
+  padding: 0 0.6rem;
+  margin-bottom: 1.25rem;
+}
+
+.kova-nav-section-title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--kova-color-text-muted);
+  padding: 0 0.6rem;
+  margin-bottom: 0.4rem;
+}
+
+.kova-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  color: var(--kova-color-text-secondary);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+
+.kova-nav-item:hover {
+  background: var(--kova-color-bg);
+  color: var(--kova-color-text);
+}
+
+.kova-nav-item.active {
+  background: var(--kova-color-primary-soft);
+  color: var(--kova-color-primary);
+  font-weight: 600;
+}
+
+.kova-nav-item svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.kova-sidebar-footer {
+  padding: 1rem;
+  border-top: 1px solid var(--kova-color-border);
+}
+
+.kova-store-info {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.kova-store-avatar {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, var(--kova-color-primary-light), var(--kova-color-primary));
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.kova-store-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.kova-store-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--kova-color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kova-store-url {
+  font-size: 0.7rem;
+  color: var(--kova-color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Main Content */
+.kova-main-content {
+  flex: 1;
+  margin-left: var(--kova-sidebar-width);
+  min-height: calc(100vh - 32px);
+  background: var(--kova-color-bg);
+}
+
+.kova-page-header {
+  background: var(--kova-color-bg-card);
+  border-bottom: 1px solid var(--kova-color-border);
+  padding: 1.25rem 1.5rem;
+  position: sticky;
+  top: 32px;
+  z-index: 50;
+}
+
+.kova-page-header-content {
+  max-width: 1200px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.kova-page-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--kova-color-text);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.kova-page-subtitle {
+  font-size: 0.85rem;
+  color: var(--kova-color-text-secondary);
+  margin-top: 0.2rem;
+}
+
+.kova-page-content {
+  padding: 1.5rem;
+  max-width: 1200px;
+}
+
+/* Cards */
+.kova-card {
+  background: var(--kova-color-bg-card);
+  border: 1px solid var(--kova-color-border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  transition: all 0.3s ease;
+  margin-bottom: 1.25rem;
+}
+
+.kova-card:hover {
+  box-shadow: var(--kova-shadow-md);
+}
+
+.kova-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--kova-color-border);
+}
+
+.kova-card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--kova-color-text);
+  margin: 0;
+}
+
+.kova-card-subtitle {
+  font-size: 0.8rem;
+  color: var(--kova-color-text-muted);
+}
+
+/* Stats Grid */
+.kova-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.kova-stat-card {
+  background: var(--kova-color-bg-card);
+  border: 1px solid var(--kova-color-border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  transition: all 0.3s ease;
+}
+
+.kova-stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--kova-shadow-md);
+}
+
+.kova-stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.875rem;
+}
+
+.kova-stat-icon.primary {
+  background: var(--kova-color-primary-soft);
+  color: var(--kova-color-primary);
+}
+
+.kova-stat-icon.success {
+  background: var(--kova-color-success-soft);
+  color: var(--kova-color-success);
+}
+
+.kova-stat-icon.warning {
+  background: var(--kova-color-warning-soft);
+  color: var(--kova-color-warning);
+}
+
+.kova-stat-icon.accent {
+  background: var(--kova-color-accent-soft);
+  color: var(--kova-color-accent);
+}
+
+.kova-stat-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.kova-stat-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--kova-color-text);
+  letter-spacing: -0.02em;
+  margin-bottom: 0.2rem;
+}
+
+.kova-stat-label {
+  font-size: 0.8rem;
+  color: var(--kova-color-text-secondary);
+}
+
+.kova-stat-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 0.4rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 100px;
+}
+
+.kova-stat-change.positive {
+  background: var(--kova-color-success-soft);
+  color: var(--kova-color-success);
+}
+
+.kova-stat-change.negative {
+  background: var(--kova-color-error-soft);
+  color: var(--kova-color-error);
+}
+
+/* Buttons */
+.kova-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: var(--kova-font-main);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  text-decoration: none;
+}
+
+.kova-btn-primary {
+  background: var(--kova-color-primary);
+  color: white;
+  box-shadow: var(--kova-shadow-primary);
+}
+
+.kova-btn-primary:hover {
+  background: var(--kova-color-primary-dark);
+  transform: translateY(-2px);
+  color: white;
+}
+
+.kova-btn-secondary {
+  background: var(--kova-color-bg);
+  color: var(--kova-color-text);
+  border: 1px solid var(--kova-color-border);
+}
+
+.kova-btn-secondary:hover {
+  background: var(--kova-color-bg-warm);
+  border-color: var(--kova-color-text-muted);
+}
+
+.kova-btn-danger {
+  background: var(--kova-color-error-soft);
+  color: var(--kova-color-error);
+}
+
+.kova-btn-danger:hover {
+  background: var(--kova-color-error);
+  color: white;
+}
+
+.kova-btn-sm {
+  padding: 0.4rem 0.7rem;
+  font-size: 0.75rem;
+}
+
+/* Tabs */
+.kova-tabs {
+  display: flex;
+  gap: 0.2rem;
+  background: var(--kova-color-bg-card);
+  padding: 0.4rem 1.5rem;
+  border-bottom: 1px solid var(--kova-color-border);
+}
+
+.kova-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--kova-color-text-secondary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-family: var(--kova-font-main);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.kova-tab:hover {
+  background: var(--kova-color-bg);
+  color: var(--kova-color-text);
+}
+
+.kova-tab.active {
+  background: var(--kova-color-primary-soft);
+  color: var(--kova-color-primary);
+}
+
+.kova-tab svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Forms */
+.kova-form-group {
+  margin-bottom: 1rem;
+}
+
+.kova-form-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--kova-color-text);
+  margin-bottom: 0.4rem;
+}
+
+.kova-form-input {
+  width: 100%;
+  max-width: 400px;
+  padding: 0.6rem 0.875rem;
+  border: 1px solid var(--kova-color-border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: var(--kova-font-main);
+  transition: all 0.2s ease;
+  background: var(--kova-color-bg);
+}
+
+.kova-form-input:focus {
+  outline: none;
+  border-color: var(--kova-color-primary);
+  box-shadow: 0 0 0 3px var(--kova-color-primary-soft);
+}
+
+.kova-form-select {
+  width: 100%;
+  max-width: 400px;
+  padding: 0.6rem 0.875rem;
+  border: 1px solid var(--kova-color-border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: var(--kova-font-main);
+  background: var(--kova-color-bg);
+  cursor: pointer;
+}
+
+.kova-form-hint {
+  font-size: 0.75rem;
+  color: var(--kova-color-text-muted);
+  margin-top: 0.3rem;
+}
+
+.kova-form-textarea {
+  width: 100%;
+  max-width: 400px;
+  padding: 0.6rem 0.875rem;
+  border: 1px solid var(--kova-color-border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: var(--kova-font-main);
+  transition: all 0.2s ease;
+  background: var(--kova-color-bg);
+  resize: vertical;
+  min-height: 80px;
+}
+
+.kova-form-textarea:focus {
+  outline: none;
+  border-color: var(--kova-color-primary);
+  box-shadow: 0 0 0 3px var(--kova-color-primary-soft);
+}
+
+/* Toggle Switch */
+.kova-toggle {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.kova-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.kova-toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--kova-color-border);
+  transition: 0.3s;
+  border-radius: 24px;
+}
+
+.kova-toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+  box-shadow: var(--kova-shadow-sm);
+}
+
+.kova-toggle input:checked + .kova-toggle-slider {
+  background-color: var(--kova-color-primary);
+}
+
+.kova-toggle input:checked + .kova-toggle-slider:before {
+  transform: translateX(20px);
+}
+
+/* Tables */
+.kova-table-container {
+  background: var(--kova-color-bg-card);
+  border: 1px solid var(--kova-color-border);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+}
+
+.kova-table-header {
+  padding: 0.875rem 1.25rem;
+  border-bottom: 1px solid var(--kova-color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.kova-table-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--kova-color-text);
+}
+
+.kova-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.kova-table th {
+  text-align: left;
+  padding: 0.875rem 1.25rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--kova-color-text-muted);
+  background: var(--kova-color-bg);
+  border-bottom: 1px solid var(--kova-color-border);
+}
+
+.kova-table td {
+  padding: 0.875rem 1.25rem;
+  border-bottom: 1px solid var(--kova-color-border);
+  font-size: 0.85rem;
+  color: var(--kova-color-text-secondary);
+}
+
+.kova-table tr:last-child td {
+  border-bottom: none;
+}
+
+.kova-table tr:hover td {
+  background: var(--kova-color-bg);
+}
+
+.kova-table-cell-main {
+  font-weight: 600;
+  color: var(--kova-color-text);
+}
+
+/* Badges */
+.kova-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.6rem;
+  border-radius: 100px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.kova-badge-primary {
+  background: var(--kova-color-primary-soft);
+  color: var(--kova-color-primary);
+}
+
+.kova-badge-success {
+  background: var(--kova-color-success-soft);
+  color: var(--kova-color-success);
+}
+
+.kova-badge-warning {
+  background: var(--kova-color-warning-soft);
+  color: var(--kova-color-warning);
+}
+
+.kova-badge-error {
+  background: var(--kova-color-error-soft);
+  color: var(--kova-color-error);
+}
+
+/* Alerts */
+.kova-alert {
+  padding: 0.875rem 1rem;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.kova-alert-success {
+  background: var(--kova-color-success-soft);
+  color: var(--kova-color-success);
+}
+
+.kova-alert-error {
+  background: var(--kova-color-error-soft);
+  color: var(--kova-color-error);
+}
+
+.kova-alert-warning {
+  background: var(--kova-color-warning-soft);
+  color: var(--kova-color-warning);
+}
+
+.kova-alert-icon svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.kova-alert-content {
+  flex: 1;
+}
+
+.kova-alert-title {
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+
+.kova-alert-message {
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+/* Loading */
+.kova-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  gap: 0.875rem;
+}
+
+.kova-loading-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--kova-color-border);
+  border-top-color: var(--kova-color-primary);
+  border-radius: 50%;
+  animation: kova-spin 0.8s linear infinite;
+}
+
+@keyframes kova-spin {
+  to { transform: rotate(360deg); }
+}
+
+.kova-loading-text {
+  color: var(--kova-color-text-secondary);
+  font-size: 0.85rem;
+}
+
+/* Empty State */
+.kova-empty-state {
+  text-align: center;
+  padding: 3rem 1.5rem;
+}
+
+.kova-empty-state-icon {
+  width: 64px;
+  height: 64px;
+  background: var(--kova-color-bg);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.25rem;
+  color: var(--kova-color-text-muted);
+}
+
+.kova-empty-state-icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.kova-empty-state-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--kova-color-text);
+  margin-bottom: 0.4rem;
+}
+
+.kova-empty-state-description {
+  color: var(--kova-color-text-secondary);
+  margin-bottom: 1.25rem;
+  font-size: 0.9rem;
+}
+
+/* Chart Container */
+.kova-chart-container {
+  background: var(--kova-color-bg-card);
+  border: 1px solid var(--kova-color-border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.kova-chart-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--kova-color-text);
+  margin-bottom: 1rem;
+}
+
+.kova-chart-container canvas {
+  max-width: 100%;
+  height: 280px !important;
+}
+
+/* Filters Bar */
+.kova-filters-bar {
+  display: flex;
+  gap: 0.875rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  align-items: center;
+  background: var(--kova-color-bg-card);
+  border: 1px solid var(--kova-color-border);
+  border-radius: 10px;
+  padding: 0.875rem 1.25rem;
+}
+
+.kova-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.kova-filter-label {
+  font-size: 0.8rem;
+  color: var(--kova-color-text-muted);
+  font-weight: 500;
+}
+
+.kova-filter-input {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--kova-color-border);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-family: var(--kova-font-main);
+  background: var(--kova-color-bg);
+}
+
+.kova-filter-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--kova-color-border);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-family: var(--kova-font-main);
+  background: var(--kova-color-bg);
+  cursor: pointer;
+}
+
+/* Conversations List */
+.kova-conversations-list {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.kova-conversation-item {
+  border-bottom: 1px solid var(--kova-color-border);
+  padding: 1rem 1.25rem;
+}
+
+.kova-conversation-item:last-child {
+  border-bottom: none;
+}
+
+.kova-conversation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.kova-conversation-time {
+  font-size: 0.75rem;
+  color: var(--kova-color-text-muted);
+}
+
+.kova-conversation-id {
+  font-size: 0.65rem;
+  color: var(--kova-color-text-muted);
+  font-family: monospace;
+  background: var(--kova-color-bg);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+}
+
+.kova-conversation-messages {
+  background: var(--kova-color-bg);
+  border-radius: 10px;
+  padding: 1rem;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.kova-message {
+  margin-bottom: 0.75rem;
+  padding: 0.6rem 0.875rem;
+  border-radius: 10px;
+  max-width: 85%;
+}
+
+.kova-message:last-child {
+  margin-bottom: 0;
+}
+
+.kova-message.user {
+  background: var(--kova-color-primary);
+  color: white;
+  margin-left: auto;
+}
+
+.kova-message.assistant {
+  background: var(--kova-color-bg-card);
+  border: 1px solid var(--kova-color-border);
+}
+
+.kova-message-role {
+  font-size: 0.65rem;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.kova-message.user .kova-message-role {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.kova-message.assistant .kova-message-role {
+  color: var(--kova-color-text-muted);
+}
+
+.kova-message-content {
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+/* Activity List */
+.kova-activity-list {
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.kova-activity-item {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--kova-color-border);
+}
+
+.kova-activity-item:last-child {
+  border-bottom: none;
+}
+
+.kova-activity-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.kova-activity-icon svg {
+  width: 16px;
+  height: 16px;
+  color: white;
+}
+
+.kova-activity-icon.recommendation {
+  background: var(--kova-color-warning);
+}
+
+.kova-activity-icon.conversion {
+  background: var(--kova-color-success);
+}
+
+.kova-activity-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.kova-activity-title {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--kova-color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kova-activity-meta {
+  font-size: 0.7rem;
+  color: var(--kova-color-text-muted);
+}
+
+.kova-activity-amount {
+  font-weight: 600;
+  color: var(--kova-color-success);
+  font-size: 0.85rem;
+}
+
+/* Quick Setup Card */
+.kova-quick-setup {
+  background: linear-gradient(135deg, var(--kova-color-primary), var(--kova-color-primary-dark));
+  color: white;
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.kova-quick-setup h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+}
+
+.kova-quick-setup p {
+  opacity: 0.9;
+  margin-bottom: 0.875rem;
+  font-size: 0.9rem;
+}
+
+.kova-quick-setup .kova-btn {
+  background: rgba(255,255,255,0.2);
+  color: white;
+}
+
+.kova-quick-setup .kova-btn:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+/* Color Picker */
+.kova-color-picker-wrapper {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.kova-color-preview {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 2px solid var(--kova-color-border);
+  cursor: pointer;
+}
+
+/* Position Selector */
+.kova-position-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.4rem;
+  max-width: 200px;
+}
+
+.kova-position-option {
+  padding: 0.6rem;
+  border: 2px solid var(--kova-color-border);
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: all 0.2s ease;
+  background: var(--kova-color-bg);
+}
+
+.kova-position-option:hover {
+  border-color: var(--kova-color-primary-light);
+}
+
+.kova-position-option.selected {
+  border-color: var(--kova-color-primary);
+  background: var(--kova-color-primary-soft);
+  color: var(--kova-color-primary);
+  font-weight: 600;
+}
+
+/* Actions Bar */
+.kova-actions-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--kova-color-border);
+}
+
+.kova-action-status {
+  margin-left: 0.75rem;
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.kova-action-status.success {
+  color: var(--kova-color-success);
+}
+
+.kova-action-status.error {
+  color: var(--kova-color-error);
+}
+
+.kova-action-status.loading {
+  color: var(--kova-color-primary);
+}
+
+/* Info Box */
+.kova-info-box {
+  background: var(--kova-color-bg-card);
+  border: 1px solid var(--kova-color-border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.kova-info-box h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--kova-color-text);
+  margin-bottom: 0.875rem;
+}
+
+.kova-info-box ol {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.kova-info-box ol li {
+  margin-bottom: 0.6rem;
+  line-height: 1.5;
+  font-size: 0.85rem;
+  color: var(--kova-color-text-secondary);
+}
+
+.kova-info-box p {
+  margin: 0 0 0.6rem;
+  line-height: 1.6;
+  font-size: 0.85rem;
+  color: var(--kova-color-text-secondary);
+}
+
+.kova-info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--kova-color-border);
+  font-size: 0.85rem;
+}
+
+.kova-info-item:last-child {
+  border-bottom: none;
+}
+
+.kova-info-label {
+  color: var(--kova-color-text-muted);
+}
+
+.kova-info-value {
+  font-weight: 600;
+  color: var(--kova-color-text);
+}
+
+/* Two Column Layout */
+.kova-two-columns {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 1.5rem;
+}
+
+.kova-main-column {
+  min-width: 0;
+}
+
+.kova-side-column {
+  min-width: 0;
+}
+
+/* Widget Preview */
+.kova-widget-preview-container {
+  background: var(--kova-color-bg);
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 350px;
+}
+
+.kova-widget-preview {
+  width: 280px;
+  height: 360px;
+  background: white;
+  border-radius: 14px;
+  box-shadow: var(--kova-shadow-lg);
+  overflow: hidden;
+}
+
+.kova-widget-preview-header {
+  padding: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: white;
+}
+
+.kova-widget-preview-avatar {
+  width: 32px;
+  height: 32px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+.kova-widget-preview-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.kova-widget-preview-status {
+  font-size: 0.7rem;
+  opacity: 0.8;
+}
+
+.kova-widget-preview-body {
+  padding: 1rem;
+  background: var(--kova-color-bg);
+  height: calc(100% - 60px);
+}
+
+.kova-widget-preview-message {
+  background: white;
+  border-radius: 10px;
+  padding: 0.75rem;
+  font-size: 0.8rem;
+  max-width: 90%;
+  box-shadow: var(--kova-shadow-sm);
+}
+
+/* Responsive */
+@media (max-width: 1400px) {
+  .kova-sidebar {
+    left: 36px; /* Collapsed WP admin sidebar */
+  }
+}
+
+@media (max-width: 1200px) {
+  .kova-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .kova-two-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 960px) {
+  .kova-sidebar {
+    display: none;
+  }
+
+  .kova-main-content {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 782px) {
+  .kova-modern-admin {
+    margin-left: -10px;
+  }
+
+  .kova-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .kova-page-content {
+    padding: 1rem;
+  }
+
+  .kova-filters-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .kova-table-container {
+    overflow-x: auto;
+  }
+
+  .kova-table {
+    min-width: 500px;
+  }
+}
+
+/* Hide WP Admin notices in Kova pages */
+.kova-modern-admin .notice:not(.kova-alert),
+.kova-modern-admin .updated:not(.kova-alert),
+.kova-modern-admin .error:not(.kova-alert) {
+  display: none !important;
+}

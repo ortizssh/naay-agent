@@ -27,7 +27,9 @@
     "shopify:deploy": "shopify app deploy",
     "shopify:info": "shopify app info",
     "sync:assets": "cd backend && npm run build:assets",
-    "verify:sync": "node -e \"const fs=require('fs'); const src=fs.statSync('backend/public/naay-widget.js').size; const dist=fs.statSync('backend/dist/public/naay-widget.js').size; console.log('Source:', src, 'bytes, Dist:', dist, 'bytes', src===dist ? '✅ SYNCED' : '❌ OUT OF SYNC');\""
+    "verify:sync": "node -e \"const fs=require('fs'); const src=fs.statSync('backend/public/naay-widget.js').size; const dist=fs.statSync('backend/dist/public/naay-widget.js').size; console.log('Source:', src, 'bytes, Dist:', dist, 'bytes', src===dist ? '✅ SYNCED' : '❌ OUT OF SYNC');\"",
+    "build:wp-plugin": "./scripts/build-wp-plugin.sh",
+    "release:wp-plugin": "npm run build:wp-plugin && echo '✅ Plugin ready at backend/public/downloads/kova-agent.zip'"
   },
   "dependencies": {
     "@shopify/admin-api-client": "^1.0.0",

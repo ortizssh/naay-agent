@@ -42,6 +42,7 @@ import {
   wooAuthController,
   wooWebhookController,
   wooEmbeddedController,
+  wooPluginUpdateController,
 } from '@/platforms/woocommerce/controllers';
 
 async function startServer() {
@@ -803,6 +804,7 @@ async function startServer() {
     app.use('/api/woo', wooAuthController);
     app.use('/api/woo/webhooks', wooWebhookController);
     app.use('/api/woo/embedded', wooEmbeddedController);
+    app.use('/api/woo/plugin', wooPluginUpdateController);
 
     // Legacy admin route - redirect to root
     app.get('/admin*', (req, res) => {
