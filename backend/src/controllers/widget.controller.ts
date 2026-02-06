@@ -172,9 +172,6 @@ router.get(
 
       logger.info(`Getting widget config for shop: ${shop}`);
 
-      // DEBUG: Include the normalized shop in response
-      const debugInfo = { normalizedShop: shop, variants: [] as string[] };
-
       // Build list of possible shop domain formats to try
       const shopVariants: string[] = [shop];
 
@@ -196,7 +193,6 @@ router.get(
       }
 
       logger.info('Trying shop domain variants:', { shopVariants });
-      debugInfo.variants = shopVariants;
 
       // First, try to get config from client_stores (new flow with full design settings)
       let clientStore = null;
@@ -248,6 +244,7 @@ router.get(
 
         if (data && !error) {
           clientStore = data;
+          clientError = null; // Reset error when found
           logger.info('Found client_stores config with variant:', {
             shopVariant,
           });
@@ -256,7 +253,7 @@ router.get(
         clientError = error;
       }
 
-      if (clientStore && !clientError) {
+      if (clientStore) {
         logger.info('Widget config loaded from client_stores', { shop });
         return res.json({
           success: true,
@@ -345,7 +342,6 @@ router.get(
         return res.json({
           success: true,
           data: { ...defaultConfig, enabled: false },
-          _debug: debugInfo,
         });
       }
 
