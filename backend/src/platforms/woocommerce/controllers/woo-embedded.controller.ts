@@ -49,10 +49,13 @@ router.get(
 
       const normalizedUrl = normalizeWooSiteUrl(siteUrl);
 
-      logger.info(`WooCommerce embedded analytics request for: ${normalizedUrl}`, {
-        startDate,
-        endDate,
-      });
+      logger.info(
+        `WooCommerce embedded analytics request for: ${normalizedUrl}`,
+        {
+          startDate,
+          endDate,
+        }
+      );
 
       // Build date filters - ensure end date includes the entire day
       const dateFilters = {
@@ -65,7 +68,9 @@ router.get(
         supabaseService as any
       ).serviceClient
         .from('stores')
-        .select('shop_domain, installed_at, updated_at, widget_enabled, platform')
+        .select(
+          'shop_domain, installed_at, updated_at, widget_enabled, platform'
+        )
         .eq('shop_domain', normalizedUrl)
         .eq('platform', 'woocommerce')
         .single();
@@ -101,7 +106,10 @@ router.get(
         };
 
         // Get analytics from chat_messages
-        const analytics = await getAnalyticsForStore(normalizedUrl, dateFilters);
+        const analytics = await getAnalyticsForStore(
+          normalizedUrl,
+          dateFilters
+        );
 
         return res.json({
           success: true,
@@ -166,7 +174,9 @@ router.put(
 
       const normalizedUrl = normalizeWooSiteUrl(siteUrl);
 
-      logger.info(`WooCommerce embedded widget config update for: ${normalizedUrl}`);
+      logger.info(
+        `WooCommerce embedded widget config update for: ${normalizedUrl}`
+      );
 
       // Build update data
       const updateData: Record<string, unknown> = {};
@@ -314,7 +324,9 @@ router.get(
 
       const normalizedUrl = normalizeWooSiteUrl(siteUrl);
 
-      logger.info(`Fetching conversations for WooCommerce: ${normalizedUrl}`, { date });
+      logger.info(`Fetching conversations for WooCommerce: ${normalizedUrl}`, {
+        date,
+      });
 
       // Build date filter
       let startOfDay: string;
@@ -398,7 +410,8 @@ router.get(
       const uniqueDates = [
         ...new Set(
           (availableDates || []).map(
-            (d: { timestamp: string }) => new Date(d.timestamp).toISOString().split('T')[0]
+            (d: { timestamp: string }) =>
+              new Date(d.timestamp).toISOString().split('T')[0]
           )
         ),
       ].slice(0, 30); // Last 30 days with data
@@ -447,7 +460,9 @@ router.get(
 
       const client = (supabaseService as any).serviceClient;
       const endDate = new Date();
-      const startDate = new Date(endDate.getTime() - days * 24 * 60 * 60 * 1000);
+      const startDate = new Date(
+        endDate.getTime() - days * 24 * 60 * 60 * 1000
+      );
       const previousStartDate = new Date(
         startDate.getTime() - days * 24 * 60 * 60 * 1000
       );
@@ -494,7 +509,8 @@ router.get(
           : 0;
       const totalRevenue =
         conversions?.reduce(
-          (sum: number, c: { order_amount?: number }) => sum + (c.order_amount || 0),
+          (sum: number, c: { order_amount?: number }) =>
+            sum + (c.order_amount || 0),
           0
         ) || 0;
       const averageOrderValue =
@@ -533,14 +549,16 @@ router.get(
         if (dayData) dayData.recommendations++;
       });
 
-      conversions?.forEach((c: { purchased_at: string; order_amount?: number }) => {
-        const dateKey = new Date(c.purchased_at).toISOString().split('T')[0];
-        const dayData = timelineMap.get(dateKey);
-        if (dayData) {
-          dayData.conversions++;
-          dayData.revenue += c.order_amount || 0;
+      conversions?.forEach(
+        (c: { purchased_at: string; order_amount?: number }) => {
+          const dateKey = new Date(c.purchased_at).toISOString().split('T')[0];
+          const dayData = timelineMap.get(dateKey);
+          if (dayData) {
+            dayData.conversions++;
+            dayData.revenue += c.order_amount || 0;
+          }
         }
-      });
+      );
 
       const timeline = Array.from(timelineMap.entries())
         .map(([date, data]) => ({
@@ -569,35 +587,39 @@ router.get(
         }
       >();
 
-      recommendations?.forEach((r: { product_id: string; product_title?: string }) => {
-        const key = r.product_id;
-        if (!productStatsMap.has(key)) {
-          productStatsMap.set(key, {
-            productId: r.product_id,
-            productTitle: r.product_title || 'Producto',
-            recommendations: 0,
-            conversions: 0,
-            revenue: 0,
-          });
+      recommendations?.forEach(
+        (r: { product_id: string; product_title?: string }) => {
+          const key = r.product_id;
+          if (!productStatsMap.has(key)) {
+            productStatsMap.set(key, {
+              productId: r.product_id,
+              productTitle: r.product_title || 'Producto',
+              recommendations: 0,
+              conversions: 0,
+              revenue: 0,
+            });
+          }
+          productStatsMap.get(key)!.recommendations++;
         }
-        productStatsMap.get(key)!.recommendations++;
-      });
+      );
 
-      conversions?.forEach((c: { product_id: string; order_amount?: number }) => {
-        const key = c.product_id;
-        if (!productStatsMap.has(key)) {
-          productStatsMap.set(key, {
-            productId: c.product_id,
-            productTitle: 'Producto',
-            recommendations: 0,
-            conversions: 0,
-            revenue: 0,
-          });
+      conversions?.forEach(
+        (c: { product_id: string; order_amount?: number }) => {
+          const key = c.product_id;
+          if (!productStatsMap.has(key)) {
+            productStatsMap.set(key, {
+              productId: c.product_id,
+              productTitle: 'Producto',
+              recommendations: 0,
+              conversions: 0,
+              revenue: 0,
+            });
+          }
+          const stats = productStatsMap.get(key)!;
+          stats.conversions++;
+          stats.revenue += c.order_amount || 0;
         }
-        const stats = productStatsMap.get(key)!;
-        stats.conversions++;
-        stats.revenue += c.order_amount || 0;
-      });
+      );
 
       const topProducts = Array.from(productStatsMap.values())
         .filter(p => p.conversions > 0)
@@ -605,7 +627,8 @@ router.get(
           ...p,
           conversionRate:
             p.recommendations > 0
-              ? Math.round((p.conversions / p.recommendations) * 100 * 100) / 100
+              ? Math.round((p.conversions / p.recommendations) * 100 * 100) /
+                100
               : 0,
           revenue: Math.round(p.revenue * 100) / 100,
         }))
@@ -621,33 +644,41 @@ router.get(
         amount?: number;
       }> = [];
 
-      recommendations?.slice(0, 10).forEach((r: {
-        recommended_at: string;
-        product_title?: string;
-        session_id: string
-      }) => {
-        recentActivity.push({
-          type: 'recommendation',
-          timestamp: r.recommended_at,
-          productTitle: r.product_title || 'Producto',
-          sessionId: r.session_id,
-        });
-      });
+      recommendations
+        ?.slice(0, 10)
+        .forEach(
+          (r: {
+            recommended_at: string;
+            product_title?: string;
+            session_id: string;
+          }) => {
+            recentActivity.push({
+              type: 'recommendation',
+              timestamp: r.recommended_at,
+              productTitle: r.product_title || 'Producto',
+              sessionId: r.session_id,
+            });
+          }
+        );
 
-      conversions?.slice(0, 10).forEach((c: {
-        purchased_at: string;
-        product_id: string;
-        session_id: string;
-        order_amount?: number;
-      }) => {
-        recentActivity.push({
-          type: 'conversion',
-          timestamp: c.purchased_at,
-          productTitle: c.product_id,
-          sessionId: c.session_id,
-          amount: c.order_amount,
-        });
-      });
+      conversions
+        ?.slice(0, 10)
+        .forEach(
+          (c: {
+            purchased_at: string;
+            product_id: string;
+            session_id: string;
+            order_amount?: number;
+          }) => {
+            recentActivity.push({
+              type: 'conversion',
+              timestamp: c.purchased_at,
+              productTitle: c.product_id,
+              sessionId: c.session_id,
+              amount: c.order_amount,
+            });
+          }
+        );
 
       recentActivity.sort(
         (a, b) =>
@@ -661,21 +692,23 @@ router.get(
         viewThrough: { count: 0, revenue: 0 },
       };
 
-      conversions?.forEach((c: { minutes_to_conversion?: number; order_amount?: number }) => {
-        const minutes = c.minutes_to_conversion || 0;
-        const amount = c.order_amount || 0;
+      conversions?.forEach(
+        (c: { minutes_to_conversion?: number; order_amount?: number }) => {
+          const minutes = c.minutes_to_conversion || 0;
+          const amount = c.order_amount || 0;
 
-        if (minutes <= 30) {
-          attributionBreakdown.direct.count++;
-          attributionBreakdown.direct.revenue += amount;
-        } else if (minutes <= 1440) {
-          attributionBreakdown.assisted.count++;
-          attributionBreakdown.assisted.revenue += amount;
-        } else {
-          attributionBreakdown.viewThrough.count++;
-          attributionBreakdown.viewThrough.revenue += amount;
+          if (minutes <= 30) {
+            attributionBreakdown.direct.count++;
+            attributionBreakdown.direct.revenue += amount;
+          } else if (minutes <= 1440) {
+            attributionBreakdown.assisted.count++;
+            attributionBreakdown.assisted.revenue += amount;
+          } else {
+            attributionBreakdown.viewThrough.count++;
+            attributionBreakdown.viewThrough.revenue += amount;
+          }
         }
-      });
+      );
 
       attributionBreakdown.direct.revenue =
         Math.round(attributionBreakdown.direct.revenue * 100) / 100;
@@ -688,7 +721,8 @@ router.get(
       const prevTotalConversions = previousConversions?.length || 0;
       const prevTotalRevenue =
         previousConversions?.reduce(
-          (sum: number, c: { order_amount?: number }) => sum + (c.order_amount || 0),
+          (sum: number, c: { order_amount?: number }) =>
+            sum + (c.order_amount || 0),
           0
         ) || 0;
       const prevTotalRecommendations = previousRecommendations?.length || 0;
@@ -760,12 +794,12 @@ router.get(
 
       const normalizedUrl = normalizeWooSiteUrl(siteUrl);
 
-      logger.info(`WooCommerce embedded widget config request for: ${normalizedUrl}`);
+      logger.info(
+        `WooCommerce embedded widget config request for: ${normalizedUrl}`
+      );
 
       // Try client_stores first
-      const { data: clientStore } = await (
-        supabaseService as any
-      ).serviceClient
+      const { data: clientStore } = await (supabaseService as any).serviceClient
         .from('client_stores')
         .select('*')
         .eq('shop_domain', normalizedUrl)
@@ -787,8 +821,10 @@ router.get(
             subtitle2: clientStore.widget_subtitle_2,
             welcomeMessage3: clientStore.widget_welcome_message_3,
             subtitle3: clientStore.widget_subtitle_3,
-            rotatingMessagesEnabled: clientStore.widget_rotating_messages_enabled,
-            rotatingMessagesInterval: clientStore.widget_rotating_messages_interval,
+            rotatingMessagesEnabled:
+              clientStore.widget_rotating_messages_enabled,
+            rotatingMessagesInterval:
+              clientStore.widget_rotating_messages_interval,
             widgetButtonSize: clientStore.widget_button_size,
             widgetButtonStyle: clientStore.widget_button_style,
             widgetShowPulse: clientStore.widget_show_pulse,
@@ -947,16 +983,16 @@ async function getAnalyticsForStore(
   }
 
   // Fetch all chat messages with pagination
-  const chatMessagesData = await fetchAllWithPagination(
+  const chatMessagesData = (await fetchAllWithPagination(
     client,
     'chat_messages',
     'session_id, timestamp',
     chatFilters,
     'timestamp'
-  ) as Array<{ session_id: string; timestamp: string }>;
+  )) as Array<{ session_id: string; timestamp: string }>;
 
   const uniqueSessions = new Set(
-    chatMessagesData.map((m) => m.session_id).filter(Boolean)
+    chatMessagesData.map(m => m.session_id).filter(Boolean)
   );
   const conversationCount = uniqueSessions.size;
   const messageCount = chatMessagesData.length;
@@ -967,7 +1003,7 @@ async function getAnalyticsForStore(
 
   // Group by day
   const sessionsByDay: Record<string, Set<string>> = {};
-  chatMessagesData.forEach((msg) => {
+  chatMessagesData.forEach(msg => {
     if (!msg.session_id || !msg.timestamp) return;
     const date = new Date(msg.timestamp).toISOString().split('T')[0];
     if (!sessionsByDay[date]) sessionsByDay[date] = new Set();
@@ -1001,17 +1037,17 @@ async function getAnalyticsForStore(
   }
 
   // Fetch all recommendations with pagination
-  const recommendationsData = await fetchAllWithPagination(
+  const recommendationsData = (await fetchAllWithPagination(
     client,
     'simple_recommendations',
     'id, created_at',
     recFilters,
     'created_at'
-  ) as Array<{ id: string; created_at: string }>;
+  )) as Array<{ id: string; created_at: string }>;
   const recommendationCount = recommendationsData.length;
 
   const recByDay: Record<string, number> = {};
-  recommendationsData.forEach((rec) => {
+  recommendationsData.forEach(rec => {
     if (!rec.created_at) return;
     const date = new Date(rec.created_at).toISOString().split('T')[0];
     recByDay[date] = (recByDay[date] || 0) + 1;
@@ -1043,17 +1079,17 @@ async function getAnalyticsForStore(
     });
   }
 
-  const conversionsData = await fetchAllWithPagination(
+  const conversionsData = (await fetchAllWithPagination(
     client,
     'simple_conversions',
     'id, purchased_at',
     convFilters,
     'purchased_at'
-  ) as Array<{ id: string; purchased_at: string }>;
+  )) as Array<{ id: string; purchased_at: string }>;
   const conversionCount = conversionsData.length;
 
   const convByDayData: Record<string, number> = {};
-  conversionsData.forEach((conv) => {
+  conversionsData.forEach(conv => {
     if (!conv.purchased_at) return;
     const date = new Date(conv.purchased_at).toISOString().split('T')[0];
     convByDayData[date] = (convByDayData[date] || 0) + 1;
@@ -1080,9 +1116,9 @@ async function getAnalyticsForStore(
 
     if (!start || !end) {
       const dataDates = new Set([
-        ...conversationsByDayData.map((d) => d.date),
-        ...recommendationsByDayData.map((d) => d.date),
-        ...conversionsByDayData.map((d) => d.date),
+        ...conversationsByDayData.map(d => d.date),
+        ...recommendationsByDayData.map(d => d.date),
+        ...conversionsByDayData.map(d => d.date),
       ]);
       return Array.from(dataDates).sort();
     }
@@ -1113,13 +1149,13 @@ async function getAnalyticsForStore(
   const allDatesInRange = generateDateRange(dateFilters.start, dateFilters.end);
 
   const convByDayMap = new Map(
-    conversationsByDayData.map((d) => [d.date, d.count])
+    conversationsByDayData.map(d => [d.date, d.count])
   );
   const recByDayMap = new Map(
-    recommendationsByDayData.map((d) => [d.date, d.count])
+    recommendationsByDayData.map(d => [d.date, d.count])
   );
   const conversionByDayMap = new Map(
-    conversionsByDayData.map((d) => [d.date, d.count])
+    conversionsByDayData.map(d => [d.date, d.count])
   );
 
   const chartDataByDay = allDatesInRange.map(date => ({
