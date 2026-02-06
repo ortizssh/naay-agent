@@ -13,7 +13,7 @@ const router = Router();
 const PLUGIN_INFO = {
   slug: 'kova-agent',
   name: 'Kova Agent - AI Shopping Assistant',
-  version: '1.0.1', // Current version available for download
+  version: '1.0.2', // Current version available for download
   tested: '6.4',
   requires: '5.8',
   requires_php: '7.4',

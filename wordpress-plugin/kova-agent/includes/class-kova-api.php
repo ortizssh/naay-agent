@@ -106,6 +106,77 @@ class Kova_API {
             // Attempt to connect to Kova API
             $this->connect_to_kova($new_value);
         }
+
+        // Always sync widget configuration when settings are updated
+        $this->sync_widget_config($new_value);
+    }
+
+    /**
+     * Sync widget configuration with Kova backend
+     */
+    private function sync_widget_config($settings) {
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+
+        $config = array(
+            'enabled' => !empty($settings['enabled']),
+            'position' => $settings['widget_position'] ?? 'bottom-right',
+            'primaryColor' => $settings['widget_color'] ?? '#6366f1',
+            'secondaryColor' => $settings['widget_secondary_color'] ?? '#212120',
+            'accentColor' => $settings['widget_accent_color'] ?? '#cf795e',
+            'greeting' => $settings['welcome_message'] ?? '',
+            'greeting2' => $settings['welcome_message_2'] ?? '',
+            'subtitle2' => $settings['subtitle_2'] ?? '',
+            'greeting3' => $settings['welcome_message_3'] ?? '',
+            'subtitle3' => $settings['subtitle_3'] ?? '',
+            'rotatingMessagesEnabled' => !empty($settings['rotating_messages_enabled']),
+            'rotatingMessagesInterval' => intval($settings['rotating_messages_interval'] ?? 5),
+            'subtitle' => $settings['widget_subtitle'] ?? 'Asistente de compras con IA',
+            'placeholder' => $settings['widget_placeholder'] ?? 'Escribe tu mensaje...',
+            'avatar' => $settings['widget_avatar'] ?? '🌿',
+            'brandName' => $settings['widget_brand_name'] ?? get_bloginfo('name'),
+            'buttonSize' => intval($settings['widget_button_size'] ?? 72),
+            'buttonStyle' => $settings['widget_button_style'] ?? 'circle',
+            'showPulse' => !empty($settings['widget_show_pulse']),
+            'chatWidth' => intval($settings['widget_chat_width'] ?? 420),
+            'chatHeight' => intval($settings['widget_chat_height'] ?? 600),
+            'showPromoMessage' => !empty($settings['widget_show_promo_message']),
+            'showCart' => isset($settings['widget_show_cart']) ? !empty($settings['widget_show_cart']) : true,
+            'enableAnimations' => isset($settings['widget_enable_animations']) ? !empty($settings['widget_enable_animations']) : true,
+            'theme' => $settings['widget_theme'] ?? 'light',
+            'promoBadgeEnabled' => !empty($settings['promo_badge_enabled']),
+            'promoBadgeDiscount' => intval($settings['promo_badge_discount'] ?? 10),
+            'promoBadgeText' => $settings['promo_badge_text'] ?? 'Descuento especial',
+            'promoBadgeColor' => $settings['promo_badge_color'] ?? '#ef4444',
+            'promoBadgeShape' => $settings['promo_badge_shape'] ?? 'circle',
+            'promoBadgePosition' => $settings['promo_badge_position'] ?? 'right',
+            'promoBadgeSuffix' => $settings['promo_badge_suffix'] ?? 'OFF',
+            'promoBadgePrefix' => $settings['promo_badge_prefix'] ?? '',
+            'promoBadgeFontSize' => intval($settings['promo_badge_font_size'] ?? 12),
+        );
+
+        $response = wp_remote_post($api_endpoint . '/api/woo/widget-config', array(
+            'headers' => array('Content-Type' => 'application/json'),
+            'body' => json_encode(array(
+                'siteUrl' => site_url(),
+                'config' => $config,
+            )),
+            'timeout' => 30,
+        ));
+
+        if (is_wp_error($response)) {
+            error_log('Kova Agent: Widget config sync failed - ' . $response->get_error_message());
+            return false;
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+
+        if (!empty($body['success'])) {
+            error_log('Kova Agent: Widget config synced successfully');
+            return true;
+        }
+
+        error_log('Kova Agent: Widget config sync failed - ' . ($body['error'] ?? 'Unknown error'));
+        return false;
     }
 
     /**

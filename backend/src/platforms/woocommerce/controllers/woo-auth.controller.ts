@@ -104,6 +104,26 @@ router.post('/connect', async (req: Request, res: Response) => {
       });
     }
 
+    // Also create/update client_stores entry for widget config
+    const { data: existingClient } = await (supabaseService as any).serviceClient
+      .from('client_stores')
+      .select('id')
+      .eq('shop_domain', normalizedUrl)
+      .single();
+
+    if (!existingClient) {
+      await (supabaseService as any).serviceClient.from('client_stores').insert({
+        shop_domain: normalizedUrl,
+        platform: 'woocommerce',
+        widget_enabled: true,
+        widget_position: 'bottom-right',
+        widget_color: '#6366f1',
+        widget_brand_name: connectionResult.storeName || 'Store',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    }
+
     logger.info('WooCommerce store connected successfully', {
       siteUrl: normalizedUrl,
       storeName: connectionResult.storeName,
@@ -501,6 +521,198 @@ router.post('/setup-webhooks', async (req: Request, res: Response) => {
       success: false,
       error: 'Internal server error',
       details: (error as Error).message,
+    });
+  }
+});
+
+/**
+ * POST /api/woo/widget-config
+ * Update widget configuration for a WooCommerce store
+ */
+router.post('/widget-config', async (req: Request, res: Response) => {
+  try {
+    const { siteUrl, config } = req.body;
+
+    if (!siteUrl) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required field: siteUrl',
+      });
+    }
+
+    // Normalize URL
+    let normalizedUrl: string;
+    try {
+      const url = new URL(siteUrl);
+      normalizedUrl = `${url.protocol}//${url.host}`;
+    } catch {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid site URL format',
+      });
+    }
+
+    logger.info('Updating WooCommerce widget config', {
+      siteUrl: normalizedUrl,
+      config,
+    });
+
+    // Check if store exists in client_stores
+    const { data: existingClient } = await (supabaseService as any).serviceClient
+      .from('client_stores')
+      .select('id')
+      .eq('shop_domain', normalizedUrl)
+      .single();
+
+    const widgetConfig = {
+      shop_domain: normalizedUrl,
+      platform: 'woocommerce',
+      widget_enabled: config.enabled ?? true,
+      widget_position: config.position || 'bottom-right',
+      widget_color: config.primaryColor || config.widget_color || '#6366f1',
+      widget_secondary_color: config.secondaryColor || '#212120',
+      widget_accent_color: config.accentColor || '#cf795e',
+      welcome_message: config.greeting || config.welcome_message || '',
+      widget_welcome_message_2: config.greeting2 || '',
+      widget_subtitle_2: config.subtitle2 || '',
+      widget_welcome_message_3: config.greeting3 || '',
+      widget_subtitle_3: config.subtitle3 || '',
+      widget_rotating_messages_enabled: config.rotatingMessagesEnabled ?? false,
+      widget_rotating_messages_interval: config.rotatingMessagesInterval || 5,
+      widget_subtitle: config.subtitle || 'Asistente de compras con IA',
+      widget_placeholder: config.placeholder || 'Escribe tu mensaje...',
+      widget_avatar: config.avatar || '🌿',
+      widget_brand_name: config.brandName || 'Kova',
+      widget_button_size: config.buttonSize || 72,
+      widget_button_style: config.buttonStyle || 'circle',
+      widget_show_pulse: config.showPulse ?? true,
+      widget_chat_width: config.chatWidth || 420,
+      widget_chat_height: config.chatHeight || 600,
+      widget_show_promo_message: config.showPromoMessage ?? true,
+      widget_show_cart: config.showCart ?? true,
+      widget_enable_animations: config.enableAnimations ?? true,
+      widget_theme: config.theme || 'light',
+      promo_badge_enabled: config.promoBadgeEnabled ?? false,
+      promo_badge_discount: config.promoBadgeDiscount || 10,
+      promo_badge_text: config.promoBadgeText || 'Descuento especial',
+      promo_badge_color: config.promoBadgeColor || '#ef4444',
+      promo_badge_shape: config.promoBadgeShape || 'circle',
+      promo_badge_position: config.promoBadgePosition || 'right',
+      promo_badge_suffix: config.promoBadgeSuffix ?? 'OFF',
+      promo_badge_prefix: config.promoBadgePrefix ?? '',
+      promo_badge_font_size: config.promoBadgeFontSize || 12,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (existingClient) {
+      // Update existing
+      await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .update(widgetConfig)
+        .eq('shop_domain', normalizedUrl);
+    } else {
+      // Insert new
+      await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .insert({
+          ...widgetConfig,
+          created_at: new Date().toISOString(),
+        });
+    }
+
+    logger.info('Widget config updated successfully', { siteUrl: normalizedUrl });
+
+    return res.json({
+      success: true,
+      message: 'Widget configuration updated',
+    });
+  } catch (error) {
+    logger.error('Error updating widget config:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      details: (error as Error).message,
+    });
+  }
+});
+
+/**
+ * GET /api/woo/widget-config/:siteUrl
+ * Get widget configuration for a WooCommerce store
+ */
+router.get('/widget-config/:siteUrl', async (req: Request, res: Response) => {
+  try {
+    const siteUrl = decodeURIComponent(req.params.siteUrl);
+
+    // Normalize URL
+    let normalizedUrl: string;
+    try {
+      const url = new URL(siteUrl);
+      normalizedUrl = `${url.protocol}//${url.host}`;
+    } catch {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid site URL format',
+      });
+    }
+
+    const { data: clientStore, error } = await (supabaseService as any).serviceClient
+      .from('client_stores')
+      .select('*')
+      .eq('shop_domain', normalizedUrl)
+      .single();
+
+    if (error || !clientStore) {
+      return res.status(404).json({
+        success: false,
+        error: 'Widget configuration not found',
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        enabled: clientStore.widget_enabled ?? true,
+        position: clientStore.widget_position || 'bottom-right',
+        primaryColor: clientStore.widget_color || '#6366f1',
+        secondaryColor: clientStore.widget_secondary_color || '#212120',
+        accentColor: clientStore.widget_accent_color || '#cf795e',
+        greeting: clientStore.welcome_message || '',
+        greeting2: clientStore.widget_welcome_message_2 || '',
+        subtitle2: clientStore.widget_subtitle_2 || '',
+        greeting3: clientStore.widget_welcome_message_3 || '',
+        subtitle3: clientStore.widget_subtitle_3 || '',
+        rotatingMessagesEnabled: clientStore.widget_rotating_messages_enabled ?? false,
+        rotatingMessagesInterval: clientStore.widget_rotating_messages_interval || 5,
+        subtitle: clientStore.widget_subtitle || 'Asistente de compras con IA',
+        placeholder: clientStore.widget_placeholder || 'Escribe tu mensaje...',
+        avatar: clientStore.widget_avatar || '🌿',
+        brandName: clientStore.widget_brand_name || 'Kova',
+        buttonSize: clientStore.widget_button_size || 72,
+        buttonStyle: clientStore.widget_button_style || 'circle',
+        showPulse: clientStore.widget_show_pulse ?? true,
+        chatWidth: clientStore.widget_chat_width || 420,
+        chatHeight: clientStore.widget_chat_height || 600,
+        showPromoMessage: clientStore.widget_show_promo_message ?? true,
+        showCart: clientStore.widget_show_cart ?? true,
+        enableAnimations: clientStore.widget_enable_animations ?? true,
+        theme: clientStore.widget_theme || 'light',
+        promoBadgeEnabled: clientStore.promo_badge_enabled ?? false,
+        promoBadgeDiscount: clientStore.promo_badge_discount || 10,
+        promoBadgeText: clientStore.promo_badge_text || 'Descuento especial',
+        promoBadgeColor: clientStore.promo_badge_color || '#ef4444',
+        promoBadgeShape: clientStore.promo_badge_shape || 'circle',
+        promoBadgePosition: clientStore.promo_badge_position || 'right',
+        promoBadgeSuffix: clientStore.promo_badge_suffix ?? 'OFF',
+        promoBadgePrefix: clientStore.promo_badge_prefix ?? '',
+        promoBadgeFontSize: clientStore.promo_badge_font_size || 12,
+      },
+    });
+  } catch (error) {
+    logger.error('Error fetching widget config:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error',
     });
   }
 });

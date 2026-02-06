@@ -185,7 +185,14 @@ class Kova_Widget {
 
         // Add design settings if configured
         if (!empty($this->settings['widget_color'])) {
-            $widget_config['forever'] = $this->settings['widget_color'];
+            $widget_config['primaryColor'] = $this->settings['widget_color'];
+            $widget_config['forever'] = $this->settings['widget_color']; // Legacy support
+        }
+        if (!empty($this->settings['widget_secondary_color'])) {
+            $widget_config['secondaryColor'] = $this->settings['widget_secondary_color'];
+        }
+        if (!empty($this->settings['widget_accent_color'])) {
+            $widget_config['accentColor'] = $this->settings['widget_accent_color'];
         }
         ?>
         <script type="text/javascript">
