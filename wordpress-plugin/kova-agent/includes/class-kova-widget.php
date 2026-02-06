@@ -155,59 +155,58 @@ class Kova_Widget {
         }
 
         $api_endpoint = $this->settings['api_endpoint'] ?? 'https://api.kova.ai';
+        $chat_endpoint = $this->settings['chat_endpoint'] ?? '';
         $page_context = $this->get_page_context();
         $customer = $this->get_customer_info();
         $nonce = $this->get_store_api_nonce();
 
-        // Widget configuration
+        // Widget configuration - use KovaConfig format expected by widget
         $widget_config = array(
             'platform' => 'woocommerce',
-            'shop' => site_url(),
+            'shopDomain' => site_url(),
             'apiEndpoint' => $api_endpoint,
-            'nonce' => $nonce,
-            'currency' => get_woocommerce_currency(),
-            'currencySymbol' => get_woocommerce_currency_symbol(),
-            'cartUrl' => wc_get_cart_url(),
-            'checkoutUrl' => wc_get_checkout_url(),
+            'chatEndpoint' => $chat_endpoint,
+            'position' => $this->settings['widget_position'] ?? 'bottom-right',
+            'greeting' => $this->settings['welcome_message'] ?? '',
+            'placeholder' => $this->settings['widget_placeholder'] ?? 'Pregúntanos sobre tu compra...',
+            'brandName' => get_bloginfo('name'),
+            'enabled' => true,
+            // WooCommerce-specific context
+            'woocommerce' => array(
+                'nonce' => $nonce,
+                'currency' => get_woocommerce_currency(),
+                'currencySymbol' => get_woocommerce_currency_symbol(),
+                'cartUrl' => wc_get_cart_url(),
+                'checkoutUrl' => wc_get_checkout_url(),
+            ),
             'pageContext' => $page_context,
             'customer' => $customer,
-            'design' => array(
-                'position' => $this->settings['widget_position'] ?? 'bottom-right',
-                'primaryColor' => $this->settings['widget_color'] ?? '#6366f1',
-                'title' => $this->settings['widget_title'] ?? 'Kova Assistant',
-                'welcomeMessage' => $this->settings['welcome_message'] ?? '',
-            ),
         );
+
+        // Add design settings if configured
+        if (!empty($this->settings['widget_color'])) {
+            $widget_config['forever'] = $this->settings['widget_color'];
+        }
         ?>
         <script type="text/javascript">
+            // Set global config before widget loads
+            window.KovaConfig = <?php echo json_encode($widget_config); ?>;
+
+            // Store WooCommerce Store API nonce globally for widget
+            window.wc_store_api_nonce = '<?php echo esc_js($nonce); ?>';
+
+            // Listen for WooCommerce cart updates and notify widget
             (function() {
-                // Wait for Kova widget to load
-                function initKovaWidget() {
-                    if (typeof window.KovaWidget !== 'undefined') {
-                        window.KovaWidget.init(<?php echo json_encode($widget_config); ?>);
-                    } else {
-                        // Retry after a short delay
-                        setTimeout(initKovaWidget, 100);
+                function notifyKovaCartUpdate() {
+                    if (window.kovaWidget && typeof window.kovaWidget.loadWooCommerceCart === 'function') {
+                        window.kovaWidget.loadWooCommerceCart();
                     }
                 }
 
-                if (document.readyState === 'complete') {
-                    initKovaWidget();
-                } else {
-                    window.addEventListener('load', initKovaWidget);
+                // jQuery-based WooCommerce events
+                if (typeof jQuery !== 'undefined') {
+                    jQuery(document.body).on('added_to_cart removed_from_cart updated_cart_totals wc_fragments_refreshed', notifyKovaCartUpdate);
                 }
-
-                // Expose cart update function for WooCommerce events
-                window.kovaUpdateCart = function() {
-                    if (typeof window.KovaWidget !== 'undefined' && window.KovaWidget.updateCart) {
-                        window.KovaWidget.updateCart();
-                    }
-                };
-
-                // Listen for WooCommerce cart updates
-                jQuery(document.body).on('added_to_cart removed_from_cart updated_cart_totals', function() {
-                    window.kovaUpdateCart();
-                });
             })();
         </script>
         <?php

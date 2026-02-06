@@ -60,6 +60,7 @@
         shopDomain: '',
         apiEndpoint: '',
         chatEndpoint: '',
+        platform: '', // 'shopify' or 'woocommerce' - auto-detected if not set
         position: 'bottom-right',
         // Kova Brand Colors - Updated Palette 2024
         everyday: '#cec8ae',    // Warm cream (preserved)
@@ -134,12 +135,98 @@
     }
 
     initializeWidget() {
+      // Detect platform if not set
+      this.detectPlatform();
+
       this.createWidget();
       this.setupElements();
       this.addEventListeners();
       this.loadConversationHistory();
-      this.loadShopifyCart(); // Load existing Shopify cart
-      this.setupShopifyCartSync(); // Setup real-time sync
+      this.loadCart(); // Load existing cart (platform-aware)
+      this.setupCartSync(); // Setup real-time sync (platform-aware)
+    }
+
+    /**
+     * Detect the e-commerce platform (Shopify or WooCommerce)
+     */
+    detectPlatform() {
+      // If platform is already set in config, use it
+      if (this.config.platform && ['shopify', 'woocommerce'].includes(this.config.platform)) {
+        console.log(`🏪 Platform set from config: ${this.config.platform}`);
+        return;
+      }
+
+      // Detect from hostname
+      const hostname = window.location.hostname;
+
+      // Check for Shopify
+      if (hostname.includes('myshopify.com') || hostname.includes('shopify.com')) {
+        this.config.platform = 'shopify';
+        console.log('🏪 Platform detected from hostname: shopify');
+        return;
+      }
+
+      // Check for WooCommerce indicators
+      if (this.isWooCommerceSite()) {
+        this.config.platform = 'woocommerce';
+        console.log('🏪 Platform detected: woocommerce');
+        return;
+      }
+
+      // Check for Shopify config
+      if (this.config.shopDomain && this.config.shopDomain.includes('myshopify.com')) {
+        this.config.platform = 'shopify';
+        console.log('🏪 Platform detected from shopDomain: shopify');
+        return;
+      }
+
+      // Default to shopify if not detected
+      this.config.platform = 'shopify';
+      console.log('🏪 Platform defaulting to: shopify');
+    }
+
+    /**
+     * Check if current site is a WooCommerce site
+     */
+    isWooCommerceSite() {
+      // Check for WooCommerce-specific globals
+      if (window.wc || window.wc_add_to_cart_params || window.woocommerce_params) {
+        return true;
+      }
+      // Check for WooCommerce body classes
+      if (document.body && document.body.classList) {
+        const wcClasses = ['woocommerce', 'woocommerce-page', 'woocommerce-cart', 'woocommerce-checkout'];
+        for (const cls of wcClasses) {
+          if (document.body.classList.contains(cls)) return true;
+        }
+      }
+      // Check for WooCommerce scripts
+      const scripts = document.querySelectorAll('script[src*="woocommerce"], script[src*="wc-"]');
+      if (scripts.length > 0) return true;
+
+      return false;
+    }
+
+    /**
+     * Platform-aware cart loading
+     */
+    loadCart() {
+      if (this.config.platform === 'woocommerce') {
+        this.loadWooCommerceCart();
+      } else {
+        this.loadShopifyCart();
+      }
+    }
+
+    /**
+     * Platform-aware cart sync setup
+     */
+    setupCartSync() {
+      if (this.config.platform === 'woocommerce') {
+        this.setupWooCommerceCartSync();
+      } else {
+        this.setupShopifyCartSync();
+      }
     }
 
     async loadSettings() {
@@ -5351,48 +5438,47 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
     async addToCart(product) {
       console.log('🛒 Adding product to cart:', product);
+      console.log('🏪 Platform:', this.config.platform);
 
       // Show loading state
       this.showCartLoading();
 
-      let addedToShopify = false;
+      let addedToCart = false;
 
-      // Check if we're on a Shopify store
-      const isShopifyDomain = window.location.hostname.includes('myshopify.com') ||
-        window.location.hostname.includes('shopify.com');
-      const currentShopDomain = (window.KovaConfig && window.KovaConfig.shopDomain) || this.config.shopDomain;
-      const hasShopConfig = currentShopDomain && currentShopDomain.trim() !== '';
-      const isShopifyStore = isShopifyDomain || hasShopConfig;
+      if (this.config.platform === 'woocommerce') {
+        // Add to WooCommerce cart
+        addedToCart = await this.addToWooCommerceCart(product.variantId || product.id, product.quantity || 1);
 
-      console.log('🏪 Is Shopify store?', isShopifyStore, 'Hostname:', window.location.hostname);
+        if (!addedToCart) {
+          console.error('❌ Failed to add product to WooCommerce cart');
+          this.hideCartLoading();
+          this.addMessage('No se pudo agregar el producto al carrito. Por favor, intenta de nuevo.', 'assistant');
+          return;
+        }
 
-      if (isShopifyStore) {
-        // Add to Shopify native cart (100% sync)
-        addedToShopify = await this.addToShopifyNativeCart(product.variantId, product.quantity || 1);
+        console.log('✅ Product added to WooCommerce cart successfully');
+      } else {
+        // Default: Add to Shopify native cart
+        addedToCart = await this.addToShopifyNativeCart(product.variantId, product.quantity || 1);
 
-        if (!addedToShopify) {
+        if (!addedToCart) {
           console.error('❌ Failed to add product to Shopify cart');
           this.hideCartLoading();
-          // Show error message to user
           this.addMessage('No se pudo agregar el producto al carrito. Por favor, intenta de nuevo.', 'assistant');
           return;
         }
 
         console.log('✅ Product added to Shopify cart successfully');
-      } else {
-        console.error('❌ Not on a Shopify store, cannot add to cart');
-        this.hideCartLoading();
-        this.addMessage('Error: No se detectó una tienda Shopify.', 'assistant');
-        return;
       }
 
-      // Hide loading - cart will be updated via loadShopifyCart called in addToShopifyNativeCart
+      // Hide loading - cart will be updated via loadCart called in add methods
       this.hideCartLoading();
     }
 
-    // Remove from cart by unique cart item ID - 100% synced with Shopify
+    // Remove from cart by unique cart item ID - platform-aware
     async removeFromCartByItemId(cartItemId) {
       console.log('🛒 Removing cart item by ID:', cartItemId);
+      console.log('🏪 Platform:', this.config.platform);
 
       // Find the specific cart item
       const item = this.cartData.items.find(item => item.cartItemId === cartItemId);
@@ -5404,27 +5490,41 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
       console.log('🗑️ Found item to remove:', item);
 
-      // Remove from Shopify using the most reliable method available
       let removed = false;
-      try {
-        if (item.shopifyKey) {
-          console.log('🗑️ Removing from Shopify by key:', item.shopifyKey);
-          removed = await this.removeFromShopifyByKey(item.shopifyKey);
-        } else if (item.line_index !== undefined) {
-          console.log('🗑️ Removing from Shopify by line_index:', item.line_index);
-          removed = await this.removeFromShopifyNativeCart(item.line_index);
-        } else if (item.variantId) {
-          console.log('🗑️ Removing from Shopify by variant ID:', item.variantId);
-          removed = await this.removeFromShopifyByVariantId(item.variantId);
+
+      if (this.config.platform === 'woocommerce') {
+        // Remove from WooCommerce cart
+        try {
+          if (item.wooKey) {
+            console.log('🗑️ Removing from WooCommerce by key:', item.wooKey);
+            removed = await this.removeFromWooCommerceCart(item.wooKey);
+          }
+        } catch (error) {
+          console.error('❌ Failed to remove from WooCommerce cart:', error);
         }
-      } catch (error) {
-        console.error('❌ Failed to remove from Shopify cart:', error);
+        // Reload cart from WooCommerce
+        await this.loadWooCommerceCart();
+        console.log('✅ Cart item removal complete. Synced with WooCommerce.');
+      } else {
+        // Remove from Shopify using the most reliable method available
+        try {
+          if (item.shopifyKey) {
+            console.log('🗑️ Removing from Shopify by key:', item.shopifyKey);
+            removed = await this.removeFromShopifyByKey(item.shopifyKey);
+          } else if (item.line_index !== undefined) {
+            console.log('🗑️ Removing from Shopify by line_index:', item.line_index);
+            removed = await this.removeFromShopifyNativeCart(item.line_index);
+          } else if (item.variantId) {
+            console.log('🗑️ Removing from Shopify by variant ID:', item.variantId);
+            removed = await this.removeFromShopifyByVariantId(item.variantId);
+          }
+        } catch (error) {
+          console.error('❌ Failed to remove from Shopify cart:', error);
+        }
+        // Reload cart from Shopify
+        await this.loadShopifyCart();
+        console.log('✅ Cart item removal complete. Synced with Shopify.');
       }
-
-      // Reload cart from Shopify to ensure 100% sync
-      await this.loadShopifyCart();
-
-      console.log('✅ Cart item removal complete. Synced with Shopify.');
     }
 
     // Remove item from Shopify cart by key (most reliable method)
@@ -5512,9 +5612,10 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       }
     }
 
-    // Update quantity by unique cart item ID - 100% synced with Shopify
+    // Update quantity by unique cart item ID - platform-aware
     async updateQuantityByItemId(cartItemId, newQuantity) {
       console.log('🛒 Updating cart item quantity:', cartItemId, 'to', newQuantity);
+      console.log('🏪 Platform:', this.config.platform);
 
       // Find the specific cart item
       const item = this.cartData.items.find(item => item.cartItemId === cartItemId);
@@ -5530,26 +5631,39 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         return;
       }
 
-      // Update in Shopify using the most reliable method available
-      try {
-        if (item.shopifyKey) {
-          console.log('🔄 Updating Shopify by key:', item.shopifyKey);
-          await this.updateShopifyQuantityByKey(item.shopifyKey, newQuantity);
-        } else if (item.line_index !== undefined) {
-          console.log('🔄 Updating Shopify by line_index:', item.line_index);
-          await this.updateShopifyCartQuantity(item.line_index, newQuantity);
-        } else if (item.variantId) {
-          console.log('🔄 Updating Shopify by variant ID:', item.variantId);
-          await this.updateShopifyQuantityByVariantId(item.variantId, newQuantity);
+      if (this.config.platform === 'woocommerce') {
+        // Update in WooCommerce
+        try {
+          if (item.wooKey) {
+            console.log('🔄 Updating WooCommerce by key:', item.wooKey);
+            await this.updateWooCommerceCartQuantity(item.wooKey, newQuantity);
+          }
+        } catch (error) {
+          console.error('❌ Failed to update WooCommerce cart quantity:', error);
         }
-      } catch (error) {
-        console.error('❌ Failed to update Shopify cart quantity:', error);
+        // Reload cart from WooCommerce
+        await this.loadWooCommerceCart();
+        console.log('✅ Cart item quantity update complete. Synced with WooCommerce.');
+      } else {
+        // Update in Shopify using the most reliable method available
+        try {
+          if (item.shopifyKey) {
+            console.log('🔄 Updating Shopify by key:', item.shopifyKey);
+            await this.updateShopifyQuantityByKey(item.shopifyKey, newQuantity);
+          } else if (item.line_index !== undefined) {
+            console.log('🔄 Updating Shopify by line_index:', item.line_index);
+            await this.updateShopifyCartQuantity(item.line_index, newQuantity);
+          } else if (item.variantId) {
+            console.log('🔄 Updating Shopify by variant ID:', item.variantId);
+            await this.updateShopifyQuantityByVariantId(item.variantId, newQuantity);
+          }
+        } catch (error) {
+          console.error('❌ Failed to update Shopify cart quantity:', error);
+        }
+        // Reload cart from Shopify
+        await this.loadShopifyCart();
+        console.log('✅ Cart item quantity update complete. Synced with Shopify.');
       }
-
-      // Reload cart from Shopify to ensure 100% sync
-      await this.loadShopifyCart();
-
-      console.log('✅ Cart item quantity update complete. Synced with Shopify.');
     }
 
     // Update quantity in Shopify cart by key (most reliable method)
@@ -6177,6 +6291,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
     proceedToCheckout() {
       console.log('🛒 Proceeding to checkout...');
+      console.log('🏪 Platform:', this.config.platform);
 
       if (this.cartData.items.length === 0) {
         console.warn('Cart is empty, cannot proceed to checkout');
@@ -6185,36 +6300,44 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       }
 
       try {
-        // If we have a checkout URL from Shopify Storefront API, use it
+        // If we have a checkout URL stored, use it
         if (this.cartData.checkoutUrl) {
-          console.log('🛒 Using Shopify checkout URL:', this.cartData.checkoutUrl);
+          console.log('🛒 Using stored checkout URL:', this.cartData.checkoutUrl);
           window.open(this.cartData.checkoutUrl, '_blank');
           return;
         }
 
-        // Fallback: construct checkout URL based on shop domain
-        const shopDomain = (window.KovaConfig && window.KovaConfig.shopDomain) || this.config.shopDomain;
-        console.log('🔍 Using shop domain for checkout:', shopDomain);
-        if (!shopDomain) {
-          console.error('❌ No shop domain configured');
-          this.addMessage('Error: No se pudo obtener la información de la tienda.', 'assistant');
-          return;
-        }
-
-        // Determine the correct checkout URL format
-        let checkoutUrl;
-        if (window.location.hostname.includes('myshopify.com') ||
-          window.location.hostname.includes('shopify.com')) {
-          // If we're on a Shopify domain, use relative path
-          checkoutUrl = '/cart';
+        // Platform-specific checkout handling
+        if (this.config.platform === 'woocommerce') {
+          // WooCommerce checkout
+          const checkoutUrl = '/checkout';
+          console.log('🛒 Redirecting to WooCommerce checkout:', checkoutUrl);
           window.location.href = checkoutUrl;
         } else {
-          // External domain, open Shopify store in new window
-          checkoutUrl = `https://${shopDomain}/cart`;
-          window.open(checkoutUrl, '_blank');
-        }
+          // Shopify checkout
+          const shopDomain = (window.KovaConfig && window.KovaConfig.shopDomain) || this.config.shopDomain;
+          console.log('🔍 Using shop domain for checkout:', shopDomain);
+          if (!shopDomain) {
+            console.error('❌ No shop domain configured');
+            this.addMessage('Error: No se pudo obtener la información de la tienda.', 'assistant');
+            return;
+          }
 
-        console.log('✅ Redirected to checkout:', checkoutUrl);
+          // Determine the correct checkout URL format
+          let checkoutUrl;
+          if (window.location.hostname.includes('myshopify.com') ||
+            window.location.hostname.includes('shopify.com')) {
+            // If we're on a Shopify domain, use relative path
+            checkoutUrl = '/cart';
+            window.location.href = checkoutUrl;
+          } else {
+            // External domain, open Shopify store in new window
+            checkoutUrl = `https://${shopDomain}/cart`;
+            window.open(checkoutUrl, '_blank');
+          }
+
+          console.log('✅ Redirected to Shopify checkout:', checkoutUrl);
+        }
 
         // Show confirmation message
         this.addMessage('Abriendo checkout... Serás redirigido a completar tu compra.', 'assistant');
@@ -6485,6 +6608,308 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         console.error('❌ Error updating Shopify cart quantity:', error);
         return false;
       }
+    }
+
+    // ======= WOOCOMMERCE CART SYNCHRONIZATION =======
+
+    /**
+     * Load WooCommerce cart using Store API
+     */
+    async loadWooCommerceCart() {
+      console.log('🔄 Loading WooCommerce cart...');
+
+      try {
+        // Try WooCommerce Store API (v1)
+        const response = await fetch('/wp-json/wc/store/v1/cart', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          credentials: 'same-origin', // Include cookies for session
+        });
+
+        if (response.ok) {
+          const cartData = await response.json();
+          console.log('✅ Loaded WooCommerce cart:', cartData);
+
+          // Store cart token for future requests
+          const cartToken = response.headers.get('Cart-Token');
+          if (cartToken) {
+            this.wooCartToken = cartToken;
+          }
+
+          this.syncFromWooCommerceCart(cartData);
+          this.updateCartDisplay();
+        } else {
+          console.warn('⚠️ WooCommerce Store API not available:', response.status);
+        }
+      } catch (error) {
+        console.error('❌ Error loading WooCommerce cart:', error);
+      }
+    }
+
+    /**
+     * Sync cart data from WooCommerce Store API response
+     */
+    syncFromWooCommerceCart(wooCart) {
+      console.log('🔄 Syncing from WooCommerce cart:', wooCart);
+
+      // Map WooCommerce cart items to our format
+      this.cartData.items = (wooCart.items || []).map((item, index) => ({
+        id: item.id.toString(),
+        cartItemId: `woo_${item.key}_${index}`,
+        wooKey: item.key, // WooCommerce item key for updates
+        title: item.name,
+        variantTitle: item.variation && item.variation.length > 0
+          ? item.variation.map(v => v.value).join(' / ')
+          : 'Default',
+        price: this.formatWooPrice(item.prices.price, item.prices.currency_minor_unit),
+        quantity: item.quantity,
+        image: item.images && item.images[0] ? item.images[0].src : null,
+        variantId: item.id.toString(),
+        handle: new URL(item.permalink).pathname.replace(/^\/product\/|\/$/g, ''),
+        url: item.permalink,
+        line_index: index + 1
+      }));
+
+      // Update totals from WooCommerce
+      const minorUnit = wooCart.totals?.currency_minor_unit || 2;
+      this.cartData.total = parseInt(wooCart.totals?.total_price || 0) / Math.pow(10, minorUnit);
+      this.cartData.itemCount = wooCart.items_count || 0;
+
+      // Store checkout URL
+      const siteUrl = this.config.shopDomain || window.location.origin;
+      this.cartData.checkoutUrl = `${siteUrl}/checkout`;
+
+      console.log('✅ Cart synced from WooCommerce. Items:', this.cartData.items.length);
+    }
+
+    /**
+     * Format WooCommerce price from minor units
+     */
+    formatWooPrice(price, minorUnit = 2) {
+      const priceNumber = parseInt(price) / Math.pow(10, minorUnit);
+      return priceNumber.toFixed(2);
+    }
+
+    /**
+     * Setup WooCommerce cart synchronization
+     */
+    setupWooCommerceCartSync() {
+      console.log('🔄 Setting up WooCommerce cart synchronization...');
+
+      // Prevent duplicate sync intervals
+      if (this.cartSyncInterval) {
+        console.log('🔄 Cart sync already running, skipping setup');
+        return;
+      }
+
+      // Listen for WooCommerce cart events
+      if (window.jQuery) {
+        window.jQuery(document.body).on('added_to_cart removed_from_cart updated_cart_totals', () => {
+          console.log('🔄 WooCommerce cart event detected');
+          this.loadWooCommerceCart();
+        });
+      }
+
+      // Store event handlers for cleanup
+      this.visibilityChangeHandler = () => {
+        if (!document.hidden) {
+          this.loadWooCommerceCart();
+        }
+      };
+
+      // Periodically sync with WooCommerce cart (every 5 seconds)
+      this.cartSyncInterval = setInterval(() => {
+        this.loadWooCommerceCart();
+      }, 5000);
+
+      // Listen for page visibility changes to sync when user returns
+      document.addEventListener('visibilitychange', this.visibilityChangeHandler);
+
+      console.log('✅ WooCommerce cart sync listeners setup');
+    }
+
+    /**
+     * Add item to WooCommerce cart using Store API
+     */
+    async addToWooCommerceCart(productId, quantity = 1) {
+      console.log('🛒 Adding to WooCommerce cart:', { productId, quantity });
+
+      try {
+        // Extract numeric ID from various formats
+        const numericId = this.extractWooProductId(productId);
+
+        const headers = {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        };
+
+        // Include cart token if available
+        if (this.wooCartToken) {
+          headers['Cart-Token'] = this.wooCartToken;
+        }
+
+        // Include nonce if available (for authenticated requests)
+        if (window.wc_store_api_nonce) {
+          headers['X-WC-Store-API-Nonce'] = window.wc_store_api_nonce;
+        }
+
+        const response = await fetch('/wp-json/wc/store/v1/cart/add-item', {
+          method: 'POST',
+          headers,
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            id: parseInt(numericId),
+            quantity: parseInt(quantity),
+          }),
+        });
+
+        console.log('📥 Response status:', response.status, response.statusText);
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log('✅ Added to WooCommerce cart:', result);
+
+          // Update cart token if returned
+          const newToken = response.headers.get('Cart-Token');
+          if (newToken) {
+            this.wooCartToken = newToken;
+          }
+
+          // Trigger cart update event
+          if (window.jQuery) {
+            window.jQuery(document.body).trigger('added_to_cart');
+          }
+
+          // Reload cart data
+          await this.loadWooCommerceCart();
+
+          return true;
+        } else {
+          const errorData = await response.text();
+          console.error('❌ WooCommerce cart API error:', errorData);
+          throw new Error(`HTTP ${response.status}: ${errorData}`);
+        }
+      } catch (error) {
+        console.error('❌ Error adding to WooCommerce cart:', error);
+        return false;
+      }
+    }
+
+    /**
+     * Remove item from WooCommerce cart by key
+     */
+    async removeFromWooCommerceCart(itemKey) {
+      console.log('🛒 Removing from WooCommerce cart by key:', itemKey);
+
+      try {
+        const headers = {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        };
+
+        if (this.wooCartToken) {
+          headers['Cart-Token'] = this.wooCartToken;
+        }
+
+        if (window.wc_store_api_nonce) {
+          headers['X-WC-Store-API-Nonce'] = window.wc_store_api_nonce;
+        }
+
+        const response = await fetch('/wp-json/wc/store/v1/cart/remove-item', {
+          method: 'POST',
+          headers,
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            key: itemKey,
+          }),
+        });
+
+        if (response.ok) {
+          console.log('✅ Removed from WooCommerce cart');
+
+          const newToken = response.headers.get('Cart-Token');
+          if (newToken) {
+            this.wooCartToken = newToken;
+          }
+
+          if (window.jQuery) {
+            window.jQuery(document.body).trigger('removed_from_cart');
+          }
+
+          await this.loadWooCommerceCart();
+          return true;
+        } else {
+          throw new Error(`HTTP ${response.status}`);
+        }
+      } catch (error) {
+        console.error('❌ Error removing from WooCommerce cart:', error);
+        return false;
+      }
+    }
+
+    /**
+     * Update item quantity in WooCommerce cart
+     */
+    async updateWooCommerceCartQuantity(itemKey, newQuantity) {
+      console.log('🛒 Updating WooCommerce cart quantity:', { itemKey, newQuantity });
+
+      try {
+        const headers = {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        };
+
+        if (this.wooCartToken) {
+          headers['Cart-Token'] = this.wooCartToken;
+        }
+
+        if (window.wc_store_api_nonce) {
+          headers['X-WC-Store-API-Nonce'] = window.wc_store_api_nonce;
+        }
+
+        const response = await fetch('/wp-json/wc/store/v1/cart/update-item', {
+          method: 'POST',
+          headers,
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            key: itemKey,
+            quantity: parseInt(newQuantity),
+          }),
+        });
+
+        if (response.ok) {
+          console.log('✅ Updated WooCommerce cart quantity');
+
+          const newToken = response.headers.get('Cart-Token');
+          if (newToken) {
+            this.wooCartToken = newToken;
+          }
+
+          if (window.jQuery) {
+            window.jQuery(document.body).trigger('updated_cart_totals');
+          }
+
+          await this.loadWooCommerceCart();
+          return true;
+        } else {
+          throw new Error(`HTTP ${response.status}`);
+        }
+      } catch (error) {
+        console.error('❌ Error updating WooCommerce cart quantity:', error);
+        return false;
+      }
+    }
+
+    /**
+     * Extract numeric product ID from various formats
+     */
+    extractWooProductId(variantId) {
+      // Handle formats like "woocommerce-var-123", "woocommerce-123", or just "123"
+      const match = String(variantId).match(/(?:woocommerce-(?:var-)?)?(\d+)/);
+      return match ? match[1] : variantId;
     }
 
     // Cleanup function

@@ -41,6 +41,7 @@ import { getConversionSyncScheduler } from '@/services/conversion-sync-scheduler
 import {
   wooAuthController,
   wooWebhookController,
+  wooEmbeddedController,
 } from '@/platforms/woocommerce/controllers';
 
 async function startServer() {
@@ -801,6 +802,7 @@ async function startServer() {
     // WooCommerce Platform Routes
     app.use('/api/woo', wooAuthController);
     app.use('/api/woo/webhooks', wooWebhookController);
+    app.use('/api/woo/embedded', wooEmbeddedController);
 
     // Legacy admin route - redirect to root
     app.get('/admin*', (req, res) => {
