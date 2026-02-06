@@ -364,7 +364,7 @@
     }
 
     function renderConversationsSummary(data) {
-        var total = data.total || 0;
+        var total = data.totalConversations || data.total || 0;
         var totalMessages = data.totalMessages || 0;
         // Restore the original HTML structure and update values
         var html = '<p><strong>' + kovaAdmin.strings.conversations + ':</strong> <span id="kova-total-conversations">' + total + '</span>';
@@ -384,8 +384,8 @@
         conversations.forEach(function(conv) {
             html += '<div class="kova-conversation-item">';
             html += '  <div class="kova-conversation-header">';
-            html += '    <span class="kova-conversation-time">' + formatConversationDate(conv.created_at) + '</span>';
-            html += '    <span class="kova-conversation-id">' + (conv.conversation_id || conv.id || '').substring(0, 8) + '...</span>';
+            html += '    <span class="kova-conversation-time">' + formatConversationDate(conv.startedAt || conv.created_at) + '</span>';
+            html += '    <span class="kova-conversation-id">' + (conv.sessionId || conv.conversation_id || conv.id || '').substring(0, 8) + '...</span>';
             html += '  </div>';
             html += '  <div class="kova-conversation-messages">';
 
