@@ -100,7 +100,9 @@ router.get('/config', async (req: Request, res: Response) => {
         shopDomain = `${url.protocol}//${url.host}`;
       } catch {
         // If URL parsing fails, use the original value
-        logger.warn('Failed to parse shop domain URL, using original value', { shopDomain });
+        logger.warn('Failed to parse shop domain URL, using original value', {
+          shopDomain,
+        });
       }
     }
 
