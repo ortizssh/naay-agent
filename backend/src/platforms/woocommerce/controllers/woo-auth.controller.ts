@@ -561,17 +561,43 @@ router.post('/widget-config', async (req: Request, res: Response) => {
       config,
     });
 
-    // Check if store exists in client_stores
-    const { data: existingClient } = await (
-      supabaseService as any
-    ).serviceClient
-      .from('client_stores')
-      .select('id')
-      .eq('shop_domain', normalizedUrl)
-      .single();
+    // Build list of possible shop domain formats to try
+    const shopVariants: string[] = [normalizedUrl];
+    try {
+      const url = new URL(normalizedUrl);
+      shopVariants.push(url.host); // e.g., "example.com"
+      shopVariants.push(url.hostname); // e.g., "example.com" (without port)
+      shopVariants.push(`${normalizedUrl}/`); // With trailing slash
+    } catch {
+      // Ignore parse errors
+    }
+
+    logger.info('Trying shop domain variants for update:', { shopVariants });
+
+    // Check if store exists in client_stores (try all variants)
+    let existingClient = null;
+    let matchedVariant = normalizedUrl;
+
+    for (const variant of shopVariants) {
+      const { data } = await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .select('id, shop_domain')
+        .eq('shop_domain', variant)
+        .single();
+
+      if (data) {
+        existingClient = data;
+        matchedVariant = data.shop_domain; // Use the exact domain from DB
+        logger.info('Found existing client_stores with variant:', { variant, matchedVariant });
+        break;
+      }
+    }
+
+    // Use the matched variant (existing domain in DB) or normalizedUrl for new entries
+    const shopDomainToUse = existingClient ? matchedVariant : normalizedUrl;
 
     const widgetConfig = {
-      shop_domain: normalizedUrl,
+      shop_domain: shopDomainToUse,
       platform: 'woocommerce',
       widget_enabled: config.enabled ?? true,
       widget_position: config.position || 'bottom-right',
@@ -611,11 +637,11 @@ router.post('/widget-config', async (req: Request, res: Response) => {
     };
 
     if (existingClient) {
-      // Update existing
+      // Update existing - use the matched variant from DB
       await (supabaseService as any).serviceClient
         .from('client_stores')
         .update(widgetConfig)
-        .eq('shop_domain', normalizedUrl);
+        .eq('shop_domain', matchedVariant);
     } else {
       // Insert new
       await (supabaseService as any).serviceClient
