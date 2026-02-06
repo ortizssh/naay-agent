@@ -628,6 +628,7 @@ router.post('/widget-config', async (req: Request, res: Response) => {
       widget_enable_animations: config.enableAnimations ?? true,
       widget_theme: config.theme || 'light',
       promo_badge_enabled: config.promoBadgeEnabled ?? false,
+      promo_badge_type: config.promoBadgeType || 'discount',
       promo_badge_discount: config.promoBadgeDiscount || 10,
       promo_badge_text: config.promoBadgeText || 'Descuento especial',
       promo_badge_color: config.promoBadgeColor || '#ef4444',

@@ -153,6 +153,7 @@ router.get(
         enableAnimations: true,
         theme: 'light',
         promoBadgeEnabled: false,
+        promoBadgeType: 'discount',
         promoBadgeDiscount: 10,
         promoBadgeText: 'Descuento especial',
         promoBadgeColor: '#ef4444',
@@ -235,6 +236,7 @@ router.get(
             widget_theme,
             widget_brand_name,
             promo_badge_enabled,
+            promo_badge_type,
             promo_badge_discount,
             promo_badge_text,
             promo_badge_color,
@@ -316,6 +318,8 @@ router.get(
             promoBadgeEnabled:
               clientStore.promo_badge_enabled ??
               defaultConfig.promoBadgeEnabled,
+            promoBadgeType:
+              clientStore.promo_badge_type || defaultConfig.promoBadgeType,
             promoBadgeDiscount:
               clientStore.promo_badge_discount ||
               defaultConfig.promoBadgeDiscount,

@@ -213,6 +213,8 @@ router.put(
       // Promotion badge settings
       if (config.promoBadgeEnabled !== undefined)
         updateData.promo_badge_enabled = config.promoBadgeEnabled;
+      if (config.promoBadgeType !== undefined)
+        updateData.promo_badge_type = config.promoBadgeType;
       if (config.promoBadgeDiscount !== undefined)
         updateData.promo_badge_discount = config.promoBadgeDiscount;
       if (config.promoBadgeText !== undefined)
@@ -233,15 +235,18 @@ router.put(
       if (config.suggestedQuestion1Text !== undefined)
         updateData.suggested_question_1_text = config.suggestedQuestion1Text;
       if (config.suggestedQuestion1Message !== undefined)
-        updateData.suggested_question_1_message = config.suggestedQuestion1Message;
+        updateData.suggested_question_1_message =
+          config.suggestedQuestion1Message;
       if (config.suggestedQuestion2Text !== undefined)
         updateData.suggested_question_2_text = config.suggestedQuestion2Text;
       if (config.suggestedQuestion2Message !== undefined)
-        updateData.suggested_question_2_message = config.suggestedQuestion2Message;
+        updateData.suggested_question_2_message =
+          config.suggestedQuestion2Message;
       if (config.suggestedQuestion3Text !== undefined)
         updateData.suggested_question_3_text = config.suggestedQuestion3Text;
       if (config.suggestedQuestion3Message !== undefined)
-        updateData.suggested_question_3_message = config.suggestedQuestion3Message;
+        updateData.suggested_question_3_message =
+          config.suggestedQuestion3Message;
 
       // Try to update client_stores first
       const { data: clientStore, error: clientError } = await (

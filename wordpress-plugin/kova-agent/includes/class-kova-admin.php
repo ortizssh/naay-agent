@@ -132,6 +132,7 @@ class Kova_Admin {
 
         // Promo Badge (Widget tab)
         $sanitized['promo_badge_enabled'] = $get_checkbox('promo_badge_enabled', false);
+        $sanitized['promo_badge_type'] = sanitize_text_field($get_value('promo_badge_type', 'discount'));
         $sanitized['promo_badge_discount'] = absint($get_value('promo_badge_discount', 10));
         $sanitized['promo_badge_text'] = sanitize_text_field($get_value('promo_badge_text', 'Descuento especial'));
         $sanitized['promo_badge_color'] = sanitize_hex_color($get_value('promo_badge_color', '#ef4444'));
@@ -1035,60 +1036,114 @@ class Kova_Admin {
                             </div>
 
                             <div id="kova-promo-badge-fields">
-                                <div class="kova-form-row">
-                                    <div class="kova-form-group kova-form-group-half">
-                                        <label class="kova-form-label"><?php _e('Discount Value', 'kova-agent'); ?></label>
-                                        <input type="number"
-                                               name="kova_agent_settings[promo_badge_discount]"
-                                               value="<?php echo esc_attr($settings['promo_badge_discount'] ?? 10); ?>"
-                                               class="kova-form-input"
-                                               min="1" max="100">
+                                <!-- Badge Type Selector -->
+                                <div class="kova-form-group">
+                                    <label class="kova-form-label"><?php _e('Badge Type', 'kova-agent'); ?></label>
+                                    <div style="display: flex; gap: 0.5rem;">
+                                        <label style="display: flex; align-items: center; padding: 0.5rem 1rem; border: 2px solid #ddd; border-radius: 8px; cursor: pointer; <?php echo ($settings['promo_badge_type'] ?? 'discount') === 'discount' ? 'border-color: #6366f1; background: rgba(99, 102, 241, 0.1);' : ''; ?>">
+                                            <input type="radio"
+                                                   name="kova_agent_settings[promo_badge_type]"
+                                                   value="discount"
+                                                   id="kova_promo_badge_type_discount"
+                                                   <?php checked(($settings['promo_badge_type'] ?? 'discount') === 'discount'); ?>
+                                                   style="margin-right: 0.5rem;">
+                                            <?php _e('💰 Discount', 'kova-agent'); ?>
+                                        </label>
+                                        <label style="display: flex; align-items: center; padding: 0.5rem 1rem; border: 2px solid #ddd; border-radius: 8px; cursor: pointer; <?php echo ($settings['promo_badge_type'] ?? 'discount') === 'notice' ? 'border-color: #6366f1; background: rgba(99, 102, 241, 0.1);' : ''; ?>">
+                                            <input type="radio"
+                                                   name="kova_agent_settings[promo_badge_type]"
+                                                   value="notice"
+                                                   id="kova_promo_badge_type_notice"
+                                                   <?php checked(($settings['promo_badge_type'] ?? 'discount') === 'notice'); ?>
+                                                   style="margin-right: 0.5rem;">
+                                            <?php _e('📢 Notice', 'kova-agent'); ?>
+                                        </label>
                                     </div>
-                                    <div class="kova-form-group kova-form-group-half">
-                                        <label class="kova-form-label"><?php _e('Badge Color', 'kova-agent'); ?></label>
-                                        <div class="kova-color-picker-wrapper">
-                                            <input type="color"
-                                                   name="kova_agent_settings[promo_badge_color]"
-                                                   value="<?php echo esc_attr($settings['promo_badge_color'] ?? '#ef4444'); ?>"
-                                                   class="kova-color-preview">
+                                    <p class="kova-form-hint"><?php _e('Discount shows percentage, Notice shows custom text', 'kova-agent'); ?></p>
+                                </div>
+
+                                <!-- Discount Type Fields -->
+                                <div id="kova-promo-badge-discount-fields" style="<?php echo ($settings['promo_badge_type'] ?? 'discount') === 'notice' ? 'display: none;' : ''; ?>">
+                                    <div class="kova-form-row">
+                                        <div class="kova-form-group kova-form-group-half">
+                                            <label class="kova-form-label"><?php _e('Discount Value', 'kova-agent'); ?></label>
+                                            <input type="number"
+                                                   name="kova_agent_settings[promo_badge_discount]"
+                                                   value="<?php echo esc_attr($settings['promo_badge_discount'] ?? 10); ?>"
+                                                   class="kova-form-input"
+                                                   min="1" max="100">
+                                        </div>
+                                        <div class="kova-form-group kova-form-group-half">
+                                            <label class="kova-form-label"><?php _e('Badge Color', 'kova-agent'); ?></label>
+                                            <div class="kova-color-picker-wrapper">
+                                                <input type="color"
+                                                       name="kova_agent_settings[promo_badge_color]"
+                                                       value="<?php echo esc_attr($settings['promo_badge_color'] ?? '#ef4444'); ?>"
+                                                       class="kova-color-preview">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="kova-form-row">
+                                        <div class="kova-form-group kova-form-group-third">
+                                            <label class="kova-form-label"><?php _e('Prefix', 'kova-agent'); ?></label>
+                                            <input type="text"
+                                                   name="kova_agent_settings[promo_badge_prefix]"
+                                                   value="<?php echo esc_attr($settings['promo_badge_prefix'] ?? ''); ?>"
+                                                   class="kova-form-input"
+                                                   placeholder="-">
+                                        </div>
+                                        <div class="kova-form-group kova-form-group-third">
+                                            <label class="kova-form-label"><?php _e('Suffix', 'kova-agent'); ?></label>
+                                            <input type="text"
+                                                   name="kova_agent_settings[promo_badge_suffix]"
+                                                   value="<?php echo esc_attr($settings['promo_badge_suffix'] ?? 'OFF'); ?>"
+                                                   class="kova-form-input"
+                                                   placeholder="% OFF">
+                                        </div>
+                                        <div class="kova-form-group kova-form-group-third">
+                                            <label class="kova-form-label"><?php _e('Font Size', 'kova-agent'); ?></label>
+                                            <input type="number"
+                                                   name="kova_agent_settings[promo_badge_font_size]"
+                                                   value="<?php echo esc_attr($settings['promo_badge_font_size'] ?? 12); ?>"
+                                                   class="kova-form-input"
+                                                   min="8" max="24">
                                         </div>
                                     </div>
                                 </div>
 
-                                <div class="kova-form-row">
-                                    <div class="kova-form-group kova-form-group-third">
-                                        <label class="kova-form-label"><?php _e('Prefix', 'kova-agent'); ?></label>
-                                        <input type="text"
-                                               name="kova_agent_settings[promo_badge_prefix]"
-                                               value="<?php echo esc_attr($settings['promo_badge_prefix'] ?? ''); ?>"
-                                               class="kova-form-input"
-                                               placeholder="-">
+                                <!-- Notice Type Fields -->
+                                <div id="kova-promo-badge-notice-fields" style="<?php echo ($settings['promo_badge_type'] ?? 'discount') !== 'notice' ? 'display: none;' : ''; ?>">
+                                    <div class="kova-form-row">
+                                        <div class="kova-form-group kova-form-group-half">
+                                            <label class="kova-form-label"><?php _e('Notice Text', 'kova-agent'); ?></label>
+                                            <input type="text"
+                                                   name="kova_agent_settings[promo_badge_text]"
+                                                   value="<?php echo esc_attr($settings['promo_badge_text'] ?? 'NEW'); ?>"
+                                                   class="kova-form-input"
+                                                   placeholder="NEW, HOT, SALE"
+                                                   maxlength="15">
+                                            <p class="kova-form-hint"><?php _e('Short text to display on the badge', 'kova-agent'); ?></p>
+                                        </div>
+                                        <div class="kova-form-group kova-form-group-half">
+                                            <label class="kova-form-label"><?php _e('Badge Color', 'kova-agent'); ?></label>
+                                            <div class="kova-color-picker-wrapper">
+                                                <input type="color"
+                                                       name="kova_agent_settings[promo_badge_color]"
+                                                       value="<?php echo esc_attr($settings['promo_badge_color'] ?? '#ef4444'); ?>"
+                                                       class="kova-color-preview">
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="kova-form-group kova-form-group-third">
-                                        <label class="kova-form-label"><?php _e('Suffix', 'kova-agent'); ?></label>
-                                        <input type="text"
-                                               name="kova_agent_settings[promo_badge_suffix]"
-                                               value="<?php echo esc_attr($settings['promo_badge_suffix'] ?? 'OFF'); ?>"
-                                               class="kova-form-input"
-                                               placeholder="% OFF">
-                                    </div>
-                                    <div class="kova-form-group kova-form-group-third">
+                                    <div class="kova-form-group">
                                         <label class="kova-form-label"><?php _e('Font Size', 'kova-agent'); ?></label>
                                         <input type="number"
                                                name="kova_agent_settings[promo_badge_font_size]"
                                                value="<?php echo esc_attr($settings['promo_badge_font_size'] ?? 12); ?>"
                                                class="kova-form-input"
-                                               min="8" max="24">
+                                               min="8" max="24"
+                                               style="width: 100px;">
                                     </div>
-                                </div>
-
-                                <div class="kova-form-group">
-                                    <label class="kova-form-label"><?php _e('Badge Text', 'kova-agent'); ?></label>
-                                    <input type="text"
-                                           name="kova_agent_settings[promo_badge_text]"
-                                           value="<?php echo esc_attr($settings['promo_badge_text'] ?? 'Descuento especial'); ?>"
-                                           class="kova-form-input"
-                                           placeholder="<?php _e('Special discount', 'kova-agent'); ?>">
                                 </div>
 
                                 <div class="kova-form-row">
@@ -1284,6 +1339,29 @@ class Kova_Admin {
             }
             $('#kova_promo_badge_enabled').on('change', togglePromoBadgeFields);
             togglePromoBadgeFields();
+
+            // Toggle promo badge type fields (discount vs notice)
+            function togglePromoBadgeTypeFields() {
+                var type = $('input[name="kova_agent_settings[promo_badge_type]"]:checked').val();
+                if (type === 'notice') {
+                    $('#kova-promo-badge-discount-fields').hide();
+                    $('#kova-promo-badge-notice-fields').show();
+                } else {
+                    $('#kova-promo-badge-discount-fields').show();
+                    $('#kova-promo-badge-notice-fields').hide();
+                }
+                // Update radio button styles
+                $('input[name="kova_agent_settings[promo_badge_type]"]').each(function() {
+                    var label = $(this).closest('label');
+                    if ($(this).is(':checked')) {
+                        label.css({'border-color': '#6366f1', 'background': 'rgba(99, 102, 241, 0.1)'});
+                    } else {
+                        label.css({'border-color': '#ddd', 'background': 'transparent'});
+                    }
+                });
+            }
+            $('input[name="kova_agent_settings[promo_badge_type]"]').on('change', togglePromoBadgeTypeFields);
+            togglePromoBadgeTypeFields();
 
             // Sync color inputs
             $('input[type="color"]').on('input', function() {

@@ -1,7 +1,14 @@
--- Migration: Add suggested questions customization fields
+-- Migration: Add suggested questions and promo badge type fields
 -- Date: 2026-02-06
--- Description: Adds fields for customizable suggested questions in the chat widget
+-- Description: Adds fields for customizable suggested questions and promo badge type
 
+-- Add promo badge type (discount or notice)
+ALTER TABLE client_stores
+ADD COLUMN IF NOT EXISTS promo_badge_type TEXT DEFAULT 'discount';
+
+COMMENT ON COLUMN client_stores.promo_badge_type IS 'Type of promo badge: discount (shows percentage) or notice (shows custom text)';
+
+-- Add suggested questions fields
 ALTER TABLE client_stores
 ADD COLUMN IF NOT EXISTS suggested_question_1_text TEXT DEFAULT 'Recomendaciones personalizadas',
 ADD COLUMN IF NOT EXISTS suggested_question_1_message TEXT DEFAULT '¿Qué productos recomiendas para mí?',

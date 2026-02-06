@@ -61,6 +61,7 @@ interface WidgetConfig {
   widget_brand_name: string;
   // Promotion badge settings
   promo_badge_enabled: boolean;
+  promo_badge_type: 'discount' | 'notice';
   promo_badge_discount: number;
   promo_badge_text: string;
   promo_badge_color: string;
@@ -357,6 +358,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
     widget_brand_name: 'Kova',
     // Promotion badge defaults
     promo_badge_enabled: false,
+    promo_badge_type: 'discount',
     promo_badge_discount: 10,
     promo_badge_text: 'Descuento especial',
     promo_badge_color: '#ef4444',
@@ -616,6 +618,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
             widget_brand_name: data.data.brandName || prev.widget_brand_name,
             // Promotion badge settings
             promo_badge_enabled: data.data.promoBadgeEnabled ?? prev.promo_badge_enabled,
+            promo_badge_type: data.data.promoBadgeType || prev.promo_badge_type,
             promo_badge_discount: data.data.promoBadgeDiscount || prev.promo_badge_discount,
             promo_badge_text: data.data.promoBadgeText || prev.promo_badge_text,
             promo_badge_color: data.data.promoBadgeColor || prev.promo_badge_color,
@@ -678,6 +681,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
             widgetBrandName: widgetConfig.widget_brand_name,
             // Promotion badge settings
             promoBadgeEnabled: widgetConfig.promo_badge_enabled,
+            promoBadgeType: widgetConfig.promo_badge_type,
             promoBadgeDiscount: widgetConfig.promo_badge_discount,
             promoBadgeText: widgetConfig.promo_badge_text,
             promoBadgeColor: widgetConfig.promo_badge_color,
@@ -2036,73 +2040,143 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                       borderRadius: '10px',
                       border: '1px solid var(--color-border)'
                     }}>
-                      {/* Discount Percentage */}
-                        <div className="form-group">
-                          <label className="form-label">Porcentaje de descuento</label>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <input
-                              type="number"
-                              className="form-input"
-                              value={widgetConfig.promo_badge_discount}
-                              onChange={e => setWidgetConfig({ ...widgetConfig, promo_badge_discount: parseInt(e.target.value) || 0 })}
-                              min={1}
-                              max={99}
-                              style={{ width: '80px' }}
-                            />
-                            <span style={{ fontSize: '1rem', fontWeight: '500' }}>%</span>
+                      {/* Badge Type Selector */}
+                      <div className="form-group">
+                        <label className="form-label">Tipo de badge</label>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button
+                            type="button"
+                            onClick={() => setWidgetConfig({ ...widgetConfig, promo_badge_type: 'discount' })}
+                            style={{
+                              padding: '0.5rem 1rem',
+                              borderRadius: '8px',
+                              border: '2px solid',
+                              borderColor: widgetConfig.promo_badge_type === 'discount' ? 'var(--color-primary)' : 'var(--color-border)',
+                              background: widgetConfig.promo_badge_type === 'discount' ? 'rgba(var(--color-primary-rgb, 107, 92, 255), 0.1)' : 'transparent',
+                              cursor: 'pointer',
+                              fontWeight: '500',
+                              fontSize: '0.85rem',
+                              color: widgetConfig.promo_badge_type === 'discount' ? 'var(--color-primary)' : 'var(--color-text)',
+                            }}
+                          >
+                            💰 Descuento
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setWidgetConfig({ ...widgetConfig, promo_badge_type: 'notice' })}
+                            style={{
+                              padding: '0.5rem 1rem',
+                              borderRadius: '8px',
+                              border: '2px solid',
+                              borderColor: widgetConfig.promo_badge_type === 'notice' ? 'var(--color-primary)' : 'var(--color-border)',
+                              background: widgetConfig.promo_badge_type === 'notice' ? 'rgba(var(--color-primary-rgb, 107, 92, 255), 0.1)' : 'transparent',
+                              cursor: 'pointer',
+                              fontWeight: '500',
+                              fontSize: '0.85rem',
+                              color: widgetConfig.promo_badge_type === 'notice' ? 'var(--color-primary)' : 'var(--color-text)',
+                            }}
+                          >
+                            📢 Aviso
+                          </button>
+                        </div>
+                        <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                          {widgetConfig.promo_badge_type === 'discount'
+                            ? 'Muestra un porcentaje de descuento en el badge'
+                            : 'Muestra un texto personalizado en el badge'}
+                        </p>
+                      </div>
+
+                      {/* Discount Type Fields */}
+                      {widgetConfig.promo_badge_type === 'discount' && (
+                        <>
+                          {/* Discount Percentage */}
+                          <div className="form-group">
+                            <label className="form-label">Porcentaje de descuento</label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <input
+                                type="number"
+                                className="form-input"
+                                value={widgetConfig.promo_badge_discount}
+                                onChange={e => setWidgetConfig({ ...widgetConfig, promo_badge_discount: parseInt(e.target.value) || 0 })}
+                                min={1}
+                                max={99}
+                                style={{ width: '80px' }}
+                              />
+                              <span style={{ fontSize: '1rem', fontWeight: '500' }}>%</span>
+                            </div>
                           </div>
-                        </div>
 
-                        {/* Prefix */}
+                          {/* Prefix */}
+                          <div className="form-group">
+                            <label className="form-label">Prefijo</label>
+                            <input
+                              type="text"
+                              className="form-input"
+                              value={widgetConfig.promo_badge_prefix}
+                              onChange={e => setWidgetConfig({ ...widgetConfig, promo_badge_prefix: e.target.value })}
+                              placeholder="SALE, HOT, etc."
+                              maxLength={10}
+                              style={{ width: '150px' }}
+                            />
+                          </div>
+
+                          {/* Suffix */}
+                          <div className="form-group">
+                            <label className="form-label">Sufijo</label>
+                            <input
+                              type="text"
+                              className="form-input"
+                              value={widgetConfig.promo_badge_suffix}
+                              onChange={e => setWidgetConfig({ ...widgetConfig, promo_badge_suffix: e.target.value })}
+                              placeholder="OFF, DSTO, etc."
+                              maxLength={10}
+                              style={{ width: '150px' }}
+                            />
+                            <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                              Resultado: <strong>{widgetConfig.promo_badge_prefix ? `${widgetConfig.promo_badge_prefix} ` : ''}{widgetConfig.promo_badge_discount}%{widgetConfig.promo_badge_suffix ? ` ${widgetConfig.promo_badge_suffix}` : ''}</strong>
+                            </p>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Notice Type Fields */}
+                      {widgetConfig.promo_badge_type === 'notice' && (
                         <div className="form-group">
-                          <label className="form-label">Prefijo</label>
+                          <label className="form-label">Texto del aviso</label>
                           <input
                             type="text"
                             className="form-input"
-                            value={widgetConfig.promo_badge_prefix}
-                            onChange={e => setWidgetConfig({ ...widgetConfig, promo_badge_prefix: e.target.value })}
-                            placeholder="SALE, HOT, etc."
-                            maxLength={10}
-                            style={{ width: '150px' }}
-                          />
-                        </div>
-
-                        {/* Suffix */}
-                        <div className="form-group">
-                          <label className="form-label">Sufijo</label>
-                          <input
-                            type="text"
-                            className="form-input"
-                            value={widgetConfig.promo_badge_suffix}
-                            onChange={e => setWidgetConfig({ ...widgetConfig, promo_badge_suffix: e.target.value })}
-                            placeholder="OFF, DSTO, etc."
-                            maxLength={10}
-                            style={{ width: '150px' }}
+                            value={widgetConfig.promo_badge_text}
+                            onChange={e => setWidgetConfig({ ...widgetConfig, promo_badge_text: e.target.value })}
+                            placeholder="NEW, HOT, SALE, etc."
+                            maxLength={15}
                           />
                           <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                            Resultado: <strong>{widgetConfig.promo_badge_prefix ? `${widgetConfig.promo_badge_prefix} ` : ''}{widgetConfig.promo_badge_discount}%{widgetConfig.promo_badge_suffix ? ` ${widgetConfig.promo_badge_suffix}` : ''}</strong>
+                            Texto corto que se mostrara en el badge
                           </p>
                         </div>
+                      )}
 
-                        {/* Font Size */}
-                        <div className="form-group">
-                          <label className="form-label">Tamaño de texto</label>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <input
-                              type="range"
-                              min="8"
-                              max="18"
-                              value={widgetConfig.promo_badge_font_size}
-                              onChange={e => setWidgetConfig({ ...widgetConfig, promo_badge_font_size: parseInt(e.target.value) })}
-                              style={{ width: '120px' }}
-                            />
-                            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', minWidth: '40px' }}>
-                              {widgetConfig.promo_badge_font_size}px
-                            </span>
-                          </div>
+                      {/* Font Size */}
+                      <div className="form-group">
+                        <label className="form-label">Tamaño de texto</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <input
+                            type="range"
+                            min="8"
+                            max="18"
+                            value={widgetConfig.promo_badge_font_size}
+                            onChange={e => setWidgetConfig({ ...widgetConfig, promo_badge_font_size: parseInt(e.target.value) })}
+                            style={{ width: '120px' }}
+                          />
+                          <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', minWidth: '40px' }}>
+                            {widgetConfig.promo_badge_font_size}px
+                          </span>
                         </div>
+                      </div>
 
-                        {/* Description/Prompt */}
+                      {/* Description/Prompt - only for discount type */}
+                      {widgetConfig.promo_badge_type === 'discount' && (
                         <div className="form-group">
                           <label className="form-label">Descripcion / Prompt</label>
                           <textarea
@@ -2116,6 +2190,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                             Texto que el agente usara al hablar de la promocion
                           </p>
                         </div>
+                      )}
 
                         {/* Badge Color */}
                         <div className="form-group">

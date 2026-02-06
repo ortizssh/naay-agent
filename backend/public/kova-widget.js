@@ -673,12 +673,20 @@
       if (this.promoBadge) {
         const badgeText = this.promoBadge.querySelector('.kova-widget__promo-badge-text');
 
-        // Update badge text
+        // Update badge text based on type (discount or notice)
         if (badgeText) {
-          const discount = this.config.promoBadgeDiscount || 10;
-          const suffix = this.config.promoBadgeSuffix || '';
-          const prefix = this.config.promoBadgePrefix || '';
-          badgeText.textContent = `${prefix ? prefix + ' ' : ''}${discount}%${suffix ? ' ' + suffix : ''}`;
+          const badgeType = this.config.promoBadgeType || 'discount';
+
+          if (badgeType === 'notice') {
+            // Notice type: show custom text
+            badgeText.textContent = this.config.promoBadgeText || 'NEW';
+          } else {
+            // Discount type: show percentage
+            const discount = this.config.promoBadgeDiscount || 10;
+            const suffix = this.config.promoBadgeSuffix || '';
+            const prefix = this.config.promoBadgePrefix || '';
+            badgeText.textContent = `${prefix ? prefix + ' ' : ''}${discount}%${suffix ? ' ' + suffix : ''}`;
+          }
         }
 
         // Show/hide badge based on config

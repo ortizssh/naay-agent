@@ -144,6 +144,7 @@ class Kova_API {
             'enableAnimations' => isset($settings['widget_enable_animations']) ? !empty($settings['widget_enable_animations']) : true,
             'theme' => $settings['widget_theme'] ?? 'light',
             'promoBadgeEnabled' => !empty($settings['promo_badge_enabled']),
+            'promoBadgeType' => $settings['promo_badge_type'] ?? 'discount',
             'promoBadgeDiscount' => intval($settings['promo_badge_discount'] ?? 10),
             'promoBadgeText' => $settings['promo_badge_text'] ?? 'Descuento especial',
             'promoBadgeColor' => $settings['promo_badge_color'] ?? '#ef4444',
