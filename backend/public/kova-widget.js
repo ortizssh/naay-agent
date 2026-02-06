@@ -727,6 +727,30 @@
         });
       }
 
+      // Update suggested questions
+      const features = this.container.querySelectorAll('.kova-widget__feature');
+      if (features.length >= 3) {
+        // Question 1
+        if (this.config.suggestedQuestion1Text || this.config.suggestedQuestion1Message) {
+          features[0].setAttribute('data-message', this.config.suggestedQuestion1Message || '¿Qué productos recomiendas para mí?');
+          const span1 = features[0].querySelector('span');
+          if (span1) span1.textContent = this.config.suggestedQuestion1Text || 'Recomendaciones personalizadas';
+        }
+        // Question 2
+        if (this.config.suggestedQuestion2Text || this.config.suggestedQuestion2Message) {
+          features[1].setAttribute('data-message', this.config.suggestedQuestion2Message || '¿Puedes ayudarme a elegir productos?');
+          const span2 = features[1].querySelector('span');
+          if (span2) span2.textContent = this.config.suggestedQuestion2Text || 'Ayuda con mi compra';
+        }
+        // Question 3
+        if (this.config.suggestedQuestion3Text || this.config.suggestedQuestion3Message) {
+          features[2].setAttribute('data-message', this.config.suggestedQuestion3Message || '¿Cuáles son las opciones de envío?');
+          const span3 = features[2].querySelector('span');
+          if (span3) span3.textContent = this.config.suggestedQuestion3Text || 'Información de envío';
+        }
+        console.log('💬 Suggested questions updated');
+      }
+
       console.log('📝 Dynamic content applied:', {
         brandName,
         placeholder: this.config.placeholder,

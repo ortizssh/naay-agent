@@ -141,6 +141,14 @@ class Kova_Admin {
         $sanitized['promo_badge_prefix'] = sanitize_text_field($get_value('promo_badge_prefix', ''));
         $sanitized['promo_badge_font_size'] = absint($get_value('promo_badge_font_size', 12));
 
+        // Suggested Questions (Widget tab)
+        $sanitized['suggested_question_1_text'] = sanitize_text_field($get_value('suggested_question_1_text', 'Recomendaciones personalizadas'));
+        $sanitized['suggested_question_1_message'] = sanitize_text_field($get_value('suggested_question_1_message', '¿Qué productos recomiendas para mí?'));
+        $sanitized['suggested_question_2_text'] = sanitize_text_field($get_value('suggested_question_2_text', 'Ayuda con mi compra'));
+        $sanitized['suggested_question_2_message'] = sanitize_text_field($get_value('suggested_question_2_message', '¿Puedes ayudarme a elegir productos?'));
+        $sanitized['suggested_question_3_text'] = sanitize_text_field($get_value('suggested_question_3_text', 'Información de envío'));
+        $sanitized['suggested_question_3_message'] = sanitize_text_field($get_value('suggested_question_3_message', '¿Cuáles son las opciones de envío?'));
+
         // Display settings (Widget tab)
         $sanitized['show_on_mobile'] = $get_checkbox('show_on_mobile', true);
         $sanitized['show_on_product_pages'] = $get_checkbox('show_on_product_pages', true);
@@ -1097,6 +1105,83 @@ class Kova_Admin {
                                             <option value="right" <?php selected($settings['promo_badge_position'] ?? 'right', 'right'); ?>><?php _e('Right', 'kova-agent'); ?></option>
                                             <option value="left" <?php selected($settings['promo_badge_position'] ?? 'right', 'left'); ?>><?php _e('Left', 'kova-agent'); ?></option>
                                         </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Suggested Questions Section -->
+                        <div class="kova-card">
+                            <div class="kova-card-header">
+                                <h3 class="kova-card-title"><?php _e('Suggested Questions', 'kova-agent'); ?></h3>
+                            </div>
+                            <p class="kova-form-hint" style="margin-bottom: 1rem;"><?php _e('Customize the quick action buttons shown to users when they open the chat.', 'kova-agent'); ?></p>
+
+                            <!-- Question 1 -->
+                            <div class="kova-form-group" style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                                <label class="kova-form-label" style="font-weight: 600; margin-bottom: 0.5rem;"><?php _e('Question 1', 'kova-agent'); ?></label>
+                                <div class="kova-form-row">
+                                    <div class="kova-form-group-half">
+                                        <label class="kova-form-label"><?php _e('Button Text', 'kova-agent'); ?></label>
+                                        <input type="text"
+                                               name="kova_agent_settings[suggested_question_1_text]"
+                                               value="<?php echo esc_attr($settings['suggested_question_1_text'] ?? 'Recomendaciones personalizadas'); ?>"
+                                               class="kova-form-input"
+                                               placeholder="<?php _e('Text shown on button', 'kova-agent'); ?>">
+                                    </div>
+                                    <div class="kova-form-group-half">
+                                        <label class="kova-form-label"><?php _e('Message to Send', 'kova-agent'); ?></label>
+                                        <input type="text"
+                                               name="kova_agent_settings[suggested_question_1_message]"
+                                               value="<?php echo esc_attr($settings['suggested_question_1_message'] ?? '¿Qué productos recomiendas para mí?'); ?>"
+                                               class="kova-form-input"
+                                               placeholder="<?php _e('Message sent when clicked', 'kova-agent'); ?>">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Question 2 -->
+                            <div class="kova-form-group" style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                                <label class="kova-form-label" style="font-weight: 600; margin-bottom: 0.5rem;"><?php _e('Question 2', 'kova-agent'); ?></label>
+                                <div class="kova-form-row">
+                                    <div class="kova-form-group-half">
+                                        <label class="kova-form-label"><?php _e('Button Text', 'kova-agent'); ?></label>
+                                        <input type="text"
+                                               name="kova_agent_settings[suggested_question_2_text]"
+                                               value="<?php echo esc_attr($settings['suggested_question_2_text'] ?? 'Ayuda con mi compra'); ?>"
+                                               class="kova-form-input"
+                                               placeholder="<?php _e('Text shown on button', 'kova-agent'); ?>">
+                                    </div>
+                                    <div class="kova-form-group-half">
+                                        <label class="kova-form-label"><?php _e('Message to Send', 'kova-agent'); ?></label>
+                                        <input type="text"
+                                               name="kova_agent_settings[suggested_question_2_message]"
+                                               value="<?php echo esc_attr($settings['suggested_question_2_message'] ?? '¿Puedes ayudarme a elegir productos?'); ?>"
+                                               class="kova-form-input"
+                                               placeholder="<?php _e('Message sent when clicked', 'kova-agent'); ?>">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Question 3 -->
+                            <div class="kova-form-group" style="background: #f8f9fa; padding: 1rem; border-radius: 8px;">
+                                <label class="kova-form-label" style="font-weight: 600; margin-bottom: 0.5rem;"><?php _e('Question 3', 'kova-agent'); ?></label>
+                                <div class="kova-form-row">
+                                    <div class="kova-form-group-half">
+                                        <label class="kova-form-label"><?php _e('Button Text', 'kova-agent'); ?></label>
+                                        <input type="text"
+                                               name="kova_agent_settings[suggested_question_3_text]"
+                                               value="<?php echo esc_attr($settings['suggested_question_3_text'] ?? 'Información de envío'); ?>"
+                                               class="kova-form-input"
+                                               placeholder="<?php _e('Text shown on button', 'kova-agent'); ?>">
+                                    </div>
+                                    <div class="kova-form-group-half">
+                                        <label class="kova-form-label"><?php _e('Message to Send', 'kova-agent'); ?></label>
+                                        <input type="text"
+                                               name="kova_agent_settings[suggested_question_3_message]"
+                                               value="<?php echo esc_attr($settings['suggested_question_3_message'] ?? '¿Cuáles son las opciones de envío?'); ?>"
+                                               class="kova-form-input"
+                                               placeholder="<?php _e('Message sent when clicked', 'kova-agent'); ?>">
                                     </div>
                                 </div>
                             </div>

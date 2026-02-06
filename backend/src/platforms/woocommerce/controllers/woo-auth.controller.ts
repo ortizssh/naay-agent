@@ -636,6 +636,18 @@ router.post('/widget-config', async (req: Request, res: Response) => {
       promo_badge_suffix: config.promoBadgeSuffix ?? 'OFF',
       promo_badge_prefix: config.promoBadgePrefix ?? '',
       promo_badge_font_size: config.promoBadgeFontSize || 12,
+      suggested_question_1_text:
+        config.suggestedQuestion1Text || 'Recomendaciones personalizadas',
+      suggested_question_1_message:
+        config.suggestedQuestion1Message || '¿Qué productos recomiendas para mí?',
+      suggested_question_2_text:
+        config.suggestedQuestion2Text || 'Ayuda con mi compra',
+      suggested_question_2_message:
+        config.suggestedQuestion2Message || '¿Puedes ayudarme a elegir productos?',
+      suggested_question_3_text:
+        config.suggestedQuestion3Text || 'Información de envío',
+      suggested_question_3_message:
+        config.suggestedQuestion3Message || '¿Cuáles son las opciones de envío?',
       updated_at: new Date().toISOString(),
     };
 

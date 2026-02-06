@@ -161,6 +161,12 @@ router.get(
         promoBadgeSuffix: 'OFF',
         promoBadgePrefix: '',
         promoBadgeFontSize: 12,
+        suggestedQuestion1Text: 'Recomendaciones personalizadas',
+        suggestedQuestion1Message: '¿Qué productos recomiendas para mí?',
+        suggestedQuestion2Text: 'Ayuda con mi compra',
+        suggestedQuestion2Message: '¿Puedes ayudarme a elegir productos?',
+        suggestedQuestion3Text: 'Información de envío',
+        suggestedQuestion3Message: '¿Cuáles son las opciones de envío?',
       };
 
       if (!shop) {
@@ -236,7 +242,13 @@ router.get(
             promo_badge_position,
             promo_badge_suffix,
             promo_badge_prefix,
-            promo_badge_font_size
+            promo_badge_font_size,
+            suggested_question_1_text,
+            suggested_question_1_message,
+            suggested_question_2_text,
+            suggested_question_2_message,
+            suggested_question_3_text,
+            suggested_question_3_message
           `
           )
           .eq('shop_domain', shopVariant)
@@ -323,6 +335,24 @@ router.get(
             promoBadgeFontSize:
               clientStore.promo_badge_font_size ||
               defaultConfig.promoBadgeFontSize,
+            suggestedQuestion1Text:
+              clientStore.suggested_question_1_text ||
+              defaultConfig.suggestedQuestion1Text,
+            suggestedQuestion1Message:
+              clientStore.suggested_question_1_message ||
+              defaultConfig.suggestedQuestion1Message,
+            suggestedQuestion2Text:
+              clientStore.suggested_question_2_text ||
+              defaultConfig.suggestedQuestion2Text,
+            suggestedQuestion2Message:
+              clientStore.suggested_question_2_message ||
+              defaultConfig.suggestedQuestion2Message,
+            suggestedQuestion3Text:
+              clientStore.suggested_question_3_text ||
+              defaultConfig.suggestedQuestion3Text,
+            suggestedQuestion3Message:
+              clientStore.suggested_question_3_message ||
+              defaultConfig.suggestedQuestion3Message,
           },
         });
       }

@@ -152,6 +152,12 @@ class Kova_API {
             'promoBadgeSuffix' => $settings['promo_badge_suffix'] ?? 'OFF',
             'promoBadgePrefix' => $settings['promo_badge_prefix'] ?? '',
             'promoBadgeFontSize' => intval($settings['promo_badge_font_size'] ?? 12),
+            'suggestedQuestion1Text' => $settings['suggested_question_1_text'] ?? 'Recomendaciones personalizadas',
+            'suggestedQuestion1Message' => $settings['suggested_question_1_message'] ?? '¿Qué productos recomiendas para mí?',
+            'suggestedQuestion2Text' => $settings['suggested_question_2_text'] ?? 'Ayuda con mi compra',
+            'suggestedQuestion2Message' => $settings['suggested_question_2_message'] ?? '¿Puedes ayudarme a elegir productos?',
+            'suggestedQuestion3Text' => $settings['suggested_question_3_text'] ?? 'Información de envío',
+            'suggestedQuestion3Message' => $settings['suggested_question_3_message'] ?? '¿Cuáles son las opciones de envío?',
         );
 
         $response = wp_remote_post($api_endpoint . '/api/woo/widget-config', array(
