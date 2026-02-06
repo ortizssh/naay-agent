@@ -110,10 +110,15 @@ router.get(
         try {
           const url = new URL(shop);
           shop = `${url.protocol}//${url.host}`;
-          logger.info('Normalized shop URL for widget config', { original: req.query.shop, normalized: shop });
+          logger.info('Normalized shop URL for widget config', {
+            original: req.query.shop,
+            normalized: shop,
+          });
         } catch {
           // If URL parsing fails, use the original value
-          logger.warn('Failed to parse shop URL, using original value', { shop });
+          logger.warn('Failed to parse shop URL, using original value', {
+            shop,
+          });
         }
       }
 
@@ -188,9 +193,7 @@ router.get(
       let clientError = null;
 
       for (const shopVariant of shopVariants) {
-        const { data, error } = await (
-          supabaseService as any
-        ).serviceClient
+        const { data, error } = await (supabaseService as any).serviceClient
           .from('client_stores')
           .select(
             `
@@ -235,7 +238,9 @@ router.get(
 
         if (data && !error) {
           clientStore = data;
-          logger.info('Found client_stores config with variant:', { shopVariant });
+          logger.info('Found client_stores config with variant:', {
+            shopVariant,
+          });
           break;
         }
         clientError = error;
