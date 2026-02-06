@@ -183,16 +183,15 @@ class Kova_Widget {
             'customer' => $customer,
         );
 
-        // Add design settings if configured
-        if (!empty($this->settings['widget_color'])) {
-            $widget_config['primaryColor'] = $this->settings['widget_color'];
-            $widget_config['forever'] = $this->settings['widget_color']; // Legacy support
-        }
-        if (!empty($this->settings['widget_secondary_color'])) {
-            $widget_config['secondaryColor'] = $this->settings['widget_secondary_color'];
-        }
-        if (!empty($this->settings['widget_accent_color'])) {
-            $widget_config['accentColor'] = $this->settings['widget_accent_color'];
+        // Add design settings - always pass colors with defaults
+        $widget_config['primaryColor'] = $this->settings['widget_color'] ?? '#6366f1';
+        $widget_config['forever'] = $widget_config['primaryColor']; // Legacy support
+        $widget_config['secondaryColor'] = $this->settings['widget_secondary_color'] ?? '#212120';
+        $widget_config['accentColor'] = $this->settings['widget_accent_color'] ?? '#cf795e';
+
+        // Additional customization options
+        if (!empty($this->settings['widget_title'])) {
+            $widget_config['brandName'] = $this->settings['widget_title'];
         }
         ?>
         <script type="text/javascript">

@@ -124,6 +124,13 @@
     init() {
       console.log('✨ Initializing Kova Luxury Widget v2.1 with Cart Sidebar:', new Date().toISOString());
       console.log('🏪 Shop Domain:', this.config.shopDomain);
+      console.log('🎨 Initial Config Colors:', {
+        primaryColor: this.config.primaryColor,
+        secondaryColor: this.config.secondaryColor,
+        accentColor: this.config.accentColor,
+        forever: this.config.forever,
+        platform: this.config.platform
+      });
 
       // Load settings from server
       this.loadSettings().then(() => {
@@ -231,12 +238,36 @@
 
     async loadSettings() {
       try {
+        // For WooCommerce, prefer the local config from window.KovaConfig
+        // as it's set directly by the WordPress plugin with the latest settings
+        if (this.config.platform === 'woocommerce' && window.KovaConfig) {
+          console.log('🏪 WooCommerce detected - using local KovaConfig instead of server fetch');
+          // Already have config from constructor, just setup rotating messages
+          this.setupRotatingMessages();
+          return;
+        }
+
         const response = await fetch(`${this.config.apiEndpoint}/api/widget/config?shop=${this.config.shopDomain}`);
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.data) {
-            Object.assign(this.config, data.data);
+            // Preserve local config values that were explicitly set
+            const localConfig = window.KovaConfig || {};
+            const mergedConfig = { ...data.data };
+
+            // For WooCommerce, local config takes priority
+            if (localConfig.platform === 'woocommerce') {
+              // Only use server values as fallback for unset local values
+              Object.keys(localConfig).forEach(key => {
+                if (localConfig[key] !== undefined && localConfig[key] !== null && localConfig[key] !== '') {
+                  mergedConfig[key] = localConfig[key];
+                }
+              });
+            }
+
+            Object.assign(this.config, mergedConfig);
             console.log('Loaded widget settings from server:', data.data);
+            console.log('Final merged config:', this.config);
 
             // Start rotating messages if enabled
             this.setupRotatingMessages();
@@ -3748,10 +3779,11 @@
       const dynamicStyle = document.createElement('style');
       dynamicStyle.id = 'kova-dynamic-styles';
 
-      // Get config values with fallbacks
-      const primaryColor = this.config.primaryColor || '#a59457';
-      const secondaryColor = this.config.secondaryColor || '#212120';
-      const accentColor = this.config.accentColor || '#cf795e';
+      // Get config values with fallbacks - check both primaryColor and forever
+      const primaryColor = this.config.primaryColor || this.config.forever || '#a59457';
+      const secondaryColor = this.config.secondaryColor || this.config.dark || '#212120';
+      const accentColor = this.config.accentColor || this.config.terracotta || '#cf795e';
+      console.log('🎨 Applying dynamic styles with colors:', { primaryColor, secondaryColor, accentColor });
       const buttonSize = this.config.buttonSize || 72;
       const chatWidth = this.config.chatWidth || 420;
       const chatHeight = this.config.chatHeight || 600;

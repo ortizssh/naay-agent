@@ -136,7 +136,10 @@ router.get('/download', async (req: Request, res: Response) => {
       res.sendFile(path.resolve(foundPath));
     } else {
       // Log all attempted paths for debugging
-      console.error('[Plugin Download] ZIP not found in any path:', possiblePaths);
+      console.error(
+        '[Plugin Download] ZIP not found in any path:',
+        possiblePaths
+      );
       console.error('[Plugin Download] __dirname:', __dirname);
       console.error('[Plugin Download] process.cwd():', process.cwd());
 
@@ -148,7 +151,8 @@ router.get('/download', async (req: Request, res: Response) => {
       } else {
         res.status(404).json({
           error: 'Plugin download not available',
-          message: 'Please download the plugin from the Kova Agent admin panel or contact support.',
+          message:
+            'Please download the plugin from the Kova Agent admin panel or contact support.',
           debug: {
             searchedPaths: possiblePaths,
             cwd: process.cwd(),
