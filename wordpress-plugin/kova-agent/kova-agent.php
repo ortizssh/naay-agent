@@ -3,7 +3,7 @@
  * Plugin Name: Kova Agent - AI Shopping Assistant
  * Plugin URI: https://kova.ai
  * Description: AI-powered shopping assistant for WooCommerce stores. Provides intelligent product search, recommendations, and cart management through a chat widget.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: Kova AI
  * Author URI: https://kova.ai
  * License: GPL v2 or later
@@ -22,7 +22,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('KOVA_AGENT_VERSION', '1.0.0');
+define('KOVA_AGENT_VERSION', '1.0.1');
 define('KOVA_AGENT_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('KOVA_AGENT_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('KOVA_AGENT_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -45,6 +45,30 @@ function kova_agent_check_woocommerce() {
 }
 
 /**
+ * Migrate settings from old API endpoint to new one
+ */
+function kova_agent_migrate_settings() {
+    $settings = get_option('kova_agent_settings', array());
+    $needs_update = false;
+
+    // Migrate from old api.kova.ai to new Azure endpoint
+    if (isset($settings['api_endpoint']) && $settings['api_endpoint'] === 'https://api.kova.ai') {
+        $settings['api_endpoint'] = 'https://naay-agent-app1763504937.azurewebsites.net';
+        $needs_update = true;
+    }
+
+    // Also handle empty endpoint
+    if (empty($settings['api_endpoint'])) {
+        $settings['api_endpoint'] = 'https://naay-agent-app1763504937.azurewebsites.net';
+        $needs_update = true;
+    }
+
+    if ($needs_update) {
+        update_option('kova_agent_settings', $settings);
+    }
+}
+
+/**
  * Initialize the plugin
  */
 function kova_agent_init() {
@@ -52,6 +76,9 @@ function kova_agent_init() {
     if (!kova_agent_check_woocommerce()) {
         return;
     }
+
+    // Run migrations
+    kova_agent_migrate_settings();
 
     // Load plugin classes
     require_once KOVA_AGENT_PLUGIN_DIR . 'includes/class-kova-admin.php';

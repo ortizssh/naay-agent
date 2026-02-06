@@ -13,7 +13,7 @@ const router = Router();
 const PLUGIN_INFO = {
   slug: 'kova-agent',
   name: 'Kova Agent - AI Shopping Assistant',
-  version: '1.0.0', // Current version available for download
+  version: '1.0.1', // Current version available for download
   tested: '6.4',
   requires: '5.8',
   requires_php: '7.4',
@@ -23,6 +23,12 @@ const PLUGIN_INFO = {
   description:
     'AI-powered shopping assistant for WooCommerce stores. Provides intelligent product search, recommendations, and cart management through a chat widget.',
   changelog: `
+        <h4>1.0.1 - API Endpoint Fix</h4>
+        <ul>
+            <li>Fixed API endpoint configuration</li>
+            <li>Added automatic migration for existing installations</li>
+            <li>Added auto-update functionality</li>
+        </ul>
         <h4>1.0.0 - Initial Release</h4>
         <ul>
             <li>AI-powered chat widget</li>
