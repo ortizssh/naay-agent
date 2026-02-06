@@ -105,23 +105,27 @@ router.post('/connect', async (req: Request, res: Response) => {
     }
 
     // Also create/update client_stores entry for widget config
-    const { data: existingClient } = await (supabaseService as any).serviceClient
+    const { data: existingClient } = await (
+      supabaseService as any
+    ).serviceClient
       .from('client_stores')
       .select('id')
       .eq('shop_domain', normalizedUrl)
       .single();
 
     if (!existingClient) {
-      await (supabaseService as any).serviceClient.from('client_stores').insert({
-        shop_domain: normalizedUrl,
-        platform: 'woocommerce',
-        widget_enabled: true,
-        widget_position: 'bottom-right',
-        widget_color: '#6366f1',
-        widget_brand_name: connectionResult.storeName || 'Store',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
+      await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .insert({
+          shop_domain: normalizedUrl,
+          platform: 'woocommerce',
+          widget_enabled: true,
+          widget_position: 'bottom-right',
+          widget_color: '#6366f1',
+          widget_brand_name: connectionResult.storeName || 'Store',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
     }
 
     logger.info('WooCommerce store connected successfully', {
@@ -558,7 +562,9 @@ router.post('/widget-config', async (req: Request, res: Response) => {
     });
 
     // Check if store exists in client_stores
-    const { data: existingClient } = await (supabaseService as any).serviceClient
+    const { data: existingClient } = await (
+      supabaseService as any
+    ).serviceClient
       .from('client_stores')
       .select('id')
       .eq('shop_domain', normalizedUrl)
@@ -620,7 +626,9 @@ router.post('/widget-config', async (req: Request, res: Response) => {
         });
     }
 
-    logger.info('Widget config updated successfully', { siteUrl: normalizedUrl });
+    logger.info('Widget config updated successfully', {
+      siteUrl: normalizedUrl,
+    });
 
     return res.json({
       success: true,
@@ -656,7 +664,9 @@ router.get('/widget-config/:siteUrl', async (req: Request, res: Response) => {
       });
     }
 
-    const { data: clientStore, error } = await (supabaseService as any).serviceClient
+    const { data: clientStore, error } = await (
+      supabaseService as any
+    ).serviceClient
       .from('client_stores')
       .select('*')
       .eq('shop_domain', normalizedUrl)
@@ -682,8 +692,10 @@ router.get('/widget-config/:siteUrl', async (req: Request, res: Response) => {
         subtitle2: clientStore.widget_subtitle_2 || '',
         greeting3: clientStore.widget_welcome_message_3 || '',
         subtitle3: clientStore.widget_subtitle_3 || '',
-        rotatingMessagesEnabled: clientStore.widget_rotating_messages_enabled ?? false,
-        rotatingMessagesInterval: clientStore.widget_rotating_messages_interval || 5,
+        rotatingMessagesEnabled:
+          clientStore.widget_rotating_messages_enabled ?? false,
+        rotatingMessagesInterval:
+          clientStore.widget_rotating_messages_interval || 5,
         subtitle: clientStore.widget_subtitle || 'Asistente de compras con IA',
         placeholder: clientStore.widget_placeholder || 'Escribe tu mensaje...',
         avatar: clientStore.widget_avatar || '🌿',

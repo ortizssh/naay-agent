@@ -102,28 +102,45 @@ router.all('/update-info', async (req: Request, res: Response) => {
 router.get('/download', async (req: Request, res: Response) => {
   try {
     // The plugin ZIP should be pre-built and stored somewhere accessible
-    // Options:
-    // 1. Build and store in a cloud storage (S3, Azure Blob, etc.)
-    // 2. Serve from local filesystem during development
-    // 3. GitHub releases URL
+    // Try multiple paths to find the ZIP file
 
-    // For now, we'll check if a local ZIP exists or redirect to GitHub
-    const pluginZipPath = path.join(
-      __dirname,
-      '../../../../public/downloads/kova-agent.zip'
-    );
+    const possiblePaths = [
+      // From compiled dist location
+      path.join(__dirname, '../../../public/downloads/kova-agent.zip'),
+      path.join(__dirname, '../../public/downloads/kova-agent.zip'),
+      path.join(__dirname, '../public/downloads/kova-agent.zip'),
+      // From process.cwd()
+      path.join(process.cwd(), 'dist/public/downloads/kova-agent.zip'),
+      path.join(process.cwd(), 'public/downloads/kova-agent.zip'),
+      // Azure specific paths
+      path.join(process.cwd(), 'downloads/kova-agent.zip'),
+    ];
 
-    if (fs.existsSync(pluginZipPath)) {
+    let foundPath: string | null = null;
+    for (const testPath of possiblePaths) {
+      console.log(`[Plugin Download] Checking path: ${testPath}`);
+      if (fs.existsSync(testPath)) {
+        foundPath = testPath;
+        console.log(`[Plugin Download] Found ZIP at: ${testPath}`);
+        break;
+      }
+    }
+
+    if (foundPath) {
       // Serve local ZIP file
       res.setHeader('Content-Type', 'application/zip');
       res.setHeader(
         'Content-Disposition',
         `attachment; filename="kova-agent-${PLUGIN_INFO.version}.zip"`
       );
-      res.sendFile(pluginZipPath);
+      res.sendFile(path.resolve(foundPath));
     } else {
+      // Log all attempted paths for debugging
+      console.error('[Plugin Download] ZIP not found in any path:', possiblePaths);
+      console.error('[Plugin Download] __dirname:', __dirname);
+      console.error('[Plugin Download] process.cwd():', process.cwd());
+
       // Redirect to GitHub releases or return error
-      // You can configure PLUGIN_DOWNLOAD_URL in environment
       const downloadUrl = process.env.PLUGIN_DOWNLOAD_URL;
 
       if (downloadUrl) {
@@ -131,8 +148,12 @@ router.get('/download', async (req: Request, res: Response) => {
       } else {
         res.status(404).json({
           error: 'Plugin download not available',
-          message:
-            'Please download the plugin from the Kova Agent admin panel or contact support.',
+          message: 'Please download the plugin from the Kova Agent admin panel or contact support.',
+          debug: {
+            searchedPaths: possiblePaths,
+            cwd: process.cwd(),
+            dirname: __dirname,
+          },
         });
       }
     }

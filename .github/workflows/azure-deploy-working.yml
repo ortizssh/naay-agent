@@ -43,11 +43,15 @@ jobs:
       run: |
         chmod +x ./scripts/build-wp-plugin.sh
         ./scripts/build-wp-plugin.sh
+        echo "📁 Checking plugin ZIP location:"
+        ls -la backend/public/downloads/ || echo "Directory not found"
 
     - name: Build backend
       run: |
         cd backend
         npm run build
+        echo "📁 Verifying plugin ZIP in dist:"
+        ls -la dist/public/downloads/ || echo "Directory not found in dist"
 
     - name: Create deployment package
       run: |
@@ -101,6 +105,10 @@ jobs:
           </system.webServer>
         </configuration>
         EOF
+
+        # Verify plugin ZIP is in deployment package
+        echo "📁 Final verification - Plugin ZIP in azure-deploy:"
+        ls -la azure-deploy/dist/public/downloads/ || echo "Plugin ZIP not found!"
 
     - name: Upload deployment artifact
       uses: actions/upload-artifact@v4
