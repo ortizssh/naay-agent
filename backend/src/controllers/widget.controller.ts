@@ -102,7 +102,20 @@ router.get(
   '/config',
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { shop } = req.query;
+      let shop = req.query.shop as string;
+
+      // Normalize URL for WooCommerce stores (remove paths, keep protocol://host)
+      // This ensures consistency with how WooCommerce stores save their config
+      if (shop && (shop.startsWith('http://') || shop.startsWith('https://'))) {
+        try {
+          const url = new URL(shop);
+          shop = `${url.protocol}//${url.host}`;
+          logger.info('Normalized shop URL for widget config', { original: req.query.shop, normalized: shop });
+        } catch {
+          // If URL parsing fails, use the original value
+          logger.warn('Failed to parse shop URL, using original value', { shop });
+        }
+      }
 
       // Default configuration
       const defaultConfig = {
@@ -142,7 +155,7 @@ router.get(
         promoBadgeFontSize: 12,
       };
 
-      if (!shop || typeof shop !== 'string') {
+      if (!shop) {
         return res.json({
           success: true,
           data: defaultConfig,
@@ -151,51 +164,82 @@ router.get(
 
       logger.info(`Getting widget config for shop: ${shop}`);
 
+      // Build list of possible shop domain formats to try
+      const shopVariants: string[] = [shop];
+
+      // If it's a full URL, also try just the hostname
+      if (shop.startsWith('http://') || shop.startsWith('https://')) {
+        try {
+          const url = new URL(shop);
+          shopVariants.push(url.host); // e.g., "example.com"
+          shopVariants.push(url.hostname); // e.g., "example.com" (without port)
+        } catch {
+          // Ignore parse errors
+        }
+      } else {
+        // If it's just a hostname, also try with https://
+        shopVariants.push(`https://${shop}`);
+      }
+
+      logger.info('Trying shop domain variants:', { shopVariants });
+
       // First, try to get config from client_stores (new flow with full design settings)
-      const { data: clientStore, error: clientError } = await (
-        supabaseService as any
-      ).serviceClient
-        .from('client_stores')
-        .select(
+      let clientStore = null;
+      let clientError = null;
+
+      for (const shopVariant of shopVariants) {
+        const { data, error } = await (
+          supabaseService as any
+        ).serviceClient
+          .from('client_stores')
+          .select(
+            `
+            widget_position,
+            widget_color,
+            welcome_message,
+            widget_welcome_message_2,
+            widget_subtitle_2,
+            widget_welcome_message_3,
+            widget_subtitle_3,
+            widget_rotating_messages_enabled,
+            widget_rotating_messages_interval,
+            widget_enabled,
+            widget_secondary_color,
+            widget_accent_color,
+            widget_button_size,
+            widget_button_style,
+            widget_show_pulse,
+            widget_chat_width,
+            widget_chat_height,
+            widget_subtitle,
+            widget_placeholder,
+            widget_avatar,
+            widget_show_promo_message,
+            widget_show_cart,
+            widget_enable_animations,
+            widget_theme,
+            widget_brand_name,
+            promo_badge_enabled,
+            promo_badge_discount,
+            promo_badge_text,
+            promo_badge_color,
+            promo_badge_shape,
+            promo_badge_position,
+            promo_badge_suffix,
+            promo_badge_prefix,
+            promo_badge_font_size
           `
-          widget_position,
-          widget_color,
-          welcome_message,
-          widget_welcome_message_2,
-          widget_subtitle_2,
-          widget_welcome_message_3,
-          widget_subtitle_3,
-          widget_rotating_messages_enabled,
-          widget_rotating_messages_interval,
-          widget_enabled,
-          widget_secondary_color,
-          widget_accent_color,
-          widget_button_size,
-          widget_button_style,
-          widget_show_pulse,
-          widget_chat_width,
-          widget_chat_height,
-          widget_subtitle,
-          widget_placeholder,
-          widget_avatar,
-          widget_show_promo_message,
-          widget_show_cart,
-          widget_enable_animations,
-          widget_theme,
-          widget_brand_name,
-          promo_badge_enabled,
-          promo_badge_discount,
-          promo_badge_text,
-          promo_badge_color,
-          promo_badge_shape,
-          promo_badge_position,
-          promo_badge_suffix,
-          promo_badge_prefix,
-          promo_badge_font_size
-        `
-        )
-        .eq('shop_domain', shop)
-        .single();
+          )
+          .eq('shop_domain', shopVariant)
+          .single();
+
+        if (data && !error) {
+          clientStore = data;
+          logger.info('Found client_stores config with variant:', { shopVariant });
+          break;
+        }
+        clientError = error;
+      }
 
       if (clientStore && !clientError) {
         logger.info('Widget config loaded from client_stores', { shop });
@@ -272,7 +316,15 @@ router.get(
       }
 
       // Fallback: Get store from stores table (legacy)
-      const store = await supabaseService.getStore(shop);
+      // Try all shop variants
+      let store = null;
+      for (const shopVariant of shopVariants) {
+        store = await supabaseService.getStore(shopVariant);
+        if (store) {
+          logger.info('Found store with variant:', { shopVariant });
+          break;
+        }
+      }
 
       if (!store || !store.widget_enabled) {
         return res.json({
