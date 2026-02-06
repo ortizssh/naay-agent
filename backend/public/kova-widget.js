@@ -4720,6 +4720,9 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             this.storeConversationId(this.conversationId);
           }
 
+          // Persist messages to backend for conversation history
+          this.persistMessages(text, assistantMessage);
+
           console.log('✅ Kova Chat: Message processed successfully via n8n');
         } else {
           console.error('❌ Kova Chat: n8n API returned error', response.status, data);
@@ -4750,6 +4753,61 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           this.sendButton.disabled = false;
         }
         this.isSending = false;
+      }
+    }
+
+    /**
+     * Persist messages to the backend for conversation history
+     * This is called after successfully sending/receiving messages via external endpoints (n8n)
+     */
+    async persistMessages(userMessage, assistantMessage) {
+      try {
+        const apiEndpoint = this.config.apiEndpoint;
+        if (!apiEndpoint) {
+          console.warn('🌿 Kova Widget: apiEndpoint not configured, skipping message persistence');
+          return;
+        }
+
+        const persistUrl = `${apiEndpoint}/api/chat/persist`;
+        const messages = [];
+
+        if (userMessage) {
+          messages.push({ role: 'user', content: userMessage });
+        }
+        if (assistantMessage) {
+          messages.push({ role: 'assistant', content: assistantMessage });
+        }
+
+        if (messages.length === 0) {
+          return;
+        }
+
+        console.log('🌿 Kova Widget: Persisting messages', {
+          sessionId: this.sessionId,
+          shopDomain: this.config.shopDomain,
+          messageCount: messages.length
+        });
+
+        const response = await fetch(persistUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            sessionId: this.sessionId,
+            shopDomain: this.config.shopDomain,
+            messages: messages
+          })
+        });
+
+        if (response.ok) {
+          console.log('✅ Kova Widget: Messages persisted successfully');
+        } else {
+          console.warn('⚠️ Kova Widget: Failed to persist messages', response.status);
+        }
+      } catch (error) {
+        // Don't fail the chat if persistence fails, just log it
+        console.warn('⚠️ Kova Widget: Error persisting messages', error);
       }
     }
 

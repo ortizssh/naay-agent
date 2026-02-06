@@ -814,4 +814,51 @@ router.get('/debug', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * POST /api/chat/persist
+ * Persist chat messages to the database
+ * Used by widget when using external chat endpoints (like n8n)
+ */
+router.post('/persist', async (req: Request, res: Response) => {
+  try {
+    const { sessionId, shopDomain, messages } = req.body;
+
+    if (!sessionId || !shopDomain || !messages || !Array.isArray(messages)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: sessionId, shopDomain, messages',
+      });
+    }
+
+    logger.info('Persisting chat messages', {
+      sessionId,
+      shopDomain,
+      messageCount: messages.length,
+    });
+
+    // Persist each message
+    for (const msg of messages) {
+      if (msg.role && msg.content) {
+        await persistChatMessage(
+          sessionId,
+          shopDomain,
+          msg.role as 'user' | 'assistant',
+          msg.content
+        );
+      }
+    }
+
+    res.json({
+      success: true,
+      persisted: messages.length,
+    });
+  } catch (error: any) {
+    logger.error('Error persisting messages:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
 export default router;
