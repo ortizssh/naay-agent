@@ -74,7 +74,7 @@ function kova_agent_activate() {
     // Create default options
     $default_options = array(
         'enabled' => false,
-        'api_endpoint' => 'https://api.kova.ai',
+        'api_endpoint' => 'https://naay-agent-app1763504937.azurewebsites.net',
         'api_key' => '',
         'consumer_key' => '',
         'consumer_secret' => '',

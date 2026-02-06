@@ -41,12 +41,12 @@ const PLUGIN_INFO = {
         </ol>
     `,
   icons: {
-    '1x': 'https://api.kova.ai/assets/plugin-icon-128.png',
-    '2x': 'https://api.kova.ai/assets/plugin-icon-256.png',
+    '1x': 'https://naay-agent-app1763504937.azurewebsites.net/assets/plugin-icon-128.png',
+    '2x': 'https://naay-agent-app1763504937.azurewebsites.net/assets/plugin-icon-256.png',
   },
   banners: {
-    low: 'https://api.kova.ai/assets/plugin-banner-772x250.png',
-    high: 'https://api.kova.ai/assets/plugin-banner-1544x500.png',
+    low: 'https://naay-agent-app1763504937.azurewebsites.net/assets/plugin-banner-772x250.png',
+    high: 'https://naay-agent-app1763504937.azurewebsites.net/assets/plugin-banner-1544x500.png',
   },
 };
 

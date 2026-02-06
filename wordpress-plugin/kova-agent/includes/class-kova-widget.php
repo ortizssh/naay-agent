@@ -61,7 +61,7 @@ class Kova_Widget {
             return;
         }
 
-        $api_endpoint = $this->settings['api_endpoint'] ?? 'https://api.kova.ai';
+        $api_endpoint = $this->settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
 
         // Enqueue the Kova widget script
         wp_enqueue_script(
@@ -154,7 +154,7 @@ class Kova_Widget {
             return;
         }
 
-        $api_endpoint = $this->settings['api_endpoint'] ?? 'https://api.kova.ai';
+        $api_endpoint = $this->settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
         $chat_endpoint = $this->settings['chat_endpoint'] ?? '';
         $page_context = $this->get_page_context();
         $customer = $this->get_customer_info();
