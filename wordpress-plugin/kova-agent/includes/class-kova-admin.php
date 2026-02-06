@@ -61,71 +61,91 @@ class Kova_Admin {
      * Sanitize settings
      */
     public function sanitize_settings($input) {
+        // Get existing settings to preserve values not in current form (different tabs)
+        $existing = get_option('kova_agent_settings', array());
         $sanitized = array();
 
-        // General settings
-        $sanitized['enabled'] = isset($input['enabled']) ? (bool) $input['enabled'] : false;
-        $sanitized['api_endpoint'] = sanitize_url($input['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net');
-        $sanitized['chat_endpoint'] = sanitize_url($input['chat_endpoint'] ?? '');
-        $sanitized['api_key'] = sanitize_text_field($input['api_key'] ?? '');
-        $sanitized['consumer_key'] = sanitize_text_field($input['consumer_key'] ?? '');
-        $sanitized['consumer_secret'] = sanitize_text_field($input['consumer_secret'] ?? '');
-        $sanitized['webhook_secret'] = sanitize_text_field($input['webhook_secret'] ?? '');
+        // Helper function to get value from input or preserve existing
+        $get_value = function($key, $default) use ($input, $existing) {
+            if (array_key_exists($key, $input)) {
+                return $input[$key];
+            }
+            return $existing[$key] ?? $default;
+        };
 
-        // Widget position and theme
-        $sanitized['widget_position'] = sanitize_text_field($input['widget_position'] ?? 'bottom-right');
-        $sanitized['widget_theme'] = sanitize_text_field($input['widget_theme'] ?? 'light');
+        // Helper for checkbox fields (preserve existing when checkbox not in form)
+        $get_checkbox = function($key, $default) use ($input, $existing) {
+            // If the key exists in input, use its value (true if set, false if not)
+            if (array_key_exists($key, $input)) {
+                return (bool) $input[$key];
+            }
+            // If not in input, preserve existing value (field is on different tab)
+            return $existing[$key] ?? $default;
+        };
 
-        // Colors
-        $sanitized['widget_color'] = sanitize_hex_color($input['widget_color'] ?? '#6366f1');
-        $sanitized['widget_secondary_color'] = sanitize_hex_color($input['widget_secondary_color'] ?? '#212120');
-        $sanitized['widget_accent_color'] = sanitize_hex_color($input['widget_accent_color'] ?? '#cf795e');
+        // General settings (Settings tab)
+        $sanitized['enabled'] = $get_checkbox('enabled', false);
+        $sanitized['api_endpoint'] = sanitize_url($get_value('api_endpoint', 'https://naay-agent-app1763504937.azurewebsites.net'));
+        $sanitized['chat_endpoint'] = sanitize_url($get_value('chat_endpoint', ''));
+        $sanitized['api_key'] = sanitize_text_field($get_value('api_key', ''));
+        $sanitized['consumer_key'] = sanitize_text_field($get_value('consumer_key', ''));
+        $sanitized['consumer_secret'] = sanitize_text_field($get_value('consumer_secret', ''));
+        $sanitized['webhook_secret'] = sanitize_text_field($get_value('webhook_secret', ''));
 
-        // Sizes
-        $sanitized['widget_button_size'] = absint($input['widget_button_size'] ?? 72);
-        $sanitized['widget_chat_width'] = absint($input['widget_chat_width'] ?? 420);
-        $sanitized['widget_chat_height'] = absint($input['widget_chat_height'] ?? 600);
+        // Widget position and theme (Widget tab)
+        $sanitized['widget_position'] = sanitize_text_field($get_value('widget_position', 'bottom-right'));
+        $sanitized['widget_theme'] = sanitize_text_field($get_value('widget_theme', 'light'));
 
-        // Button style
-        $sanitized['widget_button_style'] = sanitize_text_field($input['widget_button_style'] ?? 'circle');
-        $sanitized['widget_show_pulse'] = isset($input['widget_show_pulse']) ? (bool) $input['widget_show_pulse'] : true;
+        // Colors (Widget tab)
+        $sanitized['widget_color'] = sanitize_hex_color($get_value('widget_color', '#6366f1'));
+        $sanitized['widget_secondary_color'] = sanitize_hex_color($get_value('widget_secondary_color', '#212120'));
+        $sanitized['widget_accent_color'] = sanitize_hex_color($get_value('widget_accent_color', '#cf795e'));
 
-        // Texts
-        $sanitized['welcome_message'] = sanitize_textarea_field($input['welcome_message'] ?? '');
-        $sanitized['widget_subtitle'] = sanitize_text_field($input['widget_subtitle'] ?? 'Asistente de compras con IA');
-        $sanitized['widget_placeholder'] = sanitize_text_field($input['widget_placeholder'] ?? 'Escribe tu mensaje...');
-        $sanitized['widget_avatar'] = sanitize_text_field($input['widget_avatar'] ?? '🌿');
-        $sanitized['widget_brand_name'] = sanitize_text_field($input['widget_brand_name'] ?? get_bloginfo('name'));
+        // Sizes (Widget tab)
+        $sanitized['widget_button_size'] = absint($get_value('widget_button_size', 72));
+        $sanitized['widget_chat_width'] = absint($get_value('widget_chat_width', 420));
+        $sanitized['widget_chat_height'] = absint($get_value('widget_chat_height', 600));
 
-        // Rotating messages
-        $sanitized['rotating_messages_enabled'] = isset($input['rotating_messages_enabled']) ? (bool) $input['rotating_messages_enabled'] : false;
-        $sanitized['welcome_message_2'] = sanitize_textarea_field($input['welcome_message_2'] ?? '');
-        $sanitized['subtitle_2'] = sanitize_text_field($input['subtitle_2'] ?? '');
-        $sanitized['welcome_message_3'] = sanitize_textarea_field($input['welcome_message_3'] ?? '');
-        $sanitized['subtitle_3'] = sanitize_text_field($input['subtitle_3'] ?? '');
-        $sanitized['rotating_messages_interval'] = absint($input['rotating_messages_interval'] ?? 5);
+        // Button style (Widget tab)
+        $sanitized['widget_button_style'] = sanitize_text_field($get_value('widget_button_style', 'circle'));
+        $sanitized['widget_show_pulse'] = $get_checkbox('widget_show_pulse', true);
 
-        // Features
-        $sanitized['widget_show_promo_message'] = isset($input['widget_show_promo_message']) ? (bool) $input['widget_show_promo_message'] : true;
-        $sanitized['widget_show_cart'] = isset($input['widget_show_cart']) ? (bool) $input['widget_show_cart'] : true;
-        $sanitized['widget_enable_animations'] = isset($input['widget_enable_animations']) ? (bool) $input['widget_enable_animations'] : true;
+        // Texts (Widget tab)
+        $sanitized['welcome_message'] = sanitize_textarea_field($get_value('welcome_message', ''));
+        $sanitized['widget_subtitle'] = sanitize_text_field($get_value('widget_subtitle', 'Asistente de compras con IA'));
+        $sanitized['widget_placeholder'] = sanitize_text_field($get_value('widget_placeholder', 'Escribe tu mensaje...'));
+        $sanitized['widget_avatar'] = sanitize_text_field($get_value('widget_avatar', '🌿'));
+        $sanitized['widget_brand_name'] = sanitize_text_field($get_value('widget_brand_name', get_bloginfo('name')));
 
-        // Promo Badge
-        $sanitized['promo_badge_enabled'] = isset($input['promo_badge_enabled']) ? (bool) $input['promo_badge_enabled'] : false;
-        $sanitized['promo_badge_discount'] = absint($input['promo_badge_discount'] ?? 10);
-        $sanitized['promo_badge_text'] = sanitize_text_field($input['promo_badge_text'] ?? 'Descuento especial');
-        $sanitized['promo_badge_color'] = sanitize_hex_color($input['promo_badge_color'] ?? '#ef4444');
-        $sanitized['promo_badge_shape'] = sanitize_text_field($input['promo_badge_shape'] ?? 'circle');
-        $sanitized['promo_badge_position'] = sanitize_text_field($input['promo_badge_position'] ?? 'right');
-        $sanitized['promo_badge_suffix'] = sanitize_text_field($input['promo_badge_suffix'] ?? 'OFF');
-        $sanitized['promo_badge_prefix'] = sanitize_text_field($input['promo_badge_prefix'] ?? '');
-        $sanitized['promo_badge_font_size'] = absint($input['promo_badge_font_size'] ?? 12);
+        // Rotating messages (Widget tab)
+        $sanitized['rotating_messages_enabled'] = $get_checkbox('rotating_messages_enabled', false);
+        $sanitized['welcome_message_2'] = sanitize_textarea_field($get_value('welcome_message_2', ''));
+        $sanitized['subtitle_2'] = sanitize_text_field($get_value('subtitle_2', ''));
+        $sanitized['welcome_message_3'] = sanitize_textarea_field($get_value('welcome_message_3', ''));
+        $sanitized['subtitle_3'] = sanitize_text_field($get_value('subtitle_3', ''));
+        $sanitized['rotating_messages_interval'] = absint($get_value('rotating_messages_interval', 5));
 
-        // Display settings
-        $sanitized['show_on_mobile'] = isset($input['show_on_mobile']) ? (bool) $input['show_on_mobile'] : true;
-        $sanitized['show_on_product_pages'] = isset($input['show_on_product_pages']) ? (bool) $input['show_on_product_pages'] : true;
-        $sanitized['show_on_cart_page'] = isset($input['show_on_cart_page']) ? (bool) $input['show_on_cart_page'] : true;
-        $sanitized['show_on_checkout'] = isset($input['show_on_checkout']) ? (bool) $input['show_on_checkout'] : false;
+        // Features (Widget tab)
+        $sanitized['widget_show_promo_message'] = $get_checkbox('widget_show_promo_message', true);
+        $sanitized['widget_show_cart'] = $get_checkbox('widget_show_cart', true);
+        $sanitized['widget_enable_animations'] = $get_checkbox('widget_enable_animations', true);
+
+        // Promo Badge (Widget tab)
+        $sanitized['promo_badge_enabled'] = $get_checkbox('promo_badge_enabled', false);
+        $sanitized['promo_badge_discount'] = absint($get_value('promo_badge_discount', 10));
+        $sanitized['promo_badge_text'] = sanitize_text_field($get_value('promo_badge_text', 'Descuento especial'));
+        $sanitized['promo_badge_color'] = sanitize_hex_color($get_value('promo_badge_color', '#ef4444'));
+        $sanitized['promo_badge_shape'] = sanitize_text_field($get_value('promo_badge_shape', 'circle'));
+        $sanitized['promo_badge_position'] = sanitize_text_field($get_value('promo_badge_position', 'right'));
+        $sanitized['promo_badge_suffix'] = sanitize_text_field($get_value('promo_badge_suffix', 'OFF'));
+        $sanitized['promo_badge_prefix'] = sanitize_text_field($get_value('promo_badge_prefix', ''));
+        $sanitized['promo_badge_font_size'] = absint($get_value('promo_badge_font_size', 12));
+
+        // Display settings (Widget tab)
+        $sanitized['show_on_mobile'] = $get_checkbox('show_on_mobile', true);
+        $sanitized['show_on_product_pages'] = $get_checkbox('show_on_product_pages', true);
+        $sanitized['show_on_cart_page'] = $get_checkbox('show_on_cart_page', true);
+        $sanitized['show_on_checkout'] = $get_checkbox('show_on_checkout', false);
 
         return $sanitized;
     }

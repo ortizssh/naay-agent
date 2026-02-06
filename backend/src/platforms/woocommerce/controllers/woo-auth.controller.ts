@@ -588,7 +588,10 @@ router.post('/widget-config', async (req: Request, res: Response) => {
       if (data) {
         existingClient = data;
         matchedVariant = data.shop_domain; // Use the exact domain from DB
-        logger.info('Found existing client_stores with variant:', { variant, matchedVariant });
+        logger.info('Found existing client_stores with variant:', {
+          variant,
+          matchedVariant,
+        });
         break;
       }
     }
