@@ -473,6 +473,54 @@
   margin-bottom: 1rem;
 }
 
+.kova-form-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.kova-form-group-half {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.kova-form-group-third {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.kova-form-select {
+  display: block;
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  font-family: var(--kova-font-main);
+  color: var(--kova-color-text);
+  background-color: #fff;
+  border: 1px solid var(--kova-color-border);
+  border-radius: 8px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+.kova-form-select:focus {
+  outline: none;
+  border-color: var(--kova-color-primary);
+  box-shadow: 0 0 0 3px rgba(109, 92, 255, 0.1);
+}
+
+.kova-sticky-preview {
+  position: sticky;
+  top: 2rem;
+}
+
 .kova-form-label {
   display: block;
   font-size: 0.8rem;

@@ -238,36 +238,12 @@
 
     async loadSettings() {
       try {
-        // For WooCommerce, prefer the local config from window.KovaConfig
-        // as it's set directly by the WordPress plugin with the latest settings
-        if (this.config.platform === 'woocommerce' && window.KovaConfig) {
-          console.log('🏪 WooCommerce detected - using local KovaConfig instead of server fetch');
-          // Already have config from constructor, just setup rotating messages
-          this.setupRotatingMessages();
-          return;
-        }
-
         const response = await fetch(`${this.config.apiEndpoint}/api/widget/config?shop=${this.config.shopDomain}`);
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.data) {
-            // Preserve local config values that were explicitly set
-            const localConfig = window.KovaConfig || {};
-            const mergedConfig = { ...data.data };
-
-            // For WooCommerce, local config takes priority
-            if (localConfig.platform === 'woocommerce') {
-              // Only use server values as fallback for unset local values
-              Object.keys(localConfig).forEach(key => {
-                if (localConfig[key] !== undefined && localConfig[key] !== null && localConfig[key] !== '') {
-                  mergedConfig[key] = localConfig[key];
-                }
-              });
-            }
-
-            Object.assign(this.config, mergedConfig);
+            Object.assign(this.config, data.data);
             console.log('Loaded widget settings from server:', data.data);
-            console.log('Final merged config:', this.config);
 
             // Start rotating messages if enabled
             this.setupRotatingMessages();

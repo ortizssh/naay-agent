@@ -166,11 +166,57 @@ class Kova_Widget {
             'shopDomain' => site_url(),
             'apiEndpoint' => $api_endpoint,
             'chatEndpoint' => $chat_endpoint,
-            'position' => $this->settings['widget_position'] ?? 'bottom-right',
-            'greeting' => $this->settings['welcome_message'] ?? '',
-            'placeholder' => $this->settings['widget_placeholder'] ?? 'Pregúntanos sobre tu compra...',
-            'brandName' => get_bloginfo('name'),
             'enabled' => true,
+
+            // Position and theme
+            'position' => $this->settings['widget_position'] ?? 'bottom-right',
+            'theme' => $this->settings['widget_theme'] ?? 'light',
+
+            // Colors
+            'primaryColor' => $this->settings['widget_color'] ?? '#6366f1',
+            'secondaryColor' => $this->settings['widget_secondary_color'] ?? '#212120',
+            'accentColor' => $this->settings['widget_accent_color'] ?? '#cf795e',
+
+            // Sizes
+            'buttonSize' => intval($this->settings['widget_button_size'] ?? 72),
+            'chatWidth' => intval($this->settings['widget_chat_width'] ?? 420),
+            'chatHeight' => intval($this->settings['widget_chat_height'] ?? 600),
+
+            // Button style
+            'buttonStyle' => $this->settings['widget_button_style'] ?? 'circle',
+            'showPulse' => !empty($this->settings['widget_show_pulse']),
+
+            // Content
+            'brandName' => $this->settings['widget_brand_name'] ?? get_bloginfo('name'),
+            'avatar' => $this->settings['widget_avatar'] ?? '🌿',
+            'subtitle' => $this->settings['widget_subtitle'] ?? 'Asistente de compras con IA',
+            'greeting' => $this->settings['welcome_message'] ?? '',
+            'placeholder' => $this->settings['widget_placeholder'] ?? 'Escribe tu mensaje...',
+
+            // Rotating messages
+            'rotatingMessagesEnabled' => !empty($this->settings['rotating_messages_enabled']),
+            'rotatingMessagesInterval' => intval($this->settings['rotating_messages_interval'] ?? 5),
+            'greeting2' => $this->settings['welcome_message_2'] ?? '',
+            'subtitle2' => $this->settings['subtitle_2'] ?? '',
+            'greeting3' => $this->settings['welcome_message_3'] ?? '',
+            'subtitle3' => $this->settings['subtitle_3'] ?? '',
+
+            // Features
+            'showCart' => $this->settings['widget_show_cart'] ?? true,
+            'showPromoMessage' => $this->settings['widget_show_promo_message'] ?? true,
+            'enableAnimations' => $this->settings['widget_enable_animations'] ?? true,
+
+            // Promo Badge
+            'promoBadgeEnabled' => !empty($this->settings['promo_badge_enabled']),
+            'promoBadgeDiscount' => intval($this->settings['promo_badge_discount'] ?? 10),
+            'promoBadgeText' => $this->settings['promo_badge_text'] ?? 'Descuento especial',
+            'promoBadgeColor' => $this->settings['promo_badge_color'] ?? '#ef4444',
+            'promoBadgeShape' => $this->settings['promo_badge_shape'] ?? 'circle',
+            'promoBadgePosition' => $this->settings['promo_badge_position'] ?? 'right',
+            'promoBadgeSuffix' => $this->settings['promo_badge_suffix'] ?? 'OFF',
+            'promoBadgePrefix' => $this->settings['promo_badge_prefix'] ?? '',
+            'promoBadgeFontSize' => intval($this->settings['promo_badge_font_size'] ?? 12),
+
             // WooCommerce-specific context
             'woocommerce' => array(
                 'nonce' => $nonce,
@@ -183,16 +229,8 @@ class Kova_Widget {
             'customer' => $customer,
         );
 
-        // Add design settings - always pass colors with defaults
-        $widget_config['primaryColor'] = $this->settings['widget_color'] ?? '#6366f1';
-        $widget_config['forever'] = $widget_config['primaryColor']; // Legacy support
-        $widget_config['secondaryColor'] = $this->settings['widget_secondary_color'] ?? '#212120';
-        $widget_config['accentColor'] = $this->settings['widget_accent_color'] ?? '#cf795e';
-
-        // Additional customization options
-        if (!empty($this->settings['widget_title'])) {
-            $widget_config['brandName'] = $this->settings['widget_title'];
-        }
+        // Legacy support
+        $widget_config['forever'] = $widget_config['primaryColor'];
         ?>
         <script type="text/javascript">
             // Set global config before widget loads

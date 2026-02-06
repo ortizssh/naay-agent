@@ -78,7 +78,7 @@ router.options('/kova-widget.js', (req: Request, res: Response) => {
  */
 router.get('/config', async (req: Request, res: Response) => {
   try {
-    const shopDomain = req.query.shop as string;
+    let shopDomain = req.query.shop as string;
 
     // Set CORS headers for widget access
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -91,6 +91,20 @@ router.get('/config', async (req: Request, res: Response) => {
         error: 'shop parameter is required',
       });
     }
+
+    // Normalize URL for WooCommerce stores (remove paths, keep protocol://host)
+    // This ensures consistency with how WooCommerce stores save their config
+    if (shopDomain.startsWith('http://') || shopDomain.startsWith('https://')) {
+      try {
+        const url = new URL(shopDomain);
+        shopDomain = `${url.protocol}//${url.host}`;
+      } catch {
+        // If URL parsing fails, use the original value
+        logger.warn('Failed to parse shop domain URL, using original value', { shopDomain });
+      }
+    }
+
+    logger.info('Widget config request', { shopDomain });
 
     // Try to get config from client_stores first
     const { data: clientStore } = await (supabaseService as any).serviceClient
@@ -128,7 +142,9 @@ router.get('/config', async (req: Request, res: Response) => {
         promo_badge_color,
         promo_badge_shape,
         promo_badge_position,
-        promo_badge_suffix
+        promo_badge_suffix,
+        promo_badge_prefix,
+        promo_badge_font_size
       `
       )
       .eq('shop_domain', shopDomain)
@@ -177,6 +193,8 @@ router.get('/config', async (req: Request, res: Response) => {
           promoBadgeShape: clientStore.promo_badge_shape || 'circle',
           promoBadgePosition: clientStore.promo_badge_position || 'right',
           promoBadgeSuffix: clientStore.promo_badge_suffix ?? 'OFF',
+          promoBadgePrefix: clientStore.promo_badge_prefix ?? '',
+          promoBadgeFontSize: clientStore.promo_badge_font_size || 12,
         },
       });
     }
