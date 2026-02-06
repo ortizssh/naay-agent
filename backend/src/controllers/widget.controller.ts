@@ -122,6 +122,9 @@ router.get(
         }
       }
 
+      // Remove trailing slashes for consistency
+      shop = shop?.replace(/\/+$/, '');
+
       // Default configuration
       const defaultConfig = {
         enabled: false,
@@ -178,12 +181,15 @@ router.get(
           const url = new URL(shop);
           shopVariants.push(url.host); // e.g., "example.com"
           shopVariants.push(url.hostname); // e.g., "example.com" (without port)
+          // Also try with trailing slash (some DBs store URLs with trailing slash)
+          shopVariants.push(`${url.protocol}//${url.host}/`);
         } catch {
           // Ignore parse errors
         }
       } else {
         // If it's just a hostname, also try with https://
         shopVariants.push(`https://${shop}`);
+        shopVariants.push(`https://${shop}/`); // With trailing slash
       }
 
       logger.info('Trying shop domain variants:', { shopVariants });
