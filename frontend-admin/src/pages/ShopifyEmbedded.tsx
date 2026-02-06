@@ -69,6 +69,13 @@ interface WidgetConfig {
   promo_badge_suffix: string;
   promo_badge_prefix: string;
   promo_badge_font_size: number;
+  // Suggested questions settings
+  suggested_question_1_text: string;
+  suggested_question_1_message: string;
+  suggested_question_2_text: string;
+  suggested_question_2_message: string;
+  suggested_question_3_text: string;
+  suggested_question_3_message: string;
 }
 
 interface ChatMessage {
@@ -358,6 +365,13 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
     promo_badge_suffix: 'OFF',
     promo_badge_prefix: '',
     promo_badge_font_size: 12,
+    // Suggested questions defaults
+    suggested_question_1_text: 'Recomendaciones personalizadas',
+    suggested_question_1_message: '¿Qué productos recomiendas para mí?',
+    suggested_question_2_text: 'Ayuda con mi compra',
+    suggested_question_2_message: '¿Puedes ayudarme a elegir productos?',
+    suggested_question_3_text: 'Información de envío',
+    suggested_question_3_message: '¿Cuáles son las opciones de envío?',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -610,6 +624,13 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
             promo_badge_suffix: data.data.promoBadgeSuffix ?? prev.promo_badge_suffix,
             promo_badge_prefix: data.data.promoBadgePrefix ?? prev.promo_badge_prefix,
             promo_badge_font_size: data.data.promoBadgeFontSize || prev.promo_badge_font_size,
+            // Suggested questions settings
+            suggested_question_1_text: data.data.suggestedQuestion1Text || prev.suggested_question_1_text,
+            suggested_question_1_message: data.data.suggestedQuestion1Message || prev.suggested_question_1_message,
+            suggested_question_2_text: data.data.suggestedQuestion2Text || prev.suggested_question_2_text,
+            suggested_question_2_message: data.data.suggestedQuestion2Message || prev.suggested_question_2_message,
+            suggested_question_3_text: data.data.suggestedQuestion3Text || prev.suggested_question_3_text,
+            suggested_question_3_message: data.data.suggestedQuestion3Message || prev.suggested_question_3_message,
           }));
         }
       }
@@ -665,6 +686,13 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
             promoBadgeSuffix: widgetConfig.promo_badge_suffix,
             promoBadgePrefix: widgetConfig.promo_badge_prefix,
             promoBadgeFontSize: widgetConfig.promo_badge_font_size,
+            // Suggested questions settings
+            suggestedQuestion1Text: widgetConfig.suggested_question_1_text,
+            suggestedQuestion1Message: widgetConfig.suggested_question_1_message,
+            suggestedQuestion2Text: widgetConfig.suggested_question_2_text,
+            suggestedQuestion2Message: widgetConfig.suggested_question_2_message,
+            suggestedQuestion3Text: widgetConfig.suggested_question_3_text,
+            suggestedQuestion3Message: widgetConfig.suggested_question_3_message,
           },
         }),
       });
@@ -1869,6 +1897,85 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                       onChange={e => setWidgetConfig({ ...widgetConfig, widget_placeholder: e.target.value })}
                       placeholder="Escribe tu mensaje..."
                     />
+                  </div>
+
+                  {/* Suggested Questions Section */}
+                  <div style={{
+                    marginTop: '1.5rem',
+                    padding: '1rem',
+                    background: 'var(--color-bg)',
+                    borderRadius: '10px',
+                    border: '1px solid var(--color-border)'
+                  }}>
+                    <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.95rem', fontWeight: '600' }}>
+                      Preguntas sugeridas
+                    </h4>
+                    <p style={{ margin: '0 0 1rem', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                      Personaliza los botones de accion rapida que ven los usuarios al abrir el chat
+                    </p>
+
+                    {/* Question 1 */}
+                    <div style={{ padding: '0.75rem', background: 'rgba(var(--color-primary-rgb, 107, 92, 255), 0.05)', borderRadius: '8px', marginBottom: '0.75rem' }}>
+                      <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: '600' }}>Pregunta 1</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={widgetConfig.suggested_question_1_text}
+                        onChange={e => setWidgetConfig({ ...widgetConfig, suggested_question_1_text: e.target.value })}
+                        placeholder="Texto del boton"
+                        style={{ marginBottom: '0.5rem' }}
+                      />
+                      <label className="form-label" style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Mensaje a enviar</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={widgetConfig.suggested_question_1_message}
+                        onChange={e => setWidgetConfig({ ...widgetConfig, suggested_question_1_message: e.target.value })}
+                        placeholder="¿Qué productos recomiendas para mí?"
+                      />
+                    </div>
+
+                    {/* Question 2 */}
+                    <div style={{ padding: '0.75rem', background: 'rgba(var(--color-primary-rgb, 107, 92, 255), 0.05)', borderRadius: '8px', marginBottom: '0.75rem' }}>
+                      <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: '600' }}>Pregunta 2</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={widgetConfig.suggested_question_2_text}
+                        onChange={e => setWidgetConfig({ ...widgetConfig, suggested_question_2_text: e.target.value })}
+                        placeholder="Texto del boton"
+                        style={{ marginBottom: '0.5rem' }}
+                      />
+                      <label className="form-label" style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Mensaje a enviar</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={widgetConfig.suggested_question_2_message}
+                        onChange={e => setWidgetConfig({ ...widgetConfig, suggested_question_2_message: e.target.value })}
+                        placeholder="¿Puedes ayudarme a elegir productos?"
+                      />
+                    </div>
+
+                    {/* Question 3 */}
+                    <div style={{ padding: '0.75rem', background: 'rgba(var(--color-primary-rgb, 107, 92, 255), 0.05)', borderRadius: '8px' }}>
+                      <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: '600' }}>Pregunta 3</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={widgetConfig.suggested_question_3_text}
+                        onChange={e => setWidgetConfig({ ...widgetConfig, suggested_question_3_text: e.target.value })}
+                        placeholder="Texto del boton"
+                        style={{ marginBottom: '0.5rem' }}
+                      />
+                      <label className="form-label" style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Mensaje a enviar</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={widgetConfig.suggested_question_3_message}
+                        onChange={e => setWidgetConfig({ ...widgetConfig, suggested_question_3_message: e.target.value })}
+                        placeholder="¿Cuáles son las opciones de envío?"
+                      />
+                    </div>
                   </div>
                 </>
               )}

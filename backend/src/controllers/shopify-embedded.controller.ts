@@ -229,6 +229,19 @@ router.put(
         updateData.promo_badge_prefix = config.promoBadgePrefix;
       if (config.promoBadgeFontSize !== undefined)
         updateData.promo_badge_font_size = config.promoBadgeFontSize;
+      // Suggested questions settings
+      if (config.suggestedQuestion1Text !== undefined)
+        updateData.suggested_question_1_text = config.suggestedQuestion1Text;
+      if (config.suggestedQuestion1Message !== undefined)
+        updateData.suggested_question_1_message = config.suggestedQuestion1Message;
+      if (config.suggestedQuestion2Text !== undefined)
+        updateData.suggested_question_2_text = config.suggestedQuestion2Text;
+      if (config.suggestedQuestion2Message !== undefined)
+        updateData.suggested_question_2_message = config.suggestedQuestion2Message;
+      if (config.suggestedQuestion3Text !== undefined)
+        updateData.suggested_question_3_text = config.suggestedQuestion3Text;
+      if (config.suggestedQuestion3Message !== undefined)
+        updateData.suggested_question_3_message = config.suggestedQuestion3Message;
 
       // Try to update client_stores first
       const { data: clientStore, error: clientError } = await (
