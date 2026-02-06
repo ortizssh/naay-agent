@@ -440,7 +440,6 @@
                   <span class="kova-widget__promotional-subtitle">Te guiamos en tu compra</span>
                 </div>
               </div>
-              <div class="kova-widget__promotional-arrow"></div>
             </div>
             
             <button class="kova-widget__button" id="kova-widget-button" aria-label="Abrir chat de Kova" aria-expanded="false">
@@ -914,26 +913,6 @@
           font-size: 11px !important;
           font-weight: var(--kova-font-weight-regular) !important;
           margin-top: 2px !important;
-        }
-
-        .kova-widget__promotional-arrow {
-          position: absolute !important;
-          top: 50% !important;
-          left: -8px !important;
-          transform: translateY(-50%) !important;
-          width: 0 !important;
-          height: 0 !important;
-          border-right: 8px solid var(--kova-white) !important;
-          border-top: 8px solid transparent !important;
-          border-bottom: 8px solid transparent !important;
-          filter: drop-shadow(-2px 0 4px rgba(165, 148, 87, 0.1)) !important;
-        }
-        
-        .kova-widget--bottom-left .kova-widget__promotional-arrow {
-          right: auto !important;
-          left: -8px !important;
-          border-left: 8px solid transparent !important;
-          border-right: 8px solid var(--kova-white) !important;
         }
 
         .kova-widget--open .kova-widget__promotional-message {
