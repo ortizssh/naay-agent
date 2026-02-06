@@ -381,20 +381,40 @@
         }
 
         var html = '';
-        conversations.forEach(function(conv) {
-            html += '<div class="kova-conversation-item">';
-            html += '  <div class="kova-conversation-header">';
-            html += '    <span class="kova-conversation-time">' + formatConversationDate(conv.startedAt || conv.created_at) + '</span>';
+        conversations.forEach(function(conv, index) {
+            var messages = conv.messages || [];
+            var messageCount = messages.length;
+            var firstUserMessage = messages.find(function(m) { return m.role === 'user'; });
+            var preview = firstUserMessage ? firstUserMessage.content.substring(0, 80) : 'Sin mensajes';
+            if (firstUserMessage && firstUserMessage.content.length > 80) {
+                preview += '...';
+            }
+
+            html += '<div class="kova-conversation-item" data-index="' + index + '">';
+            html += '  <div class="kova-conversation-header" onclick="toggleConversation(' + index + ')">';
+            html += '    <div class="kova-conversation-header-left">';
+            html += '      <span class="kova-conversation-toggle" id="toggle-' + index + '">▶</span>';
+            html += '      <span class="kova-conversation-time">' + formatConversationDate(conv.startedAt || conv.created_at) + '</span>';
+            html += '      <span class="kova-conversation-count">' + messageCount + ' mensajes</span>';
+            html += '    </div>';
             html += '    <span class="kova-conversation-id">' + (conv.sessionId || conv.conversation_id || conv.id || '').substring(0, 8) + '...</span>';
             html += '  </div>';
-            html += '  <div class="kova-conversation-messages">';
+            html += '  <div class="kova-conversation-preview" id="preview-' + index + '">';
+            html += '    <span class="kova-preview-label">Usuario:</span> ' + escapeHtml(preview);
+            html += '  </div>';
+            html += '  <div class="kova-conversation-messages" id="messages-' + index + '" style="display: none;">';
 
-            var messages = conv.messages || [];
             messages.forEach(function(msg) {
                 var roleClass = msg.role === 'user' ? 'user' : 'assistant';
-                var roleLabel = msg.role === 'user' ? 'Usuario' : 'Asistente';
+                var roleLabel = msg.role === 'user' ? '👤 Usuario' : '🤖 Asistente';
+                var timeStr = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : '';
                 html += '<div class="kova-message ' + roleClass + '">';
-                html += '  <div class="kova-message-role">' + roleLabel + '</div>';
+                html += '  <div class="kova-message-header">';
+                html += '    <span class="kova-message-role">' + roleLabel + '</span>';
+                if (timeStr) {
+                    html += '    <span class="kova-message-time">' + timeStr + '</span>';
+                }
+                html += '  </div>';
                 html += '  <div class="kova-message-content">' + escapeHtml(msg.content || '') + '</div>';
                 html += '</div>';
             });
@@ -404,6 +424,23 @@
         });
 
         $list.html(html);
+
+        // Add global toggle function
+        window.toggleConversation = function(index) {
+            var $messages = $('#messages-' + index);
+            var $preview = $('#preview-' + index);
+            var $toggle = $('#toggle-' + index);
+
+            if ($messages.is(':visible')) {
+                $messages.slideUp(200);
+                $preview.slideDown(200);
+                $toggle.text('▶');
+            } else {
+                $messages.slideDown(200);
+                $preview.slideUp(200);
+                $toggle.text('▼');
+            }
+        };
     }
 
     function formatConversationDate(dateStr) {
