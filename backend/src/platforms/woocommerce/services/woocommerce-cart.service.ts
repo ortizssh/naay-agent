@@ -67,7 +67,9 @@ class WooStoreApiClient {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`WooCommerce Store API error (${response.status}): ${errorText}`);
+        throw new Error(
+          `WooCommerce Store API error (${response.status}): ${errorText}`
+        );
       }
 
       const result = await response.json();
@@ -105,7 +107,9 @@ export class WooCommerceCartService implements ICartProvider {
     try {
       // WooCommerce doesn't have explicit cart creation
       // Get current cart (creates one if doesn't exist)
-      const cart = await this.storeClient.request<WooStoreCart & { __cartToken?: string }>('/cart');
+      const cart = await this.storeClient.request<
+        WooStoreCart & { __cartToken?: string }
+      >('/cart');
 
       // Store the cart token for future requests
       const cartToken = cart.__cartToken;
@@ -130,7 +134,12 @@ export class WooCommerceCartService implements ICartProvider {
   ): Promise<NormalizedCart | null> {
     try {
       const cartToken = this.cartTokens.get(cartId) || cartId;
-      const cart = await this.storeClient.request<WooStoreCart>('/cart', 'GET', undefined, cartToken);
+      const cart = await this.storeClient.request<WooStoreCart>(
+        '/cart',
+        'GET',
+        undefined,
+        cartToken
+      );
       return this.normalizeCart(cart, cartToken);
     } catch (error) {
       if ((error as Error).message?.includes('404')) {
@@ -167,7 +176,12 @@ export class WooCommerceCartService implements ICartProvider {
       }
 
       // Get updated cart
-      const updatedCart = await this.storeClient.request<WooStoreCart>('/cart', 'GET', undefined, cartToken);
+      const updatedCart = await this.storeClient.request<WooStoreCart>(
+        '/cart',
+        'GET',
+        undefined,
+        cartToken
+      );
 
       logger.info('Items added to WooCommerce cart', {
         itemsAdded: lines.length,
@@ -203,7 +217,12 @@ export class WooCommerceCartService implements ICartProvider {
       }
 
       // Get updated cart
-      const updatedCart = await this.storeClient.request<WooStoreCart>('/cart', 'GET', undefined, cartToken);
+      const updatedCart = await this.storeClient.request<WooStoreCart>(
+        '/cart',
+        'GET',
+        undefined,
+        cartToken
+      );
 
       logger.info('WooCommerce cart lines updated', {
         linesUpdated: lines.length,
@@ -238,7 +257,12 @@ export class WooCommerceCartService implements ICartProvider {
       }
 
       // Get updated cart
-      const updatedCart = await this.storeClient.request<WooStoreCart>('/cart', 'GET', undefined, cartToken);
+      const updatedCart = await this.storeClient.request<WooStoreCart>(
+        '/cart',
+        'GET',
+        undefined,
+        cartToken
+      );
 
       logger.info('Items removed from WooCommerce cart', {
         itemsRemoved: lineIds.length,
@@ -260,7 +284,12 @@ export class WooCommerceCartService implements ICartProvider {
       const cartToken = this.cartTokens.get(cartId) || cartId;
 
       // Get current cart to find all item keys
-      const currentCart = await this.storeClient.request<WooStoreCart>('/cart', 'GET', undefined, cartToken);
+      const currentCart = await this.storeClient.request<WooStoreCart>(
+        '/cart',
+        'GET',
+        undefined,
+        cartToken
+      );
 
       // Remove all items
       for (const item of currentCart.items) {
@@ -273,7 +302,12 @@ export class WooCommerceCartService implements ICartProvider {
       }
 
       // Get updated (empty) cart
-      const updatedCart = await this.storeClient.request<WooStoreCart>('/cart', 'GET', undefined, cartToken);
+      const updatedCart = await this.storeClient.request<WooStoreCart>(
+        '/cart',
+        'GET',
+        undefined,
+        cartToken
+      );
 
       logger.info('WooCommerce cart cleared');
 
@@ -306,7 +340,12 @@ export class WooCommerceCartService implements ICartProvider {
       );
 
       // Get updated cart
-      const updatedCart = await this.storeClient.request<WooStoreCart>('/cart', 'GET', undefined, cartToken);
+      const updatedCart = await this.storeClient.request<WooStoreCart>(
+        '/cart',
+        'GET',
+        undefined,
+        cartToken
+      );
 
       return this.normalizeCart(updatedCart, cartToken);
     } catch (error) {
@@ -328,8 +367,13 @@ export class WooCommerceCartService implements ICartProvider {
   /**
    * Normalize WooCommerce Store API cart to platform-agnostic format
    */
-  private normalizeCart(cart: WooStoreCart, cartToken?: string): NormalizedCart {
-    const cartId = cartToken ? this.generateCartId(cartToken) : `woo-cart-${Date.now()}`;
+  private normalizeCart(
+    cart: WooStoreCart,
+    cartToken?: string
+  ): NormalizedCart {
+    const cartId = cartToken
+      ? this.generateCartId(cartToken)
+      : `woo-cart-${Date.now()}`;
 
     return {
       id: cartId,
@@ -337,25 +381,44 @@ export class WooCommerceCartService implements ICartProvider {
       lines: cart.items.map(item => this.normalizeCartItem(item)),
       cost: {
         subtotal: {
-          amount: this.formatPrice(cart.totals.subtotal, cart.totals.currency_minor_unit),
+          amount: this.formatPrice(
+            cart.totals.subtotal,
+            cart.totals.currency_minor_unit
+          ),
           currency: cart.totals.currency_code,
         },
         total: {
-          amount: this.formatPrice(cart.totals.total_price, cart.totals.currency_minor_unit),
+          amount: this.formatPrice(
+            cart.totals.total_price,
+            cart.totals.currency_minor_unit
+          ),
           currency: cart.totals.currency_code,
         },
         tax: {
-          amount: this.formatPrice(cart.totals.total_tax, cart.totals.currency_minor_unit),
+          amount: this.formatPrice(
+            cart.totals.total_tax,
+            cart.totals.currency_minor_unit
+          ),
           currency: cart.totals.currency_code,
         },
-        shipping: cart.totals.shipping_total ? {
-          amount: this.formatPrice(cart.totals.shipping_total, cart.totals.currency_minor_unit),
-          currency: cart.totals.currency_code,
-        } : undefined,
-        discount: cart.totals.discount_total ? {
-          amount: this.formatPrice(cart.totals.discount_total, cart.totals.currency_minor_unit),
-          currency: cart.totals.currency_code,
-        } : undefined,
+        shipping: cart.totals.shipping_total
+          ? {
+              amount: this.formatPrice(
+                cart.totals.shipping_total,
+                cart.totals.currency_minor_unit
+              ),
+              currency: cart.totals.currency_code,
+            }
+          : undefined,
+        discount: cart.totals.discount_total
+          ? {
+              amount: this.formatPrice(
+                cart.totals.discount_total,
+                cart.totals.currency_minor_unit
+              ),
+              currency: cart.totals.currency_code,
+            }
+          : undefined,
       },
       total_quantity: cart.items_count,
       checkout_url: `${this.credentials.siteUrl}/checkout`,
@@ -371,24 +434,39 @@ export class WooCommerceCartService implements ICartProvider {
       quantity: item.quantity,
       variant_id: `woocommerce-var-${item.id}`,
       variant_external_id: item.id.toString(),
-      variant_title: item.variation.length > 0
-        ? item.variation.map(v => v.value).join(' / ')
-        : 'Default',
+      variant_title:
+        item.variation.length > 0
+          ? item.variation.map(v => v.value).join(' / ')
+          : 'Default',
       product_id: `woocommerce-${item.id}`,
       product_title: item.name,
-      product_handle: new URL(item.permalink).pathname.replace(/^\/product\/|\/$/g, ''),
+      product_handle: new URL(item.permalink).pathname.replace(
+        /^\/product\/|\/$/g,
+        ''
+      ),
       price: {
-        amount: this.formatPrice(item.prices.price, item.prices.currency_minor_unit),
+        amount: this.formatPrice(
+          item.prices.price,
+          item.prices.currency_minor_unit
+        ),
         currency: item.prices.currency_code,
       },
-      compare_at_price: item.prices.regular_price !== item.prices.price ? {
-        amount: this.formatPrice(item.prices.regular_price, item.prices.currency_minor_unit),
-        currency: item.prices.currency_code,
-      } : undefined,
-      image: item.images[0] ? {
-        src: item.images[0].src,
-        alt_text: item.images[0].alt,
-      } : undefined,
+      compare_at_price:
+        item.prices.regular_price !== item.prices.price
+          ? {
+              amount: this.formatPrice(
+                item.prices.regular_price,
+                item.prices.currency_minor_unit
+              ),
+              currency: item.prices.currency_code,
+            }
+          : undefined,
+      image: item.images[0]
+        ? {
+            src: item.images[0].src,
+            alt_text: item.images[0].alt,
+          }
+        : undefined,
       options: item.variation.map(v => ({
         name: v.attribute,
         value: v.value,

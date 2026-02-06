@@ -79,7 +79,9 @@ class WooCommerceApiClient {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`WooCommerce API error (${response.status}): ${errorText}`);
+        throw new Error(
+          `WooCommerce API error (${response.status}): ${errorText}`
+        );
       }
 
       return response.json() as Promise<T>;
@@ -131,7 +133,10 @@ class WooCommerceApiClient {
     // Sort parameters
     const sortedParams = Object.keys(allParams)
       .sort()
-      .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(allParams[key])}`)
+      .map(
+        key =>
+          `${encodeURIComponent(key)}=${encodeURIComponent(allParams[key])}`
+      )
       .join('&');
 
     // Create base string
@@ -155,7 +160,10 @@ class WooCommerceApiClient {
   /**
    * Get all items with pagination
    */
-  async getAllPaginated<T>(endpoint: string, perPage: number = 100): Promise<T[]> {
+  async getAllPaginated<T>(
+    endpoint: string,
+    perPage: number = 100
+  ): Promise<T[]> {
     const items: T[] = [];
     let page = 1;
     let hasMore = true;
@@ -205,7 +213,8 @@ export class WooCommerceService implements ICommerceProvider {
         siteUrl: this.credentials.siteUrl,
       });
 
-      const products = await this.client.getAllPaginated<WooProduct>('/products');
+      const products =
+        await this.client.getAllPaginated<WooProduct>('/products');
 
       // For variable products, fetch their variations
       const normalizedProducts: NormalizedProduct[] = [];
@@ -215,7 +224,9 @@ export class WooCommerceService implements ICommerceProvider {
         normalizedProducts.push(normalized);
       }
 
-      logger.info(`Fetched ${normalizedProducts.length} products from WooCommerce`);
+      logger.info(
+        `Fetched ${normalizedProducts.length} products from WooCommerce`
+      );
       return normalizedProducts;
     } catch (error) {
       logger.error('Error fetching products from WooCommerce:', error);
@@ -223,12 +234,17 @@ export class WooCommerceService implements ICommerceProvider {
     }
   }
 
-  async getProduct(_storeIdentifier: string, productId: string): Promise<NormalizedProduct | null> {
+  async getProduct(
+    _storeIdentifier: string,
+    productId: string
+  ): Promise<NormalizedProduct | null> {
     try {
       // Extract WooCommerce ID from normalized ID if needed
       const wooId = this.extractWooId(productId);
 
-      const product = await this.client.request<WooProduct>(`/products/${wooId}`);
+      const product = await this.client.request<WooProduct>(
+        `/products/${wooId}`
+      );
       return this.normalizeProduct(product);
     } catch (error) {
       if ((error as Error).message?.includes('404')) {
@@ -251,7 +267,10 @@ export class WooCommerceService implements ICommerceProvider {
       }
 
       if (filters.availability !== undefined) {
-        params.append('stock_status', filters.availability ? 'instock' : 'outofstock');
+        params.append(
+          'stock_status',
+          filters.availability ? 'instock' : 'outofstock'
+        );
       }
 
       if (filters.priceRange?.min !== undefined) {
@@ -269,18 +288,26 @@ export class WooCommerceService implements ICommerceProvider {
 
       // Sorting
       if (filters.sortKey) {
-        const sortMapping: Record<string, { orderby: string; order: string }> = {
-          created_at: { orderby: 'date', order: 'desc' },
-          updated_at: { orderby: 'modified', order: 'desc' },
-          title: { orderby: 'title', order: 'asc' },
-          price: { orderby: 'price', order: 'asc' },
-          best_selling: { orderby: 'popularity', order: 'desc' },
-          relevance: { orderby: 'relevance', order: 'desc' },
-        };
+        const sortMapping: Record<string, { orderby: string; order: string }> =
+          {
+            created_at: { orderby: 'date', order: 'desc' },
+            updated_at: { orderby: 'modified', order: 'desc' },
+            title: { orderby: 'title', order: 'asc' },
+            price: { orderby: 'price', order: 'asc' },
+            best_selling: { orderby: 'popularity', order: 'desc' },
+            relevance: { orderby: 'relevance', order: 'desc' },
+          };
 
         const sort = sortMapping[filters.sortKey] || sortMapping.relevance;
         params.append('orderby', sort.orderby);
-        params.append('order', filters.reverse ? (sort.order === 'desc' ? 'asc' : 'desc') : sort.order);
+        params.append(
+          'order',
+          filters.reverse
+            ? sort.order === 'desc'
+              ? 'asc'
+              : 'desc'
+            : sort.order
+        );
       }
 
       if (filters.limit) {
@@ -309,7 +336,9 @@ export class WooCommerceService implements ICommerceProvider {
     try {
       if (options.productId) {
         const wooId = this.extractWooId(options.productId);
-        const product = await this.client.request<WooProduct>(`/products/${wooId}`);
+        const product = await this.client.request<WooProduct>(
+          `/products/${wooId}`
+        );
 
         let relatedIds: number[] = [];
 
@@ -328,7 +357,8 @@ export class WooCommerceService implements ICommerceProvider {
 
         // Limit and filter
         const limit = options.limit || 5;
-        const excludeIds = options.excludeProductIds?.map(id => this.extractWooId(id)) || [];
+        const excludeIds =
+          options.excludeProductIds?.map(id => this.extractWooId(id)) || [];
         relatedIds = relatedIds
           .filter(id => !excludeIds.includes(id.toString()))
           .slice(0, limit);
@@ -337,7 +367,9 @@ export class WooCommerceService implements ICommerceProvider {
         const recommendations: NormalizedProductRecommendation[] = [];
         for (const relatedId of relatedIds) {
           try {
-            const relatedProduct = await this.client.request<WooProduct>(`/products/${relatedId}`);
+            const relatedProduct = await this.client.request<WooProduct>(
+              `/products/${relatedId}`
+            );
             const normalized = await this.normalizeProduct(relatedProduct);
             recommendations.push({
               ...normalized,
@@ -396,13 +428,19 @@ export class WooCommerceService implements ICommerceProvider {
         const wooTopic = this.mapTopicToWoo(topic);
         if (!wooTopic) continue;
 
-        const webhook = await this.client.request<WooWebhook>('/webhooks', 'POST', {
-          name: `Kova Agent - ${topic}`,
-          topic: wooTopic,
-          delivery_url: `${process.env.APP_URL || 'https://api.kova.ai'}/api/woo/webhooks/${topic.replace('.', '/')}`,
-          secret: this.credentials.webhookSecret || crypto.randomBytes(32).toString('hex'),
-          status: 'active',
-        });
+        const webhook = await this.client.request<WooWebhook>(
+          '/webhooks',
+          'POST',
+          {
+            name: `Kova Agent - ${topic}`,
+            topic: wooTopic,
+            delivery_url: `${process.env.APP_URL || 'https://api.kova.ai'}/api/woo/webhooks/${topic.replace('.', '/')}`,
+            secret:
+              this.credentials.webhookSecret ||
+              crypto.randomBytes(32).toString('hex'),
+            status: 'active',
+          }
+        );
 
         createdWebhooks.push(this.normalizeWebhook(webhook));
         logger.info(`Created WooCommerce webhook: ${topic}`);
@@ -424,7 +462,10 @@ export class WooCommerceService implements ICommerceProvider {
     }
   }
 
-  async deleteWebhook(_storeIdentifier: string, webhookId: string): Promise<void> {
+  async deleteWebhook(
+    _storeIdentifier: string,
+    webhookId: string
+  ): Promise<void> {
     try {
       await this.client.request(`/webhooks/${webhookId}?force=true`, 'DELETE');
       logger.info(`Deleted WooCommerce webhook: ${webhookId}`);
@@ -465,7 +506,9 @@ export class WooCommerceService implements ICommerceProvider {
         per_page: '100',
       });
 
-      const orders = await this.client.getAllPaginated<WooOrder>(`/orders?${params.toString()}`);
+      const orders = await this.client.getAllPaginated<WooOrder>(
+        `/orders?${params.toString()}`
+      );
       return orders.map(order => this.normalizeOrder(order));
     } catch (error) {
       logger.error('Error fetching orders from WooCommerce:', error);
@@ -473,7 +516,10 @@ export class WooCommerceService implements ICommerceProvider {
     }
   }
 
-  async getOrder(_storeIdentifier: string, orderId: string): Promise<NormalizedOrder | null> {
+  async getOrder(
+    _storeIdentifier: string,
+    orderId: string
+  ): Promise<NormalizedOrder | null> {
     try {
       const wooId = this.extractWooId(orderId);
       const order = await this.client.request<WooOrder>(`/orders/${wooId}`);
@@ -489,10 +535,14 @@ export class WooCommerceService implements ICommerceProvider {
 
   // ==================== Store Operations ====================
 
-  async getStoreInfo(_storeIdentifier: string): Promise<NormalizedStore | null> {
+  async getStoreInfo(
+    _storeIdentifier: string
+  ): Promise<NormalizedStore | null> {
     try {
       // Fetch settings and test connection
-      await this.client.request<Array<{ id: string; value: unknown }>>('/settings/general');
+      await this.client.request<Array<{ id: string; value: unknown }>>(
+        '/settings/general'
+      );
       const storeInfo = await this.testConnection();
 
       if (!storeInfo.success) {
@@ -553,7 +603,9 @@ export class WooCommerceService implements ICommerceProvider {
   /**
    * Normalize WooCommerce product to platform-agnostic format
    */
-  private async normalizeProduct(product: WooProduct): Promise<NormalizedProduct> {
+  private async normalizeProduct(
+    product: WooProduct
+  ): Promise<NormalizedProduct> {
     const normalizedId = generateNormalizedId('woocommerce', product.id);
 
     // Fetch variations for variable products
@@ -564,7 +616,9 @@ export class WooCommerceService implements ICommerceProvider {
         const variations = await this.client.request<WooProductVariation[]>(
           `/products/${product.id}/variations`
         );
-        variants = variations.map(variation => this.normalizeVariation(variation, normalizedId));
+        variants = variations.map(variation =>
+          this.normalizeVariation(variation, normalizedId)
+        );
       } catch {
         logger.warn(`Failed to fetch variations for product ${product.id}`);
       }
@@ -572,20 +626,24 @@ export class WooCommerceService implements ICommerceProvider {
 
     // If no variations (simple product), create a default variant
     if (variants.length === 0) {
-      variants = [{
-        id: generateVariantId('woocommerce', product.id),
-        external_id: product.id.toString(),
-        product_id: normalizedId,
-        title: 'Default',
-        sku: product.sku,
-        price: product.price,
-        compare_at_price: product.sale_price ? product.regular_price : undefined,
-        inventory_quantity: product.stock_quantity || 0,
-        weight: product.weight ? parseFloat(product.weight) : undefined,
-        requires_shipping: product.shipping_required,
-        taxable: product.tax_status === 'taxable',
-        available: product.purchasable && product.stock_status === 'instock',
-      }];
+      variants = [
+        {
+          id: generateVariantId('woocommerce', product.id),
+          external_id: product.id.toString(),
+          product_id: normalizedId,
+          title: 'Default',
+          sku: product.sku,
+          price: product.price,
+          compare_at_price: product.sale_price
+            ? product.regular_price
+            : undefined,
+          inventory_quantity: product.stock_quantity || 0,
+          weight: product.weight ? parseFloat(product.weight) : undefined,
+          requires_shipping: product.shipping_required,
+          taxable: product.tax_status === 'taxable',
+          available: product.purchasable && product.stock_status === 'instock',
+        },
+      ];
     }
 
     return {
@@ -630,7 +688,9 @@ export class WooCommerceService implements ICommerceProvider {
       title: variation.attributes.map(a => a.option).join(' / ') || 'Default',
       sku: variation.sku,
       price: variation.price,
-      compare_at_price: variation.sale_price ? variation.regular_price : undefined,
+      compare_at_price: variation.sale_price
+        ? variation.regular_price
+        : undefined,
       inventory_quantity: variation.stock_quantity || 0,
       weight: variation.weight ? parseFloat(variation.weight) : undefined,
       requires_shipping: true,
@@ -640,11 +700,13 @@ export class WooCommerceService implements ICommerceProvider {
         name: attr.name,
         value: attr.option,
       })),
-      image: variation.image ? {
-        id: variation.image.id.toString(),
-        src: variation.image.src,
-        alt_text: variation.image.alt,
-      } : undefined,
+      image: variation.image
+        ? {
+            id: variation.image.id.toString(),
+            src: variation.image.src,
+            alt_text: variation.image.alt,
+          }
+        : undefined,
     };
   }
 
@@ -662,7 +724,11 @@ export class WooCommerceService implements ICommerceProvider {
       created_at: order.date_created,
       updated_at: order.date_modified,
       currency: order.currency,
-      subtotal: (parseFloat(order.total) - parseFloat(order.total_tax) - parseFloat(order.shipping_total)).toString(),
+      subtotal: (
+        parseFloat(order.total) -
+        parseFloat(order.total_tax) -
+        parseFloat(order.shipping_total)
+      ).toString(),
       total_tax: order.total_tax,
       total_shipping: order.shipping_total,
       total_discount: order.discount_total,
@@ -672,7 +738,10 @@ export class WooCommerceService implements ICommerceProvider {
         product_id: generateNormalizedId('woocommerce', item.product_id),
         product_external_id: item.product_id.toString(),
         product_title: item.name,
-        variant_id: generateVariantId('woocommerce', item.variation_id || item.product_id),
+        variant_id: generateVariantId(
+          'woocommerce',
+          item.variation_id || item.product_id
+        ),
         variant_external_id: (item.variation_id || item.product_id).toString(),
         variant_title: item.name,
         quantity: item.quantity,
@@ -681,13 +750,15 @@ export class WooCommerceService implements ICommerceProvider {
         currency: order.currency,
         sku: item.sku,
       })),
-      customer: order.customer_id ? {
-        id: order.customer_id.toString(),
-        email: order.billing.email,
-        first_name: order.billing.first_name,
-        last_name: order.billing.last_name,
-        phone: order.billing.phone,
-      } : undefined,
+      customer: order.customer_id
+        ? {
+            id: order.customer_id.toString(),
+            email: order.billing.email,
+            first_name: order.billing.first_name,
+            last_name: order.billing.last_name,
+            phone: order.billing.phone,
+          }
+        : undefined,
       shipping_address: {
         address1: order.shipping.address_1,
         address2: order.shipping.address_2,

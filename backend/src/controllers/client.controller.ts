@@ -618,7 +618,9 @@ router.get(
         supabaseService as any
       ).serviceClient
         .from('client_stores')
-        .select('shop_domain, widget_position, widget_color, welcome_message, chatbot_endpoint')
+        .select(
+          'shop_domain, widget_position, widget_color, welcome_message, chatbot_endpoint'
+        )
         .eq('user_id', user.id)
         .single();
 
@@ -626,7 +628,8 @@ router.get(
         throw new AppError('Tienda no encontrada', 404);
       }
 
-      const chatEndpoint = store.chatbot_endpoint || 'https://n8n.dustkey.com/webhook/kova-chat';
+      const chatEndpoint =
+        store.chatbot_endpoint || 'https://n8n.dustkey.com/webhook/kova-chat';
 
       const widgetCode = `<!-- Kova AI Chat Widget -->
 <script>

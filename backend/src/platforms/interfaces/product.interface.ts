@@ -93,7 +93,13 @@ export interface ProductSearchFilters {
     max?: number;
   };
   availability?: boolean;
-  sortKey?: 'created_at' | 'updated_at' | 'title' | 'price' | 'best_selling' | 'relevance';
+  sortKey?:
+    | 'created_at'
+    | 'updated_at'
+    | 'title'
+    | 'price'
+    | 'best_selling'
+    | 'relevance';
   reverse?: boolean;
   limit?: number;
 }
@@ -118,14 +124,19 @@ export interface RecommendationOptions {
 /**
  * Helper to generate normalized IDs from platform-specific IDs
  */
-export function generateNormalizedId(platform: Platform, externalId: string | number): string {
+export function generateNormalizedId(
+  platform: Platform,
+  externalId: string | number
+): string {
   return `${platform}-${externalId}`;
 }
 
 /**
  * Helper to extract external ID from normalized ID
  */
-export function extractExternalId(normalizedId: string): { platform: Platform; externalId: string } | null {
+export function extractExternalId(
+  normalizedId: string
+): { platform: Platform; externalId: string } | null {
   const match = normalizedId.match(/^(shopify|woocommerce)-(.+)$/);
   if (!match) return null;
   return {
@@ -137,6 +148,9 @@ export function extractExternalId(normalizedId: string): { platform: Platform; e
 /**
  * Helper to generate variant normalized ID
  */
-export function generateVariantId(platform: Platform, externalId: string | number): string {
+export function generateVariantId(
+  platform: Platform,
+  externalId: string | number
+): string {
   return `${platform}-var-${externalId}`;
 }

@@ -44,7 +44,9 @@ router.post('/connect', async (req: Request, res: Response) => {
       });
     }
 
-    logger.info('Attempting WooCommerce connection', { siteUrl: normalizedUrl });
+    logger.info('Attempting WooCommerce connection', {
+      siteUrl: normalizedUrl,
+    });
 
     // Test connection with provided credentials
     const wooService = new WooCommerceService({
@@ -87,21 +89,19 @@ router.post('/connect', async (req: Request, res: Response) => {
         .eq('shop_domain', normalizedUrl);
     } else {
       // Create new store
-      await (supabaseService as any).serviceClient
-        .from('stores')
-        .insert({
-          shop_domain: normalizedUrl,
-          platform: 'woocommerce',
-          site_url: normalizedUrl,
-          access_token: 'woocommerce', // Placeholder, actual auth uses credentials
-          credentials: {
-            consumer_key: consumerKey,
-            consumer_secret: consumerSecret,
-          },
-          webhook_secret: webhookSecret,
-          installed_at: new Date().toISOString(),
-          scopes: 'read_write',
-        });
+      await (supabaseService as any).serviceClient.from('stores').insert({
+        shop_domain: normalizedUrl,
+        platform: 'woocommerce',
+        site_url: normalizedUrl,
+        access_token: 'woocommerce', // Placeholder, actual auth uses credentials
+        credentials: {
+          consumer_key: consumerKey,
+          consumer_secret: consumerSecret,
+        },
+        webhook_secret: webhookSecret,
+        installed_at: new Date().toISOString(),
+        scopes: 'read_write',
+      });
     }
 
     logger.info('WooCommerce store connected successfully', {
@@ -364,7 +364,9 @@ router.post('/sync-products', async (req: Request, res: Response) => {
     // Fetch all products
     const products = await wooService.getAllProducts(siteUrl);
 
-    logger.info(`Syncing ${products.length} products from WooCommerce`, { siteUrl });
+    logger.info(`Syncing ${products.length} products from WooCommerce`, {
+      siteUrl,
+    });
 
     // Save products to database
     let syncedCount = 0;
@@ -410,7 +412,11 @@ router.post('/sync-products', async (req: Request, res: Response) => {
       }
     }
 
-    logger.info(`Product sync completed`, { siteUrl, syncedCount, total: products.length });
+    logger.info(`Product sync completed`, {
+      siteUrl,
+      syncedCount,
+      total: products.length,
+    });
 
     return res.json({
       success: true,
@@ -475,7 +481,9 @@ router.post('/setup-webhooks', async (req: Request, res: Response) => {
     // Create webhooks
     const webhooks = await wooService.createWebhooks(siteUrl);
 
-    logger.info(`Created ${webhooks.length} webhooks for WooCommerce store`, { siteUrl });
+    logger.info(`Created ${webhooks.length} webhooks for WooCommerce store`, {
+      siteUrl,
+    });
 
     return res.json({
       success: true,

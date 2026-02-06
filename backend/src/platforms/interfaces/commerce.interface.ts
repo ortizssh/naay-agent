@@ -13,7 +13,12 @@ import {
 import { ICartProvider } from './cart.interface';
 
 // Re-export cart types for convenience
-export type { NormalizedCart, CartLineInput, CartLineUpdateInput, BuyerIdentity } from './cart.interface';
+export type {
+  NormalizedCart,
+  CartLineInput,
+  CartLineUpdateInput,
+  BuyerIdentity,
+} from './cart.interface';
 
 /**
  * Webhook topic types (normalized across platforms)
@@ -148,7 +153,10 @@ export interface ICommerceProvider {
   /**
    * Get a single product by ID
    */
-  getProduct(storeIdentifier: string, productId: string): Promise<NormalizedProduct | null>;
+  getProduct(
+    storeIdentifier: string,
+    productId: string
+  ): Promise<NormalizedProduct | null>;
 
   /**
    * Search products with filters
@@ -179,7 +187,10 @@ export interface ICommerceProvider {
   /**
    * Create/register webhooks for the store
    */
-  createWebhooks(storeIdentifier: string, topics?: WebhookTopic[]): Promise<NormalizedWebhook[]>;
+  createWebhooks(
+    storeIdentifier: string,
+    topics?: WebhookTopic[]
+  ): Promise<NormalizedWebhook[]>;
 
   /**
    * List registered webhooks
@@ -210,7 +221,10 @@ export interface ICommerceProvider {
   /**
    * Get a single order by ID
    */
-  getOrder(storeIdentifier: string, orderId: string): Promise<NormalizedOrder | null>;
+  getOrder(
+    storeIdentifier: string,
+    orderId: string
+  ): Promise<NormalizedOrder | null>;
 
   // ==================== Store Operations ====================
 
@@ -263,7 +277,8 @@ export type CommerceProviderFactory = (
 /**
  * Registry of commerce providers by platform
  */
-export const commerceProviders: Map<Platform, CommerceProviderFactory> = new Map();
+export const commerceProviders: Map<Platform, CommerceProviderFactory> =
+  new Map();
 
 /**
  * Register a commerce provider factory
@@ -284,7 +299,9 @@ export function getCommerceProvider(
 ): ICommerceProvider {
   const factory = commerceProviders.get(platform);
   if (!factory) {
-    throw new Error(`No commerce provider registered for platform: ${platform}`);
+    throw new Error(
+      `No commerce provider registered for platform: ${platform}`
+    );
   }
   return factory(credentials);
 }

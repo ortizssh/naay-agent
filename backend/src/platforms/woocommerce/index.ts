@@ -21,9 +21,8 @@ registerCommerceProvider('woocommerce', (credentials: StoreCredentials) => {
   }
 
   // Extract site URL from identifier or use a default
-  const siteUrl = (credentials as any).siteUrl ||
-    (credentials as any).site_url ||
-    '';
+  const siteUrl =
+    (credentials as any).siteUrl || (credentials as any).site_url || '';
 
   return new WooCommerceService({
     siteUrl,

@@ -165,10 +165,7 @@ export interface ICartProvider {
   /**
    * Clear all items from cart
    */
-  clearCart(
-    storeIdentifier: string,
-    cartId: string
-  ): Promise<NormalizedCart>;
+  clearCart(storeIdentifier: string, cartId: string): Promise<NormalizedCart>;
 
   /**
    * Update buyer identity on cart
@@ -182,8 +179,5 @@ export interface ICartProvider {
   /**
    * Get checkout URL for cart
    */
-  getCheckoutUrl(
-    storeIdentifier: string,
-    cartId: string
-  ): Promise<string>;
+  getCheckoutUrl(storeIdentifier: string, cartId: string): Promise<string>;
 }

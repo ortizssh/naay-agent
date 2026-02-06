@@ -38,7 +38,10 @@ import shopifyEmbeddedRoutes from '@/controllers/shopify-embedded.controller';
 import { getConversionSyncScheduler } from '@/services/conversion-sync-scheduler.service';
 
 // WooCommerce platform imports
-import { wooAuthController, wooWebhookController } from '@/platforms/woocommerce/controllers';
+import {
+  wooAuthController,
+  wooWebhookController,
+} from '@/platforms/woocommerce/controllers';
 
 async function startServer() {
   try {
@@ -456,7 +459,9 @@ async function startServer() {
     app.use('/api/woo/webhooks', (req, res, next) => {
       let data = '';
       req.setEncoding('utf8');
-      req.on('data', chunk => { data += chunk; });
+      req.on('data', chunk => {
+        data += chunk;
+      });
       req.on('end', () => {
         (req as any).rawBody = data;
         // Parse JSON body
