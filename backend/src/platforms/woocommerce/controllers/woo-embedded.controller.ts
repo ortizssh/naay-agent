@@ -324,8 +324,22 @@ router.get(
 
       const normalizedUrl = normalizeWooSiteUrl(siteUrl);
 
+      // Build list of possible shop domain formats to try
+      const shopVariants: string[] = [normalizedUrl];
+      try {
+        const url = new URL(normalizedUrl);
+        shopVariants.push(url.host); // e.g., "imperionfc.cl"
+        shopVariants.push(url.hostname); // e.g., "imperionfc.cl"
+        shopVariants.push(`${normalizedUrl}/`); // with trailing slash
+        shopVariants.push(`https://${url.host}`);
+        shopVariants.push(`http://${url.host}`);
+      } catch {
+        // Ignore parse errors
+      }
+
       logger.info(`Fetching conversations for WooCommerce: ${normalizedUrl}`, {
         date,
+        shopVariants,
       });
 
       // Build date filter
@@ -343,24 +357,36 @@ router.get(
         endOfDay = `${todayStr}T23:59:59.999Z`;
       }
 
-      // Get unique sessions with their messages for the date
-      const { data: messages, error } = await (
-        supabaseService as any
-      ).serviceClient
-        .from('chat_messages')
-        .select('session_id, role, content, timestamp')
-        .eq('shop_domain', normalizedUrl)
-        .gte('timestamp', startOfDay)
-        .lte('timestamp', endOfDay)
-        .order('timestamp', { ascending: true });
+      // Try each variant to find messages
+      let messages: any[] = [];
+      let error: any = null;
 
-      if (error) {
+      for (const variant of shopVariants) {
+        const result = await (supabaseService as any).serviceClient
+          .from('chat_messages')
+          .select('session_id, role, content, timestamp')
+          .eq('shop_domain', variant)
+          .gte('timestamp', startOfDay)
+          .lte('timestamp', endOfDay)
+          .order('timestamp', { ascending: true });
+
+        if (result.data && result.data.length > 0) {
+          messages = result.data;
+          logger.info(`Found ${messages.length} messages with variant: ${variant}`);
+          break;
+        }
+        error = result.error;
+      }
+
+      if (messages.length === 0 && error) {
         logger.error('Error fetching conversations:', error);
         return res.status(500).json({
           success: false,
           error: 'Failed to fetch conversations',
         });
       }
+
+      logger.info(`Processing ${messages.length} messages for conversations`);
 
       // Group messages by session
       const sessionsMap = new Map<
