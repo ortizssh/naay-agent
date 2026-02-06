@@ -37,6 +37,9 @@ import clientRoutes from '@/controllers/client.controller';
 import shopifyEmbeddedRoutes from '@/controllers/shopify-embedded.controller';
 import { getConversionSyncScheduler } from '@/services/conversion-sync-scheduler.service';
 
+// WooCommerce platform imports
+import { wooAuthController, wooWebhookController } from '@/platforms/woocommerce/controllers';
+
 async function startServer() {
   try {
     console.log('🔄 Starting Naay Agent Backend...');
@@ -311,6 +314,40 @@ async function startServer() {
       next();
     });
 
+    // WooCommerce API CORS middleware
+    app.use('/api/woo', (req, res, next) => {
+      const origin = req.get('Origin');
+
+      // Allow requests from WooCommerce stores and local development
+      res.setHeader('Access-Control-Allow-Origin', origin || '*');
+      if (origin) {
+        res.setHeader('Vary', 'Origin');
+      }
+
+      res.setHeader(
+        'Access-Control-Allow-Methods',
+        'GET, POST, PUT, DELETE, OPTIONS'
+      );
+      res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization, X-Requested-With, X-WC-Webhook-Source, X-WC-Webhook-Signature'
+      );
+      res.setHeader('Access-Control-Max-Age', '86400');
+
+      // Handle OPTIONS preflight
+      if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+      }
+
+      console.log(
+        'WooCommerce API request - CORS headers set for:',
+        req.path,
+        'Origin:',
+        origin
+      );
+      next();
+    });
+
     // Public APIs CORS middleware - MOVED BEFORE GENERAL CORS
     app.use('/api/public', (req, res, next) => {
       const origin = req.get('Origin');
@@ -415,6 +452,22 @@ async function startServer() {
 
     // Body parsing middleware
     app.use('/api/webhooks', express.raw({ type: 'application/json' }));
+    // WooCommerce webhooks need raw body for signature verification
+    app.use('/api/woo/webhooks', (req, res, next) => {
+      let data = '';
+      req.setEncoding('utf8');
+      req.on('data', chunk => { data += chunk; });
+      req.on('end', () => {
+        (req as any).rawBody = data;
+        // Parse JSON body
+        try {
+          req.body = JSON.parse(data);
+        } catch {
+          req.body = {};
+        }
+        next();
+      });
+    });
     app.use(express.json({ limit: '10mb' }));
     app.use(express.urlencoded({ extended: true }));
 
@@ -739,6 +792,10 @@ async function startServer() {
     app.use('/api/simple-conversions', simpleConversionAnalyticsRoutes);
     app.use('/api/migration', historicalConversionMigratorRoutes);
     app.use('/api/real-conversions', realConversionAnalyzerRoutes);
+
+    // WooCommerce Platform Routes
+    app.use('/api/woo', wooAuthController);
+    app.use('/api/woo/webhooks', wooWebhookController);
 
     // Legacy admin route - redirect to root
     app.get('/admin*', (req, res) => {

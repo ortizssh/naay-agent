@@ -1,0 +1,233 @@
+/**
+ * Kova Agent Admin Styles
+ */
+
+.kova-admin-wrap {
+    margin: 20px 20px 20px 0;
+}
+
+.kova-admin-wrap h1 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.kova-admin-wrap h1 .dashicons {
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+    color: #6366f1;
+}
+
+.kova-admin-container {
+    display: flex;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.kova-admin-main {
+    flex: 1;
+    max-width: 800px;
+}
+
+.kova-admin-sidebar {
+    width: 300px;
+    flex-shrink: 0;
+}
+
+/* Sections */
+.kova-section {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.kova-section h2 {
+    margin: 0 0 20px;
+    padding: 0 0 15px;
+    border-bottom: 1px solid #f0f0f1;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.kova-section .form-table {
+    margin-top: 0;
+}
+
+.kova-section .form-table th {
+    padding-top: 15px;
+    padding-bottom: 15px;
+}
+
+.kova-section .form-table td {
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+/* Toggle Switch */
+.kova-toggle {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+}
+
+.kova-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.kova-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.3s;
+    border-radius: 26px;
+}
+
+.kova-toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+.kova-toggle input:checked + .kova-toggle-slider {
+    background-color: #6366f1;
+}
+
+.kova-toggle input:checked + .kova-toggle-slider:before {
+    transform: translateX(24px);
+}
+
+/* Actions */
+.kova-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #f0f0f1;
+}
+
+.kova-actions .button {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+#kova-action-status {
+    margin-left: 10px;
+    font-style: italic;
+}
+
+#kova-action-status.success {
+    color: #00a32a;
+}
+
+#kova-action-status.error {
+    color: #d63638;
+}
+
+#kova-action-status.loading {
+    color: #2271b1;
+}
+
+/* Sidebar Info Boxes */
+.kova-info-box {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.kova-info-box h3 {
+    margin: 0 0 15px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.kova-info-box ol {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.kova-info-box ol li {
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+.kova-info-box p {
+    margin: 0 0 10px;
+    line-height: 1.6;
+}
+
+.kova-info-box .button {
+    display: block;
+    text-align: center;
+}
+
+/* Color Picker */
+.kova-color-picker {
+    max-width: 100px;
+}
+
+.wp-picker-container {
+    display: inline-block;
+}
+
+/* Form Inputs */
+.kova-section input[type="text"],
+.kova-section input[type="url"],
+.kova-section input[type="password"],
+.kova-section select,
+.kova-section textarea {
+    width: 100%;
+    max-width: 400px;
+}
+
+.kova-section textarea {
+    resize: vertical;
+}
+
+/* Responsive */
+@media screen and (max-width: 1200px) {
+    .kova-admin-container {
+        flex-direction: column;
+    }
+
+    .kova-admin-sidebar {
+        width: 100%;
+        max-width: 600px;
+    }
+}
+
+@media screen and (max-width: 782px) {
+    .kova-admin-wrap {
+        margin-right: 10px;
+    }
+
+    .kova-section {
+        padding: 15px;
+    }
+
+    .kova-actions {
+        flex-wrap: wrap;
+    }
+}

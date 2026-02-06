@@ -43,9 +43,14 @@ npm test                     # Run Jest tests
 npm run test:watch           # Jest in watch mode
 npm run test:coverage        # Generate coverage report
 
-# Run single test
-npm test -- --testNamePattern="specific test name"
+# Run single test file
 npx jest path/to/test.ts
+
+# Run tests matching pattern
+npm test -- --testNamePattern="specific test name"
+
+# Run specific test file with verbose output
+npx jest backend/src/services/cache.service.test.ts --verbose
 ```
 
 ### Critical Configuration Notes
@@ -84,13 +89,15 @@ naay-agent/
 ### Controllers (`backend/src/controllers/`)
 - `auth.controller.ts` / `modern-auth.controller.ts` - Shopify OAuth flow
 - `shopify-embedded.controller.ts` - App Bridge embedded app endpoints
-- `webhook.controller.ts` - Shopify webhook handlers
+- `webhook.controller.ts` / `webhook-admin.controller.ts` - Shopify webhook handlers
 - `chat.controller.ts` / `simple-chat.controller.ts` - AI chat endpoints
 - `product.controller.ts` / `public-products.controller.ts` - Product sync and search
 - `public-cart.controller.ts` - Public cart API for widget
-- `widget.controller.ts` / `widget-public.controller.ts` - Widget endpoints
+- `widget.controller.ts` / `widget-public.controller.ts` - Widget configuration endpoints
+- `settings.controller.ts` - App settings management
 - `tenant-admin.controller.ts` - Multi-tenant administration
 - `admin-bypass.controller.ts` - Direct admin operations (testing/debugging)
+- `*-conversion-*.controller.ts` - Conversion tracking and analytics endpoints
 - `health.controller.ts` - Health check endpoints
 
 ### Key Patterns
@@ -105,7 +112,7 @@ naay-agent/
 - pgvector extension for semantic similarity search
 - Row-level security for multi-tenant isolation
 - Direct Supabase client calls (not abstracted through repositories)
-- Migrations in `database/migrations/` (001_initial_schema → 007_rotating_welcome_messages)
+- Migrations in `database/migrations/` (001_initial_schema through 007_rotating_welcome_messages, plus standalone fixes)
 - Semantic search function: `database/functions/search_products_semantic.sql`
 
 ## Environment Configuration
@@ -151,9 +158,9 @@ PORT=3000
 ### Webhook Events
 `products/create`, `products/update`, `products/delete`, `app/uninstalled`
 
-### Theme Extension (`extensions/naay-chat-widget/`)
-- `blocks/naay-chat.liquid` - Chat widget block
-- `snippets/naay-*.liquid` - Injection scripts
+### Theme Extension (`extensions/kova-chat-widget/`)
+- `blocks/kova-chat.liquid` - Chat widget block
+- `snippets/kova-*.liquid` - Injection scripts (init, body-inject, auto-inject)
 - `shopify.extension.toml` - Extension config
 
 ## Deployment

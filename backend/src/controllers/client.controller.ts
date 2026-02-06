@@ -377,7 +377,7 @@ router.get(
       ).serviceClient
         .from('client_stores')
         .select(
-          'widget_position, widget_color, welcome_message, widget_enabled'
+          'widget_position, widget_color, welcome_message, widget_enabled, chatbot_endpoint'
         )
         .eq('user_id', user.id)
         .single();
@@ -393,6 +393,7 @@ router.get(
           widget_color: '#6d5cff',
           welcome_message: 'Hola! Como puedo ayudarte?',
           widget_enabled: true,
+          chatbot_endpoint: 'https://n8n.dustkey.com/webhook/kova-chat',
         },
       });
     } catch (error) {
@@ -432,6 +433,7 @@ router.put(
         widgetEnableAnimations,
         widgetTheme,
         widgetBrandName,
+        chatbotEndpoint,
       } = req.body;
 
       const updateData: any = {};
@@ -471,6 +473,8 @@ router.put(
       if (widgetTheme) updateData.widget_theme = widgetTheme;
       if (widgetBrandName !== undefined)
         updateData.widget_brand_name = widgetBrandName;
+      if (chatbotEndpoint !== undefined)
+        updateData.chatbot_endpoint = chatbotEndpoint;
 
       const { data: store, error } = await (
         supabaseService as any
@@ -614,7 +618,7 @@ router.get(
         supabaseService as any
       ).serviceClient
         .from('client_stores')
-        .select('shop_domain, widget_position, widget_color, welcome_message')
+        .select('shop_domain, widget_position, widget_color, welcome_message, chatbot_endpoint')
         .eq('user_id', user.id)
         .single();
 
@@ -622,12 +626,14 @@ router.get(
         throw new AppError('Tienda no encontrada', 404);
       }
 
+      const chatEndpoint = store.chatbot_endpoint || 'https://n8n.dustkey.com/webhook/kova-chat';
+
       const widgetCode = `<!-- Kova AI Chat Widget -->
 <script>
   window.KovaConfig = {
     shopDomain: "${store.shop_domain}",
     apiEndpoint: "${config.shopify.appUrl}",
-    chatEndpoint: "https://n8n.dustkey.com/webhook/chat-naay",
+    chatEndpoint: "${chatEndpoint}",
     position: "${store.widget_position}",
     primaryColor: "${store.widget_color}",
     greeting: "${store.welcome_message}",
