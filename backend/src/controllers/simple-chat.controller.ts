@@ -298,49 +298,48 @@ async function getProductRecommendations(
  * Returns 200 if allowed, 429 if limit exceeded (with contactEmail).
  * Used by the widget before sending to external chat endpoints (e.g. n8n).
  */
-router.get(
-  '/check',
-  async (req: Request, res: Response) => {
-    try {
-      const shop = req.query.shop as string;
-      if (!shop) {
-        return res.json({ success: true, allowed: true });
-      }
-
-      const tenant = await tenantService.getTenant(shop);
-      if (!tenant) {
-        // No tenant record — allow (backwards-compat)
-        return res.json({ success: true, allowed: true });
-      }
-
-      await tenantService.validateTenantAccess(shop);
+router.get('/check', async (req: Request, res: Response) => {
+  try {
+    const shop = req.query.shop as string;
+    if (!shop) {
       return res.json({ success: true, allowed: true });
-    } catch (error: any) {
-      if (error.metadata?.tenantErrorCode === 'USAGE_LIMIT_EXCEEDED') {
-        // Look up tenant contact email
-        let contactEmail: string | null = null;
-        try {
-          const shop = req.query.shop as string;
-          const tenant = await tenantService.getTenant(shop);
-          contactEmail = tenant?.shop_email || null;
-        } catch { /* ignore */ }
+    }
 
-        return res.status(429).json({
-          success: false,
-          allowed: false,
-          contactEmail,
-        });
+    const tenant = await tenantService.getTenant(shop);
+    if (!tenant) {
+      // No tenant record — allow (backwards-compat)
+      return res.json({ success: true, allowed: true });
+    }
+
+    await tenantService.validateTenantAccess(shop);
+    return res.json({ success: true, allowed: true });
+  } catch (error: any) {
+    if (error.metadata?.tenantErrorCode === 'USAGE_LIMIT_EXCEEDED') {
+      // Look up tenant contact email
+      let contactEmail: string | null = null;
+      try {
+        const shop = req.query.shop as string;
+        const tenant = await tenantService.getTenant(shop);
+        contactEmail = tenant?.shop_email || null;
+      } catch {
+        /* ignore */
       }
 
-      // Other tenant errors (suspended, etc.) — block
-      return res.status(403).json({
+      return res.status(429).json({
         success: false,
         allowed: false,
-        error: error.message,
+        contactEmail,
       });
     }
+
+    // Other tenant errors (suspended, etc.) — block
+    return res.status(403).json({
+      success: false,
+      allowed: false,
+      error: error.message,
+    });
   }
-);
+});
 
 // Simple chat endpoint that directly connects to OpenAI
 // Middlewares: rate limit per tenant -> validate tenant -> track usage

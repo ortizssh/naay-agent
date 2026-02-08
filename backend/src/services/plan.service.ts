@@ -29,7 +29,8 @@ export class PlanService {
         .order('sort_order', { ascending: true });
 
       if (error || !data || data.length === 0) {
-        if (error) logger.warn('Error fetching plans from DB, using fallback:', error);
+        if (error)
+          logger.warn('Error fetching plans from DB, using fallback:', error);
         return this.getFallbackPlans();
       }
 
@@ -99,11 +100,44 @@ export class PlanService {
    * Build Plan[] from hardcoded TENANT_PLAN_LIMITS as fallback
    */
   private getFallbackPlans(): Plan[] {
-    const fallbackMeta: Record<TenantPlan, { name: string; price: number; badge_color: string; sort_order: number; description: string }> = {
-      free: { name: 'Free', price: 0, badge_color: 'neutral', sort_order: 0, description: 'Plan gratuito con funcionalidades básicas' },
-      starter: { name: 'Starter', price: 49, badge_color: 'primary', sort_order: 1, description: 'Plan inicial para tiendas en crecimiento' },
-      professional: { name: 'Professional', price: 149, badge_color: 'success', sort_order: 2, description: 'Plan profesional para tiendas establecidas' },
-      enterprise: { name: 'Enterprise', price: 499, badge_color: 'warning', sort_order: 3, description: 'Plan enterprise con todas las funcionalidades' },
+    const fallbackMeta: Record<
+      TenantPlan,
+      {
+        name: string;
+        price: number;
+        badge_color: string;
+        sort_order: number;
+        description: string;
+      }
+    > = {
+      free: {
+        name: 'Free',
+        price: 0,
+        badge_color: 'neutral',
+        sort_order: 0,
+        description: 'Plan gratuito con funcionalidades básicas',
+      },
+      starter: {
+        name: 'Starter',
+        price: 49,
+        badge_color: 'primary',
+        sort_order: 1,
+        description: 'Plan inicial para tiendas en crecimiento',
+      },
+      professional: {
+        name: 'Professional',
+        price: 149,
+        badge_color: 'success',
+        sort_order: 2,
+        description: 'Plan profesional para tiendas establecidas',
+      },
+      enterprise: {
+        name: 'Enterprise',
+        price: 499,
+        badge_color: 'warning',
+        sort_order: 3,
+        description: 'Plan enterprise con todas las funcionalidades',
+      },
     };
 
     return (Object.keys(TENANT_PLAN_LIMITS) as TenantPlan[]).map(slug => {

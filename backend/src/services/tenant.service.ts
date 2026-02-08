@@ -178,7 +178,11 @@ export class TenantService {
       if (cached !== null && cached !== undefined) return cached;
 
       const now = new Date();
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const monthStart = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        1
+      ).toISOString();
 
       const { count, error } = await (supabaseService as any).serviceClient
         .from('chat_messages')
@@ -187,7 +191,7 @@ export class TenantService {
         .eq('role', 'agent')
         .gte('timestamp', monthStart);
 
-      const result = error ? 0 : (count || 0);
+      const result = error ? 0 : count || 0;
       await cacheService.set(cacheKey, result, { ttl: 60 });
       return result;
     } catch (error) {

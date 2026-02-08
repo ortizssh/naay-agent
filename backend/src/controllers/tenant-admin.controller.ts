@@ -3,11 +3,7 @@ import { tenantService } from '@/services/tenant.service';
 import { planService } from '@/services/plan.service';
 import { SupabaseService } from '@/services/supabase.service';
 import { logger } from '@/utils/logger';
-import {
-  AppError,
-  TenantPlan,
-  TenantStatus,
-} from '@/types';
+import { AppError, TenantPlan, TenantStatus } from '@/types';
 
 const router = Router();
 const supabaseService = new SupabaseService();
@@ -27,7 +23,11 @@ router.get(
 
       // Get monthly message count and products count
       const now = new Date();
-      const statsMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const statsMonthStart = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        1
+      ).toISOString();
 
       let totalMonthlyMessages = 0;
       let totalProducts = 0;
@@ -79,7 +79,11 @@ router.post(
       logger.info('Syncing tenant features with plan definitions');
 
       const { tenants } = await tenantService.getAllTenants();
-      const updates: Array<{ shop_domain: string; plan: string; changes: string[] }> = [];
+      const updates: Array<{
+        shop_domain: string;
+        plan: string;
+        changes: string[];
+      }> = [];
 
       for (const tenant of tenants) {
         const planLimits = await planService.getPlanLimits(tenant.plan);
@@ -88,20 +92,32 @@ router.post(
         const currentFeatures = tenant.features || {};
         const expectedFeatures = planLimits.features;
         const featuresDiffer = Object.keys(expectedFeatures).some(
-          key => currentFeatures[key as keyof typeof currentFeatures] !== expectedFeatures[key as keyof typeof expectedFeatures]
+          key =>
+            currentFeatures[key as keyof typeof currentFeatures] !==
+            expectedFeatures[key as keyof typeof expectedFeatures]
         );
 
         if (featuresDiffer) {
           await (supabaseService as any).serviceClient
             .from('tenants')
-            .update({ features: expectedFeatures, updated_at: new Date().toISOString() })
+            .update({
+              features: expectedFeatures,
+              updated_at: new Date().toISOString(),
+            })
             .eq('shop_domain', tenant.shop_domain);
 
-          updates.push({ shop_domain: tenant.shop_domain, plan: tenant.plan, changes: ['features updated'] });
+          updates.push({
+            shop_domain: tenant.shop_domain,
+            plan: tenant.plan,
+            changes: ['features updated'],
+          });
         }
       }
 
-      logger.info('Fix-limits completed', { updated: updates.length, total: tenants.length });
+      logger.info('Fix-limits completed', {
+        updated: updates.length,
+        total: tenants.length,
+      });
 
       res.json({
         success: true,
@@ -144,7 +160,11 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     // Enrich tenants with client_stores data and monthly AI message counts
     const shopDomains = result.tenants.map(t => t.shop_domain);
     const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const monthStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      1
+    ).toISOString();
 
     let storeMap = new Map<string, any>();
     let messageCounts: Record<string, number> = {};
@@ -154,7 +174,9 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         const [clientStoresResult, ...messageResults] = await Promise.all([
           (supabaseService as any).serviceClient
             .from('client_stores')
-            .select('shop_domain, platform, chatbot_endpoint, widget_enabled, is_active')
+            .select(
+              'shop_domain, platform, chatbot_endpoint, widget_enabled, is_active'
+            )
             .in('shop_domain', shopDomains),
           ...shopDomains.map((domain: string) =>
             (supabaseService as any).serviceClient
@@ -166,7 +188,9 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
           ),
         ]);
 
-        (clientStoresResult.data || []).forEach((s: any) => storeMap.set(s.shop_domain, s));
+        (clientStoresResult.data || []).forEach((s: any) =>
+          storeMap.set(s.shop_domain, s)
+        );
         shopDomains.forEach((domain: string, i: number) => {
           messageCounts[domain] = messageResults[i]?.count || 0;
         });
@@ -208,7 +232,11 @@ router.get(
       const { shopDomain } = req.params;
       logger.info('Fetching enriched tenant detail', { shopDomain });
 
-      const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+      const monthStart = new Date(
+        new Date().getFullYear(),
+        new Date().getMonth(),
+        1
+      ).toISOString();
 
       const [
         tenant,
@@ -228,7 +256,9 @@ router.get(
           .maybeSingle(),
         (supabaseService as any).serviceClient
           .from('admin_users')
-          .select('id, email, first_name, last_name, company, role, user_type, plan, status, last_login_at, created_at')
+          .select(
+            'id, email, first_name, last_name, company, role, user_type, plan, status, last_login_at, created_at'
+          )
           .eq('shop_domain', shopDomain)
           .maybeSingle(),
         (supabaseService as any).serviceClient
@@ -328,7 +358,16 @@ router.get(
  */
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { shop_domain, access_token, shop_name, shop_email, plan, platform, chatbot_endpoint, widget_brand_name } = req.body;
+    const {
+      shop_domain,
+      access_token,
+      shop_name,
+      shop_email,
+      plan,
+      platform,
+      chatbot_endpoint,
+      widget_brand_name,
+    } = req.body;
 
     if (!shop_domain) {
       throw new AppError('shop_domain is required', 400);
@@ -351,12 +390,17 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     let store = await supabaseService.getStore(shop_domain);
     if (!store) {
       // Use serviceClient directly to support platform field
-      const { data: newStore, error: storeError } = await (supabaseService as any).serviceClient
+      const { data: newStore, error: storeError } = await (
+        supabaseService as any
+      ).serviceClient
         .from('stores')
         .insert({
           shop_domain,
           access_token,
-          scopes: storePlatform === 'woocommerce' ? '' : 'read_products,write_products,read_orders,read_customers,write_draft_orders',
+          scopes:
+            storePlatform === 'woocommerce'
+              ? ''
+              : 'read_products,write_products,read_orders,read_customers,write_draft_orders',
           platform: storePlatform,
           installed_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -370,7 +414,10 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
         throw new AppError('Failed to create store', 500);
       }
       store = newStore;
-      logger.info('Store created for new tenant', { shop_domain, platform: storePlatform });
+      logger.info('Store created for new tenant', {
+        shop_domain,
+        platform: storePlatform,
+      });
     }
 
     // Create tenant
@@ -506,19 +553,48 @@ router.put(
 
       // Update client_stores fields if any widget/integration fields are provided
       const clientStoreFields = [
-        'chatbot_endpoint', 'widget_enabled', 'widget_color', 'widget_secondary_color',
-        'widget_accent_color', 'widget_position', 'widget_button_size', 'widget_button_style',
-        'widget_show_pulse', 'widget_chat_width', 'widget_chat_height', 'widget_subtitle',
-        'widget_placeholder', 'widget_avatar', 'widget_show_promo_message', 'widget_show_cart',
-        'widget_enable_animations', 'widget_theme', 'widget_brand_name', 'welcome_message',
-        'suggested_question_1_text', 'suggested_question_1_message',
-        'suggested_question_2_text', 'suggested_question_2_message',
-        'suggested_question_3_text', 'suggested_question_3_message',
-        'promo_badge_enabled', 'promo_badge_discount', 'promo_badge_text',
-        'promo_badge_color', 'promo_badge_shape', 'promo_badge_position',
-        'promo_badge_suffix', 'promo_badge_font_size', 'promo_badge_prefix', 'promo_badge_type',
-        'widget_rotating_messages_enabled', 'widget_welcome_message_2', 'widget_welcome_message_3',
-        'widget_rotating_messages_interval', 'widget_subtitle_2', 'widget_subtitle_3',
+        'chatbot_endpoint',
+        'widget_enabled',
+        'widget_color',
+        'widget_secondary_color',
+        'widget_accent_color',
+        'widget_position',
+        'widget_button_size',
+        'widget_button_style',
+        'widget_show_pulse',
+        'widget_chat_width',
+        'widget_chat_height',
+        'widget_subtitle',
+        'widget_placeholder',
+        'widget_avatar',
+        'widget_show_promo_message',
+        'widget_show_cart',
+        'widget_enable_animations',
+        'widget_theme',
+        'widget_brand_name',
+        'welcome_message',
+        'suggested_question_1_text',
+        'suggested_question_1_message',
+        'suggested_question_2_text',
+        'suggested_question_2_message',
+        'suggested_question_3_text',
+        'suggested_question_3_message',
+        'promo_badge_enabled',
+        'promo_badge_discount',
+        'promo_badge_text',
+        'promo_badge_color',
+        'promo_badge_shape',
+        'promo_badge_position',
+        'promo_badge_suffix',
+        'promo_badge_font_size',
+        'promo_badge_prefix',
+        'promo_badge_type',
+        'widget_rotating_messages_enabled',
+        'widget_welcome_message_2',
+        'widget_welcome_message_3',
+        'widget_rotating_messages_interval',
+        'widget_subtitle_2',
+        'widget_subtitle_3',
       ];
 
       const clientStoreUpdate: Record<string, any> = {};
@@ -542,16 +618,22 @@ router.put(
 
       // Update features on tenants if provided
       if (req.body.features !== undefined) {
-        const { error: featError } = await (supabaseService as any).serviceClient
+        const { error: featError } = await (
+          supabaseService as any
+        ).serviceClient
           .from('tenants')
-          .update({ features: req.body.features, updated_at: new Date().toISOString() })
+          .update({
+            features: req.body.features,
+            updated_at: new Date().toISOString(),
+          })
           .eq('shop_domain', shopDomain);
 
         if (featError) {
           logger.warn('Error updating tenant features:', featError);
         }
 
-        updatedTenant = (await tenantService.getTenant(shopDomain)) || updatedTenant;
+        updatedTenant =
+          (await tenantService.getTenant(shopDomain)) || updatedTenant;
       }
 
       res.json({
