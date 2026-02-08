@@ -136,6 +136,11 @@ async function normalizeShopDomain(shopInput: string): Promise<string> {
 
   let normalized = shopInput.toLowerCase().trim();
 
+  // Strip protocol (https://imperionfc.cl → imperionfc.cl)
+  normalized = normalized.replace(/^https?:\/\//, '');
+  // Strip trailing slash
+  normalized = normalized.replace(/\/+$/, '');
+
   // If already in myshopify.com format, return as is
   if (normalized.includes('.myshopify.com')) {
     return normalized;
@@ -300,10 +305,13 @@ async function getProductRecommendations(
  */
 router.get('/check', async (req: Request, res: Response) => {
   try {
-    const shop = req.query.shop as string;
-    if (!shop) {
+    const rawShop = req.query.shop as string;
+    if (!rawShop) {
       return res.json({ success: true, allowed: true });
     }
+
+    // Normalize domain (e.g. "https://imperionfc.cl" → "imperionfc.cl")
+    const shop = await normalizeShopDomain(rawShop);
 
     const tenant = await tenantService.getTenant(shop);
     if (!tenant) {
@@ -318,7 +326,8 @@ router.get('/check', async (req: Request, res: Response) => {
       // Look up tenant contact email
       let contactEmail: string | null = null;
       try {
-        const shop = req.query.shop as string;
+        const rawShop = req.query.shop as string;
+        const shop = await normalizeShopDomain(rawShop);
         const tenant = await tenantService.getTenant(shop);
         contactEmail = tenant?.shop_email || null;
       } catch {
