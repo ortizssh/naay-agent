@@ -1,12 +1,12 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { tenantService } from '@/services/tenant.service';
+import { planService } from '@/services/plan.service';
 import { SupabaseService } from '@/services/supabase.service';
 import { logger } from '@/utils/logger';
 import {
   AppError,
   TenantPlan,
   TenantStatus,
-  TENANT_PLAN_LIMITS,
 } from '@/types';
 
 const router = Router();
@@ -25,27 +25,37 @@ router.get(
       // Get all tenants for stats calculation
       const { tenants, total } = await tenantService.getAllTenants();
 
-      // Calculate stats
+      // Get monthly message count and products count
+      const now = new Date();
+      const statsMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+      let totalMonthlyMessages = 0;
+      let totalProducts = 0;
+
+      try {
+        const [msgResult, prodResult] = await Promise.all([
+          (supabaseService as any).serviceClient
+            .from('chat_messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('role', 'agent')
+            .gte('timestamp', statsMonthStart),
+          (supabaseService as any).serviceClient
+            .from('products')
+            .select('*', { count: 'exact', head: true }),
+        ]);
+        totalMonthlyMessages = msgResult.count || 0;
+        totalProducts = prodResult.count || 0;
+      } catch (err) {
+        logger.warn('Failed to get stats counts:', err);
+      }
+
       const stats = {
         totalTenants: total,
         activeTenants: tenants.filter(t => t.status === 'active').length,
         trialTenants: tenants.filter(t => t.status === 'trial').length,
-        totalMessages: tenants.reduce(
-          (sum, t) => sum + t.monthly_messages_used,
-          0
-        ),
-        totalProducts: 0, // Will calculate from products table
+        totalMessages: totalMonthlyMessages,
+        totalProducts,
       };
-
-      // Get total products count
-      try {
-        const { count } = await (supabaseService as any).serviceClient
-          .from('products')
-          .select('*', { count: 'exact', head: true });
-        stats.totalProducts = count || 0;
-      } catch (err) {
-        logger.warn('Failed to get products count:', err);
-      }
 
       res.json({
         success: true,
@@ -53,6 +63,53 @@ router.get(
       });
     } catch (error) {
       logger.error('Error fetching tenant stats:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * POST /api/admin/tenants/fix-limits
+ * Sync all tenants' features with their plan definitions
+ */
+router.post(
+  '/fix-limits',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      logger.info('Syncing tenant features with plan definitions');
+
+      const { tenants } = await tenantService.getAllTenants();
+      const updates: Array<{ shop_domain: string; plan: string; changes: string[] }> = [];
+
+      for (const tenant of tenants) {
+        const planLimits = await planService.getPlanLimits(tenant.plan);
+        if (!planLimits) continue;
+
+        const currentFeatures = tenant.features || {};
+        const expectedFeatures = planLimits.features;
+        const featuresDiffer = Object.keys(expectedFeatures).some(
+          key => currentFeatures[key as keyof typeof currentFeatures] !== expectedFeatures[key as keyof typeof expectedFeatures]
+        );
+
+        if (featuresDiffer) {
+          await (supabaseService as any).serviceClient
+            .from('tenants')
+            .update({ features: expectedFeatures, updated_at: new Date().toISOString() })
+            .eq('shop_domain', tenant.shop_domain);
+
+          updates.push({ shop_domain: tenant.shop_domain, plan: tenant.plan, changes: ['features updated'] });
+        }
+      }
+
+      logger.info('Fix-limits completed', { updated: updates.length, total: tenants.length });
+
+      res.json({
+        success: true,
+        message: `Updated ${updates.length} of ${tenants.length} tenants`,
+        data: { updated: updates },
+      });
+    } catch (error) {
+      logger.error('Error fixing tenant limits:', error);
       next(error);
     }
   }
@@ -84,10 +141,53 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       offset: offset,
     });
 
+    // Enrich tenants with client_stores data and monthly AI message counts
+    const shopDomains = result.tenants.map(t => t.shop_domain);
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+    let storeMap = new Map<string, any>();
+    let messageCounts: Record<string, number> = {};
+
+    if (shopDomains.length > 0) {
+      try {
+        const [clientStoresResult, ...messageResults] = await Promise.all([
+          (supabaseService as any).serviceClient
+            .from('client_stores')
+            .select('shop_domain, platform, chatbot_endpoint, widget_enabled, is_active')
+            .in('shop_domain', shopDomains),
+          ...shopDomains.map((domain: string) =>
+            (supabaseService as any).serviceClient
+              .from('chat_messages')
+              .select('*', { count: 'exact', head: true })
+              .eq('shop_domain', domain)
+              .eq('role', 'agent')
+              .gte('timestamp', monthStart)
+          ),
+        ]);
+
+        (clientStoresResult.data || []).forEach((s: any) => storeMap.set(s.shop_domain, s));
+        shopDomains.forEach((domain: string, i: number) => {
+          messageCounts[domain] = messageResults[i]?.count || 0;
+        });
+      } catch (err) {
+        logger.warn('Failed to enrich tenant list:', err);
+      }
+    }
+
+    const enrichedTenants = result.tenants.map(t => ({
+      ...t,
+      platform: storeMap.get(t.shop_domain)?.platform || 'shopify',
+      chatbot_endpoint: storeMap.get(t.shop_domain)?.chatbot_endpoint || null,
+      widget_enabled: storeMap.get(t.shop_domain)?.widget_enabled ?? true,
+      is_active: storeMap.get(t.shop_domain)?.is_active ?? false,
+      real_message_count: messageCounts[t.shop_domain] || 0,
+    }));
+
     res.json({
       success: true,
       data: {
-        tenants: result.tenants,
+        tenants: enrichedTenants,
         total: result.total,
       },
     });
@@ -96,6 +196,102 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     next(error);
   }
 });
+
+/**
+ * GET /api/admin/tenants/:shopDomain/detail
+ * Get enriched tenant detail from all related tables
+ */
+router.get(
+  '/:shopDomain/detail',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shopDomain } = req.params;
+      logger.info('Fetching enriched tenant detail', { shopDomain });
+
+      const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+
+      const [
+        tenant,
+        clientStoreResult,
+        userResult,
+        storeResult,
+        msgCountResult,
+        monthlyMsgResult,
+        sessionResult,
+        conversionResult,
+      ] = await Promise.all([
+        tenantService.getTenant(shopDomain),
+        (supabaseService as any).serviceClient
+          .from('client_stores')
+          .select('*')
+          .eq('shop_domain', shopDomain)
+          .maybeSingle(),
+        (supabaseService as any).serviceClient
+          .from('admin_users')
+          .select('id, email, first_name, last_name, company, role, user_type, plan, status, last_login_at, created_at')
+          .eq('shop_domain', shopDomain)
+          .maybeSingle(),
+        (supabaseService as any).serviceClient
+          .from('stores')
+          .select('id, platform, site_url, widget_enabled, installed_at')
+          .eq('shop_domain', shopDomain)
+          .maybeSingle(),
+        (supabaseService as any).serviceClient
+          .from('chat_messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('shop_domain', shopDomain),
+        (supabaseService as any).serviceClient
+          .from('chat_messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('shop_domain', shopDomain)
+          .eq('role', 'agent')
+          .gte('timestamp', monthStart),
+        (supabaseService as any).serviceClient
+          .from('chat_messages')
+          .select('session_id')
+          .eq('shop_domain', shopDomain),
+        (supabaseService as any).serviceClient
+          .from('simple_conversions')
+          .select('id, total_order_amount')
+          .eq('shop_domain', shopDomain),
+      ]);
+
+      if (!tenant) {
+        throw new AppError('Tenant not found', 404);
+      }
+
+      const uniqueSessions = new Set(
+        (sessionResult.data || []).map((m: any) => m.session_id)
+      ).size;
+
+      const conversions = conversionResult.data || [];
+      const totalRevenue = conversions.reduce(
+        (sum: number, c: any) => sum + (parseFloat(c.total_order_amount) || 0),
+        0
+      );
+
+      res.json({
+        success: true,
+        data: {
+          tenant,
+          clientStore: clientStoreResult.data || null,
+          linkedUser: userResult.data || null,
+          store: storeResult.data || null,
+          stats: {
+            totalMessages: msgCountResult.count || 0,
+            monthlyMessages: monthlyMsgResult.count || 0,
+            uniqueSessions,
+            totalConversions: conversions.length,
+            totalRevenue,
+          },
+        },
+      });
+    } catch (error) {
+      logger.error('Error fetching tenant detail:', error);
+      next(error);
+    }
+  }
+);
 
 /**
  * GET /api/admin/tenants/:shopDomain
@@ -132,7 +328,7 @@ router.get(
  */
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { shop_domain, access_token, shop_name, shop_email, plan } = req.body;
+    const { shop_domain, access_token, shop_name, shop_email, plan, platform, chatbot_endpoint, widget_brand_name } = req.body;
 
     if (!shop_domain) {
       throw new AppError('shop_domain is required', 400);
@@ -151,18 +347,30 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     }
 
     // Create or update store
+    const storePlatform = platform || 'shopify';
     let store = await supabaseService.getStore(shop_domain);
     if (!store) {
-      store = await supabaseService.createStore({
-        shop_domain,
-        access_token,
-        scopes:
-          'read_products,write_products,read_orders,read_customers,write_draft_orders',
-        installed_at: new Date(),
-        updated_at: new Date(),
-        widget_enabled: true,
-      });
-      logger.info('Store created for new tenant', { shop_domain });
+      // Use serviceClient directly to support platform field
+      const { data: newStore, error: storeError } = await (supabaseService as any).serviceClient
+        .from('stores')
+        .insert({
+          shop_domain,
+          access_token,
+          scopes: storePlatform === 'woocommerce' ? '' : 'read_products,write_products,read_orders,read_customers,write_draft_orders',
+          platform: storePlatform,
+          installed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          widget_enabled: true,
+        })
+        .select()
+        .single();
+
+      if (storeError) {
+        logger.error('Error creating store:', storeError);
+        throw new AppError('Failed to create store', 500);
+      }
+      store = newStore;
+      logger.info('Store created for new tenant', { shop_domain, platform: storePlatform });
     }
 
     // Create tenant
@@ -203,6 +411,30 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       }
     } catch (err) {
       logger.warn('Error creating app settings:', err);
+    }
+
+    // Create client_stores entry
+    try {
+      const { error: csError } = await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .insert({
+          shop_domain,
+          platform: storePlatform,
+          status: 'active',
+          is_active: true,
+          chatbot_endpoint: chatbot_endpoint || null,
+          widget_enabled: true,
+          widget_color: '#a59457',
+          widget_brand_name: widget_brand_name || shop_name || shop_domain,
+          welcome_message: 'Hola! Como puedo ayudarte?',
+          widget_position: 'bottom-right',
+        });
+
+      if (csError && csError.code !== '23505') {
+        logger.warn('Failed to create client_stores entry:', csError);
+      }
+    } catch (err) {
+      logger.warn('Error creating client_stores entry:', err);
     }
 
     res.status(201).json({
@@ -270,6 +502,56 @@ router.put(
         // Refresh tenant data
         updatedTenant =
           (await tenantService.getTenant(shopDomain)) || updatedTenant;
+      }
+
+      // Update client_stores fields if any widget/integration fields are provided
+      const clientStoreFields = [
+        'chatbot_endpoint', 'widget_enabled', 'widget_color', 'widget_secondary_color',
+        'widget_accent_color', 'widget_position', 'widget_button_size', 'widget_button_style',
+        'widget_show_pulse', 'widget_chat_width', 'widget_chat_height', 'widget_subtitle',
+        'widget_placeholder', 'widget_avatar', 'widget_show_promo_message', 'widget_show_cart',
+        'widget_enable_animations', 'widget_theme', 'widget_brand_name', 'welcome_message',
+        'suggested_question_1_text', 'suggested_question_1_message',
+        'suggested_question_2_text', 'suggested_question_2_message',
+        'suggested_question_3_text', 'suggested_question_3_message',
+        'promo_badge_enabled', 'promo_badge_discount', 'promo_badge_text',
+        'promo_badge_color', 'promo_badge_shape', 'promo_badge_position',
+        'promo_badge_suffix', 'promo_badge_font_size', 'promo_badge_prefix', 'promo_badge_type',
+        'widget_rotating_messages_enabled', 'widget_welcome_message_2', 'widget_welcome_message_3',
+        'widget_rotating_messages_interval', 'widget_subtitle_2', 'widget_subtitle_3',
+      ];
+
+      const clientStoreUpdate: Record<string, any> = {};
+      for (const field of clientStoreFields) {
+        if (req.body[field] !== undefined) {
+          clientStoreUpdate[field] = req.body[field];
+        }
+      }
+
+      if (Object.keys(clientStoreUpdate).length > 0) {
+        clientStoreUpdate.updated_at = new Date().toISOString();
+        const { error: csError } = await (supabaseService as any).serviceClient
+          .from('client_stores')
+          .update(clientStoreUpdate)
+          .eq('shop_domain', shopDomain);
+
+        if (csError) {
+          logger.warn('Error updating client_store fields:', csError);
+        }
+      }
+
+      // Update features on tenants if provided
+      if (req.body.features !== undefined) {
+        const { error: featError } = await (supabaseService as any).serviceClient
+          .from('tenants')
+          .update({ features: req.body.features, updated_at: new Date().toISOString() })
+          .eq('shop_domain', shopDomain);
+
+        if (featError) {
+          logger.warn('Error updating tenant features:', featError);
+        }
+
+        updatedTenant = (await tenantService.getTenant(shopDomain)) || updatedTenant;
       }
 
       res.json({
@@ -431,49 +713,6 @@ router.get(
 );
 
 /**
- * POST /api/admin/tenants/:shopDomain/reset-usage
- * Reset monthly usage for a tenant
- */
-router.post(
-  '/:shopDomain/reset-usage',
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { shopDomain } = req.params;
-
-      logger.info('Resetting tenant usage', { shopDomain });
-
-      // Check if tenant exists
-      const existingTenant = await tenantService.getTenant(shopDomain);
-      if (!existingTenant) {
-        throw new AppError('Tenant not found', 404);
-      }
-
-      // Reset usage to 0
-      const { error } = await (supabaseService as any).serviceClient
-        .from('tenants')
-        .update({
-          monthly_messages_used: 0,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('shop_domain', shopDomain);
-
-      if (error) {
-        logger.error('Error resetting tenant usage:', error);
-        throw new AppError('Failed to reset usage', 500);
-      }
-
-      res.json({
-        success: true,
-        message: 'Monthly usage reset successfully',
-      });
-    } catch (error) {
-      logger.error('Error resetting tenant usage:', error);
-      next(error);
-    }
-  }
-);
-
-/**
  * GET /api/admin/tenants/plans/info
  * Get available plans and their limits
  */
@@ -481,9 +720,10 @@ router.get(
   '/plans/info',
   async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const plans = await planService.getAllPlans();
       res.json({
         success: true,
-        data: TENANT_PLAN_LIMITS,
+        data: plans,
       });
     } catch (error) {
       logger.error('Error fetching plan info:', error);

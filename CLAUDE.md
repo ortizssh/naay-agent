@@ -10,19 +10,19 @@ NEVER proactively create documentation files (*.md) or README files. Only create
 
 ## Project Overview
 
-Naay Agent is a Shopify AI assistant that combines a Node.js backend, Shopify theme extensions, and AI-powered chat capabilities. It provides semantic product search, cart management, and conversational commerce through a chat widget that integrates directly into Shopify stores.
+Naay Agent is a multi-platform AI commerce assistant. It integrates with **Shopify** and **WooCommerce** stores, providing semantic product search, cart management, and conversational commerce through an embeddable chat widget. The backend normalizes both platforms behind a unified commerce provider interface.
 
 ## Development Commands
 
-### Primary Commands
+### Primary Commands (run from project root)
 ```bash
 npm run dev                  # Start backend + admin concurrently
 npm run dev:backend          # Backend only (tsx watch mode)
-npm run dev:admin            # Admin panel only
+npm run dev:admin            # Admin panel only (Vite dev server on :3001)
 npm run dev:shopify          # Shopify CLI dev (requires Shopify CLI)
 
 npm run build                # Build all components
-npm run build:backend        # Build backend (tsc + alias + assets)
+npm run build:backend        # Build backend (tsc + tsc-alias + asset copy)
 
 npm run test                 # Run all tests
 npm run test:backend         # Backend tests only
@@ -36,7 +36,7 @@ npm run verify:sync          # Verify widget files synced between source/dist
 ### Backend-Specific Commands (run from `backend/`)
 ```bash
 npm run dev                  # Start with tsx watch mode
-npm run build                # Safe build: tsc + alias resolution + asset copy
+npm run build                # tsc → tsc-alias → copy public/ to dist/
 npm run start                # Start production server
 
 npm test                     # Run Jest tests
@@ -58,6 +58,7 @@ npx jest backend/src/services/cache.service.test.ts --verbose
 - **Path aliases**: Use `@/` prefix (e.g., `@/services/`, `@/types/`)
 - **Environment files**: Located in `config/.env` (not `backend/.env`)
 - **Build process**: Compilation → alias resolution (`tsc-alias`) → asset copying (`public/` to `dist/`)
+- **Frontend-admin build**: Vite outputs to `../backend/public/app/` — the backend serves this as an SPA
 
 ## Architecture Overview
 
@@ -65,46 +66,66 @@ npx jest backend/src/services/cache.service.test.ts --verbose
 ```
 naay-agent/
 ├── backend/                 # Node.js/Express API (TypeScript)
-├── frontend-admin/          # Admin panel (Shopify App Bridge)
+│   ├── src/
+│   │   ├── controllers/     # Route handlers (Express routers)
+│   │   ├── services/        # Business logic
+│   │   ├── platforms/       # Multi-platform abstraction (Shopify, WooCommerce)
+│   │   ├── middleware/      # Auth, CORS, rate limiting, security, tenancy
+│   │   ├── types/           # TypeScript definitions
+│   │   └── utils/           # Utilities
+│   └── public/              # Static assets (widget JS, admin SPA)
+├── frontend-admin/          # Admin panel (React 18 + Vite + App Bridge)
 ├── extensions/              # Shopify theme extension (chat widget)
 ├── database/                # SQL schemas, migrations, functions
 ├── config/                  # Environment variables (.env)
-├── scripts/                 # Automation scripts
+├── scripts/                 # Setup and deployment automation
 └── azure-config/            # Azure deployment configuration
 ```
 
-### Core Services (`backend/src/services/`)
-- `ai-agent.service.ts` - AI orchestration, intent detection, chat logic
-- `shopify.service.ts` / `modern-shopify.service.ts` - Shopify Admin & Storefront API interactions
-- `supabase.service.ts` - Database operations
-- `embedding.service.ts` - OpenAI embeddings generation
-- `queue.service.ts` - BullMQ background job management
-- `cart.service.ts` - Shopping cart operations via Storefront API
-- `cache.service.ts` - Redis caching with memory fallback
-- `tenant.service.ts` - Multi-tenant shop isolation
-- `conversion-sync-scheduler.service.ts` - Scheduled conversion sync (every 5 hours)
-- `simple-conversion-tracker.service.ts` - Conversion attribution and tracking
-- `*-analytics.service.ts` - Analytics aggregation and reporting
+### Request Flow & Middleware Chain
 
-### Controllers (`backend/src/controllers/`)
-- `auth.controller.ts` / `modern-auth.controller.ts` - Shopify OAuth flow
-- `shopify-embedded.controller.ts` - App Bridge embedded app endpoints
-- `webhook.controller.ts` / `webhook-admin.controller.ts` - Shopify webhook handlers
-- `chat.controller.ts` / `simple-chat.controller.ts` - AI chat endpoints
-- `product.controller.ts` / `public-products.controller.ts` - Product sync and search
-- `public-cart.controller.ts` - Public cart API for widget
-- `widget.controller.ts` / `widget-public.controller.ts` - Widget configuration endpoints
-- `settings.controller.ts` - App settings management
-- `tenant-admin.controller.ts` - Multi-tenant administration
-- `admin-bypass.controller.ts` - Direct admin operations (testing/debugging)
-- `*-conversion-*.controller.ts` - Conversion tracking and analytics endpoints
-- `health.controller.ts` - Health check endpoints
+The Express app in `backend/src/index.ts` applies middleware in this order:
 
-### Key Patterns
-- Controllers → Services → Supabase (no repository layer)
-- Type casting used in some services: `(supabaseService as any).serviceClient`
-- Queue-based async processing for product sync and embeddings
-- Dual-layer caching: Redis primary, memory fallback
+1. **Per-prefix CORS** — Different CORS policies per route prefix (`/static`, `/api/widget`, `/api/chat`, `/api/woo`, `/api/public`, `/api/admin`)
+2. **Helmet** — Security headers (with iframe exceptions for Shopify/WooCommerce embeds)
+3. **Rate limiting** — Endpoint-specific limits (chat: 30/min per session, webhooks: 1000/min per shop, default: 100/15min)
+4. **Security middleware** — XSS sanitization, script tag prevention, event handler stripping
+5. **Raw body capture** — For webhook HMAC signature verification (must come before JSON parsing)
+6. **JSON/URL parsing** — 10MB limit
+7. **Route handlers** — Controllers export Express Routers mounted via `app.use()`
+8. **SPA fallback** — Non-API routes serve `backend/public/app/index.html` for React client-side routing
+
+### Multi-Platform Commerce Abstraction (`backend/src/platforms/`)
+
+The codebase supports both Shopify and WooCommerce through a provider pattern:
+
+- **`interfaces/commerce.interface.ts`** — Defines `ICommerceProvider`, `ICartProvider`, `IAuthProvider` with normalized types (`NormalizedProduct`, `NormalizedOrder`, `NormalizedStore`)
+- **`shopify/`** — Shopify implementation (Admin API + Storefront API)
+- **`woocommerce/`** — WooCommerce implementation (REST API v3 with OAuth signature generation)
+- **Factory registration** — `registerCommerceProvider('woocommerce', factory)` / `getCommerceProvider(platform, credentials)` for dynamic instantiation
+
+Key difference: Shopify identifies stores by `*.myshopify.com` domain; WooCommerce uses full site URLs (e.g., `https://example.com`).
+
+### Key Architectural Patterns
+- **Controllers → Services → Supabase** (no repository layer)
+- **Type casting** used in some services: `(supabaseService as any).serviceClient`
+- **Queue-based async processing** — BullMQ + Redis for product sync and embedding generation
+- **Dual-layer caching** — Redis primary, in-memory fallback (via `cache.service.ts`)
+- **Chat is HTTP request-response** — No WebSockets; no real-time streaming
+- **`modern-shopify.service.ts`** extends `ShopifyService` adding session-token-based methods (App Bridge 3.0 pattern); both coexist
+
+### Multi-Tenancy
+
+- **TenantService** (`backend/src/services/tenant.service.ts`) — Lookups by shop domain, 5-min Redis cache with `tenant:` prefix
+- **Plan-based feature gating** — `TENANT_PLAN_LIMITS` controls product limits, message limits, analytics access per plan (free/professional/enterprise)
+- **Tenant middleware** (`middleware/tenant.middleware.ts`) — `validateShopContext` ensures request shop matches authenticated shop; extracts shop from body, query, params, or `x-shopify-shop-domain` header
+- **Request context** — Controllers access `(req as TenantRequest).tenant` for feature checks
+
+### Frontend Admin (`frontend-admin/`)
+- **React 18.2 + Vite** — Dev server on port 3001, proxies `/api` to localhost:3000
+- **Page routing** — Public pages (Landing, Login, Register), Admin pages (Dashboard, Tenants, Settings), Client pages (MyStore, WidgetConfig, Analytics), Onboarding wizard
+- **User-type routing** — Admin vs Client determines available page set
+- **Embedded contexts** — `ShopifyEmbedded` component for Shopify Admin iframe; WooCommerce embedded views via `woo-embedded.controller.ts`
 
 ### Database (Supabase + pgvector)
 **Core Tables**: `shops`, `products`, `product_variants`, `product_embeddings`, `conversations`, `webhook_events`, `shopify_sessions`, `app_settings`
@@ -112,8 +133,15 @@ naay-agent/
 - pgvector extension for semantic similarity search
 - Row-level security for multi-tenant isolation
 - Direct Supabase client calls (not abstracted through repositories)
-- Migrations in `database/migrations/` (001_initial_schema through 007_rotating_welcome_messages, plus standalone fixes)
+- Migrations in `database/migrations/`
 - Semantic search function: `database/functions/search_products_semantic.sql`
+
+### Widget Serving
+- Served at `/static/kova-widget.js` and `/widget/kova-widget.js`
+- Dynamic file lookup across 4 possible paths (dist, build, cwd variations)
+- Anti-cache headers (no-cache, max-age=0, ETag with timestamp)
+- Legacy redirect: `naay-widget.js` → `kova-widget.js`
+- Test pages in project root: `test-cart.html`, `test-cart-widget.html`, `test-cart-remove.html`
 
 ## Environment Configuration
 
@@ -134,14 +162,10 @@ PORT=3000
 ## Testing & Debugging
 
 ### Manual Testing Endpoints
-- `GET /health` - Basic health check
-- `GET /health/detailed` - Comprehensive service status
-- `POST /api/admin-bypass/products/sync` - Force product sync
-- `GET /api/admin-bypass/stats` - System statistics
-
-### Widget Testing
-- Use `test-cart.html` or `test-cart-widget.html` in root for local testing
-- Widget served from `backend/public/naay-widget.js`
+- `GET /health` — Basic health check
+- `GET /health/detailed` — Comprehensive service status
+- `POST /api/admin-bypass/products/sync` — Force product sync
+- `GET /api/admin-bypass/stats` — System statistics
 
 ### Jest Configuration
 - Coverage thresholds: 70% branches, 80% functions/lines/statements
@@ -159,9 +183,21 @@ PORT=3000
 `products/create`, `products/update`, `products/delete`, `app/uninstalled`
 
 ### Theme Extension (`extensions/kova-chat-widget/`)
-- `blocks/kova-chat.liquid` - Chat widget block
-- `snippets/kova-*.liquid` - Injection scripts (init, body-inject, auto-inject)
-- `shopify.extension.toml` - Extension config
+- `blocks/kova-chat.liquid` — Chat widget block
+- `snippets/kova-*.liquid` — Injection scripts (init, body-inject, auto-inject)
+- `shopify.extension.toml` — Extension config
+
+## WooCommerce Integration
+
+### Authentication
+- Store connection via WooCommerce REST API key validation (`woo-auth.controller.ts`)
+- OAuth signature generation for API requests
+
+### Controllers (`platforms/woocommerce/controllers/`)
+- `woo-embedded.controller.ts` — Analytics/conversations/conversions for WC admin panel
+- `woo-auth.controller.ts` — Store connection
+- `woo-webhook.controller.ts` — Product/order webhook handlers
+- `woo-plugin-update.controller.ts` — Plugin version management
 
 ## Deployment
 
@@ -170,3 +206,4 @@ PORT=3000
 - **CI/CD**: `.github/workflows/azure-deploy-*.yml` (push to `main` triggers deploy)
 - **Build for Azure**: `npm run azure:setup`
 - **Entry point**: `startup.js` (loads `backend/dist/index.js`)
+- **Setup scripts**: `scripts/setup-supabase.sh` (DB init), `scripts/dev-setup.sh` (env check + deps)

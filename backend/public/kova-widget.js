@@ -4590,6 +4590,26 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           return;
         }
 
+        // Pre-check: validate tenant can send messages before hitting chat endpoint
+        if (this.config.apiEndpoint && this.config.shopDomain) {
+          try {
+            const checkUrl = `${this.config.apiEndpoint}/api/simple-chat/check?shop=${encodeURIComponent(this.config.shopDomain)}`;
+            const checkRes = await fetch(checkUrl, { mode: 'cors', credentials: 'omit' });
+            if (checkRes.status === 429) {
+              const checkData = await checkRes.json();
+              const contactEmail = checkData.contactEmail;
+              const contactMsg = contactEmail
+                ? ' Contáctanos a ' + contactEmail + ' para más información.'
+                : '';
+              this.removeTypingIndicator(typingIndicator);
+              this.addMessage('Lo siento, nuestro sistema está temporalmente detenido.' + contactMsg, 'assistant');
+              return;
+            }
+          } catch (checkErr) {
+            console.warn('⚠️ Kova Chat: Pre-check failed, proceeding anyway:', checkErr);
+          }
+        }
+
         const payload = {
           message: text,
           shop: this.config.shopDomain,
@@ -4726,7 +4746,13 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           console.log('✅ Kova Chat: Message processed successfully via n8n');
         } else {
           console.error('❌ Kova Chat: n8n API returned error', response.status, data);
-          if (response.status === 500) {
+          if (response.status === 429) {
+            const contactEmail = data?.data?.contactEmail;
+            const contactMsg = contactEmail
+              ? ' Contáctanos a ' + contactEmail + ' para más información.'
+              : '';
+            this.addMessage('Lo siento, nuestro sistema está temporalmente detenido.' + contactMsg, 'assistant');
+          } else if (response.status === 500) {
             this.addMessage('🔧 El asistente de IA está siendo actualizado. Por favor intenta en unos minutos. ¡Gracias por tu paciencia!', 'assistant');
           } else {
             this.addMessage('Lo siento, hubo un error. Por favor intenta de nuevo.', 'assistant');

@@ -372,7 +372,9 @@ router.get(
 
         if (result.data && result.data.length > 0) {
           messages = result.data;
-          logger.info(`Found ${messages.length} messages with variant: ${variant}`);
+          logger.info(
+            `Found ${messages.length} messages with variant: ${variant}`
+          );
           break;
         }
         error = result.error;

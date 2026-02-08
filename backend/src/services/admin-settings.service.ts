@@ -79,7 +79,7 @@ export class AdminSettingsService {
 
       // Update in database
       const { error } = await this.supabaseService.client
-        .from('shops')
+        .from('stores')
         .update({
           settings: updatedSettings,
           updated_at: new Date().toISOString(),

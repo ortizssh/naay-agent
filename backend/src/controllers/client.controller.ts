@@ -120,6 +120,17 @@ router.get(
         (s: any) => s.status === 'active' || s.status === 'connected'
       );
 
+      // Resolve real plan from tenants table
+      let realPlan = user.plan;
+      if (user.shop_domain) {
+        const { data: tenant } = await (supabaseService as any).serviceClient
+          .from('tenants')
+          .select('plan')
+          .eq('shop_domain', user.shop_domain)
+          .single();
+        if (tenant?.plan) realPlan = tenant.plan;
+      }
+
       res.json({
         success: true,
         data: {
@@ -128,7 +139,7 @@ router.get(
           totalProducts,
           onboardingCompleted: user.onboarding_completed,
           onboardingStep: user.onboarding_step,
-          plan: user.plan,
+          plan: realPlan,
         },
       });
     } catch (error) {
@@ -333,17 +344,17 @@ router.get(
         })
         .eq('id', userId);
 
-      // Also sync to main shops table
+      // Also sync to main stores table
       const { data: existingShop } = await (
         supabaseService as any
       ).serviceClient
-        .from('shops')
+        .from('stores')
         .select('id')
         .eq('shop_domain', shop)
         .single();
 
       if (!existingShop) {
-        await (supabaseService as any).serviceClient.from('shops').insert({
+        await (supabaseService as any).serviceClient.from('stores').insert({
           shop_domain: shop,
           access_token: accessToken,
           status: 'active',

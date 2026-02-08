@@ -2063,7 +2063,7 @@ router.get(
 
       // Get shop from database (assuming there's at least one shop)
       const shopsQuery = await (supabaseService as any).serviceClient
-        .from('shops')
+        .from('stores')
         .select('shop_domain, access_token')
         .limit(1)
         .single();
@@ -4712,10 +4712,6 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       // Check all tables that might have shop data
-      const { data: shops, error: shopsError } = await supabaseService.client
-        .from('shops')
-        .select('*');
-
       const { data: stores, error: storesError } = await supabaseService.client
         .from('stores')
         .select('*');
@@ -4735,7 +4731,6 @@ router.get(
       res.json({
         success: true,
         data: {
-          shops: shops || [],
           stores: stores || [],
           conversationShops: [
             ...new Set(conversations?.map(c => c.shop_domain) || []),
@@ -4744,7 +4739,6 @@ router.get(
             ...new Set(recommendations?.map(r => r.shop_domain) || []),
           ],
           errors: {
-            shops: shopsError?.message,
             stores: storesError?.message,
             conversations: convError?.message,
             recommendations: recError?.message,

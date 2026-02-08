@@ -10,14 +10,10 @@ export interface Tenant {
   plan: TenantPlan;
   status: TenantStatus;
   trial_ends_at?: string;
-  monthly_messages_limit: number;
-  monthly_messages_used: number;
-  products_limit: number;
   billing_email?: string;
   stripe_customer_id?: string;
   stripe_subscription_id?: string;
   features: Record<string, boolean>;
-  settings: Record<string, any>;
   created_at: string;
   updated_at: string;
   last_activity_at: string;
@@ -31,8 +27,116 @@ export interface DashboardStats {
   totalProducts: number;
 }
 
+export interface ClientStore {
+  id: string;
+  shop_domain: string;
+  platform: 'shopify' | 'woocommerce';
+  status: string;
+  is_active: boolean;
+  chatbot_endpoint?: string;
+  widget_brand_name?: string;
+  widget_enabled: boolean;
+  widget_color?: string;
+  widget_secondary_color?: string;
+  widget_accent_color?: string;
+  widget_position?: string;
+  widget_button_size?: number;
+  widget_button_style?: string;
+  widget_show_pulse?: boolean;
+  widget_chat_width?: number;
+  widget_chat_height?: number;
+  widget_subtitle?: string;
+  widget_placeholder?: string;
+  widget_avatar?: string;
+  widget_show_promo_message?: boolean;
+  widget_show_cart?: boolean;
+  widget_enable_animations?: boolean;
+  widget_theme?: string;
+  welcome_message?: string;
+  widget_rotating_messages_enabled?: boolean;
+  widget_welcome_message_2?: string;
+  widget_welcome_message_3?: string;
+  widget_rotating_messages_interval?: number;
+  widget_subtitle_2?: string;
+  widget_subtitle_3?: string;
+  promo_badge_enabled?: boolean;
+  promo_badge_discount?: number;
+  promo_badge_text?: string;
+  promo_badge_color?: string;
+  promo_badge_shape?: string;
+  promo_badge_position?: string;
+  promo_badge_suffix?: string;
+  promo_badge_font_size?: number;
+  promo_badge_prefix?: string;
+  promo_badge_type?: string;
+  suggested_question_1_text?: string;
+  suggested_question_1_message?: string;
+  suggested_question_2_text?: string;
+  suggested_question_2_message?: string;
+  suggested_question_3_text?: string;
+  suggested_question_3_message?: string;
+  products_synced?: number;
+  last_sync_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LinkedUser {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  company?: string;
+  role: string;
+  user_type: string;
+  plan?: string;
+  status: string;
+  last_login_at?: string;
+  created_at: string;
+}
+
+export interface ClientStats {
+  totalMessages: number;
+  monthlyMessages: number;
+  uniqueSessions: number;
+  totalConversions: number;
+  totalRevenue: number;
+}
+
+export interface Plan {
+  id: string;
+  slug: TenantPlan;
+  name: string;
+  description: string | null;
+  price: number;
+  currency: string;
+  billing_period: string;
+  monthly_messages: number;
+  products_limit: number;
+  features: Record<string, boolean>;
+  badge_color: string;
+  sort_order: number;
+  is_active: boolean;
+}
+
+export interface EnrichedTenant extends Tenant {
+  platform?: string;
+  chatbot_endpoint?: string;
+  widget_enabled?: boolean;
+  is_active?: boolean;
+  real_message_count?: number;
+}
+
+export interface TenantDetail {
+  tenant: Tenant;
+  clientStore: ClientStore | null;
+  linkedUser: LinkedUser | null;
+  store: { id: string; platform: string; site_url?: string; widget_enabled: boolean; installed_at: string } | null;
+  stats: ClientStats;
+}
+
 export interface TenantsResponse {
-  tenants: Tenant[];
+  tenants: EnrichedTenant[];
   total: number;
 }
 
@@ -94,6 +198,11 @@ class ApiClient {
     return this.request<DashboardStats>('/api/admin/tenants/stats');
   }
 
+  // Plans
+  async getPlans(): Promise<Plan[]> {
+    return this.request<Plan[]>('/api/admin/tenants/plans/info');
+  }
+
   // Tenants
   async getTenants(params?: {
     page?: number;
@@ -117,12 +226,19 @@ class ApiClient {
     return this.request<Tenant>(`/api/admin/tenants/${shopDomain}`);
   }
 
+  async getTenantDetail(shopDomain: string): Promise<TenantDetail> {
+    return this.request<TenantDetail>(`/api/admin/tenants/${shopDomain}/detail`);
+  }
+
   async createTenant(data: {
     shop_domain: string;
     access_token: string;
     shop_name?: string;
     shop_email?: string;
     plan?: TenantPlan;
+    platform?: string;
+    chatbot_endpoint?: string;
+    widget_brand_name?: string;
   }): Promise<Tenant> {
     return this.request<Tenant>('/api/admin/tenants', {
       method: 'POST',
@@ -132,11 +248,7 @@ class ApiClient {
 
   async updateTenant(
     shopDomain: string,
-    data: {
-      plan?: TenantPlan;
-      shop_name?: string;
-      shop_email?: string;
-    }
+    data: Record<string, any>
   ): Promise<Tenant> {
     return this.request<Tenant>(`/api/admin/tenants/${shopDomain}`, {
       method: 'PUT',

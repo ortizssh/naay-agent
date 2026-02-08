@@ -227,12 +227,8 @@ export const trackMessageUsage = async (
     if (res.statusCode >= 200 && res.statusCode < 300) {
       const shop = (req as any).shop;
       if (shop) {
-        tenantService.incrementUsage(shop, 1).catch(error => {
-          logger.warn('Failed to increment usage:', {
-            shop,
-            error: error.message,
-          });
-        });
+        // Invalidate monthly count cache so next validation gets fresh count
+        tenantService.invalidateMessageCountCache(shop).catch(() => {});
       }
     }
 

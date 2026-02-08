@@ -660,19 +660,13 @@ export interface Tenant {
   status: TenantStatus;
   trial_ends_at?: Date;
 
-  // Limits
-  monthly_messages_limit: number;
-  monthly_messages_used: number;
-  products_limit: number;
-
   // Billing
   billing_email?: string;
   stripe_customer_id?: string;
   stripe_subscription_id?: string;
 
-  // Configuration
+  // Configuration (per-tenant overrides)
   features: TenantFeatures;
-  settings: TenantSettings;
 
   // Timestamps
   created_at: Date;
@@ -694,6 +688,23 @@ export interface TenantPlanLimits {
   features: TenantFeatures;
 }
 
+export interface Plan {
+  id: string;
+  slug: TenantPlan;
+  name: string;
+  description: string | null;
+  price: number;
+  currency: string;
+  billing_period: string;
+  monthly_messages: number;
+  products_limit: number;
+  features: TenantFeatures;
+  badge_color: string;
+  sort_order: number;
+  is_active: boolean;
+}
+
+// Fallback plan limits — used when DB is unavailable
 export const TENANT_PLAN_LIMITS: Record<TenantPlan, TenantPlanLimits> = {
   free: {
     monthly_messages: 100,

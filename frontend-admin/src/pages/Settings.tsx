@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { api, clientApi, Plan } from '../services/api';
 
 interface UserProfile {
   id: string;
@@ -7,6 +8,7 @@ interface UserProfile {
   lastName: string;
   company?: string;
   plan: string;
+  userType?: string;
 }
 
 function Settings() {
@@ -16,6 +18,8 @@ function Settings() {
   const [saved, setSaved] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [activeTab, setActiveTab] = useState<'general' | 'account' | 'plans'>('general');
+  const [dynamicPlans, setDynamicPlans] = useState<Plan[]>([]);
+  const [tenantPlan, setTenantPlan] = useState<string | null>(null);
 
   // Password change state
   const [currentPassword, setCurrentPassword] = useState('');
@@ -32,6 +36,19 @@ function Settings() {
     const storedApiUrl = localStorage.getItem('api_url');
     if (storedApiUrl) {
       setApiUrl(storedApiUrl);
+    }
+
+    // Fetch dynamic plans
+    api.getPlans().then(setDynamicPlans).catch(() => {});
+
+    // For client users, fetch real tenant plan
+    const parsed = storedUser ? JSON.parse(storedUser) : null;
+    if (parsed?.userType === 'client') {
+      clientApi.getDashboard().then(res => {
+        if (res.data?.plan) {
+          setTenantPlan(res.data.plan);
+        }
+      }).catch(() => {});
     }
   }, []);
 
@@ -85,41 +102,19 @@ function Settings() {
     }
   };
 
-  const plans = [
-    {
-      name: 'Starter',
-      price: '$149',
-      period: '/mes',
-      description: 'Para tiendas pequenas',
-      features: ['100 mensajes/mes', '50 productos', 'Soporte por email'],
-      badge: 'primary'
-    },
-    {
-      name: 'Growth',
-      price: '$349',
-      period: '/mes',
-      description: 'Para tiendas en crecimiento',
-      features: ['1,000 mensajes/mes', '500 productos', 'Soporte prioritario', 'Analytics basicos'],
-      badge: 'success',
-      popular: true
-    },
-    {
-      name: 'Pro',
-      price: '$599',
-      period: '/mes',
-      description: 'Para operaciones profesionales',
-      features: ['10,000 mensajes/mes', '5,000 productos', 'Soporte 24/7', 'Analytics avanzados', 'API personalizada'],
-      badge: 'warning'
-    },
-    {
-      name: 'Enterprise',
-      price: 'Personalizado',
-      period: '',
-      description: 'Para grandes operaciones',
-      features: ['Mensajes ilimitados', 'Productos ilimitados', 'Soporte dedicado', 'SLA garantizado', 'Integraciones custom'],
-      badge: 'neutral'
-    }
-  ];
+  const currentPlanSlug = tenantPlan || user?.plan || 'free';
+
+  const formatFeatures = (plan: Plan): string[] => {
+    const features: string[] = [];
+    const msgs = plan.monthly_messages === -1 ? 'Mensajes ilimitados' : `${plan.monthly_messages.toLocaleString()} mensajes/mes`;
+    const prods = plan.products_limit === -1 ? 'Productos ilimitados' : `${plan.products_limit.toLocaleString()} productos`;
+    features.push(msgs, prods);
+    if (plan.features.analytics) features.push('Analytics');
+    if (plan.features.custom_branding) features.push('Branding personalizado');
+    if (plan.features.priority_support) features.push('Soporte prioritario');
+    if (plan.features.api_access) features.push('Acceso API');
+    return features;
+  };
 
   return (
     <>
@@ -292,9 +287,17 @@ function Settings() {
               <div style={{ marginTop: '1rem', padding: '1rem', background: 'var(--color-bg)', borderRadius: '10px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>Plan actual:</span>
-                  <span className={`badge badge-${user?.plan === 'pro' ? 'warning' : user?.plan === 'growth' ? 'success' : 'primary'}`}>
-                    {user?.plan?.charAt(0).toUpperCase() + (user?.plan?.slice(1) || '')}
-                  </span>
+                  {(() => {
+                    const currentPlan = tenantPlan || user?.plan || 'free';
+                    const matchedPlan = dynamicPlans.find(p => p.slug === currentPlan);
+                    const badgeColor = matchedPlan?.badge_color || 'primary';
+                    const planName = matchedPlan?.name || currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1);
+                    return (
+                      <span className={`badge badge-${badgeColor}`}>
+                        {planName}
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
@@ -380,65 +383,72 @@ function Settings() {
         {/* Plans Tab */}
         {activeTab === 'plans' && (
           <div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
-              {plans.map((plan) => (
-                <div
-                  key={plan.name}
-                  className="card"
-                  style={{
-                    position: 'relative',
-                    border: plan.popular ? '2px solid var(--color-primary)' : undefined
-                  }}
-                >
-                  {plan.popular && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '-12px',
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      background: 'var(--color-primary)',
-                      color: 'white',
-                      padding: '0.25rem 0.75rem',
-                      borderRadius: '20px',
-                      fontSize: '0.75rem',
-                      fontWeight: '600'
-                    }}>
-                      Popular
-                    </div>
-                  )}
-                  <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-                    <span className={`badge badge-${plan.badge}`} style={{ marginBottom: '1rem' }}>
-                      {plan.name}
-                    </span>
-                    <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--color-text)' }}>
-                      {plan.price}
-                      <span style={{ fontSize: '1rem', fontWeight: '400', color: 'var(--color-text-secondary)' }}>
-                        {plan.period}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
-                      {plan.description}
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                    {plan.features.map((feature, idx) => (
-                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" strokeWidth="2">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                        <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <button
-                    className={`btn ${user?.plan === plan.name.toLowerCase() ? 'btn-secondary' : 'btn-primary'}`}
-                    style={{ width: '100%' }}
-                    disabled={user?.plan === plan.name.toLowerCase()}
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${dynamicPlans.length || 4}, 1fr)`, gap: '1.5rem' }}>
+              {dynamicPlans.map((plan) => {
+                const isCurrentPlan = currentPlanSlug === plan.slug;
+                const isPopular = plan.slug === 'professional';
+                const features = formatFeatures(plan);
+                const priceDisplay = plan.price === 0 ? 'Gratis' : plan.slug === 'enterprise' ? 'Personalizado' : `$${plan.price}`;
+                const periodDisplay = plan.price > 0 && plan.slug !== 'enterprise' ? '/mes' : '';
+                return (
+                  <div
+                    key={plan.slug}
+                    className="card"
+                    style={{
+                      position: 'relative',
+                      border: isPopular ? '2px solid var(--color-primary)' : undefined
+                    }}
                   >
-                    {user?.plan === plan.name.toLowerCase() ? 'Plan Actual' : 'Seleccionar'}
-                  </button>
-                </div>
-              ))}
+                    {isPopular && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '-12px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        background: 'var(--color-primary)',
+                        color: 'white',
+                        padding: '0.25rem 0.75rem',
+                        borderRadius: '20px',
+                        fontSize: '0.75rem',
+                        fontWeight: '600'
+                      }}>
+                        Popular
+                      </div>
+                    )}
+                    <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                      <span className={`badge badge-${plan.badge_color}`} style={{ marginBottom: '1rem' }}>
+                        {plan.name}
+                      </span>
+                      <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--color-text)' }}>
+                        {priceDisplay}
+                        <span style={{ fontSize: '1rem', fontWeight: '400', color: 'var(--color-text-secondary)' }}>
+                          {periodDisplay}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
+                        {plan.description}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                      {features.map((feature, idx) => (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" strokeWidth="2">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                          <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      className={`btn ${isCurrentPlan ? 'btn-secondary' : 'btn-primary'}`}
+                      style={{ width: '100%' }}
+                      disabled={isCurrentPlan}
+                    >
+                      {isCurrentPlan ? 'Plan Actual' : 'Seleccionar'}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

@@ -25,6 +25,22 @@ function verifyPassword(password: string, hash: string): boolean {
   return hashPassword(password) === hash;
 }
 
+// Helper to resolve the real tenant plan from the tenants table
+async function resolveRealPlan(user: any): Promise<string> {
+  if (!user.shop_domain) return user.plan || 'free';
+  try {
+    const { data: tenant } = await (supabaseService as any).serviceClient
+      .from('tenants')
+      .select('plan')
+      .eq('shop_domain', user.shop_domain)
+      .single();
+    if (tenant?.plan) return tenant.plan;
+  } catch {
+    // Fall through to default
+  }
+  return user.plan || 'free';
+}
+
 // Helper to generate JWT
 function generateToken(user: any): string {
   return jwt.sign(
@@ -119,6 +135,9 @@ router.post(
       // Generate token
       const token = generateToken(user);
 
+      // Resolve real plan from tenants table
+      const realPlan = await resolveRealPlan(user);
+
       logger.info('Admin user registered successfully', {
         userId: user.id,
         email,
@@ -135,7 +154,7 @@ router.post(
           lastName: user.last_name,
           company: user.company,
           role: user.role,
-          plan: user.plan,
+          plan: realPlan,
           userType: user.user_type,
           onboardingCompleted: user.onboarding_completed,
           onboardingStep: user.onboarding_step,
@@ -194,6 +213,9 @@ router.post(
       // Generate token
       const token = generateToken(user);
 
+      // Resolve real plan from tenants table
+      const realPlan = await resolveRealPlan(user);
+
       logger.info('Login successful', { userId: user.id, email });
 
       res.json({
@@ -207,7 +229,7 @@ router.post(
           lastName: user.last_name,
           company: user.company,
           role: user.role,
-          plan: user.plan,
+          plan: realPlan,
           userType: user.user_type || 'admin',
           onboardingCompleted: user.onboarding_completed ?? true,
           onboardingStep: user.onboarding_step ?? 4,
@@ -248,6 +270,9 @@ router.get('/me', async (req: Request, res: Response, next: NextFunction) => {
         throw new AppError('Usuario no encontrado', 404);
       }
 
+      // Resolve real plan from tenants table
+      const realPlan = await resolveRealPlan(user);
+
       res.json({
         success: true,
         user: {
@@ -257,7 +282,7 @@ router.get('/me', async (req: Request, res: Response, next: NextFunction) => {
           lastName: user.last_name,
           company: user.company,
           role: user.role,
-          plan: user.plan,
+          plan: realPlan,
           status: user.status,
           userType: user.user_type || 'admin',
           onboardingCompleted: user.onboarding_completed ?? true,

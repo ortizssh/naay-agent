@@ -1,12 +1,12 @@
 import { SupabaseService } from './supabase.service';
 import { cacheService } from './cache.service';
+import { planService } from './plan.service';
 import { logger } from '@/utils/logger';
 import {
   Tenant,
   TenantPlan,
   TenantStatus,
   TenantFeatures,
-  TenantSettings,
   TenantUsageInfo,
   TenantError,
   TenantErrorCode,
@@ -73,9 +73,8 @@ export class TenantService {
     }
   ): Promise<Tenant | null> {
     try {
-      // Use 'free' plan limits for trial accounts
       const effectivePlan: TenantPlan = options?.plan || 'free';
-      const planLimits = TENANT_PLAN_LIMITS[effectivePlan];
+      const planLimits = await planService.getPlanLimits(effectivePlan);
 
       const { data, error } = await (supabaseService as any).serviceClient
         .from('tenants')
@@ -88,8 +87,6 @@ export class TenantService {
           trial_ends_at: options?.plan
             ? null
             : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days trial
-          monthly_messages_limit: planLimits.monthly_messages,
-          products_limit: planLimits.products,
           features: planLimits.features,
         })
         .select()
@@ -115,7 +112,7 @@ export class TenantService {
     newPlan: TenantPlan
   ): Promise<Tenant | null> {
     try {
-      const planLimits = TENANT_PLAN_LIMITS[newPlan];
+      const planLimits = await planService.getPlanLimits(newPlan);
 
       const { data, error } = await (supabaseService as any).serviceClient
         .from('tenants')
@@ -123,8 +120,6 @@ export class TenantService {
           plan: newPlan,
           status: 'active',
           trial_ends_at: null,
-          monthly_messages_limit: planLimits.monthly_messages,
-          products_limit: planLimits.products,
           features: planLimits.features,
         })
         .eq('shop_domain', shopDomain)
@@ -173,67 +168,39 @@ export class TenantService {
   }
 
   /**
-   * Update tenant settings
+   * Get real monthly message count from chat_messages table
+   * Counts AI responses (role='assistant') for the current month
    */
-  async updateSettings(
-    shopDomain: string,
-    settings: Partial<TenantSettings>
-  ): Promise<Tenant | null> {
+  async getMonthlyMessageCount(shopDomain: string): Promise<number> {
     try {
-      const tenant = await this.getTenant(shopDomain);
-      if (!tenant) return null;
+      const cacheKey = `tenant:monthly_msgs:${shopDomain}`;
+      const cached = await cacheService.get<number>(cacheKey);
+      if (cached !== null && cached !== undefined) return cached;
 
-      const newSettings = { ...tenant.settings, ...settings };
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-      const { data, error } = await (supabaseService as any).serviceClient
-        .from('tenants')
-        .update({ settings: newSettings })
+      const { count, error } = await (supabaseService as any).serviceClient
+        .from('chat_messages')
+        .select('*', { count: 'exact', head: true })
         .eq('shop_domain', shopDomain)
-        .select()
-        .single();
+        .eq('role', 'agent')
+        .gte('timestamp', monthStart);
 
-      if (error) {
-        logger.error('Error updating tenant settings:', error);
-        return null;
-      }
-
-      await this.invalidateCache(shopDomain);
-      return this.mapDbToTenant(data);
+      const result = error ? 0 : (count || 0);
+      await cacheService.set(cacheKey, result, { ttl: 60 });
+      return result;
     } catch (error) {
-      logger.error('Error in updateSettings:', error);
-      return null;
+      logger.error('Error in getMonthlyMessageCount:', error);
+      return 0;
     }
   }
 
   /**
-   * Increment message usage
+   * Invalidate monthly message count cache (call after each new message)
    */
-  async incrementUsage(
-    shopDomain: string,
-    count: number = 1
-  ): Promise<boolean> {
-    try {
-      const { data, error } = await (supabaseService as any).serviceClient.rpc(
-        'increment_tenant_usage',
-        {
-          p_shop_domain: shopDomain,
-          p_messages_count: count,
-        }
-      );
-
-      if (error) {
-        logger.error('Error incrementing tenant usage:', error);
-        return false;
-      }
-
-      // Update cache if exists
-      await this.invalidateCache(shopDomain);
-
-      return data === true;
-    } catch (error) {
-      logger.error('Error in incrementUsage:', error);
-      return false;
-    }
+  async invalidateMessageCountCache(shopDomain: string): Promise<void> {
+    await cacheService.del(`tenant:monthly_msgs:${shopDomain}`);
   }
 
   /**
@@ -244,8 +211,9 @@ export class TenantService {
       const tenant = await this.getTenant(shopDomain);
       if (!tenant) return null;
 
-      const limit = tenant.monthly_messages_limit;
-      const used = tenant.monthly_messages_used;
+      const planLimits = await planService.getPlanLimits(tenant.plan);
+      const limit = planLimits.monthly_messages;
+      const used = await this.getMonthlyMessageCount(shopDomain);
       const isUnlimited = limit === -1;
 
       return {
@@ -324,20 +292,18 @@ export class TenantService {
       );
     }
 
-    // Check message limit
-    if (
-      tenant.monthly_messages_limit !== -1 &&
-      tenant.monthly_messages_used >= tenant.monthly_messages_limit
-    ) {
-      throw new TenantError(
-        'Monthly message limit exceeded. Please upgrade your plan.',
-        TenantErrorCode.USAGE_LIMIT_EXCEEDED,
-        shopDomain,
-        {
-          used: tenant.monthly_messages_used,
-          limit: tenant.monthly_messages_limit,
-        }
-      );
+    // Check message limit from plan (count from chat_messages)
+    const planLimits = await planService.getPlanLimits(tenant.plan);
+    if (planLimits.monthly_messages !== -1) {
+      const monthlyCount = await this.getMonthlyMessageCount(shopDomain);
+      if (monthlyCount >= planLimits.monthly_messages) {
+        throw new TenantError(
+          'Monthly message limit exceeded. Please upgrade your plan.',
+          TenantErrorCode.USAGE_LIMIT_EXCEEDED,
+          shopDomain,
+          { used: monthlyCount, limit: planLimits.monthly_messages }
+        );
+      }
     }
   }
 
@@ -458,19 +424,10 @@ export class TenantService {
       trial_ends_at: data.trial_ends_at
         ? new Date(data.trial_ends_at)
         : undefined,
-      monthly_messages_limit: data.monthly_messages_limit,
-      monthly_messages_used: data.monthly_messages_used,
-      products_limit: data.products_limit,
       billing_email: data.billing_email,
       stripe_customer_id: data.stripe_customer_id,
       stripe_subscription_id: data.stripe_subscription_id,
       features: data.features || TENANT_PLAN_LIMITS.free.features,
-      settings: data.settings || {
-        widget_position: 'bottom-right',
-        widget_color: '#000000',
-        welcome_message: '¡Hola! ¿En qué puedo ayudarte?',
-        language: 'es',
-      },
       created_at: new Date(data.created_at),
       updated_at: new Date(data.updated_at),
       last_activity_at: new Date(data.last_activity_at),

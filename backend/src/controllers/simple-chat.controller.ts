@@ -66,6 +66,9 @@ const optionalTenantValidation = async (
           data: {
             response: error.message,
             conversationId: null,
+            ...(error.metadata?.tenantErrorCode === 'USAGE_LIMIT_EXCEEDED' && {
+              contactEmail: tenant.shop_email || null,
+            }),
           },
         });
         return;
@@ -95,19 +98,11 @@ const trackUsageAfterResponse = async (
   const originalJson = res.json.bind(res);
 
   res.json = (body: any) => {
-    // Only track on successful responses
     if (res.statusCode >= 200 && res.statusCode < 300 && body?.success) {
       const shop = req.body?.shop;
-      const tenant = (req as any).tenant;
-
-      if (shop && tenant) {
-        // Increment usage for tenants
-        tenantService.incrementUsage(shop, 1).catch(error => {
-          logger.warn('Failed to increment tenant usage:', {
-            shop,
-            error: error.message,
-          });
-        });
+      if (shop) {
+        // Invalidate monthly count cache so next validation gets fresh count
+        tenantService.invalidateMessageCountCache(shop).catch(() => {});
       }
     }
 
@@ -296,6 +291,56 @@ async function getProductRecommendations(
     return [];
   }
 }
+
+/**
+ * GET /api/simple-chat/check?shop=xxx
+ * Lightweight pre-check: can this tenant send a message?
+ * Returns 200 if allowed, 429 if limit exceeded (with contactEmail).
+ * Used by the widget before sending to external chat endpoints (e.g. n8n).
+ */
+router.get(
+  '/check',
+  async (req: Request, res: Response) => {
+    try {
+      const shop = req.query.shop as string;
+      if (!shop) {
+        return res.json({ success: true, allowed: true });
+      }
+
+      const tenant = await tenantService.getTenant(shop);
+      if (!tenant) {
+        // No tenant record — allow (backwards-compat)
+        return res.json({ success: true, allowed: true });
+      }
+
+      await tenantService.validateTenantAccess(shop);
+      return res.json({ success: true, allowed: true });
+    } catch (error: any) {
+      if (error.metadata?.tenantErrorCode === 'USAGE_LIMIT_EXCEEDED') {
+        // Look up tenant contact email
+        let contactEmail: string | null = null;
+        try {
+          const shop = req.query.shop as string;
+          const tenant = await tenantService.getTenant(shop);
+          contactEmail = tenant?.shop_email || null;
+        } catch { /* ignore */ }
+
+        return res.status(429).json({
+          success: false,
+          allowed: false,
+          contactEmail,
+        });
+      }
+
+      // Other tenant errors (suspended, etc.) — block
+      return res.status(403).json({
+        success: false,
+        allowed: false,
+        error: error.message,
+      });
+    }
+  }
+);
 
 // Simple chat endpoint that directly connects to OpenAI
 // Middlewares: rate limit per tenant -> validate tenant -> track usage

@@ -1,31 +1,58 @@
 import { useState, useEffect } from 'react';
-import { api, Tenant, TenantPlan, TenantStatus } from '../services/api';
+import { api, EnrichedTenant, TenantPlan, TenantStatus, TenantDetail, Plan } from '../services/api';
 
 function Tenants() {
-  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [tenants, setTenants] = useState<EnrichedTenant[]>([]);
+  const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const pageSize = 10;
 
+  // View mode
+  const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
+
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
 
-  // Form state
-  const [formData, setFormData] = useState({
+  // Detail view state
+  const [selectedDetail, setSelectedDetail] = useState<TenantDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [activeDetailTab, setActiveDetailTab] = useState<'general' | 'stats' | 'widget' | 'integration'>('general');
+  const [widgetSubTab, setWidgetSubTab] = useState<'appearance' | 'content' | 'features' | 'questions' | 'promo'>('appearance');
+  const [detailForm, setDetailForm] = useState<Record<string, any>>({});
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  // Create form state
+  const [createForm, setCreateForm] = useState({
     shop_domain: '',
     shop_name: '',
     shop_email: '',
     plan: 'starter' as TenantPlan,
     access_token: '',
+    platform: 'shopify',
+    chatbot_endpoint: '',
+    widget_brand_name: '',
   });
+
+  useEffect(() => {
+    loadPlans();
+  }, []);
 
   useEffect(() => {
     loadTenants();
   }, [page]);
+
+  const loadPlans = async () => {
+    try {
+      const data = await api.getPlans();
+      setPlans(data);
+    } catch (err) {
+      // Plans will fall back to empty — dropdowns show nothing until loaded
+    }
+  };
 
   const loadTenants = async () => {
     try {
@@ -41,37 +68,107 @@ function Tenants() {
     }
   };
 
-  const handleCreateTenant = async () => {
+  const loadTenantDetail = async (shopDomain: string) => {
     try {
-      await api.createTenant({
-        shop_domain: formData.shop_domain,
-        shop_name: formData.shop_name,
-        shop_email: formData.shop_email,
-        plan: formData.plan,
-        access_token: formData.access_token,
+      setDetailLoading(true);
+      setError(null);
+      const detail = await api.getTenantDetail(shopDomain);
+      setSelectedDetail(detail);
+      setDetailForm({
+        shop_name: detail.tenant.shop_name || '',
+        shop_email: detail.tenant.shop_email || '',
+        plan: detail.tenant.plan,
+        features: { ...(detail.tenant.features || {}) },
+        chatbot_endpoint: detail.clientStore?.chatbot_endpoint || '',
+        widget_enabled: detail.clientStore?.widget_enabled ?? true,
+        widget_color: detail.clientStore?.widget_color || '#a59457',
+        widget_secondary_color: detail.clientStore?.widget_secondary_color || '#212120',
+        widget_accent_color: detail.clientStore?.widget_accent_color || '#cf795e',
+        widget_position: detail.clientStore?.widget_position || 'bottom-right',
+        widget_button_size: detail.clientStore?.widget_button_size || 72,
+        widget_button_style: detail.clientStore?.widget_button_style || 'circle',
+        widget_show_pulse: detail.clientStore?.widget_show_pulse ?? true,
+        widget_chat_width: detail.clientStore?.widget_chat_width || 420,
+        widget_chat_height: detail.clientStore?.widget_chat_height || 600,
+        widget_subtitle: detail.clientStore?.widget_subtitle || '',
+        widget_placeholder: detail.clientStore?.widget_placeholder || '',
+        widget_avatar: detail.clientStore?.widget_avatar || '',
+        widget_show_promo_message: detail.clientStore?.widget_show_promo_message ?? true,
+        widget_show_cart: detail.clientStore?.widget_show_cart ?? true,
+        widget_enable_animations: detail.clientStore?.widget_enable_animations ?? true,
+        widget_theme: detail.clientStore?.widget_theme || 'light',
+        widget_brand_name: detail.clientStore?.widget_brand_name || '',
+        welcome_message: detail.clientStore?.welcome_message || '',
+        widget_rotating_messages_enabled: detail.clientStore?.widget_rotating_messages_enabled ?? false,
+        widget_welcome_message_2: detail.clientStore?.widget_welcome_message_2 || '',
+        widget_welcome_message_3: detail.clientStore?.widget_welcome_message_3 || '',
+        widget_rotating_messages_interval: detail.clientStore?.widget_rotating_messages_interval || 5,
+        widget_subtitle_2: detail.clientStore?.widget_subtitle_2 || '',
+        widget_subtitle_3: detail.clientStore?.widget_subtitle_3 || '',
+        suggested_question_1_text: detail.clientStore?.suggested_question_1_text || '',
+        suggested_question_1_message: detail.clientStore?.suggested_question_1_message || '',
+        suggested_question_2_text: detail.clientStore?.suggested_question_2_text || '',
+        suggested_question_2_message: detail.clientStore?.suggested_question_2_message || '',
+        suggested_question_3_text: detail.clientStore?.suggested_question_3_text || '',
+        suggested_question_3_message: detail.clientStore?.suggested_question_3_message || '',
+        promo_badge_enabled: detail.clientStore?.promo_badge_enabled ?? false,
+        promo_badge_discount: detail.clientStore?.promo_badge_discount || 10,
+        promo_badge_text: detail.clientStore?.promo_badge_text || '',
+        promo_badge_color: detail.clientStore?.promo_badge_color || '#ef4444',
+        promo_badge_shape: detail.clientStore?.promo_badge_shape || 'circle',
+        promo_badge_position: detail.clientStore?.promo_badge_position || 'right',
+        promo_badge_type: detail.clientStore?.promo_badge_type || 'discount',
       });
-      setShowCreateModal(false);
-      resetForm();
-      loadTenants();
+      setViewMode('detail');
+      setActiveDetailTab('general');
+      setWidgetSubTab('appearance');
     } catch (err: any) {
-      setError(err.message || 'Error al crear cliente');
+      setError(err.message || 'Error al cargar detalle del cliente');
+    } finally {
+      setDetailLoading(false);
     }
   };
 
-  const handleUpdateTenant = async () => {
-    if (!selectedTenant) return;
+  const handleSaveDetail = async () => {
+    if (!selectedDetail) return;
     try {
-      await api.updateTenant(selectedTenant.shop_domain, {
-        plan: formData.plan,
-        shop_name: formData.shop_name,
-        shop_email: formData.shop_email,
+      setSaving(true);
+      setError(null);
+      await api.updateTenant(selectedDetail.tenant.shop_domain, detailForm);
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+      await loadTenantDetail(selectedDetail.tenant.shop_domain);
+    } catch (err: any) {
+      setError(err.message || 'Error al guardar cambios');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleBackToList = () => {
+    setViewMode('list');
+    setSelectedDetail(null);
+    loadTenants();
+  };
+
+  const handleCreateTenant = async () => {
+    try {
+      setError(null);
+      await api.createTenant({
+        shop_domain: createForm.shop_domain,
+        shop_name: createForm.shop_name,
+        shop_email: createForm.shop_email,
+        plan: createForm.plan,
+        access_token: createForm.access_token,
+        platform: createForm.platform,
+        chatbot_endpoint: createForm.chatbot_endpoint || undefined,
+        widget_brand_name: createForm.widget_brand_name || undefined,
       });
-      setShowEditModal(false);
-      setSelectedTenant(null);
-      resetForm();
+      setShowCreateModal(false);
+      resetCreateForm();
       loadTenants();
     } catch (err: any) {
-      setError(err.message || 'Error al actualizar cliente');
+      setError(err.message || 'Error al crear cliente');
     }
   };
 
@@ -79,7 +176,11 @@ function Tenants() {
     if (!confirm('Seguro que deseas suspender este cliente?')) return;
     try {
       await api.updateTenantStatus(shopDomain, 'suspended');
-      loadTenants();
+      if (viewMode === 'detail') {
+        await loadTenantDetail(shopDomain);
+      } else {
+        loadTenants();
+      }
     } catch (err: any) {
       setError(err.message || 'Error al suspender cliente');
     }
@@ -88,64 +189,57 @@ function Tenants() {
   const handleActivateTenant = async (shopDomain: string) => {
     try {
       await api.updateTenantStatus(shopDomain, 'active');
-      loadTenants();
+      if (viewMode === 'detail') {
+        await loadTenantDetail(shopDomain);
+      } else {
+        loadTenants();
+      }
     } catch (err: any) {
       setError(err.message || 'Error al activar cliente');
     }
   };
 
-  const resetForm = () => {
-    setFormData({
+  const resetCreateForm = () => {
+    setCreateForm({
       shop_domain: '',
       shop_name: '',
       shop_email: '',
       plan: 'starter',
       access_token: '',
+      platform: 'shopify',
+      chatbot_endpoint: '',
+      widget_brand_name: '',
     });
   };
 
-  const openEditModal = (tenant: Tenant) => {
-    setSelectedTenant(tenant);
-    setFormData({
-      shop_domain: tenant.shop_domain,
-      shop_name: tenant.shop_name || '',
-      shop_email: tenant.shop_email || '',
-      plan: tenant.plan,
-      access_token: '',
-    });
-    setShowEditModal(true);
+  const updateDetailForm = (field: string, value: any) => {
+    setDetailForm(prev => ({ ...prev, [field]: value }));
   };
 
-  const getPlanBadge = (plan: TenantPlan) => {
-    const badges: Record<TenantPlan, string> = {
-      free: 'badge-neutral',
-      starter: 'badge-primary',
-      professional: 'badge-success',
-      enterprise: 'badge-warning',
-    };
-    const labels: Record<TenantPlan, string> = {
-      free: 'Free',
-      starter: 'Starter',
-      professional: 'Professional',
-      enterprise: 'Enterprise',
-    };
-    return <span className={`badge ${badges[plan]}`}>{labels[plan]}</span>;
+  const updateFeature = (key: string, value: boolean) => {
+    setDetailForm(prev => ({
+      ...prev,
+      features: { ...prev.features, [key]: value },
+    }));
+  };
+
+  // --- Badge helpers ---
+  const getPlanBadge = (planSlug: TenantPlan) => {
+    const plan = plans.find(p => p.slug === planSlug);
+    const badgeClass = plan ? `badge-${plan.badge_color}` : 'badge-neutral';
+    const label = plan ? plan.name : planSlug;
+    return <span className={`badge ${badgeClass}`}>{label}</span>;
   };
 
   const getStatusBadge = (status: TenantStatus) => {
-    const badges: Record<TenantStatus, string> = {
-      active: 'badge-success',
-      trial: 'badge-warning',
-      suspended: 'badge-error',
-      cancelled: 'badge-neutral',
-    };
-    const labels: Record<TenantStatus, string> = {
-      active: 'Activo',
-      trial: 'Prueba',
-      suspended: 'Suspendido',
-      cancelled: 'Cancelado',
-    };
+    const badges: Record<TenantStatus, string> = { active: 'badge-success', trial: 'badge-warning', suspended: 'badge-error', cancelled: 'badge-neutral' };
+    const labels: Record<TenantStatus, string> = { active: 'Activo', trial: 'Prueba', suspended: 'Suspendido', cancelled: 'Cancelado' };
     return <span className={`badge ${badges[status]}`}>{labels[status]}</span>;
+  };
+
+  const getPlatformBadge = (platform?: string) => {
+    if (platform === 'woocommerce') return <span className="badge" style={{ background: '#f3e8ff', color: '#7f54b3', fontWeight: 600 }}>WooCommerce</span>;
+    return <span className="badge" style={{ background: '#e6f4d7', color: '#5e8e3e', fontWeight: 600 }}>Shopify</span>;
   };
 
   const getUsagePercentage = (used: number, limit: number) => {
@@ -159,6 +253,552 @@ function Tenants() {
     return 'primary';
   };
 
+  const formatDate = (d?: string) => d ? new Date(d).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-';
+  const formatCurrency = (n: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n);
+  const formatLimit = (n: number) => n === -1 ? 'Ilimitado' : n.toLocaleString();
+
+  // --- RENDER ---
+
+  // Detail view
+  if (viewMode === 'detail') {
+    if (detailLoading) {
+      return (
+        <>
+          <header className="page-header">
+            <div className="page-header-content">
+              <div><h1 className="page-title">Detalle del Cliente</h1></div>
+            </div>
+          </header>
+          <div className="page-content">
+            <div className="loading-container"><div className="loading-spinner"></div><span className="loading-text">Cargando detalle...</span></div>
+          </div>
+        </>
+      );
+    }
+
+    if (!selectedDetail) {
+      return (
+        <div className="page-content">
+          <button className="btn btn-secondary" onClick={handleBackToList}>Volver a lista</button>
+          <p style={{ marginTop: '1rem' }}>No se pudo cargar el detalle.</p>
+        </div>
+      );
+    }
+
+    const { tenant, clientStore, linkedUser, store, stats } = selectedDetail;
+
+    return (
+      <>
+        <header className="page-header">
+          <div className="page-header-content">
+            <div>
+              <button className="btn btn-secondary btn-sm" onClick={handleBackToList} style={{ marginBottom: '0.5rem' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
+                Volver
+              </button>
+              <h1 className="page-title">{tenant.shop_name || tenant.shop_domain}</h1>
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'center' }}>
+                {getPlanBadge(tenant.plan)}
+                {getStatusBadge(tenant.status)}
+                {getPlatformBadge(clientStore?.platform || store?.platform)}
+                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{tenant.shop_domain}</span>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              {success && <span style={{ color: 'var(--color-success)', fontSize: '0.9rem', fontWeight: 600 }}>Guardado</span>}
+              <button className="btn btn-primary" onClick={handleSaveDetail} disabled={saving}>
+                {saving ? 'Guardando...' : 'Guardar Cambios'}
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <div className="page-content">
+          {error && (
+            <div className="alert alert-error" style={{ marginBottom: '1rem' }}>
+              <div className="alert-content"><div className="alert-message">{error}</div></div>
+            </div>
+          )}
+
+          {/* Tabs */}
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+            {([['general', 'General'], ['stats', 'Uso y Stats'], ['widget', 'Widget'], ['integration', 'Integracion']] as const).map(([key, label]) => (
+              <button key={key} className={`btn ${activeDetailTab === key ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveDetailTab(key as any)}>
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* TAB: General */}
+          {activeDetailTab === 'general' && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+              <div className="card">
+                <div className="card-header"><h3 className="card-title">Informacion del Cliente</h3></div>
+                <div className="form-group">
+                  <label className="form-label">Nombre de la Tienda</label>
+                  <input type="text" className="form-input" value={detailForm.shop_name} onChange={e => updateDetailForm('shop_name', e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Email</label>
+                  <input type="email" className="form-input" value={detailForm.shop_email} onChange={e => updateDetailForm('shop_email', e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Plan</label>
+                  <select className="form-select" value={detailForm.plan} onChange={e => updateDetailForm('plan', e.target.value)}>
+                    {plans.map(p => (
+                      <option key={p.slug} value={p.slug}>{p.name} - {formatLimit(p.monthly_messages)} msgs/mes</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Estado</label>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    {getStatusBadge(tenant.status)}
+                    {(tenant.status === 'active' || tenant.status === 'trial') && (
+                      <button className="btn btn-danger btn-sm" onClick={() => handleSuspendTenant(tenant.shop_domain)}>Suspender</button>
+                    )}
+                    {(tenant.status === 'suspended' || tenant.status === 'cancelled') && (
+                      <button className="btn btn-secondary btn-sm" onClick={() => handleActivateTenant(tenant.shop_domain)}>Activar</button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="card">
+                <div className="card-header"><h3 className="card-title">Usuario Vinculado</h3></div>
+                {linkedUser ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Nombre</span>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{linkedUser.first_name} {linkedUser.last_name}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Email</span>
+                      <span style={{ fontSize: '0.9rem' }}>{linkedUser.email}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Empresa</span>
+                      <span style={{ fontSize: '0.9rem' }}>{linkedUser.company || '-'}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Tipo</span>
+                      <span className="badge badge-primary">{linkedUser.user_type}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Ultimo Login</span>
+                      <span style={{ fontSize: '0.9rem' }}>{formatDate(linkedUser.last_login_at)}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>Sin usuario vinculado</p>
+                )}
+
+                <div style={{ borderTop: '1px solid var(--color-border)', marginTop: '1rem', paddingTop: '1rem' }}>
+                  <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem' }}>Fechas</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Creado</span>
+                      <span style={{ fontSize: '0.85rem' }}>{formatDate(tenant.created_at)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Actualizado</span>
+                      <span style={{ fontSize: '0.85rem' }}>{formatDate(tenant.updated_at)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Ultima Actividad</span>
+                      <span style={{ fontSize: '0.85rem' }}>{formatDate(tenant.last_activity_at)}</span>
+                    </div>
+                    {tenant.trial_ends_at && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Trial Expira</span>
+                        <span style={{ fontSize: '0.85rem' }}>{formatDate(tenant.trial_ends_at)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: Stats */}
+          {activeDetailTab === 'stats' && (
+            <>
+              <div className="stats-grid">
+                <div className="stat-card">
+                  <div className="stat-icon primary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                  </div>
+                  <div className="stat-value">{stats.totalMessages.toLocaleString()}</div>
+                  <div className="stat-label">Total Mensajes</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-icon success">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>
+                  </div>
+                  <div className="stat-value">{stats.uniqueSessions.toLocaleString()}</div>
+                  <div className="stat-label">Sesiones Unicas</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-icon warning">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20V10M18 20V4M6 20v-4" /></svg>
+                  </div>
+                  <div className="stat-value">{stats.totalConversions.toLocaleString()}</div>
+                  <div className="stat-label">Conversiones</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-icon accent">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
+                  </div>
+                  <div className="stat-value">{formatCurrency(stats.totalRevenue)}</div>
+                  <div className="stat-label">Revenue Total</div>
+                </div>
+              </div>
+
+              <div className="card" style={{ marginTop: '1.5rem' }}>
+                <div className="card-header">
+                  <h3 className="card-title">Uso del Plan</h3>
+                </div>
+                {(() => {
+                  const detailPlan = plans.find(p => p.slug === tenant.plan);
+                  const msgLimit = detailPlan?.monthly_messages ?? 100;
+                  const prodLimit = detailPlan?.products_limit ?? 50;
+                  return (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                  <div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>Mensajes este mes</div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+                      {(stats.monthlyMessages || 0).toLocaleString()} / {msgLimit === -1 ? 'Ilimitado' : msgLimit.toLocaleString()}
+                    </div>
+                    {msgLimit !== -1 && (() => {
+                      const pct = getUsagePercentage(stats.monthlyMessages || 0, msgLimit);
+                      return (
+                        <div className="progress-bar">
+                          <div className={`progress-bar-fill ${getProgressColor(pct)}`} style={{ width: `${pct}%` }}></div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>Productos</div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>{clientStore?.products_synced || 0} sincronizados</div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
+                      Limite: {prodLimit === -1 ? 'Ilimitado' : prodLimit.toLocaleString()}
+                    </div>
+                    {clientStore?.last_sync_at && (
+                      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
+                        Ultimo sync: {formatDate(clientStore.last_sync_at)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                  );
+                })()}
+              </div>
+            </>
+          )}
+
+          {/* TAB: Widget */}
+          {activeDetailTab === 'widget' && (
+            <>
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                {([['appearance', 'Apariencia'], ['content', 'Contenido'], ['features', 'Funcionalidades'], ['questions', 'Preguntas'], ['promo', 'Promo Badge']] as const).map(([key, label]) => (
+                  <button key={key} className={`btn btn-sm ${widgetSubTab === key ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setWidgetSubTab(key as any)}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {!clientStore ? (
+                <div className="card"><p style={{ color: 'var(--color-text-muted)' }}>No hay configuracion de widget para este cliente. Se creara al guardar cambios.</p></div>
+              ) : (
+                <>
+                  {/* Widget: Appearance */}
+                  {widgetSubTab === 'appearance' && (
+                    <div className="card">
+                      <div className="form-group">
+                        <label className="form-label">Tema</label>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button className={`btn btn-sm ${detailForm.widget_theme === 'light' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => updateDetailForm('widget_theme', 'light')}>Claro</button>
+                          <button className={`btn btn-sm ${detailForm.widget_theme === 'dark' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => updateDetailForm('widget_theme', 'dark')}>Oscuro</button>
+                        </div>
+                      </div>
+                      {[['widget_color', 'Color Primario'], ['widget_secondary_color', 'Color Secundario'], ['widget_accent_color', 'Color Acento']].map(([field, label]) => (
+                        <div className="form-group" key={field}>
+                          <label className="form-label">{label}</label>
+                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <input type="color" value={detailForm[field] || '#000000'} onChange={e => updateDetailForm(field, e.target.value)} style={{ width: 40, height: 40, border: 'none', cursor: 'pointer', borderRadius: 8 }} />
+                            <input type="text" className="form-input" value={detailForm[field] || ''} onChange={e => updateDetailForm(field, e.target.value)} style={{ maxWidth: 140 }} />
+                          </div>
+                        </div>
+                      ))}
+                      <div className="form-group">
+                        <label className="form-label">Posicion</label>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', maxWidth: 300 }}>
+                          {['bottom-right', 'bottom-left', 'top-right', 'top-left'].map(pos => (
+                            <button key={pos} className={`btn btn-sm ${detailForm.widget_position === pos ? 'btn-primary' : 'btn-secondary'}`} onClick={() => updateDetailForm('widget_position', pos)}>
+                              {pos.replace('-', ' ')}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Estilo del Boton</label>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          {['circle', 'rounded', 'square'].map(s => (
+                            <button key={s} className={`btn btn-sm ${detailForm.widget_button_style === s ? 'btn-primary' : 'btn-secondary'}`} onClick={() => updateDetailForm('widget_button_style', s)}>
+                              {s.charAt(0).toUpperCase() + s.slice(1)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Tamano del Boton: {detailForm.widget_button_size}px</label>
+                        <input type="range" min="48" max="96" value={detailForm.widget_button_size} onChange={e => updateDetailForm('widget_button_size', parseInt(e.target.value))} style={{ width: '100%' }} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Ancho del Chat: {detailForm.widget_chat_width}px</label>
+                        <input type="range" min="320" max="600" step="10" value={detailForm.widget_chat_width} onChange={e => updateDetailForm('widget_chat_width', parseInt(e.target.value))} style={{ width: '100%' }} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Alto del Chat: {detailForm.widget_chat_height}px</label>
+                        <input type="range" min="400" max="800" step="10" value={detailForm.widget_chat_height} onChange={e => updateDetailForm('widget_chat_height', parseInt(e.target.value))} style={{ width: '100%' }} />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Widget: Content */}
+                  {widgetSubTab === 'content' && (
+                    <div className="card">
+                      <div className="form-group">
+                        <label className="form-label">Nombre de Marca</label>
+                        <input type="text" className="form-input" value={detailForm.widget_brand_name} onChange={e => updateDetailForm('widget_brand_name', e.target.value)} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Avatar</label>
+                        <input type="text" className="form-input" value={detailForm.widget_avatar} onChange={e => updateDetailForm('widget_avatar', e.target.value)} maxLength={4} style={{ maxWidth: 100 }} />
+                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Emoji o texto corto</span>
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Mensaje de Bienvenida</label>
+                        <textarea className="form-input" rows={2} value={detailForm.welcome_message} onChange={e => updateDetailForm('welcome_message', e.target.value)} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Subtitulo</label>
+                        <input type="text" className="form-input" value={detailForm.widget_subtitle} onChange={e => updateDetailForm('widget_subtitle', e.target.value)} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Placeholder</label>
+                        <input type="text" className="form-input" value={detailForm.widget_placeholder} onChange={e => updateDetailForm('widget_placeholder', e.target.value)} />
+                      </div>
+                      <div style={{ borderTop: '1px solid var(--color-border)', marginTop: '1rem', paddingTop: '1rem' }}>
+                        <div className="form-group">
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                            <input type="checkbox" checked={detailForm.widget_rotating_messages_enabled} onChange={e => updateDetailForm('widget_rotating_messages_enabled', e.target.checked)} style={{ width: 18, height: 18 }} />
+                            <span className="form-label" style={{ margin: 0 }}>Mensajes Rotativos</span>
+                          </label>
+                        </div>
+                        {detailForm.widget_rotating_messages_enabled && (
+                          <>
+                            <div className="form-group">
+                              <label className="form-label">Intervalo (segundos)</label>
+                              <input type="number" className="form-input" value={detailForm.widget_rotating_messages_interval} onChange={e => updateDetailForm('widget_rotating_messages_interval', parseInt(e.target.value))} style={{ maxWidth: 100 }} />
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label">Mensaje 2</label>
+                              <input type="text" className="form-input" value={detailForm.widget_welcome_message_2} onChange={e => updateDetailForm('widget_welcome_message_2', e.target.value)} />
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label">Subtitulo 2</label>
+                              <input type="text" className="form-input" value={detailForm.widget_subtitle_2} onChange={e => updateDetailForm('widget_subtitle_2', e.target.value)} />
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label">Mensaje 3</label>
+                              <input type="text" className="form-input" value={detailForm.widget_welcome_message_3} onChange={e => updateDetailForm('widget_welcome_message_3', e.target.value)} />
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label">Subtitulo 3</label>
+                              <input type="text" className="form-input" value={detailForm.widget_subtitle_3} onChange={e => updateDetailForm('widget_subtitle_3', e.target.value)} />
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Widget: Features */}
+                  {widgetSubTab === 'features' && (
+                    <div className="card">
+                      {[
+                        ['widget_show_pulse', 'Animacion Pulse', 'Muestra efecto pulse en el boton del chat'],
+                        ['widget_show_promo_message', 'Mensaje Promocional', 'Muestra un mensaje promocional junto al boton'],
+                        ['widget_show_cart', 'Carrito Integrado', 'Permite gestionar el carrito desde el chat'],
+                        ['widget_enable_animations', 'Animaciones', 'Habilita animaciones en el widget'],
+                        ['widget_enabled', 'Widget Activo', 'El widget esta visible en la tienda'],
+                      ].map(([field, label, desc]) => (
+                        <div className="form-group" key={field}>
+                          <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', cursor: 'pointer' }}>
+                            <input type="checkbox" checked={detailForm[field] ?? true} onChange={e => updateDetailForm(field, e.target.checked)} style={{ width: 20, height: 20, marginTop: 2 }} />
+                            <div>
+                              <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{label}</div>
+                              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{desc}</div>
+                            </div>
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Widget: Suggested Questions */}
+                  {widgetSubTab === 'questions' && (
+                    <div className="card">
+                      <div className="card-header"><h3 className="card-title">Preguntas Sugeridas</h3></div>
+                      {[1, 2, 3].map(n => (
+                        <div key={n} style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: n < 3 ? '1px solid var(--color-border)' : 'none' }}>
+                          <div style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem' }}>Pregunta {n}</div>
+                          <div className="form-group">
+                            <label className="form-label">Texto del boton</label>
+                            <input type="text" className="form-input" value={detailForm[`suggested_question_${n}_text`]} onChange={e => updateDetailForm(`suggested_question_${n}_text`, e.target.value)} />
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">Mensaje que se envia</label>
+                            <input type="text" className="form-input" value={detailForm[`suggested_question_${n}_message`]} onChange={e => updateDetailForm(`suggested_question_${n}_message`, e.target.value)} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Widget: Promo Badge */}
+                  {widgetSubTab === 'promo' && (
+                    <div className="card">
+                      <div className="form-group">
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={detailForm.promo_badge_enabled} onChange={e => updateDetailForm('promo_badge_enabled', e.target.checked)} style={{ width: 20, height: 20 }} />
+                          <span className="form-label" style={{ margin: 0 }}>Badge Promocional Activo</span>
+                        </label>
+                      </div>
+                      {detailForm.promo_badge_enabled && (
+                        <>
+                          <div className="form-group">
+                            <label className="form-label">Tipo</label>
+                            <select className="form-select" value={detailForm.promo_badge_type} onChange={e => updateDetailForm('promo_badge_type', e.target.value)}>
+                              <option value="discount">Descuento</option>
+                              <option value="text">Texto libre</option>
+                            </select>
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">Texto</label>
+                            <input type="text" className="form-input" value={detailForm.promo_badge_text} onChange={e => updateDetailForm('promo_badge_text', e.target.value)} />
+                          </div>
+                          {detailForm.promo_badge_type === 'discount' && (
+                            <div className="form-group">
+                              <label className="form-label">Descuento (%)</label>
+                              <input type="number" className="form-input" value={detailForm.promo_badge_discount} onChange={e => updateDetailForm('promo_badge_discount', parseInt(e.target.value))} style={{ maxWidth: 100 }} />
+                            </div>
+                          )}
+                          <div className="form-group">
+                            <label className="form-label">Color del Badge</label>
+                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                              <input type="color" value={detailForm.promo_badge_color || '#ef4444'} onChange={e => updateDetailForm('promo_badge_color', e.target.value)} style={{ width: 40, height: 40, border: 'none', cursor: 'pointer', borderRadius: 8 }} />
+                              <input type="text" className="form-input" value={detailForm.promo_badge_color} onChange={e => updateDetailForm('promo_badge_color', e.target.value)} style={{ maxWidth: 140 }} />
+                            </div>
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">Forma</label>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                              {['circle', 'pill', 'square'].map(s => (
+                                <button key={s} className={`btn btn-sm ${detailForm.promo_badge_shape === s ? 'btn-primary' : 'btn-secondary'}`} onClick={() => updateDetailForm('promo_badge_shape', s)}>
+                                  {s.charAt(0).toUpperCase() + s.slice(1)}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">Posicion</label>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                              {['left', 'right', 'top'].map(p => (
+                                <button key={p} className={`btn btn-sm ${detailForm.promo_badge_position === p ? 'btn-primary' : 'btn-secondary'}`} onClick={() => updateDetailForm('promo_badge_position', p)}>
+                                  {p.charAt(0).toUpperCase() + p.slice(1)}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
+
+          {/* TAB: Integration */}
+          {activeDetailTab === 'integration' && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+              <div className="card">
+                <div className="card-header"><h3 className="card-title">Configuracion de Integracion</h3></div>
+                <div className="form-group">
+                  <label className="form-label">Chatbot Endpoint</label>
+                  <input type="text" className="form-input" placeholder="https://n8n.example.com/webhook/..." value={detailForm.chatbot_endpoint} onChange={e => updateDetailForm('chatbot_endpoint', e.target.value)} />
+                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>URL del webhook del chatbot (n8n, etc.)</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem', padding: '1rem', background: 'var(--color-bg)', borderRadius: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Plataforma</span>
+                    {getPlatformBadge(clientStore?.platform || store?.platform)}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Estado Store</span>
+                    <span className="badge badge-success">{clientStore?.status || store ? 'Conectado' : 'Sin conectar'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Productos Sync</span>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{clientStore?.products_synced || 0}</span>
+                  </div>
+                  {clientStore?.last_sync_at && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Ultimo Sync</span>
+                      <span style={{ fontSize: '0.85rem' }}>{formatDate(clientStore.last_sync_at)}</span>
+                    </div>
+                  )}
+                  {store?.installed_at && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Instalado</span>
+                      <span style={{ fontSize: '0.85rem' }}>{formatDate(store.installed_at)}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="card">
+                <div className="card-header"><h3 className="card-title">Feature Flags</h3></div>
+                {[
+                  ['semantic_search', 'Busqueda Semantica', 'Busqueda por significado con embeddings IA'],
+                  ['cart_management', 'Gestion de Carrito', 'Agregar/modificar productos desde el chat'],
+                  ['analytics', 'Analytics', 'Dashboard de analiticas y metricas'],
+                  ['custom_branding', 'Branding Personalizado', 'Personalizar colores y marca del widget'],
+                  ['priority_support', 'Soporte Prioritario', 'Atencion preferencial al cliente'],
+                  ['api_access', 'Acceso API', 'Acceso directo a la API del sistema'],
+                ].map(([key, label, desc]) => (
+                  <div className="form-group" key={key}>
+                    <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={detailForm.features?.[key] ?? false} onChange={e => updateFeature(key, e.target.checked)} style={{ width: 20, height: 20, marginTop: 2 }} />
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{label}</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{desc}</div>
+                      </div>
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </>
+    );
+  }
+
+  // --- LIST VIEW ---
   return (
     <>
       <header className="page-header">
@@ -180,116 +820,91 @@ function Tenants() {
       <div className="page-content">
         {error && (
           <div className="alert alert-error">
-            <svg className="alert-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-            <div className="alert-content">
-              <div className="alert-message">{error}</div>
-            </div>
+            <div className="alert-content"><div className="alert-message">{error}</div></div>
           </div>
         )}
 
         <div className="table-container">
           <div className="table-header">
             <h3 className="table-title">Lista de Clientes</h3>
-            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-              {tenants.length} clientes
-            </span>
+            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{tenants.length} clientes</span>
           </div>
 
           {loading ? (
-            <div className="loading-container">
-              <div className="loading-spinner"></div>
-              <span className="loading-text">Cargando clientes...</span>
-            </div>
+            <div className="loading-container"><div className="loading-spinner"></div><span className="loading-text">Cargando clientes...</span></div>
           ) : tenants.length === 0 ? (
             <div className="empty-state">
               <div className="empty-state-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg>
               </div>
               <h3 className="empty-state-title">No hay clientes</h3>
               <p className="empty-state-description">Agrega tu primer cliente para comenzar</p>
-              <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
-                Agregar primer cliente
-              </button>
+              <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>Agregar primer cliente</button>
             </div>
           ) : (
             <table className="table">
               <thead>
                 <tr>
                   <th>Tienda</th>
+                  <th>Plataforma</th>
                   <th>Plan</th>
                   <th>Estado</th>
-                  <th>Uso Mensajes</th>
+                  <th>Mensajes</th>
+                  <th>Widget</th>
                   <th>Creado</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {tenants.map((tenant) => {
-                  const usagePercent = getUsagePercentage(
-                    tenant.monthly_messages_used,
-                    tenant.monthly_messages_limit
-                  );
+                  const planData = plans.find(p => p.slug === tenant.plan);
+                  const planLimit = planData?.monthly_messages ?? 100;
+                  const usagePercent = getUsagePercentage(tenant.real_message_count || 0, planLimit);
                   return (
                     <tr key={tenant.id}>
                       <td>
-                        <div className="table-cell-main">{tenant.shop_domain}</div>
+                        <div className="table-cell-main" style={{ cursor: 'pointer', color: 'var(--color-text)', fontWeight: 600 }} onClick={() => loadTenantDetail(tenant.shop_domain)}>
+                          {tenant.shop_domain}
+                        </div>
                         {tenant.shop_name && tenant.shop_name !== tenant.shop_domain && (
                           <div className="table-cell-sub">{tenant.shop_name}</div>
                         )}
                       </td>
+                      <td>{getPlatformBadge(tenant.platform)}</td>
                       <td>{getPlanBadge(tenant.plan)}</td>
                       <td>{getStatusBadge(tenant.status)}</td>
                       <td>
                         <div style={{ minWidth: '120px' }}>
-                          <div style={{ fontSize: '0.85rem', marginBottom: '0.35rem' }}>
-                            {tenant.monthly_messages_used.toLocaleString()} /{' '}
-                            {tenant.monthly_messages_limit === -1
-                              ? '∞'
-                              : tenant.monthly_messages_limit.toLocaleString()}
+                          <div style={{ fontSize: '0.85rem', marginBottom: '0.25rem' }}>
+                            <span style={{ fontWeight: 600 }}>{(tenant.real_message_count || 0).toLocaleString()}</span>
+                            <span style={{ color: 'var(--color-text-muted)' }}> este mes</span>
+                          </div>
+                          <div style={{ fontSize: '0.8rem', marginBottom: '0.25rem', color: 'var(--color-text-muted)' }}>
+                            Limite: {planLimit === -1 ? '\u221E' : planLimit.toLocaleString()} / mes
                           </div>
                           <div className="progress-bar">
-                            <div
-                              className={`progress-bar-fill ${getProgressColor(usagePercent)}`}
-                              style={{ width: `${usagePercent}%` }}
-                            ></div>
+                            <div className={`progress-bar-fill ${getProgressColor(usagePercent)}`} style={{ width: `${usagePercent}%` }}></div>
                           </div>
                         </div>
                       </td>
                       <td>
+                        <div style={{
+                          width: 10, height: 10, borderRadius: '50%',
+                          background: (tenant.widget_enabled && tenant.is_active) ? 'var(--color-success)' : 'var(--color-text-muted)',
+                        }} title={tenant.widget_enabled ? 'Activo' : 'Inactivo'} />
+                      </td>
+                      <td>
                         <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                          {new Date(tenant.created_at).toLocaleDateString('es-ES')}
+                          {formatDate(tenant.created_at)}
                         </span>
                       </td>
                       <td>
                         <div className="actions-cell">
-                          <button
-                            className="btn btn-secondary btn-sm"
-                            onClick={() => openEditModal(tenant)}
-                          >
-                            Editar
-                          </button>
+                          <button className="btn btn-primary btn-sm" onClick={() => loadTenantDetail(tenant.shop_domain)}>Ver</button>
                           {tenant.status === 'active' || tenant.status === 'trial' ? (
-                            <button
-                              className="btn btn-danger btn-sm"
-                              onClick={() => handleSuspendTenant(tenant.shop_domain)}
-                            >
-                              Suspender
-                            </button>
+                            <button className="btn btn-danger btn-sm" onClick={() => handleSuspendTenant(tenant.shop_domain)}>Suspender</button>
                           ) : (
-                            <button
-                              className="btn btn-secondary btn-sm"
-                              onClick={() => handleActivateTenant(tenant.shop_domain)}
-                            >
-                              Activar
-                            </button>
+                            <button className="btn btn-secondary btn-sm" onClick={() => handleActivateTenant(tenant.shop_domain)}>Activar</button>
                           )}
                         </div>
                       </td>
@@ -302,23 +917,9 @@ function Tenants() {
 
           {totalPages > 1 && (
             <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
-              <button
-                className="btn btn-secondary btn-sm"
-                disabled={page === 1}
-                onClick={() => setPage(page - 1)}
-              >
-                Anterior
-              </button>
-              <span style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}>
-                Pagina {page} de {totalPages}
-              </span>
-              <button
-                className="btn btn-secondary btn-sm"
-                disabled={page === totalPages}
-                onClick={() => setPage(page + 1)}
-              >
-                Siguiente
-              </button>
+              <button className="btn btn-secondary btn-sm" disabled={page === 1} onClick={() => setPage(page - 1)}>Anterior</button>
+              <span style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}>Pagina {page} de {totalPages}</span>
+              <button className="btn btn-secondary btn-sm" disabled={page === totalPages} onClick={() => setPage(page + 1)}>Siguiente</button>
             </div>
           )}
         </div>
@@ -331,146 +932,56 @@ function Tenants() {
             <div className="modal-header">
               <h2 className="modal-title">Agregar Nuevo Cliente</h2>
               <button className="modal-close" onClick={() => setShowCreateModal(false)}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
               </button>
             </div>
             <div className="modal-body">
               <div className="form-group">
-                <label className="form-label">Dominio de Shopify</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="tienda.myshopify.com"
-                  value={formData.shop_domain}
-                  onChange={(e) => setFormData({ ...formData, shop_domain: e.target.value })}
-                />
-                <p className="form-hint">El dominio .myshopify.com de la tienda</p>
+                <label className="form-label">Plataforma</label>
+                <select className="form-select" value={createForm.platform} onChange={e => setCreateForm({ ...createForm, platform: e.target.value })}>
+                  <option value="shopify">Shopify</option>
+                  <option value="woocommerce">WooCommerce</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">{createForm.platform === 'woocommerce' ? 'Dominio del Sitio' : 'Dominio de Shopify'}</label>
+                <input type="text" className="form-input" placeholder={createForm.platform === 'woocommerce' ? 'mitienda.com' : 'tienda.myshopify.com'} value={createForm.shop_domain} onChange={e => setCreateForm({ ...createForm, shop_domain: e.target.value })} />
+                <p className="form-hint">{createForm.platform === 'woocommerce' ? 'El dominio del sitio WooCommerce' : 'El dominio .myshopify.com de la tienda'}</p>
               </div>
               <div className="form-group">
                 <label className="form-label">Access Token</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="shpat_xxxxx"
-                  value={formData.access_token}
-                  onChange={(e) => setFormData({ ...formData, access_token: e.target.value })}
-                />
-                <p className="form-hint">Token de acceso de la app instalada</p>
+                <input type="text" className="form-input" placeholder={createForm.platform === 'woocommerce' ? 'ck_xxxxx' : 'shpat_xxxxx'} value={createForm.access_token} onChange={e => setCreateForm({ ...createForm, access_token: e.target.value })} />
+                <p className="form-hint">Token de acceso de la tienda</p>
               </div>
               <div className="form-group">
                 <label className="form-label">Nombre de la Tienda (opcional)</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="Mi Tienda"
-                  value={formData.shop_name}
-                  onChange={(e) => setFormData({ ...formData, shop_name: e.target.value })}
-                />
+                <input type="text" className="form-input" placeholder="Mi Tienda" value={createForm.shop_name} onChange={e => setCreateForm({ ...createForm, shop_name: e.target.value })} />
               </div>
               <div className="form-group">
                 <label className="form-label">Email (opcional)</label>
-                <input
-                  type="email"
-                  className="form-input"
-                  placeholder="contacto@tienda.com"
-                  value={formData.shop_email}
-                  onChange={(e) => setFormData({ ...formData, shop_email: e.target.value })}
-                />
+                <input type="email" className="form-input" placeholder="contacto@tienda.com" value={createForm.shop_email} onChange={e => setCreateForm({ ...createForm, shop_email: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Chatbot Endpoint (opcional)</label>
+                <input type="text" className="form-input" placeholder="https://n8n.example.com/webhook/..." value={createForm.chatbot_endpoint} onChange={e => setCreateForm({ ...createForm, chatbot_endpoint: e.target.value })} />
+                <p className="form-hint">URL del webhook del chatbot (n8n, etc.)</p>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Nombre de Marca Widget (opcional)</label>
+                <input type="text" className="form-input" placeholder="Mi Marca" value={createForm.widget_brand_name} onChange={e => setCreateForm({ ...createForm, widget_brand_name: e.target.value })} />
               </div>
               <div className="form-group">
                 <label className="form-label">Plan</label>
-                <select
-                  className="form-select"
-                  value={formData.plan}
-                  onChange={(e) => setFormData({ ...formData, plan: e.target.value as TenantPlan })}
-                >
-                  <option value="free">Free - 100 msgs/mes</option>
-                  <option value="starter">Starter - 1,000 msgs/mes</option>
-                  <option value="professional">Professional - 10,000 msgs/mes</option>
-                  <option value="enterprise">Enterprise - Ilimitado</option>
+                <select className="form-select" value={createForm.plan} onChange={e => setCreateForm({ ...createForm, plan: e.target.value as TenantPlan })}>
+                  {plans.map(p => (
+                    <option key={p.slug} value={p.slug}>{p.name} - {formatLimit(p.monthly_messages)} msgs/mes</option>
+                  ))}
                 </select>
               </div>
             </div>
             <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => { setShowCreateModal(false); resetForm(); }}>
-                Cancelar
-              </button>
-              <button className="btn btn-primary" onClick={handleCreateTenant}>
-                Crear Cliente
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Modal */}
-      {showEditModal && selectedTenant && (
-        <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2 className="modal-title">Editar: {selectedTenant.shop_domain}</h2>
-              <button className="modal-close" onClick={() => setShowEditModal(false)}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label className="form-label">Nombre de la Tienda</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={formData.shop_name}
-                  onChange={(e) => setFormData({ ...formData, shop_name: e.target.value })}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Email</label>
-                <input
-                  type="email"
-                  className="form-input"
-                  value={formData.shop_email}
-                  onChange={(e) => setFormData({ ...formData, shop_email: e.target.value })}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Plan</label>
-                <select
-                  className="form-select"
-                  value={formData.plan}
-                  onChange={(e) => setFormData({ ...formData, plan: e.target.value as TenantPlan })}
-                >
-                  <option value="free">Free - 100 msgs/mes</option>
-                  <option value="starter">Starter - 1,000 msgs/mes</option>
-                  <option value="professional">Professional - 10,000 msgs/mes</option>
-                  <option value="enterprise">Enterprise - Ilimitado</option>
-                </select>
-              </div>
-              <div style={{ background: 'var(--color-bg)', padding: '1rem', borderRadius: '10px', marginTop: '1rem' }}>
-                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                  Uso actual: {selectedTenant.monthly_messages_used.toLocaleString()} /{' '}
-                  {selectedTenant.monthly_messages_limit === -1
-                    ? 'Ilimitado'
-                    : selectedTenant.monthly_messages_limit.toLocaleString()}{' '}
-                  mensajes
-                </div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
-                  Creado: {new Date(selectedTenant.created_at).toLocaleDateString('es-ES')}
-                </div>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => { setShowEditModal(false); setSelectedTenant(null); resetForm(); }}>
-                Cancelar
-              </button>
-              <button className="btn btn-primary" onClick={handleUpdateTenant}>
-                Guardar Cambios
-              </button>
+              <button className="btn btn-secondary" onClick={() => { setShowCreateModal(false); resetCreateForm(); }}>Cancelar</button>
+              <button className="btn btn-primary" onClick={handleCreateTenant}>Crear Cliente</button>
             </div>
           </div>
         </div>

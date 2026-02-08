@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { api } from '../services/api';
+import { api, Plan } from '../services/api';
 
 interface DashboardStats {
   totalTenants: number;
@@ -11,12 +11,23 @@ interface DashboardStats {
 
 function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadStats();
+    loadPlans();
   }, []);
+
+  const loadPlans = async () => {
+    try {
+      const data = await api.getPlans();
+      setPlans(data);
+    } catch (err) {
+      // Non-critical, plans card will be empty
+    }
+  };
 
   const loadStats = async () => {
     try {
@@ -195,34 +206,17 @@ function Dashboard() {
               <h3 className="card-title">Planes Disponibles</h3>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'var(--color-bg)', borderRadius: '10px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <span className="badge badge-primary">Starter</span>
-                  <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>$149/mes</span>
+              {plans.map(plan => (
+                <div key={plan.slug} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'var(--color-bg)', borderRadius: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <span className={`badge badge-${plan.badge_color}`}>{plan.name}</span>
+                    {plan.price > 0 && <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>${plan.price}/{plan.billing_period === 'monthly' ? 'mes' : 'año'}</span>}
+                  </div>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                    {plan.monthly_messages === -1 ? 'Ilimitado' : `${plan.monthly_messages.toLocaleString()} msgs/mes`}
+                  </span>
                 </div>
-                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>100 msgs/mes</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'var(--color-bg)', borderRadius: '10px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <span className="badge badge-success">Growth</span>
-                  <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>$349/mes</span>
-                </div>
-                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>1,000 msgs/mes</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'var(--color-bg)', borderRadius: '10px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <span className="badge badge-warning">Pro</span>
-                  <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>$599/mes</span>
-                </div>
-                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>10,000 msgs/mes</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'var(--color-bg)', borderRadius: '10px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <span className="badge badge-neutral">Enterprise</span>
-                  <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>Personalizado</span>
-                </div>
-                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Ilimitado</span>
-              </div>
+              ))}
             </div>
           </div>
         </div>
