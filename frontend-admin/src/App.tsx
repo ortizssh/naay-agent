@@ -17,6 +17,7 @@ import ClientDashboard from './pages/client/ClientDashboard';
 import MyStore from './pages/client/MyStore';
 import WidgetConfig from './pages/client/WidgetConfig';
 import Analytics from './pages/client/Analytics';
+import KnowledgeBase from './pages/client/KnowledgeBase';
 
 // Onboarding
 import OnboardingWizard from './pages/onboarding/OnboardingWizard';
@@ -28,7 +29,7 @@ import ClientSidebar from './components/layout/ClientSidebar';
 import ShopifyEmbedded from './pages/ShopifyEmbedded';
 
 type AdminPageType = 'dashboard' | 'tenants' | 'settings';
-type ClientPageType = 'dashboard' | 'store' | 'widget' | 'analytics';
+type ClientPageType = 'dashboard' | 'store' | 'widget' | 'analytics' | 'knowledge';
 type PageType = 'landing' | 'login' | 'register' | 'dashboard';
 
 interface User {
@@ -275,6 +276,8 @@ function App() {
           return <WidgetConfig />;
         case 'analytics':
           return <Analytics />;
+        case 'knowledge':
+          return <KnowledgeBase />;
         default:
           return <ClientDashboard onStartOnboarding={handleStartOnboarding} />;
       }

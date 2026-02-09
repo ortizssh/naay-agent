@@ -761,6 +761,44 @@ export const TENANT_PLAN_LIMITS: Record<TenantPlan, TenantPlanLimits> = {
   },
 };
 
+// =====================================================
+// Knowledge Base Types
+// =====================================================
+
+export type KnowledgeSourceType = 'text' | 'file' | 'url';
+export type KnowledgeEmbeddingStatus = 'pending' | 'processing' | 'completed' | 'failed';
+
+export interface KnowledgeDocument {
+  id: string;
+  shop_domain: string;
+  title: string;
+  source_type: KnowledgeSourceType;
+  source_url?: string;
+  original_filename?: string;
+  content: string;
+  content_hash?: string;
+  chunk_count: number;
+  embedding_status: KnowledgeEmbeddingStatus;
+  error_message?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KnowledgeChunk {
+  id: string;
+  document_id: string;
+  shop_domain: string;
+  chunk_index: number;
+  content: string;
+  token_count?: number;
+  embedding?: number[];
+  metadata: {
+    document_title?: string;
+    source_type?: string;
+  };
+  created_at: string;
+}
+
 // Error codes for tenant operations
 export enum TenantErrorCode {
   TENANT_NOT_FOUND = 'TENANT_NOT_FOUND',

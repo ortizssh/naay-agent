@@ -332,6 +332,88 @@ function Tenants() {
           {/* TAB: General */}
           {activeDetailTab === 'general' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+              {/* Billing Card — full width */}
+              <div className="card" style={{ gridColumn: '1 / -1' }}>
+                <div className="card-header"><h3 className="card-title">Facturacion</h3></div>
+                {tenant.stripe_customer_id ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.5rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      <div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>Estado Suscripcion</div>
+                        <div>{tenant.stripe_subscription_id
+                          ? (() => {
+                              const statusMap: Record<string, { label: string; cls: string }> = {
+                                active: { label: 'Activa', cls: 'badge-success' },
+                                trial: { label: 'Periodo de Prueba', cls: 'badge-warning' },
+                                suspended: { label: 'Pago Pendiente', cls: 'badge-error' },
+                                cancelled: { label: 'Cancelada', cls: 'badge-neutral' },
+                              };
+                              const s = statusMap[tenant.status] || { label: tenant.status, cls: 'badge-neutral' };
+                              return <span className={`badge ${s.cls}`}>{s.label}</span>;
+                            })()
+                          : <span className="badge badge-neutral">Sin suscripcion</span>
+                        }</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>Plan</div>
+                        <div>{getPlanBadge(tenant.plan)}</div>
+                      </div>
+                      {(() => {
+                        const planData = plans.find(p => p.slug === tenant.plan);
+                        return planData && planData.price > 0 ? (
+                          <div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>Precio</div>
+                            <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>${planData.price}<span style={{ fontSize: '0.8rem', fontWeight: 400, color: 'var(--color-text-muted)' }}>/mes</span></div>
+                          </div>
+                        ) : null;
+                      })()}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      <div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>Email de Facturacion</div>
+                        <div style={{ fontSize: '0.9rem' }}>{tenant.billing_email || tenant.shop_email || '-'}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>Stripe Customer</div>
+                        <a href={`https://dashboard.stripe.com/customers/${tenant.stripe_customer_id}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.85rem', color: 'var(--color-primary)', textDecoration: 'none' }}>
+                          {tenant.stripe_customer_id}
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginLeft: 4, verticalAlign: 'middle' }}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
+                        </a>
+                      </div>
+                      {tenant.stripe_subscription_id && (
+                        <div>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>Stripe Subscription</div>
+                          <a href={`https://dashboard.stripe.com/subscriptions/${tenant.stripe_subscription_id}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.85rem', color: 'var(--color-primary)', textDecoration: 'none' }}>
+                            {tenant.stripe_subscription_id}
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginLeft: 4, verticalAlign: 'middle' }}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      {tenant.trial_ends_at && (
+                        <div>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>Fin del Trial</div>
+                          <div style={{ fontSize: '0.9rem' }}>{formatDate(tenant.trial_ends_at)}</div>
+                        </div>
+                      )}
+                      <div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>Creado</div>
+                        <div style={{ fontSize: '0.9rem' }}>{formatDate(tenant.created_at)}</div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.5rem 0' }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" strokeWidth="1.5"><rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>
+                    <div>
+                      <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>Sin informacion de pago</div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Este cliente no tiene un metodo de pago configurado en Stripe</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="card">
                 <div className="card-header"><h3 className="card-title">Informacion del Cliente</h3></div>
                 <div className="form-group">
@@ -849,8 +931,8 @@ function Tenants() {
                   <th>Plataforma</th>
                   <th>Plan</th>
                   <th>Estado</th>
+                  <th>Pago</th>
                   <th>Mensajes</th>
-                  <th>Widget</th>
                   <th>Creado</th>
                   <th>Acciones</th>
                 </tr>
@@ -874,6 +956,15 @@ function Tenants() {
                       <td>{getPlanBadge(tenant.plan)}</td>
                       <td>{getStatusBadge(tenant.status)}</td>
                       <td>
+                        {tenant.stripe_subscription_id ? (
+                          <span className="badge badge-success" style={{ fontSize: '0.75rem' }}>Stripe</span>
+                        ) : tenant.stripe_customer_id ? (
+                          <span className="badge badge-warning" style={{ fontSize: '0.75rem' }}>Sin sub.</span>
+                        ) : (
+                          <span className="badge badge-neutral" style={{ fontSize: '0.75rem' }}>-</span>
+                        )}
+                      </td>
+                      <td>
                         <div style={{ minWidth: '120px' }}>
                           <div style={{ fontSize: '0.85rem', marginBottom: '0.25rem' }}>
                             <span style={{ fontWeight: 600 }}>{(tenant.real_message_count || 0).toLocaleString()}</span>
@@ -886,12 +977,6 @@ function Tenants() {
                             <div className={`progress-bar-fill ${getProgressColor(usagePercent)}`} style={{ width: `${usagePercent}%` }}></div>
                           </div>
                         </div>
-                      </td>
-                      <td>
-                        <div style={{
-                          width: 10, height: 10, borderRadius: '50%',
-                          background: (tenant.widget_enabled && tenant.is_active) ? 'var(--color-success)' : 'var(--color-text-muted)',
-                        }} title={tenant.widget_enabled ? 'Activo' : 'Inactivo'} />
                       </td>
                       <td>
                         <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>

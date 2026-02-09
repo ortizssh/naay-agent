@@ -6,6 +6,8 @@ import { SupabaseService } from '@/services/supabase.service';
 import { tenantService } from '@/services/tenant.service';
 import { createTenantRateLimiter } from '@/middleware/tenant.middleware';
 import { SimpleConversionTracker } from '@/services/simple-conversion-tracker.service';
+import { knowledgeService } from '@/services/knowledge.service';
+import { getCommerceProvider } from '@/platforms/interfaces/commerce.interface';
 
 const router = Router();
 const simpleConversionTracker = new SimpleConversionTracker();
@@ -212,32 +214,152 @@ async function persistChatMessage(
   }
 }
 
-// Function to search for products
-async function searchProducts(
+// =====================================================
+// Default system prompt (used as fallback when tenant has no custom config)
+// =====================================================
+const DEFAULT_SYSTEM_PROMPT = `Eres un asistente virtual de comercio. Tu misión es ayudar a los clientes a encontrar productos y resolver sus dudas.
+
+INSTRUCCIONES CRÍTICAS:
+- SIEMPRE usa search_products antes de recomendar productos
+- NUNCA inventes productos que no existan en el catálogo
+- Usa search_knowledge para preguntas sobre la marca, políticas, envíos, etc.
+- Si no encuentras productos adecuados, ofrece consejos generales y sugiere reformular la consulta`;
+
+// Tone descriptions for system prompt generation
+const TONE_DESCRIPTIONS: Record<string, string> = {
+  friendly: 'Cálido, cercano y empático. Usa un lenguaje natural y accesible.',
+  formal: 'Formal y respetuoso. Usa un lenguaje profesional y cortés.',
+  casual: 'Casual y relajado. Usa un lenguaje informal y directo.',
+  professional: 'Profesional y experto. Usa un lenguaje técnico pero comprensible.',
+};
+
+const LANGUAGE_NAMES: Record<string, string> = {
+  es: 'Español',
+  en: 'English',
+  pt: 'Português',
+};
+
+/**
+ * Build a dynamic system prompt from tenant AI config
+ */
+function buildSystemPrompt(agentConfig: {
+  agent_name?: string;
+  brand_description?: string;
+  agent_tone?: string;
+  agent_language?: string;
+  agent_instructions?: string;
+  widget_brand_name?: string;
+}): string {
+  const name = agentConfig.agent_name || agentConfig.widget_brand_name || 'Asistente';
+  const brandName = agentConfig.widget_brand_name || 'la tienda';
+  const tone = TONE_DESCRIPTIONS[agentConfig.agent_tone || 'friendly'] || TONE_DESCRIPTIONS.friendly;
+  const language = LANGUAGE_NAMES[agentConfig.agent_language || 'es'] || 'Español';
+
+  let prompt = `Eres ${name}, el asistente virtual de ${brandName}.`;
+
+  if (agentConfig.brand_description) {
+    prompt += `\n\n${agentConfig.brand_description}`;
+  }
+
+  prompt += `\n\nTONO: ${tone}`;
+  prompt += `\nIDIOMA: Responde siempre en ${language}.`;
+
+  if (agentConfig.agent_instructions) {
+    prompt += `\n\nINSTRUCCIONES ADICIONALES:\n${agentConfig.agent_instructions}`;
+  }
+
+  prompt += `\n\nHERRAMIENTAS DISPONIBLES:
+- search_products: busca productos en el catálogo actualizado de la tienda
+- get_product_recommendations: obtiene recomendaciones de productos
+- get_product_details: obtiene detalle completo de un producto específico
+- search_knowledge: consulta la base de conocimiento de la marca (políticas, envíos, info de marca, etc.)
+
+REGLAS CRÍTICAS:
+- SIEMPRE usa search_products antes de recomendar productos específicos
+- NUNCA inventes productos que no existan en el catálogo
+- Usa search_knowledge para preguntas sobre la marca, políticas, envíos, etc.
+- Solo recomienda productos que aparezcan en los resultados de búsqueda
+- Si no encuentras productos adecuados, ofrece consejos generales y sugiere reformular la consulta`;
+
+  return prompt;
+}
+
+/**
+ * Load AI config for a tenant from client_stores
+ */
+async function loadAgentConfig(shopDomain: string): Promise<{
+  agent_name?: string;
+  agent_tone?: string;
+  brand_description?: string;
+  agent_instructions?: string;
+  agent_language?: string;
+  ai_model?: string;
+  chat_mode?: string;
+  widget_brand_name?: string;
+  platform?: string;
+  access_token?: string;
+} | null> {
+  try {
+    const { data, error } = await (supabaseService as any).serviceClient
+      .from('client_stores')
+      .select('agent_name, agent_tone, brand_description, agent_instructions, agent_language, ai_model, chat_mode, widget_brand_name, platform, access_token')
+      .eq('shop_domain', shopDomain)
+      .eq('chat_mode', 'internal')
+      .limit(1);
+    if (data && data.length > 0) return data[0];
+
+    // Fallback: get any row for this shop
+    const { data: fallback, error: fallbackErr } = await (supabaseService as any).serviceClient
+      .from('client_stores')
+      .select('agent_name, agent_tone, brand_description, agent_instructions, agent_language, ai_model, chat_mode, widget_brand_name, platform, access_token')
+      .eq('shop_domain', shopDomain)
+      .limit(1);
+    return fallback?.[0] || null;
+  } catch (err: any) {
+    logger.warn('loadAgentConfig error', { shopDomain, error: err.message });
+    return null;
+  }
+}
+
+// Function to search products via commerce provider (real-time API)
+async function searchProductsViaProvider(
   shop: string,
   query: string,
   limit: number = 5,
-  skinType?: string
+  provider: any | null
 ) {
   try {
-    logger.info('Function searchProducts called', {
-      shop,
-      query,
-      limit,
-      skinType,
-    });
+    logger.info('searchProducts via commerce provider', { shop, query, limit });
 
-    const products = await supabaseService.searchProductsSemantic(
-      shop,
-      query,
-      limit,
-      { skinType }
-    );
+    // Try real-time API first if provider is available
+    if (provider) {
+      try {
+        const products = await provider.searchProducts(shop, { query, limit, availability: true });
+        if (products && products.length > 0) {
+          return products.map((p: any) => ({
+            id: p.external_id || p.id,
+            title: p.title,
+            description: p.description?.substring(0, 300) || '',
+            price: p.price_range?.min || p.variants?.[0]?.price || 'N/A',
+            vendor: p.vendor || '',
+            productType: p.product_type || '',
+            tags: p.tags || [],
+            images: p.images?.[0]?.src || null,
+            available: p.variants?.some((v: any) => v.available !== false) ?? true,
+            handle: p.handle || '',
+          }));
+        }
+      } catch (providerError) {
+        logger.warn('Commerce provider search failed, falling back to semantic:', providerError);
+      }
+    }
 
+    // Fallback: semantic search via embeddings
+    const products = await supabaseService.searchProductsSemantic(shop, query, limit);
     return products.map(product => ({
       id: product.id,
       title: product.title,
-      description: product.description,
+      description: product.description?.substring(0, 300) || '',
       price: product.price,
       vendor: product.vendor,
       productType: product.product_type,
@@ -247,53 +369,94 @@ async function searchProducts(
       similarity: product.similarity,
     }));
   } catch (error) {
-    logger.error('Error in searchProducts function:', error);
+    logger.error('Error in searchProducts:', error);
     return [];
   }
 }
 
-// Function to get product recommendations
-async function getProductRecommendations(
+// Function to get product recommendations via commerce provider
+async function getProductRecommendationsViaProvider(
   shop: string,
-  skinType?: string,
-  concerns?: string[],
-  limit: number = 5
+  intent: string,
+  limit: number = 5,
+  provider: any | null
 ) {
   try {
-    logger.info('Function getProductRecommendations called', {
-      shop,
-      skinType,
-      concerns,
-      limit,
-    });
+    logger.info('getProductRecommendations via commerce provider', { shop, intent, limit });
 
-    let query = '';
-    if (skinType) query += `productos para piel ${skinType} `;
-    if (concerns && concerns.length > 0) query += concerns.join(' ') + ' ';
-    if (!query.trim()) query = 'productos recomendados cuidado piel natural';
+    if (provider) {
+      try {
+        const products = await provider.getProductRecommendations(shop, { intent: intent as any || 'popular', limit });
+        if (products && products.length > 0) {
+          return products.map((p: any) => ({
+            id: p.external_id || p.id,
+            title: p.title,
+            description: p.description?.substring(0, 300) || '',
+            price: p.price_range?.min || p.variants?.[0]?.price || 'N/A',
+            vendor: p.vendor || '',
+            tags: p.tags || [],
+            images: p.images?.[0]?.src || null,
+            available: true,
+            reason: p.reason || '',
+          }));
+        }
+      } catch (providerError) {
+        logger.warn('Commerce provider recommendations failed, falling back to semantic:', providerError);
+      }
+    }
 
-    const products = await supabaseService.searchProductsSemantic(
-      shop,
-      query.trim(),
-      limit,
-      { skinType }
-    );
-
+    // Fallback: semantic search
+    const query = intent || 'productos populares recomendados';
+    const products = await supabaseService.searchProductsSemantic(shop, query, limit);
     return products.map(product => ({
       id: product.id,
       title: product.title,
-      description: product.description,
+      description: product.description?.substring(0, 300) || '',
       price: product.price,
       vendor: product.vendor,
-      productType: product.product_type,
       tags: product.tags,
       images: product.images?.[0] || null,
       available: product.variants?.some(v => v.available) || false,
-      recommendationScore: product.similarity,
     }));
   } catch (error) {
-    logger.error('Error in getProductRecommendations function:', error);
+    logger.error('Error in getProductRecommendations:', error);
     return [];
+  }
+}
+
+// Function to get product details via commerce provider
+async function getProductDetailsViaProvider(
+  shop: string,
+  productId: string,
+  provider: any | null
+) {
+  try {
+    if (provider) {
+      const product = await provider.getProduct(shop, productId);
+      if (product) {
+        return {
+          id: product.external_id || product.id,
+          title: product.title,
+          description: product.description || '',
+          vendor: product.vendor || '',
+          productType: product.product_type || '',
+          tags: product.tags || [],
+          images: product.images?.map((img: any) => img.src) || [],
+          variants: product.variants?.map((v: any) => ({
+            id: v.external_id || v.id,
+            title: v.title,
+            price: v.price,
+            available: v.available !== false,
+            sku: v.sku || '',
+          })) || [],
+          handle: product.handle || '',
+        };
+      }
+    }
+    return null;
+  } catch (error) {
+    logger.error('Error getting product details:', error);
+    return null;
   }
 }
 
@@ -389,6 +552,46 @@ router.post(
         throw new Error('OpenAI API key not configured');
       }
 
+      // Load tenant AI config for dynamic system prompt & model
+      const agentConfig = shop ? await loadAgentConfig(shop) : null;
+      const aiModel = agentConfig?.ai_model || 'gpt-4.1-mini';
+      // Build system prompt: dynamic if config exists, default otherwise
+      const systemPrompt = agentConfig
+        ? buildSystemPrompt(agentConfig)
+        : DEFAULT_SYSTEM_PROMPT;
+
+      // Initialize commerce provider for real-time product API calls
+      let commerceProvider: any = null;
+      if (shop) {
+        try {
+          // Load access_token and credentials from stores table (canonical source)
+          let accessToken = agentConfig?.access_token;
+          let credentials: any = null;
+          const { data: storeData } = await (supabaseService as any).serviceClient
+            .from('stores')
+            .select('access_token, credentials')
+            .eq('shop_domain', shop)
+            .limit(1);
+          if (storeData?.[0]) {
+            if (!accessToken) accessToken = storeData[0].access_token;
+            credentials = storeData[0].credentials;
+          }
+          if (accessToken) {
+            commerceProvider = getCommerceProvider(
+              (agentConfig?.platform || 'shopify') as any,
+              {
+                platform: (agentConfig?.platform || 'shopify') as any,
+                access_token: accessToken,
+                consumer_key: credentials?.consumer_key,
+                consumer_secret: credentials?.consumer_secret,
+              }
+            );
+          }
+        } catch (providerErr) {
+          logger.warn('Could not initialize commerce provider:', providerErr);
+        }
+      }
+
       // Get or initialize conversation history
       if (!conversationStore[currentConversationId]) {
         conversationStore[currentConversationId] = [];
@@ -417,108 +620,19 @@ router.post(
       const messages = [
         {
           role: 'system',
-          content: `#### 💬 **Rol del Agente**
-
-Eres **Naáy Assistant**, el asesor virtual de **Naáy**, marca española de cosmética natural y ecológica fundada en Valladolid. Tu misión es ofrecer orientación personalizada sobre el cuidado de la piel y el uso de productos Naáy, reflejando siempre el tono cálido, cercano, profesional y respetuoso con el medio ambiente que caracteriza a la marca.
-
----
-
-#### 🌿 **Personalidad y tono**
-
-* Cálido, empático y educativo
-* Profesional, pero accesible
-* Natural y confiable, sin tecnicismos excesivos
-* Inspirado en el bienestar y respeto por el cuerpo y la naturaleza
-
-Ejemplo de tono:
-
-> "Tu piel merece respirar y sentirse en calma. Te ayudaré a elegir una rutina que la cuide con ingredientes naturales, como hacemos en Naáy desde hace más de una década."
-
----
-
-#### 🧴 **Conocimientos base**
-
-* Cosmética natural y ecológica certificada (sin parabenos, siliconas, derivados del petróleo, alcohol ni sales).
-* Tipos de piel: seca, grasa, mixta, sensible, con dermatitis, rosácea, psoriasis, etc.
-* Ingredientes naturales comunes en los productos Naáy (aloe vera, manzanilla, caléndula, rosa mosqueta, etc.).
-* Beneficios dermatológicos de cada línea de producto (facial, corporal, capilar, bebés, higiene personal).
-* Certificaciones ecológicas europeas y valores éticos (no testado en animales, sostenibilidad).
-
----
-
-#### 🪄 **Funciones principales**
-
-1. **Asesor dermatológico personalizado:** recomendar productos según tipo de piel, edad y necesidades.
-2. **Educador ecológico:** explicar la importancia de los ingredientes naturales y las certificaciones ecológicas.
-3. **Asistente de compra:** guiar al usuario en el proceso de elección y uso correcto de cada producto.
-4. **Embajador de marca:** transmitir los valores de respeto al cuerpo, a la familia y al medio ambiente.
-5. **Atención postventa:** resolver dudas sobre combinaciones, alergias o rutinas.
-
----
-
-#### 🧠 **Estructura de razonamiento**
-
-Cuando un usuario interactúe:
-
-1. Identifica su **tipo de piel** y necesidades (sensibilidad, hidratación, regeneración, etc.).
-2. Sugiere una rutina **personalizada** (limpieza, hidratación, nutrición, protección).
-3. Explica **por qué** se recomiendan esos productos y **qué los hace diferentes**.
-4. Ofrece un consejo ecológico o de bienestar complementario.
-
----
-
-#### ⚙️ **Ejemplo de diálogo**
-
-**Usuario:** Tengo la piel muy sensible y últimamente me arde con cualquier crema. ¿Qué puedo usar?
-**Naáy Assistant:** Entiendo lo molesto que puede ser. En Naáy formulamos productos especialmente para pieles como la tuya, con ingredientes naturales calmantes como aloe vera y caléndula. Te recomiendo nuestra **Crema Facial Calmante de Aloe & Caléndula**, libre de alcohol y parabenos, ideal para reducir la irritación y fortalecer la barrera natural de tu piel. 🌿
-
----
-
-#### 🌍 **Valores esenciales**
-
-* Respeto al cuerpo y la naturaleza.
-* Cuidado de toda la familia.
-* Innovación basada en experiencia (más de 18 años en cosmética ecológica).
-* Colaboración con hospitales y asociaciones dermatológicas.
-* Producción sostenible y ética.
-
-**INSTRUCCIONES CRÍTICAS:**
-
-🚨 **SOLO PRODUCTOS REALES**: NUNCA inventes, menciones o recomiendes productos que no existan en el catálogo actual de Shopify. SIEMPRE debes buscar en la base de datos de productos reales antes de hacer cualquier recomendación.
-
-🔍 **OBLIGATORIO**: Antes de responder cualquier consulta sobre productos, DEBES usar las herramientas disponibles (search_products o get_product_recommendations) para buscar productos reales que coincidan con las necesidades del usuario.
-
-❌ **PROHIBIDO**: 
-- Inventar nombres de productos que no existen
-- Crear descripciones de productos inexistentes
-- Mencionar productos "ejemplo" o "hipotéticos"
-- Sugerir productos sin verificar que existan en stock
-
-✅ **PERMITIDO**:
-- Solo recomendar productos que aparezcan en los resultados de búsqueda
-- Explicar beneficios de ingredientes naturales en general
-- Dar consejos de cuidado de la piel sin mencionar productos específicos si no hay coincidencias en la base de datos
-- Sugerir que el usuario reformule su consulta si no encuentras productos adecuados
-
-🛠️ **USO DE HERRAMIENTAS OBLIGATORIO**:
-- Para consultas como "¿tienes cremas para piel seca?" → Usar search_products con query="crema piel seca"
-- Para preguntas como "¿qué me recomiendas para mi piel grasa?" → Usar get_product_recommendations con skin_type="grasa"
-- Para dudas específicas como "productos anti-edad" → Usar search_products con query="anti-edad"
-- SIEMPRE usar las herramientas antes de responder sobre productos específicos
-
-**Si no encuentras productos reales que coincidan con la consulta, explica que no tienes productos específicos disponibles actualmente y ofrece consejos generales de cuidado de la piel.**`,
+          content: systemPrompt,
         },
-        ...conversationStore[currentConversationId], // Include conversation history
+        ...conversationStore[currentConversationId],
       ];
 
-      // Define tools for product search
+      // Define tools for product search + knowledge base
       const tools = [
         {
           type: 'function' as const,
           function: {
             name: 'search_products',
             description:
-              'Busca productos específicos en el catálogo de Shopify basado en una consulta de texto',
+              'Busca productos en el catálogo actualizado de la tienda basado en una consulta de texto',
             parameters: {
               type: 'object',
               properties: {
@@ -527,16 +641,9 @@ Cuando un usuario interactúe:
                   description:
                     "Término de búsqueda para encontrar productos (ej: 'crema facial', 'limpiador', 'anti-edad')",
                 },
-                skin_type: {
-                  type: 'string',
-                  description:
-                    "Tipo de piel del usuario (ej: 'seca', 'grasa', 'mixta', 'sensible')",
-                  enum: ['seca', 'grasa', 'mixta', 'sensible', 'normal'],
-                },
                 limit: {
                   type: 'number',
-                  description: 'Número máximo de productos a devolver',
-                  default: 5,
+                  description: 'Número máximo de productos a devolver (default: 5)',
                 },
               },
               required: ['query'],
@@ -548,29 +655,62 @@ Cuando un usuario interactúe:
           function: {
             name: 'get_product_recommendations',
             description:
-              'Obtiene recomendaciones de productos basadas en el tipo de piel y preocupaciones específicas',
+              'Obtiene recomendaciones de productos según una intención o necesidad',
             parameters: {
               type: 'object',
               properties: {
-                skin_type: {
+                intent: {
                   type: 'string',
-                  description: 'Tipo de piel del usuario',
-                  enum: ['seca', 'grasa', 'mixta', 'sensible', 'normal'],
-                },
-                concerns: {
-                  type: 'array',
-                  items: {
-                    type: 'string',
-                  },
                   description:
-                    "Lista de preocupaciones de la piel (ej: ['anti-edad', 'acné', 'manchas'])",
+                    "Intención o descripción de lo que busca el cliente (ej: 'productos para piel sensible', 'regalos populares')",
                 },
                 limit: {
                   type: 'number',
-                  description: 'Número máximo de productos a recomendar',
-                  default: 3,
+                  description: 'Número máximo de productos a recomendar (default: 5)',
                 },
               },
+              required: ['intent'],
+            },
+          },
+        },
+        {
+          type: 'function' as const,
+          function: {
+            name: 'get_product_details',
+            description:
+              'Obtiene el detalle completo de un producto específico (variantes, precios, stock)',
+            parameters: {
+              type: 'object',
+              properties: {
+                product_id: {
+                  type: 'string',
+                  description: 'ID del producto a consultar',
+                },
+              },
+              required: ['product_id'],
+            },
+          },
+        },
+        {
+          type: 'function' as const,
+          function: {
+            name: 'search_knowledge',
+            description:
+              'Consulta la base de conocimiento de la marca para responder preguntas sobre políticas, envíos, información de la marca, ingredientes, etc.',
+            parameters: {
+              type: 'object',
+              properties: {
+                query: {
+                  type: 'string',
+                  description:
+                    "Pregunta o tema a buscar en la base de conocimiento (ej: 'política de devoluciones', 'envíos internacionales')",
+                },
+                limit: {
+                  type: 'number',
+                  description: 'Número máximo de resultados (default: 5)',
+                },
+              },
+              required: ['query'],
             },
           },
         },
@@ -578,32 +718,33 @@ Cuando un usuario interactúe:
 
       // Call OpenAI with tools
       const completion = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+        model: aiModel,
         messages: messages,
         tools: tools,
         tool_choice: 'auto',
-        max_tokens: 500,
+        max_tokens: 1000,
         temperature: 0.7,
       });
 
       let response =
         completion.choices[0]?.message?.content ||
-        '¡Hola! Soy tu asistente de Naay. ¿En qué puedo ayudarte con tu cuidado de la piel?';
+        '¡Hola! ¿En qué puedo ayudarte?';
 
       // Handle function calls
       if (completion.choices[0]?.message?.tool_calls) {
         const toolCalls = completion.choices[0].message.tool_calls;
         let toolResults: any[] = [];
-        let allRecommendedProducts: any[] = []; // Track all products for conversion tracking
+        let allRecommendedProducts: any[] = [];
 
         for (const toolCall of toolCalls) {
+          const args = JSON.parse(toolCall.function.arguments);
+
           if (toolCall.function.name === 'search_products') {
-            const args = JSON.parse(toolCall.function.arguments);
-            const products = await searchProducts(
+            const products = await searchProductsViaProvider(
               shop,
               args.query,
-              args.limit,
-              args.skin_type
+              args.limit || 5,
+              commerceProvider
             );
             allRecommendedProducts.push(...products);
             toolResults.push({
@@ -612,18 +753,43 @@ Cuando un usuario interactúe:
               content: JSON.stringify(products),
             });
           } else if (toolCall.function.name === 'get_product_recommendations') {
-            const args = JSON.parse(toolCall.function.arguments);
-            const products = await getProductRecommendations(
+            const products = await getProductRecommendationsViaProvider(
               shop,
-              args.skin_type,
-              args.concerns,
-              args.limit
+              args.intent,
+              args.limit || 5,
+              commerceProvider
             );
             allRecommendedProducts.push(...products);
             toolResults.push({
               tool_call_id: toolCall.id,
               role: 'tool' as const,
               content: JSON.stringify(products),
+            });
+          } else if (toolCall.function.name === 'get_product_details') {
+            const product = await getProductDetailsViaProvider(
+              shop,
+              args.product_id,
+              commerceProvider
+            );
+            if (product) allRecommendedProducts.push(product);
+            toolResults.push({
+              tool_call_id: toolCall.id,
+              role: 'tool' as const,
+              content: JSON.stringify(product || { error: 'Product not found' }),
+            });
+          } else if (toolCall.function.name === 'search_knowledge') {
+            const results = shop
+              ? await knowledgeService.searchKnowledge(shop, args.query, args.limit || 5)
+              : [];
+            logger.info('search_knowledge', { shop, query: args.query, resultCount: results.length });
+            toolResults.push({
+              tool_call_id: toolCall.id,
+              role: 'tool' as const,
+              content: JSON.stringify(results.map(r => ({
+                title: r.document_title,
+                content: r.content,
+                similarity: r.similarity,
+              }))),
             });
           }
         }
@@ -665,9 +831,9 @@ Cuando un usuario interactúe:
           ];
 
           const finalCompletion = await openai.chat.completions.create({
-            model: 'gpt-3.5-turbo',
+            model: aiModel,
             messages: messagesWithTools,
-            max_tokens: 500,
+            max_tokens: 1000,
             temperature: 0.7,
           });
 
@@ -695,7 +861,7 @@ Cuando un usuario interactúe:
         success: true,
         data: {
           response,
-          conversationId: currentConversationId, // Return the same conversation ID
+          conversationId: currentConversationId,
         },
       });
     } catch (error: any) {
@@ -707,7 +873,6 @@ Cuando un usuario interactúe:
         hasApiKey: !!apiKey,
       });
 
-      // Specific error handling for OpenAI issues
       let errorMessage =
         'Lo siento, hubo un problema al procesar tu mensaje. Por favor intenta de nuevo.';
 

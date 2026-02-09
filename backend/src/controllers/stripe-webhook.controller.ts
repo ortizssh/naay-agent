@@ -94,6 +94,19 @@ router.post('/', async (req: Request, res: Response) => {
           await tenantService.updateStatus(shopDomain, 'active');
         } else if (subscription.status === 'trialing') {
           await tenantService.updateStatus(shopDomain, 'trial');
+        } else if (subscription.status === 'past_due' || subscription.status === 'unpaid') {
+          await tenantService.updateStatus(shopDomain, 'suspended');
+          logger.warn('Subscription past_due/unpaid, tenant suspended', {
+            shopDomain,
+            stripeStatus: subscription.status,
+          });
+        } else if (subscription.status === 'incomplete_expired') {
+          await tenantService.updatePlan(shopDomain, 'free');
+          await tenantService.updateStatus(shopDomain, 'cancelled');
+          await tenantService.updateStripeInfo(shopDomain, {
+            stripe_subscription_id: undefined,
+          });
+          logger.warn('Subscription incomplete_expired, downgraded to free', { shopDomain });
         }
 
         // Check if plan changed (price ID changed)
@@ -140,11 +153,25 @@ router.post('/', async (req: Request, res: Response) => {
 
       case 'invoice.payment_failed': {
         const invoice = event.data.object as any;
-        logger.warn('Invoice payment failed', {
-          customerId: invoice.customer,
-          invoiceId: invoice.id,
-        });
-        // Stripe handles retries via dunning settings
+        const subscriptionId = invoice.subscription;
+
+        if (subscriptionId) {
+          try {
+            const sub = await stripeService.getSubscription(subscriptionId);
+            const shopDomain = sub.metadata?.shop_domain;
+            if (shopDomain && sub.status === 'past_due') {
+              await tenantService.updateStatus(shopDomain, 'suspended');
+              logger.warn('Payment failed, tenant suspended', {
+                shopDomain,
+                customerId: invoice.customer,
+                invoiceId: invoice.id,
+                attemptCount: invoice.attempt_count,
+              });
+            }
+          } catch (err) {
+            logger.error('Error processing invoice.payment_failed:', err);
+          }
+        }
         break;
       }
 
@@ -157,11 +184,10 @@ router.post('/', async (req: Request, res: Response) => {
             const sub = await stripeService.getSubscription(subscriptionId);
             const shopDomain = sub.metadata?.shop_domain;
             if (shopDomain) {
-              // If was on trial, move to active on first payment
               const tenant = await tenantService.getTenant(shopDomain);
-              if (tenant && tenant.status === 'trial') {
+              if (tenant && (tenant.status === 'trial' || tenant.status === 'suspended')) {
                 await tenantService.updateStatus(shopDomain, 'active');
-                logger.info('Trial -> Active after first payment', {
+                logger.info(`${tenant.status} -> Active after payment`, {
                   shopDomain,
                 });
               }

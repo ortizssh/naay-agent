@@ -34,6 +34,7 @@ import realConversionAnalyzerRoutes from '@/controllers/real-conversion-analyzer
 import tenantAdminRoutes from '@/controllers/tenant-admin.controller';
 import adminAuthRoutes from '@/controllers/admin-auth.controller';
 import clientRoutes from '@/controllers/client.controller';
+import knowledgeRoutes from '@/controllers/knowledge.controller';
 import shopifyEmbeddedRoutes from '@/controllers/shopify-embedded.controller';
 import billingRoutes from '@/controllers/billing.controller';
 import stripeWebhookRoutes from '@/controllers/stripe-webhook.controller';
@@ -835,6 +836,7 @@ async function startServer() {
     app.use('/api/admin/tenants', tenantAdminRoutes);
     app.use('/api/auth', adminAuthRoutes);
     app.use('/api/client', clientRoutes);
+    app.use('/api/client/knowledge', knowledgeRoutes);
     app.use('/api/billing', billingRoutes);
     app.use('/api/stripe/webhooks', stripeWebhookRoutes);
     app.use('/api/shopify/embedded', shopifyEmbeddedRoutes);

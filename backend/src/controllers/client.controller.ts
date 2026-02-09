@@ -945,7 +945,7 @@ router.get(
       ).serviceClient
         .from('client_stores')
         .select(
-          'shop_domain, widget_position, widget_color, welcome_message, chatbot_endpoint'
+          'shop_domain, widget_position, widget_color, welcome_message, chatbot_endpoint, chat_mode'
         )
         .eq('user_id', user.id)
         .single();
@@ -955,7 +955,9 @@ router.get(
       }
 
       const chatEndpoint =
-        store.chatbot_endpoint || 'https://n8n.dustkey.com/webhook/kova-chat';
+        store.chat_mode === 'external' && store.chatbot_endpoint
+          ? store.chatbot_endpoint
+          : `${config.shopify.appUrl}/api/simple-chat/`;
 
       const widgetCode = `<!-- Kova AI Chat Widget -->
 <script>
@@ -1672,6 +1674,112 @@ router.get(
     } catch (error) {
       logger.error('Get recent conversions error:', error);
       return next(error);
+    }
+  }
+);
+
+/**
+ * GET /api/client/ai-config
+ * Get AI agent configuration for the tenant
+ */
+router.get(
+  '/ai-config',
+  requireClientAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = (req as any).user;
+
+      const { data: store, error } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('client_stores')
+        .select(
+          'chat_mode, ai_model, agent_name, agent_tone, brand_description, agent_instructions, agent_language, chatbot_endpoint'
+        )
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw new AppError('Error al obtener configuracion de IA', 500);
+      }
+
+      res.json({
+        success: true,
+        data: store || {
+          chat_mode: 'internal',
+          ai_model: 'gpt-4.1-mini',
+          agent_name: null,
+          agent_tone: 'friendly',
+          brand_description: null,
+          agent_instructions: null,
+          agent_language: 'es',
+          chatbot_endpoint: null,
+        },
+      });
+    } catch (error) {
+      logger.error('Get AI config error:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * PUT /api/client/ai-config
+ * Update AI agent configuration
+ */
+router.put(
+  '/ai-config',
+  requireClientAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = (req as any).user;
+      const {
+        chatMode,
+        aiModel,
+        agentName,
+        agentTone,
+        brandDescription,
+        agentInstructions,
+        agentLanguage,
+        chatbotEndpoint,
+      } = req.body;
+
+      // Validate: external mode requires endpoint
+      if (chatMode === 'external' && !chatbotEndpoint) {
+        throw new AppError('URL del endpoint es requerida para modo externo', 400);
+      }
+
+      const updateData: any = {};
+      if (chatMode !== undefined) updateData.chat_mode = chatMode;
+      if (aiModel !== undefined) updateData.ai_model = aiModel;
+      if (agentName !== undefined) updateData.agent_name = agentName;
+      if (agentTone !== undefined) updateData.agent_tone = agentTone;
+      if (brandDescription !== undefined) updateData.brand_description = brandDescription;
+      if (agentInstructions !== undefined) updateData.agent_instructions = agentInstructions;
+      if (agentLanguage !== undefined) updateData.agent_language = agentLanguage;
+      if (chatbotEndpoint !== undefined) updateData.chatbot_endpoint = chatbotEndpoint;
+
+      const { data: store, error } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('client_stores')
+        .update(updateData)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (error) {
+        logger.error('Error updating AI config:', error);
+        throw new AppError('Error al actualizar configuracion de IA', 500);
+      }
+
+      res.json({
+        success: true,
+        data: store,
+      });
+    } catch (error) {
+      logger.error('Update AI config error:', error);
+      next(error);
     }
   }
 );

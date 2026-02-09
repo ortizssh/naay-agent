@@ -445,6 +445,98 @@ class ClientApiClient {
   async getAvailablePlans(): Promise<{ success: boolean; data: Plan[] }> {
     return this.request('/api/billing/plans');
   }
+
+  // Knowledge Base
+  async getKnowledgeDocuments(): Promise<{ success: boolean; data: KnowledgeDocument[] }> {
+    return this.request('/api/client/knowledge');
+  }
+
+  async createKnowledgeDocument(data: { title: string; content: string }): Promise<{ success: boolean; data: KnowledgeDocument }> {
+    return this.request('/api/client/knowledge', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async uploadKnowledgeFile(file: File, title?: string): Promise<{ success: boolean; data: KnowledgeDocument }> {
+    const token = localStorage.getItem('auth_token');
+    const formData = new FormData();
+    formData.append('file', file);
+    if (title) formData.append('title', title);
+
+    const url = `${getApiUrl()}/api/client/knowledge/upload`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  async deleteKnowledgeDocument(id: string): Promise<{ success: boolean }> {
+    return this.request(`/api/client/knowledge/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getKnowledgeDocumentStatus(id: string): Promise<{ success: boolean; data: { embedding_status: string; chunk_count: number; error_message: string | null } }> {
+    return this.request(`/api/client/knowledge/${id}/status`);
+  }
+
+  // AI Config
+  async getAiConfig(): Promise<{ success: boolean; data: AiConfig }> {
+    return this.request('/api/client/ai-config');
+  }
+
+  async updateAiConfig(data: Partial<{
+    chatMode: string;
+    aiModel: string;
+    agentName: string;
+    agentTone: string;
+    brandDescription: string;
+    agentInstructions: string;
+    agentLanguage: string;
+    chatbotEndpoint: string;
+  }>): Promise<{ success: boolean; data: any }> {
+    return this.request('/api/client/ai-config', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+}
+
+// Knowledge Base Types
+export interface KnowledgeDocument {
+  id: string;
+  shop_domain: string;
+  title: string;
+  source_type: 'text' | 'file' | 'url';
+  original_filename?: string;
+  chunk_count: number;
+  embedding_status: 'pending' | 'processing' | 'completed' | 'failed';
+  error_message?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// AI Config Types
+export interface AiConfig {
+  chat_mode: 'internal' | 'external';
+  ai_model: string;
+  agent_name: string | null;
+  agent_tone: string;
+  brand_description: string | null;
+  agent_instructions: string | null;
+  agent_language: string;
+  chatbot_endpoint: string | null;
 }
 
 // Types for Conversion Dashboard

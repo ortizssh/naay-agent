@@ -908,6 +908,11 @@ body {
   width: 100%;
   max-width: 600px;
   box-shadow: var(--shadow-lg);
+  transition: max-width 0.3s ease;
+}
+
+.onboarding-card.onboarding-card-wide {
+  max-width: 880px;
 }
 
 .onboarding-title {
@@ -1303,6 +1308,10 @@ body {
 
   .onboarding-card {
     padding: 1.5rem;
+  }
+
+  .onboarding-card.onboarding-card-wide {
+    max-width: 100%;
   }
 }
 
