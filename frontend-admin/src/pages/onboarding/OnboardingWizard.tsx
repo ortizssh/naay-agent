@@ -6,6 +6,7 @@ import StoreInfo from './steps/StoreInfo';
 import SelectPlan from './steps/SelectPlan';
 import ConfigureWidget from './steps/ConfigureWidget';
 import SyncAndActivate from './steps/SyncAndActivate';
+import WooInstructions from './steps/WooInstructions';
 import { clientApi } from '../../services/api';
 import logoKova from '../../img/logo-kova.png';
 
@@ -132,6 +133,23 @@ function OnboardingWizard({ initialStep = 0, onComplete }: OnboardingWizardProps
     }
   };
 
+  const isWoo = selectedPlatform === 'woocommerce';
+
+  // WooCommerce: 3 steps (Platform → SelectPlan → WooInstructions)
+  // Shopify: 6 steps (Platform → Connect → StoreInfo → SelectPlan → Widget → Sync)
+  const wooTotalSteps = 3;
+  const displayTotalSteps = isWoo ? wooTotalSteps : totalSteps;
+
+  // Map current step to display step for WooCommerce
+  const getDisplayStep = () => {
+    if (!isWoo) return currentStep;
+    // Woo steps: 0 → 0, 3 → 1, 4 → 2 (WooInstructions)
+    if (currentStep === 0) return 0;
+    if (currentStep === 3) return 1;
+    if (currentStep === 4) return 2;
+    return currentStep;
+  };
+
   const renderStep = () => {
     switch (currentStep) {
       case 0:
@@ -139,8 +157,13 @@ function OnboardingWizard({ initialStep = 0, onComplete }: OnboardingWizardProps
           <PlatformSelect
             selectedPlatform={selectedPlatform}
             onSelect={setSelectedPlatform}
-            onNext={() => setCurrentStep(1)}
-            onComplete={onComplete}
+            onNext={() => {
+              if (selectedPlatform === 'woocommerce') {
+                setCurrentStep(3); // Skip to SelectPlan
+              } else {
+                setCurrentStep(1); // Shopify: ConnectStore
+              }
+            }}
           />
         );
       case 1:
@@ -169,12 +192,26 @@ function OnboardingWizard({ initialStep = 0, onComplete }: OnboardingWizardProps
               </div>
             )}
             <SelectPlan
-              onBack={() => setCurrentStep(2)}
+              onBack={() => {
+                if (isWoo) {
+                  setCurrentStep(0); // Back to PlatformSelect
+                } else {
+                  setCurrentStep(2); // Back to StoreInfo
+                }
+              }}
               onNext={() => setCurrentStep(4)}
             />
           </>
         );
       case 4:
+        if (isWoo) {
+          return (
+            <WooInstructions
+              onBack={() => setCurrentStep(3)}
+              onComplete={handleComplete}
+            />
+          );
+        }
         return (
           <ConfigureWidget
             config={widgetConfig}
@@ -202,7 +239,7 @@ function OnboardingWizard({ initialStep = 0, onComplete }: OnboardingWizardProps
           <img src={logoKova} alt="Kova" className="sidebar-logo-img" />
         </div>
         <div className="onboarding-header-right">
-          <span className="onboarding-step-text">Paso {currentStep + 1} de {totalSteps}</span>
+          <span className="onboarding-step-text">Paso {getDisplayStep() + 1} de {displayTotalSteps}</span>
           <button onClick={handleSkip} className="btn-skip">
             Saltar configuracion
           </button>
@@ -211,7 +248,7 @@ function OnboardingWizard({ initialStep = 0, onComplete }: OnboardingWizardProps
 
       <div className="onboarding-content">
         <div className="onboarding-card">
-          <StepIndicator currentStep={currentStep} totalSteps={totalSteps} />
+          <StepIndicator currentStep={getDisplayStep()} totalSteps={displayTotalSteps} />
           {renderStep()}
         </div>
       </div>
