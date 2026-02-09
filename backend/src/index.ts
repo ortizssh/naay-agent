@@ -106,25 +106,14 @@ async function startServer() {
     });
 
     // Chat API CORS middleware - for main chat endpoints
+    // Allow any origin since the widget can be embedded on any store domain (Shopify or WooCommerce)
     app.use('/api/chat', (req, res, next) => {
       const origin = req.get('Origin');
 
-      // Allow requests from Shopify domains only
-      const allowedOrigins = [
-        /^https:\/\/[a-zA-Z0-9-]+\.myshopify\.com$/,
-        /^https:\/\/[a-zA-Z0-9-]+\.shopify\.com$/,
-        /^https:\/\/admin\.shopify\.com$/,
-      ];
-
-      let allowOrigin = false;
       if (origin) {
-        allowOrigin = allowedOrigins.some(pattern => pattern.test(origin));
-      }
-
-      if (allowOrigin) {
         res.setHeader('Access-Control-Allow-Origin', origin);
         res.setHeader('Vary', 'Origin');
-      } else if (!origin) {
+      } else {
         res.setHeader('Access-Control-Allow-Origin', '*');
       }
 
@@ -140,37 +129,18 @@ async function startServer() {
         return res.status(200).end();
       }
 
-      console.log(
-        'Chat API request - CORS headers set for:',
-        req.path,
-        'Origin:',
-        origin,
-        'Allowed:',
-        allowOrigin
-      );
       next();
     });
 
     // Simple Chat API CORS middleware - for simple chat endpoints
+    // Allow any origin since the widget can be embedded on any store domain (Shopify or WooCommerce)
     app.use('/api/simple-chat', (req, res, next) => {
       const origin = req.get('Origin');
 
-      // Allow requests from Shopify domains only
-      const allowedOrigins = [
-        /^https:\/\/[a-zA-Z0-9-]+\.myshopify\.com$/,
-        /^https:\/\/[a-zA-Z0-9-]+\.shopify\.com$/,
-        /^https:\/\/admin\.shopify\.com$/,
-      ];
-
-      let allowOrigin = false;
       if (origin) {
-        allowOrigin = allowedOrigins.some(pattern => pattern.test(origin));
-      }
-
-      if (allowOrigin) {
         res.setHeader('Access-Control-Allow-Origin', origin);
         res.setHeader('Vary', 'Origin');
-      } else if (!origin) {
+      } else {
         res.setHeader('Access-Control-Allow-Origin', '*');
       }
 
@@ -186,14 +156,6 @@ async function startServer() {
         return res.status(200).end();
       }
 
-      console.log(
-        'Simple Chat API request - CORS headers set for:',
-        req.path,
-        'Origin:',
-        origin,
-        'Allowed:',
-        allowOrigin
-      );
       next();
     });
 
