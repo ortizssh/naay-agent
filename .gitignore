@@ -106,3 +106,7 @@ docker-compose.override.yml
 # WordPress Plugin builds (built during deployment)
 backend/public/downloads/*.zip
 !backend/public/downloads/.gitkeep
+
+# Deploy zip archives
+*.zip
+!wordpress-plugin/kova-agent.zip
