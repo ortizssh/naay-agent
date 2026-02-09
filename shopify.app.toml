@@ -17,6 +17,7 @@ scopes = "read_products,write_products,read_orders,read_customers,write_draft_or
 redirect_urls = [
   "https://naay-agent-app1763504937.azurewebsites.net/auth/callback",
   "https://naay-agent-app1763504937.azurewebsites.net/auth/shopify/callback",
+  "https://naay-agent-app1763504937.azurewebsites.net/api/client/oauth/callback",
 ]
 
 # Enable session tokens for embedded apps (App Bridge 3.0)

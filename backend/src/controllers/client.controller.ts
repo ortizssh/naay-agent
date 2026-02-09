@@ -212,32 +212,37 @@ router.post(
         supabaseService as any
       ).serviceClient
         .from('client_stores')
-        .select('id')
+        .select('id, status')
         .eq('user_id', user.id)
         .eq('shop_domain', normalizedDomain)
         .single();
 
-      if (existingStore) {
+      let store = existingStore;
+
+      if (existingStore && existingStore.status === 'active') {
         throw new AppError('Esta tienda ya esta conectada', 409);
       }
 
-      // Create pending store record
-      const { data: store, error } = await (
-        supabaseService as any
-      ).serviceClient
-        .from('client_stores')
-        .insert({
-          user_id: user.id,
-          shop_domain: normalizedDomain,
-          platform: platform || 'shopify',
-          status: 'pending',
-        })
-        .select()
-        .single();
+      if (!existingStore) {
+        // Create pending store record
+        const { data: newStore, error } = await (
+          supabaseService as any
+        ).serviceClient
+          .from('client_stores')
+          .insert({
+            user_id: user.id,
+            shop_domain: normalizedDomain,
+            platform: platform || 'shopify',
+            status: 'pending',
+          })
+          .select()
+          .single();
 
-      if (error) {
-        logger.error('Error creating store:', error);
-        throw new AppError('Error al crear tienda', 500);
+        if (error) {
+          logger.error('Error creating store:', error);
+          throw new AppError('Error al crear tienda', 500);
+        }
+        store = newStore;
       }
 
       // Generate OAuth URL
