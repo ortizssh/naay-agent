@@ -3,6 +3,7 @@ import { SupabaseService } from '@/services/supabase.service';
 import { logger } from '@/utils/logger';
 import { AppError } from '@/types';
 import { validateAuth } from '@/middleware/shopify-auth.middleware';
+import { config as appConfig } from '@/utils/config';
 
 const router = Router();
 const supabaseService = new SupabaseService();
@@ -250,7 +251,10 @@ router.get(
             suggested_question_2_text,
             suggested_question_2_message,
             suggested_question_3_text,
-            suggested_question_3_message
+            suggested_question_3_message,
+            chat_mode,
+            chatbot_endpoint,
+            platform
           `
           )
           .eq('shop_domain', shopVariant)
@@ -269,10 +273,20 @@ router.get(
 
       if (clientStore) {
         logger.info('Widget config loaded from client_stores', { shop });
+
+        // Determine chatEndpoint based on chat_mode
+        const appUrl = appConfig.shopify?.appUrl || '';
+        const chatEndpoint =
+          clientStore.chat_mode === 'external' && clientStore.chatbot_endpoint
+            ? clientStore.chatbot_endpoint
+            : `${appUrl}/api/simple-chat/`;
+
         return res.json({
           success: true,
           data: {
             enabled: clientStore.widget_enabled ?? true,
+            chatEndpoint,
+            platform: clientStore.platform || '',
             position: clientStore.widget_position || defaultConfig.position,
             primaryColor:
               clientStore.widget_color || defaultConfig.primaryColor,

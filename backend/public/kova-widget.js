@@ -6721,20 +6721,32 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     async loadWooCommerceCart() {
       console.log('🔄 Loading WooCommerce cart...');
 
+      // ---- Attempt 1: WooCommerce Store API ----
       try {
-        // Try WooCommerce Store API (v1)
+        const headers = {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        };
+
+        if (this.wooCartToken) {
+          headers['Cart-Token'] = this.wooCartToken;
+        }
+
+        const nonce = this.getWooNonce();
+        if (nonce) {
+          headers['Nonce'] = nonce;
+          headers['X-WC-Store-API-Nonce'] = nonce;
+        }
+
         const response = await fetch('/wp-json/wc/store/v1/cart', {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          credentials: 'same-origin', // Include cookies for session
+          headers,
+          credentials: 'same-origin',
         });
 
         if (response.ok) {
           const cartData = await response.json();
-          console.log('✅ Loaded WooCommerce cart:', cartData);
+          console.log('✅ Loaded WooCommerce cart via Store API:', cartData);
 
           // Store cart token for future requests
           const cartToken = response.headers.get('Cart-Token');
@@ -6744,11 +6756,36 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
           this.syncFromWooCommerceCart(cartData);
           this.updateCartDisplay();
-        } else {
-          console.warn('⚠️ WooCommerce Store API not available:', response.status);
+          return;
+        }
+
+        console.warn('⚠️ Store API cart load failed:', response.status);
+      } catch (error) {
+        console.warn('⚠️ Store API cart load error:', error);
+      }
+
+      // ---- Attempt 2: Traditional WooCommerce AJAX fragments ----
+      try {
+        const response = await fetch('/?wc-ajax=get_refreshed_fragments', {
+          method: 'POST',
+          credentials: 'same-origin',
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.fragments) {
+            console.log('✅ Loaded WooCommerce cart via AJAX fragments');
+            // Extract cart count from fragments if available
+            const cartCountHtml = data.fragments['.cart-contents'] || data.fragments['a.cart-contents'] || '';
+            const countMatch = String(cartCountHtml).match(/(\d+)\s*(?:item|producto|artículo)/i);
+            const itemCount = countMatch ? parseInt(countMatch[1]) : 0;
+
+            this.cartData.itemCount = itemCount;
+            this.updateCartDisplay();
+          }
         }
       } catch (error) {
-        console.error('❌ Error loading WooCommerce cart:', error);
+        console.warn('⚠️ AJAX fragments also failed:', error);
       }
     }
 
@@ -6835,15 +6872,25 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     }
 
     /**
-     * Add item to WooCommerce cart using Store API
+     * Get WooCommerce Store API nonce from any available source
+     */
+    getWooNonce() {
+      return window.wc_store_api_nonce
+        || (window.wcBlocksMiddlewareConfig && window.wcBlocksMiddlewareConfig.nonce)
+        || null;
+    }
+
+    /**
+     * Add item to WooCommerce cart using Store API with AJAX fallback
      */
     async addToWooCommerceCart(productId, quantity = 1) {
       console.log('🛒 Adding to WooCommerce cart:', { productId, quantity });
 
-      try {
-        // Extract numeric ID from various formats
-        const numericId = this.extractWooProductId(productId);
+      // Extract numeric ID from various formats
+      const numericId = this.extractWooProductId(productId);
 
+      // ---- Attempt 1: WooCommerce Store API ----
+      try {
         const headers = {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -6855,8 +6902,10 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         }
 
         // Include nonce if available (for authenticated requests)
-        if (window.wc_store_api_nonce) {
-          headers['X-WC-Store-API-Nonce'] = window.wc_store_api_nonce;
+        const nonce = this.getWooNonce();
+        if (nonce) {
+          headers['Nonce'] = nonce;
+          headers['X-WC-Store-API-Nonce'] = nonce;
         }
 
         const response = await fetch('/wp-json/wc/store/v1/cart/add-item', {
@@ -6869,11 +6918,11 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           }),
         });
 
-        console.log('📥 Response status:', response.status, response.statusText);
+        console.log('📥 Store API response:', response.status, response.statusText);
 
         if (response.ok) {
           const result = await response.json();
-          console.log('✅ Added to WooCommerce cart:', result);
+          console.log('✅ Added to WooCommerce cart via Store API:', result);
 
           // Update cart token if returned
           const newToken = response.headers.get('Cart-Token');
@@ -6890,15 +6939,76 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           await this.loadWooCommerceCart();
 
           return true;
-        } else {
-          const errorData = await response.text();
-          console.error('❌ WooCommerce cart API error:', errorData);
-          throw new Error(`HTTP ${response.status}: ${errorData}`);
+        }
+
+        console.warn('⚠️ Store API failed:', response.status, '- trying AJAX fallback');
+      } catch (error) {
+        console.warn('⚠️ Store API error, trying AJAX fallback:', error);
+      }
+
+      // ---- Attempt 2: Traditional WooCommerce AJAX (?wc-ajax=add_to_cart) ----
+      try {
+        const formData = new FormData();
+        formData.append('product_id', numericId);
+        formData.append('quantity', String(quantity));
+
+        const response = await fetch('/?wc-ajax=add_to_cart', {
+          method: 'POST',
+          body: formData,
+          credentials: 'same-origin',
+        });
+
+        console.log('📥 AJAX fallback response:', response.status);
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log('✅ Added to WooCommerce cart via AJAX fallback:', result);
+
+          if (result.error) {
+            console.warn('⚠️ WooCommerce AJAX returned error:', result.error);
+            // Don't return false yet, try the last fallback
+          } else {
+            // Trigger cart update events
+            if (window.jQuery) {
+              window.jQuery(document.body).trigger('added_to_cart', [result.fragments, result.cart_hash]);
+            }
+
+            await this.loadWooCommerceCart();
+            return true;
+          }
+        }
+
+        console.warn('⚠️ AJAX fallback failed:', response.status, '- trying form fallback');
+      } catch (error) {
+        console.warn('⚠️ AJAX fallback error, trying form fallback:', error);
+      }
+
+      // ---- Attempt 3: Direct add-to-cart URL (most universal) ----
+      try {
+        const response = await fetch(`/?add-to-cart=${numericId}&quantity=${quantity}`, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Accept': 'application/json' },
+          redirect: 'follow',
+        });
+
+        console.log('📥 Direct URL fallback response:', response.status);
+
+        if (response.ok || response.redirected) {
+          console.log('✅ Added to WooCommerce cart via direct URL');
+
+          if (window.jQuery) {
+            window.jQuery(document.body).trigger('added_to_cart');
+          }
+
+          await this.loadWooCommerceCart();
+          return true;
         }
       } catch (error) {
-        console.error('❌ Error adding to WooCommerce cart:', error);
-        return false;
+        console.error('❌ All WooCommerce add-to-cart methods failed:', error);
       }
+
+      return false;
     }
 
     /**
@@ -6917,8 +7027,10 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           headers['Cart-Token'] = this.wooCartToken;
         }
 
-        if (window.wc_store_api_nonce) {
-          headers['X-WC-Store-API-Nonce'] = window.wc_store_api_nonce;
+        const nonce = this.getWooNonce();
+        if (nonce) {
+          headers['Nonce'] = nonce;
+          headers['X-WC-Store-API-Nonce'] = nonce;
         }
 
         const response = await fetch('/wp-json/wc/store/v1/cart/remove-item', {
@@ -6969,8 +7081,10 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           headers['Cart-Token'] = this.wooCartToken;
         }
 
-        if (window.wc_store_api_nonce) {
-          headers['X-WC-Store-API-Nonce'] = window.wc_store_api_nonce;
+        const nonce = this.getWooNonce();
+        if (nonce) {
+          headers['Nonce'] = nonce;
+          headers['X-WC-Store-API-Nonce'] = nonce;
         }
 
         const response = await fetch('/wp-json/wc/store/v1/cart/update-item', {

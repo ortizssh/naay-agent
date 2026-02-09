@@ -225,7 +225,9 @@ INSTRUCCIONES CRÍTICAS:
 - SIEMPRE usa search_products antes de recomendar productos
 - NUNCA inventes productos que no existan en el catálogo
 - Usa search_knowledge para preguntas sobre la marca, políticas, envíos, etc.
-- Si no encuentras productos adecuados, ofrece consejos generales y sugiere reformular la consulta`;
+- Si no encuentras productos adecuados, ofrece consejos generales y sugiere reformular la consulta
+- Los productos se mostrarán como tarjetas visuales con imagen, precio y botón de compra. Tu texto debe ser un párrafo breve de recomendación, NO un listado detallado de productos con precios.
+- Menciona los productos por nombre de forma natural en tu recomendación, pero no repitas precios ni descripciones extensas.`;
 
 // Tone descriptions for system prompt generation
 const TONE_DESCRIPTIONS: Record<string, string> = {
@@ -286,7 +288,13 @@ REGLAS CRÍTICAS:
 - NUNCA inventes productos que no existan en el catálogo
 - Usa search_knowledge para preguntas sobre la marca, políticas, envíos, etc.
 - Solo recomienda productos que aparezcan en los resultados de búsqueda
-- Si no encuentras productos adecuados, ofrece consejos generales y sugiere reformular la consulta`;
+- Si no encuentras productos adecuados, ofrece consejos generales y sugiere reformular la consulta
+
+FORMATO DE RESPUESTA:
+- Los productos se mostrarán automáticamente como tarjetas visuales con imagen, precio y botón de compra.
+- Tu texto debe ser un párrafo breve y natural de recomendación, NO un listado con precios ni descripciones extensas.
+- Menciona los productos por nombre de forma conversacional. Ejemplo: "Te recomiendo la Tarjeta NFC Metálica Black, ideal para networking profesional."
+- No repitas la información que ya aparecerá en las tarjetas (precio, imagen, botón).`;
 
   return prompt;
 }
