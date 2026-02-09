@@ -96,10 +96,7 @@ export class StripeService {
   /**
    * Verify and construct a Stripe webhook event
    */
-  constructEvent(
-    payload: Buffer | string,
-    signature: string
-  ): Stripe.Event {
+  constructEvent(payload: Buffer | string, signature: string): Stripe.Event {
     const stripe = getStripe();
 
     if (!config.stripe.webhookSecret) {

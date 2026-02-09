@@ -34,7 +34,9 @@ router.post('/', async (req: Request, res: Response) => {
     event = stripeService.constructEvent(req.body, signature);
   } catch (err: any) {
     logger.error('Stripe webhook signature verification failed:', err.message);
-    return res.status(400).json({ error: 'Webhook signature verification failed' });
+    return res
+      .status(400)
+      .json({ error: 'Webhook signature verification failed' });
   }
 
   logger.info('Stripe webhook received', { type: event.type, id: event.id });
@@ -130,7 +132,9 @@ router.post('/', async (req: Request, res: Response) => {
           stripe_subscription_id: undefined,
         });
 
-        logger.info('Subscription cancelled, downgraded to free', { shopDomain });
+        logger.info('Subscription cancelled, downgraded to free', {
+          shopDomain,
+        });
         break;
       }
 
@@ -157,7 +161,9 @@ router.post('/', async (req: Request, res: Response) => {
               const tenant = await tenantService.getTenant(shopDomain);
               if (tenant && tenant.status === 'trial') {
                 await tenantService.updateStatus(shopDomain, 'active');
-                logger.info('Trial -> Active after first payment', { shopDomain });
+                logger.info('Trial -> Active after first payment', {
+                  shopDomain,
+                });
               }
             }
           } catch (err) {

@@ -111,7 +111,10 @@ router.post(
           .single();
 
         if (store?.shop_domain) {
-          await tenantService.updatePlan(store.shop_domain, planSlug as TenantPlan);
+          await tenantService.updatePlan(
+            store.shop_domain,
+            planSlug as TenantPlan
+          );
         }
 
         return res.json({
