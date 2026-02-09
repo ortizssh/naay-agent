@@ -94,7 +94,10 @@ router.post('/', async (req: Request, res: Response) => {
           await tenantService.updateStatus(shopDomain, 'active');
         } else if (subscription.status === 'trialing') {
           await tenantService.updateStatus(shopDomain, 'trial');
-        } else if (subscription.status === 'past_due' || subscription.status === 'unpaid') {
+        } else if (
+          subscription.status === 'past_due' ||
+          subscription.status === 'unpaid'
+        ) {
           await tenantService.updateStatus(shopDomain, 'suspended');
           logger.warn('Subscription past_due/unpaid, tenant suspended', {
             shopDomain,
@@ -106,7 +109,9 @@ router.post('/', async (req: Request, res: Response) => {
           await tenantService.updateStripeInfo(shopDomain, {
             stripe_subscription_id: undefined,
           });
-          logger.warn('Subscription incomplete_expired, downgraded to free', { shopDomain });
+          logger.warn('Subscription incomplete_expired, downgraded to free', {
+            shopDomain,
+          });
         }
 
         // Check if plan changed (price ID changed)
@@ -185,7 +190,10 @@ router.post('/', async (req: Request, res: Response) => {
             const shopDomain = sub.metadata?.shop_domain;
             if (shopDomain) {
               const tenant = await tenantService.getTenant(shopDomain);
-              if (tenant && (tenant.status === 'trial' || tenant.status === 'suspended')) {
+              if (
+                tenant &&
+                (tenant.status === 'trial' || tenant.status === 'suspended')
+              ) {
                 await tenantService.updateStatus(shopDomain, 'active');
                 logger.info(`${tenant.status} -> Active after payment`, {
                   shopDomain,

@@ -766,7 +766,11 @@ export const TENANT_PLAN_LIMITS: Record<TenantPlan, TenantPlanLimits> = {
 // =====================================================
 
 export type KnowledgeSourceType = 'text' | 'file' | 'url';
-export type KnowledgeEmbeddingStatus = 'pending' | 'processing' | 'completed' | 'failed';
+export type KnowledgeEmbeddingStatus =
+  | 'pending'
+  | 'processing'
+  | 'completed'
+  | 'failed';
 
 export interface KnowledgeDocument {
   id: string;

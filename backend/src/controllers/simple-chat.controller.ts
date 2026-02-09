@@ -230,7 +230,8 @@ const TONE_DESCRIPTIONS: Record<string, string> = {
   friendly: 'Cálido, cercano y empático. Usa un lenguaje natural y accesible.',
   formal: 'Formal y respetuoso. Usa un lenguaje profesional y cortés.',
   casual: 'Casual y relajado. Usa un lenguaje informal y directo.',
-  professional: 'Profesional y experto. Usa un lenguaje técnico pero comprensible.',
+  professional:
+    'Profesional y experto. Usa un lenguaje técnico pero comprensible.',
 };
 
 const LANGUAGE_NAMES: Record<string, string> = {
@@ -250,10 +251,14 @@ function buildSystemPrompt(agentConfig: {
   agent_instructions?: string;
   widget_brand_name?: string;
 }): string {
-  const name = agentConfig.agent_name || agentConfig.widget_brand_name || 'Asistente';
+  const name =
+    agentConfig.agent_name || agentConfig.widget_brand_name || 'Asistente';
   const brandName = agentConfig.widget_brand_name || 'la tienda';
-  const tone = TONE_DESCRIPTIONS[agentConfig.agent_tone || 'friendly'] || TONE_DESCRIPTIONS.friendly;
-  const language = LANGUAGE_NAMES[agentConfig.agent_language || 'es'] || 'Español';
+  const tone =
+    TONE_DESCRIPTIONS[agentConfig.agent_tone || 'friendly'] ||
+    TONE_DESCRIPTIONS.friendly;
+  const language =
+    LANGUAGE_NAMES[agentConfig.agent_language || 'es'] || 'Español';
 
   let prompt = `Eres ${name}, el asistente virtual de ${brandName}.`;
 
@@ -302,16 +307,22 @@ async function loadAgentConfig(shopDomain: string): Promise<{
   try {
     const { data, error } = await (supabaseService as any).serviceClient
       .from('client_stores')
-      .select('agent_name, agent_tone, brand_description, agent_instructions, agent_language, ai_model, chat_mode, widget_brand_name, platform, access_token')
+      .select(
+        'agent_name, agent_tone, brand_description, agent_instructions, agent_language, ai_model, chat_mode, widget_brand_name, platform, access_token'
+      )
       .eq('shop_domain', shopDomain)
       .eq('chat_mode', 'internal')
       .limit(1);
     if (data && data.length > 0) return data[0];
 
     // Fallback: get any row for this shop
-    const { data: fallback, error: fallbackErr } = await (supabaseService as any).serviceClient
+    const { data: fallback, error: fallbackErr } = await (
+      supabaseService as any
+    ).serviceClient
       .from('client_stores')
-      .select('agent_name, agent_tone, brand_description, agent_instructions, agent_language, ai_model, chat_mode, widget_brand_name, platform, access_token')
+      .select(
+        'agent_name, agent_tone, brand_description, agent_instructions, agent_language, ai_model, chat_mode, widget_brand_name, platform, access_token'
+      )
       .eq('shop_domain', shopDomain)
       .limit(1);
     return fallback?.[0] || null;
@@ -334,7 +345,11 @@ async function searchProductsViaProvider(
     // Try real-time API first if provider is available
     if (provider) {
       try {
-        const products = await provider.searchProducts(shop, { query, limit, availability: true });
+        const products = await provider.searchProducts(shop, {
+          query,
+          limit,
+          availability: true,
+        });
         if (products && products.length > 0) {
           return products.map((p: any) => ({
             id: p.external_id || p.id,
@@ -345,17 +360,25 @@ async function searchProductsViaProvider(
             productType: p.product_type || '',
             tags: p.tags || [],
             images: p.images?.[0]?.src || null,
-            available: p.variants?.some((v: any) => v.available !== false) ?? true,
+            available:
+              p.variants?.some((v: any) => v.available !== false) ?? true,
             handle: p.handle || '',
           }));
         }
       } catch (providerError) {
-        logger.warn('Commerce provider search failed, falling back to semantic:', providerError);
+        logger.warn(
+          'Commerce provider search failed, falling back to semantic:',
+          providerError
+        );
       }
     }
 
     // Fallback: semantic search via embeddings
-    const products = await supabaseService.searchProductsSemantic(shop, query, limit);
+    const products = await supabaseService.searchProductsSemantic(
+      shop,
+      query,
+      limit
+    );
     return products.map(product => ({
       id: product.id,
       title: product.title,
@@ -382,11 +405,18 @@ async function getProductRecommendationsViaProvider(
   provider: any | null
 ) {
   try {
-    logger.info('getProductRecommendations via commerce provider', { shop, intent, limit });
+    logger.info('getProductRecommendations via commerce provider', {
+      shop,
+      intent,
+      limit,
+    });
 
     if (provider) {
       try {
-        const products = await provider.getProductRecommendations(shop, { intent: intent as any || 'popular', limit });
+        const products = await provider.getProductRecommendations(shop, {
+          intent: (intent as any) || 'popular',
+          limit,
+        });
         if (products && products.length > 0) {
           return products.map((p: any) => ({
             id: p.external_id || p.id,
@@ -401,13 +431,20 @@ async function getProductRecommendationsViaProvider(
           }));
         }
       } catch (providerError) {
-        logger.warn('Commerce provider recommendations failed, falling back to semantic:', providerError);
+        logger.warn(
+          'Commerce provider recommendations failed, falling back to semantic:',
+          providerError
+        );
       }
     }
 
     // Fallback: semantic search
     const query = intent || 'productos populares recomendados';
-    const products = await supabaseService.searchProductsSemantic(shop, query, limit);
+    const products = await supabaseService.searchProductsSemantic(
+      shop,
+      query,
+      limit
+    );
     return products.map(product => ({
       id: product.id,
       title: product.title,
@@ -442,13 +479,14 @@ async function getProductDetailsViaProvider(
           productType: product.product_type || '',
           tags: product.tags || [],
           images: product.images?.map((img: any) => img.src) || [],
-          variants: product.variants?.map((v: any) => ({
-            id: v.external_id || v.id,
-            title: v.title,
-            price: v.price,
-            available: v.available !== false,
-            sku: v.sku || '',
-          })) || [],
+          variants:
+            product.variants?.map((v: any) => ({
+              id: v.external_id || v.id,
+              title: v.title,
+              price: v.price,
+              available: v.available !== false,
+              sku: v.sku || '',
+            })) || [],
           handle: product.handle || '',
         };
       }
@@ -567,7 +605,9 @@ router.post(
           // Load access_token and credentials from stores table (canonical source)
           let accessToken = agentConfig?.access_token;
           let credentials: any = null;
-          const { data: storeData } = await (supabaseService as any).serviceClient
+          const { data: storeData } = await (
+            supabaseService as any
+          ).serviceClient
             .from('stores')
             .select('access_token, credentials')
             .eq('shop_domain', shop)
@@ -643,7 +683,8 @@ router.post(
                 },
                 limit: {
                   type: 'number',
-                  description: 'Número máximo de productos a devolver (default: 5)',
+                  description:
+                    'Número máximo de productos a devolver (default: 5)',
                 },
               },
               required: ['query'],
@@ -666,7 +707,8 @@ router.post(
                 },
                 limit: {
                   type: 'number',
-                  description: 'Número máximo de productos a recomendar (default: 5)',
+                  description:
+                    'Número máximo de productos a recomendar (default: 5)',
                 },
               },
               required: ['intent'],
@@ -775,21 +817,33 @@ router.post(
             toolResults.push({
               tool_call_id: toolCall.id,
               role: 'tool' as const,
-              content: JSON.stringify(product || { error: 'Product not found' }),
+              content: JSON.stringify(
+                product || { error: 'Product not found' }
+              ),
             });
           } else if (toolCall.function.name === 'search_knowledge') {
             const results = shop
-              ? await knowledgeService.searchKnowledge(shop, args.query, args.limit || 5)
+              ? await knowledgeService.searchKnowledge(
+                  shop,
+                  args.query,
+                  args.limit || 5
+                )
               : [];
-            logger.info('search_knowledge', { shop, query: args.query, resultCount: results.length });
+            logger.info('search_knowledge', {
+              shop,
+              query: args.query,
+              resultCount: results.length,
+            });
             toolResults.push({
               tool_call_id: toolCall.id,
               role: 'tool' as const,
-              content: JSON.stringify(results.map(r => ({
-                title: r.document_title,
-                content: r.content,
-                similarity: r.similarity,
-              }))),
+              content: JSON.stringify(
+                results.map(r => ({
+                  title: r.document_title,
+                  content: r.content,
+                  similarity: r.similarity,
+                }))
+              ),
             });
           }
         }

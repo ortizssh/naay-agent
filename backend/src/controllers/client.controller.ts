@@ -1746,7 +1746,10 @@ router.put(
 
       // Validate: external mode requires endpoint
       if (chatMode === 'external' && !chatbotEndpoint) {
-        throw new AppError('URL del endpoint es requerida para modo externo', 400);
+        throw new AppError(
+          'URL del endpoint es requerida para modo externo',
+          400
+        );
       }
 
       const updateData: any = {};
@@ -1754,10 +1757,14 @@ router.put(
       if (aiModel !== undefined) updateData.ai_model = aiModel;
       if (agentName !== undefined) updateData.agent_name = agentName;
       if (agentTone !== undefined) updateData.agent_tone = agentTone;
-      if (brandDescription !== undefined) updateData.brand_description = brandDescription;
-      if (agentInstructions !== undefined) updateData.agent_instructions = agentInstructions;
-      if (agentLanguage !== undefined) updateData.agent_language = agentLanguage;
-      if (chatbotEndpoint !== undefined) updateData.chatbot_endpoint = chatbotEndpoint;
+      if (brandDescription !== undefined)
+        updateData.brand_description = brandDescription;
+      if (agentInstructions !== undefined)
+        updateData.agent_instructions = agentInstructions;
+      if (agentLanguage !== undefined)
+        updateData.agent_language = agentLanguage;
+      if (chatbotEndpoint !== undefined)
+        updateData.chatbot_endpoint = chatbotEndpoint;
 
       const { data: store, error } = await (
         supabaseService as any

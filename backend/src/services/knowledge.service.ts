@@ -19,9 +19,17 @@ export class KnowledgeService {
    */
   async createDocument(
     shopDomain: string,
-    params: { title: string; content: string; sourceType: 'text' | 'file' | 'url'; originalFilename?: string }
+    params: {
+      title: string;
+      content: string;
+      sourceType: 'text' | 'file' | 'url';
+      originalFilename?: string;
+    }
   ): Promise<KnowledgeDocument> {
-    const contentHash = crypto.createHash('sha256').update(params.content).digest('hex');
+    const contentHash = crypto
+      .createHash('sha256')
+      .update(params.content)
+      .digest('hex');
 
     const { data, error } = await (supabaseService as any).serviceClient
       .from('knowledge_documents')
@@ -44,7 +52,10 @@ export class KnowledgeService {
 
     // Process document async (chunking + embeddings)
     this.processDocument(data.id).catch(err => {
-      logger.error('Background document processing failed:', { documentId: data.id, error: err.message });
+      logger.error('Background document processing failed:', {
+        documentId: data.id,
+        error: err.message,
+      });
     });
 
     return data;
@@ -73,12 +84,19 @@ export class KnowledgeService {
       }
 
       // Chunk the text
-      const chunks = this.chunkText(doc.content, MAX_CHUNK_TOKENS, CHUNK_OVERLAP);
+      const chunks = this.chunkText(
+        doc.content,
+        MAX_CHUNK_TOKENS,
+        CHUNK_OVERLAP
+      );
 
       if (chunks.length === 0) {
         await (supabaseService as any).serviceClient
           .from('knowledge_documents')
-          .update({ embedding_status: 'failed', error_message: 'No content to process' })
+          .update({
+            embedding_status: 'failed',
+            error_message: 'No content to process',
+          })
           .eq('id', documentId);
         return;
       }
@@ -87,7 +105,8 @@ export class KnowledgeService {
       const allEmbeddings: number[][] = [];
       for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
         const batch = chunks.slice(i, i + BATCH_SIZE);
-        const embeddings = await embeddingService.generateBatchEmbeddings(batch);
+        const embeddings =
+          await embeddingService.generateBatchEmbeddings(batch);
         allEmbeddings.push(...embeddings);
       }
 
@@ -102,7 +121,9 @@ export class KnowledgeService {
         metadata: { document_title: doc.title, source_type: doc.source_type },
       }));
 
-      const { error: insertError } = await (supabaseService as any).serviceClient
+      const { error: insertError } = await (
+        supabaseService as any
+      ).serviceClient
         .from('knowledge_chunks')
         .insert(chunkRows);
 
@@ -126,7 +147,10 @@ export class KnowledgeService {
         shopDomain: doc.shop_domain,
       });
     } catch (err: any) {
-      logger.error('Error processing knowledge document:', { documentId, error: err.message });
+      logger.error('Error processing knowledge document:', {
+        documentId,
+        error: err.message,
+      });
       await (supabaseService as any).serviceClient
         .from('knowledge_documents')
         .update({ embedding_status: 'failed', error_message: err.message })
@@ -137,7 +161,11 @@ export class KnowledgeService {
   /**
    * Split text into chunks by paragraphs, then sentences if needed
    */
-  chunkText(text: string, maxTokens: number = MAX_CHUNK_TOKENS, overlap: number = CHUNK_OVERLAP): string[] {
+  chunkText(
+    text: string,
+    maxTokens: number = MAX_CHUNK_TOKENS,
+    overlap: number = CHUNK_OVERLAP
+  ): string[] {
     if (!text || !text.trim()) return [];
 
     const maxChars = maxTokens * 4; // ~4 chars per token approximation
@@ -198,13 +226,19 @@ export class KnowledgeService {
   /**
    * Search knowledge base using semantic similarity
    */
-  async searchKnowledge(shopDomain: string, query: string, limit: number = 5): Promise<Array<{
-    chunk_id: string;
-    document_id: string;
-    document_title: string;
-    content: string;
-    similarity: number;
-  }>> {
+  async searchKnowledge(
+    shopDomain: string,
+    query: string,
+    limit: number = 5
+  ): Promise<
+    Array<{
+      chunk_id: string;
+      document_id: string;
+      document_title: string;
+      content: string;
+      similarity: number;
+    }>
+  > {
     const cacheKey = `knowledge:search:${shopDomain}:${Buffer.from(query).toString('base64').slice(0, 40)}`;
     const cached = await cacheService.get<any[]>(cacheKey);
     if (cached) return cached;
@@ -215,13 +249,15 @@ export class KnowledgeService {
 
       // Call RPC function - pass embedding as string for vector type casting
       const embeddingStr = `[${queryEmbedding.join(',')}]`;
-      const { data, error } = await (supabaseService as any).serviceClient
-        .rpc('search_knowledge_semantic', {
+      const { data, error } = await (supabaseService as any).serviceClient.rpc(
+        'search_knowledge_semantic',
+        {
           p_shop_domain: shopDomain,
           p_query_embedding: embeddingStr,
           p_match_threshold: 0.3,
           p_match_count: limit,
-        });
+        }
+      );
 
       if (error) {
         logger.error('Knowledge semantic search error:', error);
@@ -243,7 +279,9 @@ export class KnowledgeService {
   async listDocuments(shopDomain: string): Promise<KnowledgeDocument[]> {
     const { data, error } = await (supabaseService as any).serviceClient
       .from('knowledge_documents')
-      .select('id, shop_domain, title, source_type, original_filename, content_hash, chunk_count, embedding_status, error_message, created_at, updated_at')
+      .select(
+        'id, shop_domain, title, source_type, original_filename, content_hash, chunk_count, embedding_status, error_message, created_at, updated_at'
+      )
       .eq('shop_domain', shopDomain)
       .order('created_at', { ascending: false });
 
@@ -258,7 +296,10 @@ export class KnowledgeService {
   /**
    * Get a single document by ID (with ownership check)
    */
-  async getDocument(documentId: string, shopDomain: string): Promise<KnowledgeDocument | null> {
+  async getDocument(
+    documentId: string,
+    shopDomain: string
+  ): Promise<KnowledgeDocument | null> {
     const { data, error } = await (supabaseService as any).serviceClient
       .from('knowledge_documents')
       .select('*')
@@ -294,7 +335,10 @@ export class KnowledgeService {
   /**
    * Get document processing status
    */
-  async getDocumentStatus(documentId: string, shopDomain: string): Promise<{
+  async getDocumentStatus(
+    documentId: string,
+    shopDomain: string
+  ): Promise<{
     embedding_status: string;
     chunk_count: number;
     error_message: string | null;
