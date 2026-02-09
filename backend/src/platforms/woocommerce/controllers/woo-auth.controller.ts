@@ -23,7 +23,17 @@ const supabaseService = new SupabaseService();
  */
 router.post('/connect', async (req: Request, res: Response) => {
   try {
-    const { siteUrl, consumerKey, consumerSecret, storeName, storeEmail, currency, country, timezone, locale } = req.body;
+    const {
+      siteUrl,
+      consumerKey,
+      consumerSecret,
+      storeName,
+      storeEmail,
+      currency,
+      country,
+      timezone,
+      locale,
+    } = req.body;
 
     if (!siteUrl || !consumerKey || !consumerSecret) {
       return res.status(400).json({
@@ -153,7 +163,8 @@ router.post('/connect', async (req: Request, res: Response) => {
           .from('client_stores')
           .update({
             ...clientStoreMetadata,
-            widget_brand_name: storeName || connectionResult.storeName || undefined,
+            widget_brand_name:
+              storeName || connectionResult.storeName || undefined,
             updated_at: new Date().toISOString(),
           })
           .eq('shop_domain', normalizedUrl);

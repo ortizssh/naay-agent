@@ -319,10 +319,24 @@ router.get(
       const accessToken = tokenData.access_token;
 
       // Fetch shop info from Shopify API
-      let shopInfo: { name: string; email: string; domain: string; currency: string; timezone: string; country: string; locale: string } | null = null;
+      let shopInfo: {
+        name: string;
+        email: string;
+        domain: string;
+        currency: string;
+        timezone: string;
+        country: string;
+        locale: string;
+      } | null = null;
       try {
-        shopInfo = await shopifyService.getShopInfo(shop as string, accessToken);
-        logger.info('Fetched shop info', { shop, shopInfo: { name: shopInfo.name, currency: shopInfo.currency } });
+        shopInfo = await shopifyService.getShopInfo(
+          shop as string,
+          accessToken
+        );
+        logger.info('Fetched shop info', {
+          shop,
+          shopInfo: { name: shopInfo.name, currency: shopInfo.currency },
+        });
       } catch (err) {
         logger.error('Failed to fetch shop info, continuing without it:', err);
       }
@@ -390,7 +404,9 @@ router.get(
       }
 
       if (!existingShop) {
-        await (supabaseService as any).serviceClient.from('stores').insert(storesData);
+        await (supabaseService as any).serviceClient
+          .from('stores')
+          .insert(storesData);
       } else {
         await (supabaseService as any).serviceClient
           .from('stores')
@@ -819,7 +835,10 @@ router.post(
 
           // Create webhooks
           try {
-            await shopifyService.createWebhooks(store.shop_domain, store.access_token);
+            await shopifyService.createWebhooks(
+              store.shop_domain,
+              store.access_token
+            );
             await (supabaseService as any).serviceClient
               .from('client_stores')
               .update({ webhooks_configured: true })
@@ -828,7 +847,9 @@ router.post(
             logger.error('Failed to create webhooks:', err);
           }
 
-          logger.info(`Sync completed for ${store.shop_domain}: ${syncedCount}/${products.length}`);
+          logger.info(
+            `Sync completed for ${store.shop_domain}: ${syncedCount}/${products.length}`
+          );
         } catch (err) {
           logger.error('Product sync failed:', err);
           await (supabaseService as any).serviceClient
