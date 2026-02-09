@@ -4785,16 +4785,23 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     /**
      * Persist messages to the backend for conversation history
      * This is called after successfully sending/receiving messages via external endpoints (n8n)
+     * When using internal chat (/api/simple-chat/), the backend already persists messages
      */
     async persistMessages(userMessage, assistantMessage) {
       try {
+        // Skip persistence if using internal chat - backend already handles it
+        const chatEndpoint = this.config.chatEndpoint || '';
+        if (chatEndpoint.includes('/api/simple-chat')) {
+          return;
+        }
+
         const apiEndpoint = this.config.apiEndpoint;
         if (!apiEndpoint) {
           console.warn('🌿 Kova Widget: apiEndpoint not configured, skipping message persistence');
           return;
         }
 
-        const persistUrl = `${apiEndpoint}/api/chat/persist`;
+        const persistUrl = `${apiEndpoint}/api/simple-chat/persist`;
         const messages = [];
 
         if (userMessage) {
