@@ -8,7 +8,7 @@ import ConfigureWidget from './steps/ConfigureWidget';
 import SyncAndActivate from './steps/SyncAndActivate';
 import WooInstructions from './steps/WooInstructions';
 import { clientApi } from '../../services/api';
-import logoKova from '../../img/logo-kova.png';
+import logoKova from '../../img/kova-logo.svg';
 
 interface OnboardingWizardProps {
   initialStep?: number;

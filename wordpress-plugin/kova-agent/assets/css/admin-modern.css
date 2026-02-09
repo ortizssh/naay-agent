@@ -83,24 +83,9 @@
   text-decoration: none;
 }
 
-.kova-sidebar-logo-icon {
-  width: 36px;
-  height: 36px;
-  background: linear-gradient(135deg, var(--kova-color-primary), var(--kova-color-accent));
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: 800;
-  font-size: 1rem;
-}
-
-.kova-sidebar-logo-text {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: var(--kova-color-primary);
-  letter-spacing: -0.02em;
+.kova-sidebar-logo-svg {
+  height: 28px;
+  width: auto;
 }
 
 .kova-sidebar-nav {

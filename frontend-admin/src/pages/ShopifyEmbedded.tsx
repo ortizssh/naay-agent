@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import logoKova from '../img/logo-kova.png';
+import logoKova from '../img/kova-logo.svg';
 
 interface ShopifyEmbeddedProps {
   shop: string;

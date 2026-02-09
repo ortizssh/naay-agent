@@ -52,18 +52,7 @@ function SelectPlan({ onBack, onNext }: SelectPlanProps) {
       // Save plan selection step
       await clientApi.updateOnboardingStep(3, { planSlug });
 
-      const plan = plans.find(p => p.slug === planSlug);
-
-      if (!plan || plan.price === 0) {
-        // Free plan — just continue
-        const res = await clientApi.createCheckout(planSlug);
-        if (res.data?.free) {
-          onNext();
-          return;
-        }
-      }
-
-      // Paid plan — redirect to Stripe Checkout
+      // Redirect to Stripe Checkout
       const res = await clientApi.createCheckout(planSlug);
       if (res.data?.checkoutUrl) {
         window.location.href = res.data.checkoutUrl;
@@ -95,7 +84,7 @@ function SelectPlan({ onBack, onNext }: SelectPlanProps) {
     <>
       <h2 className="onboarding-title">Selecciona tu plan</h2>
       <p className="onboarding-subtitle">
-        Elige el plan que mejor se adapte a tu negocio. Todos los planes pagos incluyen 14 dias de prueba gratis.
+        Elige el plan que mejor se adapte a tu negocio.
       </p>
 
       {error && (
@@ -125,23 +114,16 @@ function SelectPlan({ onBack, onNext }: SelectPlanProps) {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: `repeat(${Math.min(plans.length, 4)}, 1fr)`,
+          gridTemplateColumns: `repeat(${Math.min(plans.filter(p => p.price > 0).length, 3)}, 1fr)`,
           gap: '1rem',
           marginBottom: '2rem',
         }}
       >
-        {plans.map(plan => {
+        {plans.filter(plan => plan.price > 0).map(plan => {
           const isPopular = plan.slug === 'professional';
-          const isPaid = plan.price > 0;
           const features = formatFeatures(plan);
-          const priceDisplay =
-            plan.price === 0
-              ? 'Gratis'
-              : plan.slug === 'enterprise'
-                ? 'Personalizado'
-                : `$${plan.price}`;
-          const periodDisplay =
-            plan.price > 0 && plan.slug !== 'enterprise' ? '/mes' : '';
+          const priceDisplay = `$${plan.price}`;
+          const periodDisplay = '/mes';
           const isSelected = selectedPlan === plan.slug;
 
           return (
@@ -177,23 +159,6 @@ function SelectPlan({ onBack, onNext }: SelectPlanProps) {
                   }}
                 >
                   Popular
-                </div>
-              )}
-              {isPaid && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: isPopular ? '8px' : '-12px',
-                    right: '12px',
-                    background: 'var(--color-success)',
-                    color: 'white',
-                    padding: '0.2rem 0.6rem',
-                    borderRadius: '20px',
-                    fontSize: '0.7rem',
-                    fontWeight: '600',
-                  }}
-                >
-                  14 dias gratis
                 </div>
               )}
 
@@ -281,9 +246,7 @@ function SelectPlan({ onBack, onNext }: SelectPlanProps) {
               >
                 {isSelected && processing
                   ? 'Procesando...'
-                  : plan.price === 0
-                    ? 'Comenzar gratis'
-                    : 'Comenzar prueba gratis'}
+                  : 'Seleccionar plan'}
               </button>
             </div>
           );

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import './styles/admin.css';
-import logoKova from './img/logo-kova.png';
+import logoKova from './img/kova-logo.svg';
 
 // Public pages
 import Landing from './pages/Landing';

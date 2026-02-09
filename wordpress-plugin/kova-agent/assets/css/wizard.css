@@ -29,23 +29,9 @@
     gap: 0.5rem;
 }
 
-.kova-wizard-logo-icon {
-    width: 36px;
-    height: 36px;
-    background: #6366f1;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: 700;
-    font-size: 1.1rem;
-}
-
-.kova-wizard-logo-text {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #1a1a1a;
+.kova-wizard-logo-svg {
+    height: 32px;
+    width: auto;
 }
 
 .kova-wizard-skip {

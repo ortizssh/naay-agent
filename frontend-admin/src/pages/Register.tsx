@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { authApi } from '../services/api';
-import logoKova from '../img/logo-kova.png';
+import logoKova from '../img/kova-logo.svg';
 
 interface RegisterProps {
   onSuccess: (user: any, token: string) => void;
