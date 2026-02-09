@@ -784,10 +784,10 @@ router.post(
         '¡Hola! ¿En qué puedo ayudarte?';
 
       // Handle function calls
+      let allRecommendedProducts: any[] = [];
       if (completion.choices[0]?.message?.tool_calls) {
         const toolCalls = completion.choices[0].message.tool_calls;
         let toolResults: any[] = [];
-        let allRecommendedProducts: any[] = [];
 
         for (const toolCall of toolCalls) {
           const args = JSON.parse(toolCall.function.arguments);
@@ -906,26 +906,71 @@ router.post(
         }
       }
 
-      // Store assistant's response in conversation history
+      // Store assistant's response in conversation history (clean text for OpenAI context)
       conversationStore[currentConversationId].push({
         role: 'assistant',
         content: response,
       });
 
-      // Persist assistant response to database (non-blocking)
+      // Build widget response: append product JSON so the widget renders product cards
+      // Format matches n8n output: {"output":[{"product":{id,title,image:{src},price,handle,variant_id}}]}
+      let widgetResponse = response;
+      if (allRecommendedProducts.length > 0) {
+        const widgetProducts = allRecommendedProducts
+          .filter((p: any) => p.id && p.title)
+          .map((p: any) => {
+            // Resolve image URL from various formats
+            let imageUrl = '';
+            if (typeof p.images === 'string') {
+              imageUrl = p.images;
+            } else if (Array.isArray(p.images) && p.images.length > 0) {
+              imageUrl = typeof p.images[0] === 'string' ? p.images[0] : (p.images[0]?.src || '');
+            }
+
+            // Resolve price from direct field or variants array
+            let price = 0;
+            if (p.price && p.price !== 'N/A') {
+              price = Number(p.price) || 0;
+            } else if (p.variants && p.variants.length > 0) {
+              price = Number(p.variants[0].price) || 0;
+            }
+
+            // Resolve variant ID
+            const variantId = p.variantId
+              || (p.variants && p.variants.length > 0 ? p.variants[0].id : null)
+              || p.id;
+
+            return {
+              product: {
+                id: isNaN(Number(p.id)) ? p.id : Number(p.id),
+                title: p.title,
+                image: imageUrl ? { src: imageUrl } : { src: '' },
+                price,
+                handle: p.handle || '',
+                variant_id: isNaN(Number(variantId)) ? variantId : Number(variantId),
+              },
+            };
+          });
+
+        if (widgetProducts.length > 0) {
+          widgetResponse = response + '\n\n' + JSON.stringify({ output: widgetProducts }, null, 2);
+        }
+      }
+
+      // Persist assistant response to database (non-blocking) — includes product JSON
       if (shop) {
         persistChatMessage(
           currentConversationId,
           shop,
           'agent',
-          response
+          widgetResponse
         ).catch(() => {});
       }
 
       res.json({
         success: true,
         data: {
-          response,
+          response: widgetResponse,
           conversationId: currentConversationId,
         },
       });
