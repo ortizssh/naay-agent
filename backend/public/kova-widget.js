@@ -4653,13 +4653,21 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             return;
           }
 
-          // Handle different n8n response formats
+          // Handle different response formats (simple-chat internal + n8n external)
           let assistantMessage = '🔧 El asistente recibió tu mensaje pero está configurando la respuesta. Por favor intenta de nuevo en un momento.';
           let hasProducts = false;
           let products = [];
 
+          // Simple-chat internal format: {success: true, data: {response: "...", conversationId: "..."}}
+          if (data && data.success && data.data && data.data.response) {
+            assistantMessage = data.data.response;
+            if (data.data.conversationId) {
+              this.conversationId = data.data.conversationId;
+              this.storeConversationId(this.conversationId);
+            }
+          }
           // Check if response contains products - Latest n8n format: {output: [{product: {...}}]}
-          if (data && data.output && Array.isArray(data.output) && data.output.length > 0) {
+          else if (data && data.output && Array.isArray(data.output) && data.output.length > 0) {
             // Check for new simplified product format
             const outputItems = data.output.filter(item => item.product);
             if (outputItems.length > 0) {
