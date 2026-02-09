@@ -254,7 +254,7 @@ export class KnowledgeService {
         {
           p_shop_domain: shopDomain,
           p_query_embedding: embeddingStr,
-          p_match_threshold: 0.3,
+          p_match_threshold: 0.2,
           p_match_count: limit,
         }
       );

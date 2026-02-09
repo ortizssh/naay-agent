@@ -1,12 +1,32 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import multer from 'multer';
+import pdfParse from 'pdf-parse';
 import { tenantService } from '@/services/tenant.service';
 import { planService } from '@/services/plan.service';
 import { SupabaseService } from '@/services/supabase.service';
+import { knowledgeService } from '@/services/knowledge.service';
 import { logger } from '@/utils/logger';
 import { AppError, TenantPlan, TenantStatus } from '@/types';
 
 const router = Router();
 const supabaseService = new SupabaseService();
+
+// Multer config for knowledge file uploads: memory storage, 10MB limit, PDF/TXT/MD only
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['application/pdf', 'text/plain', 'text/markdown'];
+    if (
+      allowed.includes(file.mimetype) ||
+      file.originalname.match(/\.(txt|md|pdf)$/i)
+    ) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only .txt, .md and .pdf files are allowed'));
+    }
+  },
+});
 
 /**
  * GET /api/admin/tenants/stats
@@ -247,6 +267,7 @@ router.get(
         monthlyMsgResult,
         sessionResult,
         conversionResult,
+        knowledgeCountResult,
       ] = await Promise.all([
         tenantService.getTenant(shopDomain),
         (supabaseService as any).serviceClient
@@ -284,6 +305,10 @@ router.get(
           .from('simple_conversions')
           .select('id, total_order_amount')
           .eq('shop_domain', shopDomain),
+        (supabaseService as any).serviceClient
+          .from('knowledge_documents')
+          .select('*', { count: 'exact', head: true })
+          .eq('shop_domain', shopDomain),
       ]);
 
       if (!tenant) {
@@ -313,11 +338,151 @@ router.get(
             uniqueSessions,
             totalConversions: conversions.length,
             totalRevenue,
+            knowledgeDocumentCount: knowledgeCountResult.count || 0,
           },
         },
       });
     } catch (error) {
       logger.error('Error fetching tenant detail:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * GET /api/admin/tenants/:shopDomain/knowledge
+ * List knowledge documents for a tenant
+ */
+router.get(
+  '/:shopDomain/knowledge',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shopDomain } = req.params;
+      const documents = await knowledgeService.listDocuments(shopDomain);
+      res.json({ success: true, data: documents });
+    } catch (error) {
+      logger.error('Admin list knowledge documents error:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * POST /api/admin/tenants/:shopDomain/knowledge
+ * Create a text knowledge document for a tenant
+ */
+router.post(
+  '/:shopDomain/knowledge',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shopDomain } = req.params;
+      const { title, content } = req.body;
+
+      if (!title || !content) {
+        throw new AppError('Title and content are required', 400);
+      }
+
+      const document = await knowledgeService.createDocument(shopDomain, {
+        title,
+        content,
+        sourceType: 'text',
+      });
+
+      res.status(201).json({ success: true, data: document });
+    } catch (error) {
+      logger.error('Admin create knowledge document error:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * POST /api/admin/tenants/:shopDomain/knowledge/upload
+ * Upload a file (PDF/TXT/MD) as knowledge document for a tenant
+ */
+router.post(
+  '/:shopDomain/knowledge/upload',
+  upload.single('file'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shopDomain } = req.params;
+      const file = req.file;
+
+      if (!file) {
+        throw new AppError('File is required', 400);
+      }
+
+      const title = req.body.title || file.originalname;
+      let content: string;
+
+      if (
+        file.mimetype === 'application/pdf' ||
+        file.originalname.endsWith('.pdf')
+      ) {
+        const pdfData = await pdfParse(file.buffer);
+        content = pdfData.text;
+      } else {
+        content = file.buffer.toString('utf-8');
+      }
+
+      if (!content.trim()) {
+        throw new AppError('File contains no extractable text', 400);
+      }
+
+      const document = await knowledgeService.createDocument(shopDomain, {
+        title,
+        content,
+        sourceType: 'file',
+        originalFilename: file.originalname,
+      });
+
+      res.status(201).json({ success: true, data: document });
+    } catch (error) {
+      logger.error('Admin upload knowledge document error:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * DELETE /api/admin/tenants/:shopDomain/knowledge/:docId
+ * Delete a knowledge document for a tenant
+ */
+router.delete(
+  '/:shopDomain/knowledge/:docId',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shopDomain, docId } = req.params;
+      await knowledgeService.deleteDocument(docId, shopDomain);
+      res.json({ success: true });
+    } catch (error) {
+      logger.error('Admin delete knowledge document error:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * GET /api/admin/tenants/:shopDomain/knowledge/:docId/status
+ * Get knowledge document processing status
+ */
+router.get(
+  '/:shopDomain/knowledge/:docId/status',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shopDomain, docId } = req.params;
+      const status = await knowledgeService.getDocumentStatus(
+        docId,
+        shopDomain
+      );
+
+      if (!status) {
+        throw new AppError('Document not found', 404);
+      }
+
+      res.json({ success: true, data: status });
+    } catch (error) {
+      logger.error('Admin get knowledge document status error:', error);
       next(error);
     }
   }
@@ -595,6 +760,13 @@ router.put(
         'widget_rotating_messages_interval',
         'widget_subtitle_2',
         'widget_subtitle_3',
+        'chat_mode',
+        'ai_model',
+        'agent_name',
+        'agent_tone',
+        'brand_description',
+        'agent_instructions',
+        'agent_language',
       ];
 
       const clientStoreUpdate: Record<string, any> = {};

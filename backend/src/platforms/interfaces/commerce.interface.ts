@@ -131,6 +131,7 @@ export interface StoreCredentials {
   consumer_key?: string;
   consumer_secret?: string;
   webhook_secret?: string;
+  siteUrl?: string;
 }
 
 /**

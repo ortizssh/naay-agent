@@ -75,6 +75,13 @@ export interface ClientStore {
   suggested_question_2_message?: string;
   suggested_question_3_text?: string;
   suggested_question_3_message?: string;
+  chat_mode?: 'internal' | 'external';
+  ai_model?: string;
+  agent_name?: string | null;
+  agent_tone?: string;
+  brand_description?: string | null;
+  agent_instructions?: string | null;
+  agent_language?: string;
   products_synced?: number;
   last_sync_at?: string;
   created_at: string;
@@ -270,6 +277,52 @@ class ApiClient {
     return this.request<void>(`/api/admin/tenants/${shopDomain}`, {
       method: 'DELETE',
     });
+  }
+
+  // Admin Knowledge Base
+  async getAdminKnowledgeDocuments(shopDomain: string): Promise<KnowledgeDocument[]> {
+    return this.request<KnowledgeDocument[]>(`/api/admin/tenants/${shopDomain}/knowledge`);
+  }
+
+  async createAdminKnowledgeDocument(shopDomain: string, data: { title: string; content: string }): Promise<KnowledgeDocument> {
+    return this.request<KnowledgeDocument>(`/api/admin/tenants/${shopDomain}/knowledge`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async uploadAdminKnowledgeFile(shopDomain: string, file: File, title?: string): Promise<KnowledgeDocument> {
+    const token = localStorage.getItem('auth_token');
+    const formData = new FormData();
+    formData.append('file', file);
+    if (title) formData.append('title', title);
+
+    const url = `${getApiUrl()}/api/admin/tenants/${shopDomain}/knowledge/upload`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.data || data;
+  }
+
+  async deleteAdminKnowledgeDocument(shopDomain: string, docId: string): Promise<void> {
+    return this.request<void>(`/api/admin/tenants/${shopDomain}/knowledge/${docId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getAdminKnowledgeDocumentStatus(shopDomain: string, docId: string): Promise<{ embedding_status: string; chunk_count: number; error_message: string | null }> {
+    return this.request<{ embedding_status: string; chunk_count: number; error_message: string | null }>(`/api/admin/tenants/${shopDomain}/knowledge/${docId}/status`);
   }
 }
 

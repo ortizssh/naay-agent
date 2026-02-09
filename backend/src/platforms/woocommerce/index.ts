@@ -20,9 +20,8 @@ registerCommerceProvider('woocommerce', (credentials: StoreCredentials) => {
     throw new Error('WooCommerce requires consumer_key and consumer_secret');
   }
 
-  // Extract site URL from identifier or use a default
-  const siteUrl =
-    (credentials as any).siteUrl || (credentials as any).site_url || '';
+  // Extract site URL from credentials
+  const siteUrl = credentials.siteUrl || '';
 
   return new WooCommerceService({
     siteUrl,

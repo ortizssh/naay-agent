@@ -8,6 +8,8 @@ import { createTenantRateLimiter } from '@/middleware/tenant.middleware';
 import { SimpleConversionTracker } from '@/services/simple-conversion-tracker.service';
 import { knowledgeService } from '@/services/knowledge.service';
 import { getCommerceProvider } from '@/platforms/interfaces/commerce.interface';
+// Side-effect imports to register commerce providers
+import '@/platforms/woocommerce';
 
 const router = Router();
 const simpleConversionTracker = new SimpleConversionTracker();
@@ -192,7 +194,7 @@ const conversationStore: Record<
 async function persistChatMessage(
   sessionId: string,
   shopDomain: string,
-  role: 'user' | 'assistant',
+  role: 'client' | 'agent',
   content: string
 ): Promise<void> {
   try {
@@ -602,28 +604,32 @@ router.post(
       let commerceProvider: any = null;
       if (shop) {
         try {
-          // Load access_token and credentials from stores table (canonical source)
+          // Load access_token, credentials, and site_url from stores table (canonical source)
           let accessToken = agentConfig?.access_token;
           let credentials: any = null;
+          let siteUrl: string | null = null;
           const { data: storeData } = await (
             supabaseService as any
           ).serviceClient
             .from('stores')
-            .select('access_token, credentials')
+            .select('access_token, credentials, site_url')
             .eq('shop_domain', shop)
             .limit(1);
           if (storeData?.[0]) {
             if (!accessToken) accessToken = storeData[0].access_token;
             credentials = storeData[0].credentials;
+            siteUrl = storeData[0].site_url;
           }
-          if (accessToken) {
+          const platform = (agentConfig?.platform || 'shopify') as any;
+          if (accessToken || (credentials?.consumer_key && credentials?.consumer_secret)) {
             commerceProvider = getCommerceProvider(
-              (agentConfig?.platform || 'shopify') as any,
+              platform,
               {
-                platform: (agentConfig?.platform || 'shopify') as any,
+                platform,
                 access_token: accessToken,
                 consumer_key: credentials?.consumer_key,
                 consumer_secret: credentials?.consumer_secret,
+                siteUrl: siteUrl || (platform === 'woocommerce' ? `https://${shop}` : undefined),
               }
             );
           }
@@ -645,7 +651,7 @@ router.post(
 
       // Persist user message to database (non-blocking)
       if (shop) {
-        persistChatMessage(currentConversationId, shop, 'user', message).catch(
+        persistChatMessage(currentConversationId, shop, 'client', message).catch(
           () => {}
         );
       }
@@ -906,7 +912,7 @@ router.post(
         persistChatMessage(
           currentConversationId,
           shop,
-          'assistant',
+          'agent',
           response
         ).catch(() => {});
       }
@@ -1111,10 +1117,14 @@ router.post('/persist', async (req: Request, res: Response) => {
     // Persist each message
     for (const msg of messages) {
       if (msg.role && msg.content) {
+        // Map OpenAI roles to our DB convention if needed
+        const dbRole = msg.role === 'user' ? 'client'
+          : msg.role === 'assistant' ? 'agent'
+          : (msg.role as 'client' | 'agent');
         await persistChatMessage(
           sessionId,
           shopDomain,
-          msg.role as 'user' | 'assistant',
+          dbRole,
           msg.content
         );
       }

@@ -182,13 +182,12 @@ export class SupabaseService {
           // Use the actual implemented schema (stores table with shop_domain)
           // Call function with correct parameters matching actual schema
           const { data, error } = await this.serviceClient.rpc(
-            'search_products_semantic',
+            'search_products_semantic_v2',
             {
-              shop_domain: shopDomain, // Use shop_domain as implemented
-              query_text: query, // Include query text
-              query_embedding: embedding, // Pass array directly
-              match_threshold: 0.7,
-              match_count: limit,
+              p_shop_domain: shopDomain,
+              p_query_embedding: embedding,
+              p_match_threshold: 0.7,
+              p_match_count: limit,
             }
           );
 

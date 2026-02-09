@@ -44,9 +44,11 @@ router.post('/connect', async (req: Request, res: Response) => {
 
     // Validate URL format
     let normalizedUrl: string;
+    let shopDomain: string;
     try {
       const url = new URL(siteUrl);
       normalizedUrl = `${url.protocol}//${url.host}`;
+      shopDomain = url.host; // e.g. "imperionfc.cl" — used as DB key (no protocol)
     } catch {
       return res.status(400).json({
         success: false,
@@ -56,6 +58,7 @@ router.post('/connect', async (req: Request, res: Response) => {
 
     logger.info('Attempting WooCommerce connection', {
       siteUrl: normalizedUrl,
+      shopDomain,
     });
 
     // Test connection with provided credentials
@@ -78,9 +81,12 @@ router.post('/connect', async (req: Request, res: Response) => {
     // Generate webhook secret for this store
     const webhookSecret = crypto.randomBytes(32).toString('hex');
 
-    // Store credentials in database
-    // First check if store already exists
-    const existingStore = await supabaseService.getStore(normalizedUrl);
+    // Store credentials in database — use shopDomain (host only) as key
+    // Also check for existing stores with either format (host or full URL)
+    let existingStore = await supabaseService.getStore(shopDomain);
+    if (!existingStore) {
+      existingStore = await supabaseService.getStore(normalizedUrl);
+    }
 
     // Build store metadata from provided fields
     const storeMetadata: any = {};
@@ -105,11 +111,11 @@ router.post('/connect', async (req: Request, res: Response) => {
           updated_at: new Date().toISOString(),
           ...storeMetadata,
         })
-        .eq('shop_domain', normalizedUrl);
+        .eq('shop_domain', existingStore.shop_domain);
     } else {
-      // Create new store
+      // Create new store — use host-only domain as shop_domain
       await (supabaseService as any).serviceClient.from('stores').insert({
-        shop_domain: normalizedUrl,
+        shop_domain: shopDomain,
         platform: 'woocommerce',
         site_url: normalizedUrl,
         access_token: 'woocommerce', // Placeholder, actual auth uses credentials
@@ -124,13 +130,16 @@ router.post('/connect', async (req: Request, res: Response) => {
       });
     }
 
+    // Determine the actual shop_domain used in DB
+    const dbShopDomain = existingStore ? existingStore.shop_domain : shopDomain;
+
     // Also create/update client_stores entry for widget config
     const { data: existingClient } = await (
       supabaseService as any
     ).serviceClient
       .from('client_stores')
       .select('id')
-      .eq('shop_domain', normalizedUrl)
+      .eq('shop_domain', dbShopDomain)
       .single();
 
     // Build client_stores metadata
@@ -146,7 +155,7 @@ router.post('/connect', async (req: Request, res: Response) => {
       await (supabaseService as any).serviceClient
         .from('client_stores')
         .insert({
-          shop_domain: normalizedUrl,
+          shop_domain: dbShopDomain,
           platform: 'woocommerce',
           widget_enabled: true,
           widget_position: 'bottom-right',
@@ -167,7 +176,7 @@ router.post('/connect', async (req: Request, res: Response) => {
               storeName || connectionResult.storeName || undefined,
             updated_at: new Date().toISOString(),
           })
-          .eq('shop_domain', normalizedUrl);
+          .eq('shop_domain', dbShopDomain);
       }
     }
 
@@ -180,10 +189,11 @@ router.post('/connect', async (req: Request, res: Response) => {
       await (supabaseService as any).serviceClient
         .from('tenants')
         .update(tenantUpdate)
-        .eq('shop_domain', normalizedUrl);
+        .eq('shop_domain', dbShopDomain);
     }
 
     logger.info('WooCommerce store connected successfully', {
+      shopDomain: dbShopDomain,
       siteUrl: normalizedUrl,
       storeName: connectionResult.storeName,
     });
@@ -191,6 +201,7 @@ router.post('/connect', async (req: Request, res: Response) => {
     return res.json({
       success: true,
       data: {
+        shopDomain: dbShopDomain,
         siteUrl: normalizedUrl,
         storeName: connectionResult.storeName,
         woocommerceVersion: connectionResult.woocommerceVersion,
@@ -287,9 +298,11 @@ router.post('/disconnect', async (req: Request, res: Response) => {
 
     // Normalize URL
     let normalizedUrl: string;
+    let hostDomain: string;
     try {
       const url = new URL(siteUrl);
       normalizedUrl = `${url.protocol}//${url.host}`;
+      hostDomain = url.host;
     } catch {
       return res.status(400).json({
         success: false,
@@ -297,8 +310,11 @@ router.post('/disconnect', async (req: Request, res: Response) => {
       });
     }
 
-    // Get store to verify it exists and get credentials for webhook cleanup
-    const store = await supabaseService.getStore(normalizedUrl);
+    // Get store to verify it exists — try host-only first, then full URL
+    let store = await supabaseService.getStore(hostDomain);
+    if (!store) {
+      store = await supabaseService.getStore(normalizedUrl);
+    }
 
     if (!store) {
       return res.status(404).json({
@@ -306,6 +322,8 @@ router.post('/disconnect', async (req: Request, res: Response) => {
         error: 'Store not found',
       });
     }
+
+    const dbShopDomain = (store as any).shop_domain;
 
     // Try to delete webhooks from WooCommerce
     try {
@@ -334,21 +352,21 @@ router.post('/disconnect', async (req: Request, res: Response) => {
     await (supabaseService as any).serviceClient
       .from('stores')
       .delete()
-      .eq('shop_domain', normalizedUrl);
+      .eq('shop_domain', dbShopDomain);
 
     // Delete products
     await (supabaseService as any).serviceClient
       .from('products')
       .delete()
-      .eq('shop_domain', normalizedUrl);
+      .eq('shop_domain', dbShopDomain);
 
     // Delete embeddings
     await (supabaseService as any).serviceClient
       .from('product_embeddings')
       .delete()
-      .eq('shop_domain', normalizedUrl);
+      .eq('shop_domain', dbShopDomain);
 
-    logger.info('WooCommerce store disconnected', { siteUrl: normalizedUrl });
+    logger.info('WooCommerce store disconnected', { shopDomain: dbShopDomain });
 
     return res.json({
       success: true,
@@ -372,7 +390,13 @@ router.get('/store/:siteUrl', async (req: Request, res: Response) => {
   try {
     const siteUrl = decodeURIComponent(req.params.siteUrl);
 
-    const store = await supabaseService.getStore(siteUrl);
+    // Try host-only first, then full URL
+    let hostOnly: string;
+    try { hostOnly = new URL(siteUrl).host; } catch { hostOnly = siteUrl; }
+    let store = await supabaseService.getStore(hostOnly);
+    if (!store) {
+      store = await supabaseService.getStore(siteUrl);
+    }
 
     if (!store) {
       return res.status(404).json({
@@ -415,8 +439,17 @@ router.post('/sync-products', async (req: Request, res: Response) => {
       });
     }
 
-    // Get store credentials
-    const store = await supabaseService.getStore(siteUrl);
+    // Get store credentials — try host-only first, then full URL
+    let storeHost: string;
+    try {
+      storeHost = new URL(siteUrl).host;
+    } catch {
+      storeHost = siteUrl;
+    }
+    let store = await supabaseService.getStore(storeHost);
+    if (!store) {
+      store = await supabaseService.getStore(siteUrl);
+    }
 
     if (!store) {
       return res.status(404).json({
@@ -425,6 +458,8 @@ router.post('/sync-products', async (req: Request, res: Response) => {
       });
     }
 
+    const dbShopDomain = (store as any).shop_domain;
+    const storeSiteUrl = (store as any).site_url || siteUrl;
     const credentials = (store as any).credentials;
     if (!credentials?.consumer_key || !credentials?.consumer_secret) {
       return res.status(400).json({
@@ -435,25 +470,25 @@ router.post('/sync-products', async (req: Request, res: Response) => {
 
     // Create WooCommerce service
     const wooService = new WooCommerceService({
-      siteUrl,
+      siteUrl: storeSiteUrl,
       consumerKey: credentials.consumer_key,
       consumerSecret: credentials.consumer_secret,
     });
 
     // Fetch all products
-    const products = await wooService.getAllProducts(siteUrl);
+    const products = await wooService.getAllProducts(storeSiteUrl);
 
     logger.info(`Syncing ${products.length} products from WooCommerce`, {
-      siteUrl,
+      shopDomain: dbShopDomain,
     });
 
-    // Save products to database
+    // Save products to database using the canonical shop_domain
     let syncedCount = 0;
     for (const product of products) {
       try {
         // Convert normalized product to Shopify format for compatibility
         // with existing supabase.service.saveProduct method
-        await supabaseService.saveProduct(siteUrl, {
+        await supabaseService.saveProduct(dbShopDomain, {
           id: product.external_id,
           title: product.title,
           description: product.description,
@@ -529,8 +564,11 @@ router.post('/setup-webhooks', async (req: Request, res: Response) => {
       });
     }
 
-    // Get store credentials
-    const store = await supabaseService.getStore(siteUrl);
+    // Get store credentials — try host-only first, then full URL
+    let whHost: string;
+    try { whHost = new URL(siteUrl).host; } catch { whHost = siteUrl; }
+    let store = await supabaseService.getStore(whHost);
+    if (!store) { store = await supabaseService.getStore(siteUrl); }
 
     if (!store) {
       return res.status(404).json({
@@ -539,6 +577,7 @@ router.post('/setup-webhooks', async (req: Request, res: Response) => {
       });
     }
 
+    const whSiteUrl = (store as any).site_url || siteUrl;
     const credentials = (store as any).credentials;
     const webhookSecret = (store as any).webhook_secret;
 
@@ -551,14 +590,14 @@ router.post('/setup-webhooks', async (req: Request, res: Response) => {
 
     // Create WooCommerce service
     const wooService = new WooCommerceService({
-      siteUrl,
+      siteUrl: whSiteUrl,
       consumerKey: credentials.consumer_key,
       consumerSecret: credentials.consumer_secret,
       webhookSecret,
     });
 
     // Create webhooks
-    const webhooks = await wooService.createWebhooks(siteUrl);
+    const webhooks = await wooService.createWebhooks(whSiteUrl);
 
     logger.info(`Created ${webhooks.length} webhooks for WooCommerce store`, {
       siteUrl,
@@ -651,8 +690,9 @@ router.post('/widget-config', async (req: Request, res: Response) => {
       }
     }
 
-    // Use the matched variant (existing domain in DB) or normalizedUrl for new entries
-    const shopDomainToUse = existingClient ? matchedVariant : normalizedUrl;
+    // Use the matched variant (existing domain in DB) or host-only domain for new entries
+    const hostOnly = new URL(normalizedUrl).host;
+    const shopDomainToUse = existingClient ? matchedVariant : hostOnly;
 
     const widgetConfig = {
       shop_domain: shopDomainToUse,
@@ -764,15 +804,26 @@ router.get('/widget-config/:siteUrl', async (req: Request, res: Response) => {
       });
     }
 
-    const { data: clientStore, error } = await (
+    // Try host-only first, then full URL
+    const hostOnly = new URL(normalizedUrl).host;
+    let { data: clientStore } = await (
       supabaseService as any
     ).serviceClient
       .from('client_stores')
       .select('*')
-      .eq('shop_domain', normalizedUrl)
+      .eq('shop_domain', hostOnly)
       .single();
 
-    if (error || !clientStore) {
+    if (!clientStore) {
+      const result = await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .select('*')
+        .eq('shop_domain', normalizedUrl)
+        .single();
+      clientStore = result.data;
+    }
+
+    if (!clientStore) {
       return res.status(404).json({
         success: false,
         error: 'Widget configuration not found',

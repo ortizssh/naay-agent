@@ -1689,7 +1689,7 @@ router.get(
     try {
       const user = (req as any).user;
 
-      const { data: store, error } = await (
+      const { data: stores, error } = await (
         supabaseService as any
       ).serviceClient
         .from('client_stores')
@@ -1697,12 +1697,13 @@ router.get(
           'chat_mode, ai_model, agent_name, agent_tone, brand_description, agent_instructions, agent_language, chatbot_endpoint'
         )
         .eq('user_id', user.id)
-        .single();
+        .limit(1);
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         throw new AppError('Error al obtener configuracion de IA', 500);
       }
 
+      const store = stores?.[0];
       res.json({
         success: true,
         data: store || {
@@ -1766,23 +1767,31 @@ router.put(
       if (chatbotEndpoint !== undefined)
         updateData.chatbot_endpoint = chatbotEndpoint;
 
-      const { data: store, error } = await (
+      // Update all stores for this user (handles duplicate rows)
+      const { error } = await (
         supabaseService as any
       ).serviceClient
         .from('client_stores')
         .update(updateData)
-        .eq('user_id', user.id)
-        .select()
-        .single();
+        .eq('user_id', user.id);
 
       if (error) {
         logger.error('Error updating AI config:', error);
         throw new AppError('Error al actualizar configuracion de IA', 500);
       }
 
+      // Fetch updated config
+      const { data: updated } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('client_stores')
+        .select('*')
+        .eq('user_id', user.id)
+        .limit(1);
+
       res.json({
         success: true,
-        data: store,
+        data: updated?.[0] || {},
       });
     } catch (error) {
       logger.error('Update AI config error:', error);

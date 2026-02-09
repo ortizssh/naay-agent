@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { api, EnrichedTenant, TenantPlan, TenantStatus, TenantDetail, Plan } from '../services/api';
+import { useState, useEffect, useRef } from 'react';
+import { api, EnrichedTenant, TenantPlan, TenantStatus, TenantDetail, Plan, KnowledgeDocument } from '../services/api';
 
 function Tenants() {
   const [tenants, setTenants] = useState<EnrichedTenant[]>([]);
@@ -19,11 +19,21 @@ function Tenants() {
   // Detail view state
   const [selectedDetail, setSelectedDetail] = useState<TenantDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [activeDetailTab, setActiveDetailTab] = useState<'general' | 'stats' | 'widget' | 'integration'>('general');
+  const [activeDetailTab, setActiveDetailTab] = useState<'general' | 'stats' | 'widget' | 'ai' | 'knowledge' | 'integration'>('general');
   const [widgetSubTab, setWidgetSubTab] = useState<'appearance' | 'content' | 'features' | 'questions' | 'promo'>('appearance');
   const [detailForm, setDetailForm] = useState<Record<string, any>>({});
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  // Knowledge state
+  const [knowledgeDocs, setKnowledgeDocs] = useState<KnowledgeDocument[]>([]);
+  const [knowledgeLoading, setKnowledgeLoading] = useState(false);
+  const [knowledgeTab, setKnowledgeTab] = useState<'documents' | 'add'>('documents');
+  const [knowledgeAddMode, setKnowledgeAddMode] = useState<'text' | 'file'>('text');
+  const [knowledgeTitle, setKnowledgeTitle] = useState('');
+  const [knowledgeContent, setKnowledgeContent] = useState('');
+  const [knowledgeSubmitting, setKnowledgeSubmitting] = useState(false);
+  const knowledgeFileRef = useRef<HTMLInputElement>(null);
 
   // Create form state
   const [createForm, setCreateForm] = useState({
@@ -118,6 +128,13 @@ function Tenants() {
         promo_badge_shape: detail.clientStore?.promo_badge_shape || 'circle',
         promo_badge_position: detail.clientStore?.promo_badge_position || 'right',
         promo_badge_type: detail.clientStore?.promo_badge_type || 'discount',
+        chat_mode: detail.clientStore?.chat_mode || 'internal',
+        ai_model: detail.clientStore?.ai_model || 'gpt-4.1-mini',
+        agent_name: detail.clientStore?.agent_name || '',
+        agent_tone: detail.clientStore?.agent_tone || 'friendly',
+        brand_description: detail.clientStore?.brand_description || '',
+        agent_instructions: detail.clientStore?.agent_instructions || '',
+        agent_language: detail.clientStore?.agent_language || 'es',
       });
       setViewMode('detail');
       setActiveDetailTab('general');
@@ -223,6 +240,89 @@ function Tenants() {
     }));
   };
 
+  // --- Knowledge helpers ---
+  const loadKnowledgeDocs = async (shopDomain: string) => {
+    try {
+      setKnowledgeLoading(true);
+      const docs = await api.getAdminKnowledgeDocuments(shopDomain);
+      setKnowledgeDocs(docs);
+    } catch (err: any) {
+      setError(err.message || 'Error al cargar documentos');
+    } finally {
+      setKnowledgeLoading(false);
+    }
+  };
+
+  const handleCreateKnowledgeText = async () => {
+    if (!selectedDetail || !knowledgeTitle.trim() || !knowledgeContent.trim()) return;
+    try {
+      setKnowledgeSubmitting(true);
+      await api.createAdminKnowledgeDocument(selectedDetail.tenant.shop_domain, {
+        title: knowledgeTitle,
+        content: knowledgeContent,
+      });
+      setKnowledgeTitle('');
+      setKnowledgeContent('');
+      setKnowledgeTab('documents');
+      await loadKnowledgeDocs(selectedDetail.tenant.shop_domain);
+    } catch (err: any) {
+      setError(err.message || 'Error al crear documento');
+    } finally {
+      setKnowledgeSubmitting(false);
+    }
+  };
+
+  const handleUploadKnowledgeFile = async () => {
+    if (!selectedDetail) return;
+    const file = knowledgeFileRef.current?.files?.[0];
+    if (!file) return;
+    try {
+      setKnowledgeSubmitting(true);
+      await api.uploadAdminKnowledgeFile(
+        selectedDetail.tenant.shop_domain,
+        file,
+        knowledgeTitle || undefined
+      );
+      setKnowledgeTitle('');
+      if (knowledgeFileRef.current) knowledgeFileRef.current.value = '';
+      setKnowledgeTab('documents');
+      await loadKnowledgeDocs(selectedDetail.tenant.shop_domain);
+    } catch (err: any) {
+      setError(err.message || 'Error al subir archivo');
+    } finally {
+      setKnowledgeSubmitting(false);
+    }
+  };
+
+  const handleDeleteKnowledgeDoc = async (docId: string) => {
+    if (!selectedDetail || !confirm('Seguro que deseas eliminar este documento?')) return;
+    try {
+      await api.deleteAdminKnowledgeDocument(selectedDetail.tenant.shop_domain, docId);
+      await loadKnowledgeDocs(selectedDetail.tenant.shop_domain);
+    } catch (err: any) {
+      setError(err.message || 'Error al eliminar documento');
+    }
+  };
+
+  // Lazy-load knowledge docs when tab is selected
+  useEffect(() => {
+    if (activeDetailTab === 'knowledge' && selectedDetail && knowledgeDocs.length === 0) {
+      loadKnowledgeDocs(selectedDetail.tenant.shop_domain);
+    }
+  }, [activeDetailTab, selectedDetail]);
+
+  // Poll for pending/processing knowledge docs
+  useEffect(() => {
+    if (activeDetailTab !== 'knowledge' || !selectedDetail) return;
+    const hasPending = knowledgeDocs.some(d => d.embedding_status === 'pending' || d.embedding_status === 'processing');
+    if (!hasPending) return;
+
+    const interval = setInterval(() => {
+      loadKnowledgeDocs(selectedDetail.tenant.shop_domain);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [activeDetailTab, selectedDetail, knowledgeDocs]);
+
   // --- Badge helpers ---
   const getPlanBadge = (planSlug: TenantPlan) => {
     const plan = plans.find(p => p.slug === planSlug);
@@ -322,7 +422,7 @@ function Tenants() {
 
           {/* Tabs */}
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-            {([['general', 'General'], ['stats', 'Uso y Stats'], ['widget', 'Widget'], ['integration', 'Integracion']] as const).map(([key, label]) => (
+            {([['general', 'General'], ['stats', 'Uso y Stats'], ['widget', 'Widget'], ['ai', 'IA'], ['knowledge', 'Knowledge'], ['integration', 'Integracion']] as const).map(([key, label]) => (
               <button key={key} className={`btn ${activeDetailTab === key ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveDetailTab(key as any)}>
                 {label}
               </button>
@@ -814,17 +914,204 @@ function Tenants() {
             </>
           )}
 
+          {/* TAB: IA */}
+          {activeDetailTab === 'ai' && (
+            <div className="card">
+              <div className="card-header"><h3 className="card-title">Configuracion de IA</h3></div>
+              <div className="form-group">
+                <label className="form-label">Modo de Chat</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <button
+                    className={`btn ${detailForm.chat_mode === 'internal' ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => updateDetailForm('chat_mode', 'internal')}
+                    style={{ padding: '1rem', height: 'auto', flexDirection: 'column', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><circle cx="9" cy="9" r="1"/><circle cx="15" cy="9" r="1"/></svg>
+                    <span style={{ fontWeight: 600 }}>IA Interna (Kova)</span>
+                    <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>Motor de IA integrado</span>
+                  </button>
+                  <button
+                    className={`btn ${detailForm.chat_mode === 'external' ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => updateDetailForm('chat_mode', 'external')}
+                    style={{ padding: '1rem', height: 'auto', flexDirection: 'column', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    <span style={{ fontWeight: 600 }}>Endpoint Externo</span>
+                    <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>Webhook personalizado</span>
+                  </button>
+                </div>
+              </div>
+
+              {detailForm.chat_mode === 'internal' ? (
+                <>
+                  <div className="form-group">
+                    <label className="form-label">Nombre del Agente</label>
+                    <input type="text" className="form-input" placeholder="Ej: Kova" value={detailForm.agent_name} onChange={e => updateDetailForm('agent_name', e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Descripcion de la Marca</label>
+                    <textarea className="form-input" rows={3} placeholder="Describe la marca para darle contexto al agente..." value={detailForm.brand_description} onChange={e => updateDetailForm('brand_description', e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Tono del Agente</label>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      {[['friendly', 'Amigable'], ['formal', 'Formal'], ['casual', 'Casual'], ['professional', 'Profesional']].map(([val, label]) => (
+                        <button key={val} className={`btn btn-sm ${detailForm.agent_tone === val ? 'btn-primary' : 'btn-secondary'}`} onClick={() => updateDetailForm('agent_tone', val)}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Idioma del Agente</label>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      {[['es', 'Espanol'], ['en', 'English'], ['pt', 'Portugues']].map(([val, label]) => (
+                        <button key={val} className={`btn btn-sm ${detailForm.agent_language === val ? 'btn-primary' : 'btn-secondary'}`} onClick={() => updateDetailForm('agent_language', val)}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Instrucciones del Agente</label>
+                    <textarea className="form-input" rows={4} placeholder="Instrucciones adicionales para el comportamiento del agente..." value={detailForm.agent_instructions} onChange={e => updateDetailForm('agent_instructions', e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Modelo de IA</label>
+                    <select className="form-select" value={detailForm.ai_model} onChange={e => updateDetailForm('ai_model', e.target.value)}>
+                      <option value="gpt-4.1-mini">GPT-4.1 Mini (Recomendado)</option>
+                      <option value="gpt-4o">GPT-4o</option>
+                      <option value="gpt-4">GPT-4</option>
+                      <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                    </select>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="form-group">
+                    <label className="form-label">Chatbot Endpoint (obligatorio)</label>
+                    <input type="text" className="form-input" placeholder="https://n8n.example.com/webhook/..." value={detailForm.chatbot_endpoint} onChange={e => updateDetailForm('chatbot_endpoint', e.target.value)} />
+                  </div>
+                  <div style={{ padding: '0.75rem 1rem', background: 'var(--color-bg)', borderRadius: 8, fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                    El endpoint debe aceptar POST con <code>{'{ message, sessionId, shopDomain }'}</code> y responder con <code>{'{ reply }'}</code>.
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* TAB: Knowledge */}
+          {activeDetailTab === 'knowledge' && (
+            <div className="card">
+              <div className="card-header">
+                <h3 className="card-title">Knowledge Base</h3>
+              </div>
+
+              {/* Sub-tabs */}
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                <button className={`btn btn-sm ${knowledgeTab === 'documents' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setKnowledgeTab('documents')}>
+                  Documentos ({knowledgeDocs.length})
+                </button>
+                <button className={`btn btn-sm ${knowledgeTab === 'add' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setKnowledgeTab('add')}>
+                  + Agregar
+                </button>
+              </div>
+
+              {knowledgeTab === 'documents' && (
+                <>
+                  {knowledgeLoading ? (
+                    <div className="loading-container"><div className="loading-spinner"></div><span className="loading-text">Cargando documentos...</span></div>
+                  ) : knowledgeDocs.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--color-text-muted)' }}>
+                      <p style={{ marginBottom: '0.75rem' }}>No hay documentos en la knowledge base.</p>
+                      <button className="btn btn-primary btn-sm" onClick={() => setKnowledgeTab('add')}>Agregar primer documento</button>
+                    </div>
+                  ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table className="table" style={{ fontSize: '0.85rem' }}>
+                        <thead>
+                          <tr>
+                            <th>Titulo</th>
+                            <th>Tipo</th>
+                            <th>Fragmentos</th>
+                            <th>Estado</th>
+                            <th>Fecha</th>
+                            <th>Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {knowledgeDocs.map(doc => (
+                            <tr key={doc.id}>
+                              <td style={{ fontWeight: 600 }}>{doc.title}</td>
+                              <td><span className="badge badge-neutral">{doc.source_type}</span></td>
+                              <td>{doc.chunk_count}</td>
+                              <td>
+                                {doc.embedding_status === 'completed' && <span className="badge badge-success">Listo</span>}
+                                {doc.embedding_status === 'processing' && <span className="badge badge-warning">Procesando</span>}
+                                {doc.embedding_status === 'pending' && <span className="badge badge-neutral">Pendiente</span>}
+                                {doc.embedding_status === 'failed' && <span className="badge badge-error">Error</span>}
+                              </td>
+                              <td style={{ color: 'var(--color-text-muted)' }}>{formatDate(doc.created_at)}</td>
+                              <td>
+                                <button className="btn btn-danger btn-sm" onClick={() => handleDeleteKnowledgeDoc(doc.id)}>Eliminar</button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {knowledgeTab === 'add' && (
+                <>
+                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                    <button className={`btn btn-sm ${knowledgeAddMode === 'text' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setKnowledgeAddMode('text')}>
+                      Texto directo
+                    </button>
+                    <button className={`btn btn-sm ${knowledgeAddMode === 'file' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setKnowledgeAddMode('file')}>
+                      Subir archivo
+                    </button>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Titulo</label>
+                    <input type="text" className="form-input" placeholder="Nombre del documento..." value={knowledgeTitle} onChange={e => setKnowledgeTitle(e.target.value)} />
+                  </div>
+
+                  {knowledgeAddMode === 'text' ? (
+                    <>
+                      <div className="form-group">
+                        <label className="form-label">Contenido</label>
+                        <textarea className="form-input" rows={8} placeholder="Pega o escribe el contenido aqui..." value={knowledgeContent} onChange={e => setKnowledgeContent(e.target.value)} />
+                      </div>
+                      <button className="btn btn-primary" disabled={knowledgeSubmitting || !knowledgeTitle.trim() || !knowledgeContent.trim()} onClick={handleCreateKnowledgeText}>
+                        {knowledgeSubmitting ? 'Creando...' : 'Crear Documento'}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="form-group">
+                        <label className="form-label">Archivo (.txt, .md, .pdf)</label>
+                        <input type="file" ref={knowledgeFileRef} accept=".txt,.md,.pdf" className="form-input" />
+                      </div>
+                      <button className="btn btn-primary" disabled={knowledgeSubmitting} onClick={handleUploadKnowledgeFile}>
+                        {knowledgeSubmitting ? 'Subiendo...' : 'Subir Archivo'}
+                      </button>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
           {/* TAB: Integration */}
           {activeDetailTab === 'integration' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
               <div className="card">
                 <div className="card-header"><h3 className="card-title">Configuracion de Integracion</h3></div>
-                <div className="form-group">
-                  <label className="form-label">Chatbot Endpoint</label>
-                  <input type="text" className="form-input" placeholder="https://n8n.example.com/webhook/..." value={detailForm.chatbot_endpoint} onChange={e => updateDetailForm('chatbot_endpoint', e.target.value)} />
-                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>URL del webhook del chatbot (n8n, etc.)</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem', padding: '1rem', background: 'var(--color-bg)', borderRadius: 10 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '1rem', background: 'var(--color-bg)', borderRadius: 10 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Plataforma</span>
                     {getPlatformBadge(clientStore?.platform || store?.platform)}

@@ -68,16 +68,16 @@ async function requireClientAuth(
 // Helper: get shop_domain from authenticated user
 async function getShopDomain(req: Request): Promise<string> {
   const user = (req as any).user;
-  const { data: store } = await (supabaseService as any).serviceClient
+  const { data: stores } = await (supabaseService as any).serviceClient
     .from('client_stores')
     .select('shop_domain')
     .eq('user_id', user.id)
-    .single();
+    .limit(1);
 
-  if (!store?.shop_domain) {
+  if (!stores?.[0]?.shop_domain) {
     throw new AppError('Tienda no encontrada', 404);
   }
-  return store.shop_domain;
+  return stores[0].shop_domain;
 }
 
 /**
