@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { SupabaseService } from '@/services/supabase.service';
+import { ShopifyService } from '@/services/shopify.service';
 import { SimpleConversionTracker } from '@/services/simple-conversion-tracker.service';
 import { logger } from '@/utils/logger';
 import { AppError } from '@/types';
@@ -8,6 +9,7 @@ import { config } from '@/utils/config';
 
 const router = Router();
 const supabaseService = new SupabaseService();
+const shopifyService = new ShopifyService();
 
 const JWT_SECRET =
   process.env.JWT_SECRET || 'kova-admin-secret-key-change-in-production';
@@ -316,19 +318,40 @@ router.get(
       };
       const accessToken = tokenData.access_token;
 
-      // Update store with access token
+      // Fetch shop info from Shopify API
+      let shopInfo: { name: string; email: string; domain: string; currency: string; timezone: string; country: string; locale: string } | null = null;
+      try {
+        shopInfo = await shopifyService.getShopInfo(shop as string, accessToken);
+        logger.info('Fetched shop info', { shop, shopInfo: { name: shopInfo.name, currency: shopInfo.currency } });
+      } catch (err) {
+        logger.error('Failed to fetch shop info, continuing without it:', err);
+      }
+
+      // Update store with access token and shop metadata
+      const clientStoreUpdate: any = {
+        access_token: accessToken,
+        status: 'connected',
+        trial_started_at: new Date().toISOString(),
+        trial_ends_at: new Date(
+          Date.now() + 14 * 24 * 60 * 60 * 1000
+        ).toISOString(), // 14 days trial
+      };
+
+      if (shopInfo) {
+        clientStoreUpdate.shop_name = shopInfo.name;
+        clientStoreUpdate.shop_email = shopInfo.email;
+        clientStoreUpdate.shop_currency = shopInfo.currency;
+        clientStoreUpdate.shop_country = shopInfo.country;
+        clientStoreUpdate.shop_timezone = shopInfo.timezone;
+        clientStoreUpdate.shop_locale = shopInfo.locale;
+        clientStoreUpdate.widget_brand_name = shopInfo.name;
+      }
+
       const { error: updateError } = await (
         supabaseService as any
       ).serviceClient
         .from('client_stores')
-        .update({
-          access_token: accessToken,
-          status: 'connected',
-          trial_started_at: new Date().toISOString(),
-          trial_ends_at: new Date(
-            Date.now() + 14 * 24 * 60 * 60 * 1000
-          ).toISOString(), // 14 days trial
-        })
+        .update(clientStoreUpdate)
         .eq('id', storeId);
 
       if (updateError) {
@@ -340,7 +363,7 @@ router.get(
       await (supabaseService as any).serviceClient
         .from('admin_users')
         .update({
-          onboarding_step: 3,
+          onboarding_step: 2,
         })
         .eq('id', userId);
 
@@ -353,18 +376,43 @@ router.get(
         .eq('shop_domain', shop)
         .single();
 
+      const storesData: any = {
+        shop_domain: shop,
+        access_token: accessToken,
+        status: 'active',
+      };
+      if (shopInfo) {
+        storesData.shop_name = shopInfo.name;
+        storesData.shop_email = shopInfo.email;
+        storesData.shop_currency = shopInfo.currency;
+        storesData.shop_country = shopInfo.country;
+        storesData.shop_timezone = shopInfo.timezone;
+      }
+
       if (!existingShop) {
-        await (supabaseService as any).serviceClient.from('stores').insert({
-          shop_domain: shop,
-          access_token: accessToken,
-          status: 'active',
-        });
+        await (supabaseService as any).serviceClient.from('stores').insert(storesData);
+      } else {
+        await (supabaseService as any).serviceClient
+          .from('stores')
+          .update(storesData)
+          .eq('shop_domain', shop);
+      }
+
+      // Update tenants table with shop metadata
+      if (shopInfo) {
+        await (supabaseService as any).serviceClient
+          .from('tenants')
+          .update({
+            shop_name: shopInfo.name,
+            shop_email: shopInfo.email,
+          })
+          .eq('shop_domain', shop);
       }
 
       logger.info('OAuth successful', { userId, storeId, shop });
 
-      // Redirect to onboarding step 3
-      res.redirect('/admin?oauth=success&step=3');
+      // Redirect to onboarding step 2 (StoreInfo)
+      res.redirect('/admin?oauth=success&step=2');
     } catch (error) {
       logger.error('OAuth callback error:', error);
       res.redirect('/admin?error=oauth_error');
@@ -557,13 +605,13 @@ router.post(
       const user = (req as any).user;
       const { step, data } = req.body;
 
-      if (step === undefined || step < 0 || step > 4) {
+      if (step === undefined || step < 0 || step > 5) {
         throw new AppError('Paso invalido', 400);
       }
 
       const updateData: any = {
         onboarding_step: step,
-        onboarding_completed: step >= 4,
+        onboarding_completed: step >= 5,
       };
 
       // Update user
@@ -576,7 +624,20 @@ router.post(
         throw new AppError('Error al actualizar onboarding', 500);
       }
 
-      // If step 3 (widget config), also update store
+      // Step 2 (StoreInfo): update brand name and support email
+      if (step === 2 && data) {
+        const storeUpdate: any = {};
+        if (data.brandName) storeUpdate.widget_brand_name = data.brandName;
+        if (data.supportEmail) storeUpdate.shop_email = data.supportEmail;
+        if (Object.keys(storeUpdate).length > 0) {
+          await (supabaseService as any).serviceClient
+            .from('client_stores')
+            .update(storeUpdate)
+            .eq('user_id', user.id);
+        }
+      }
+
+      // Step 3 (widget config): update widget settings
       if (step === 3 && data) {
         await (supabaseService as any).serviceClient
           .from('client_stores')
@@ -585,17 +646,20 @@ router.post(
             widget_color: data.widgetColor || '#6d5cff',
             welcome_message:
               data.welcomeMessage || 'Hola! Como puedo ayudarte?',
+            widget_brand_name: data.widgetBrandName || undefined,
+            widget_subtitle: data.widgetSubtitle || undefined,
           })
           .eq('user_id', user.id);
       }
 
-      // If step 4 (activate), mark store as active
-      if (step === 4) {
+      // Step 5 (complete): mark store as active
+      if (step >= 5) {
         await (supabaseService as any).serviceClient
           .from('client_stores')
           .update({
             status: 'active',
             is_active: true,
+            onboarding_completed_at: new Date().toISOString(),
           })
           .eq('user_id', user.id);
       }
@@ -604,11 +668,221 @@ router.post(
         success: true,
         data: {
           step,
-          completed: step >= 4,
+          completed: step >= 5,
         },
       });
     } catch (error) {
       logger.error('Update onboarding error:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * GET /api/client/store/info
+ * Get store info (name, email, currency, etc.)
+ */
+router.get(
+  '/store/info',
+  requireClientAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = (req as any).user;
+
+      const { data: store, error } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('client_stores')
+        .select(
+          'shop_domain, shop_name, shop_email, shop_currency, shop_country, shop_timezone, shop_locale, widget_brand_name, platform'
+        )
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw new AppError('Error al obtener info de tienda', 500);
+      }
+
+      res.json({
+        success: true,
+        data: store || null,
+      });
+    } catch (error) {
+      logger.error('Get store info error:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * PUT /api/client/store/info
+ * Update store info (brand name, support email)
+ */
+router.put(
+  '/store/info',
+  requireClientAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = (req as any).user;
+      const { brandName, supportEmail } = req.body;
+
+      const updateData: any = {};
+      if (brandName !== undefined) updateData.widget_brand_name = brandName;
+      if (supportEmail !== undefined) updateData.shop_email = supportEmail;
+
+      const { error } = await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .update(updateData)
+        .eq('user_id', user.id);
+
+      if (error) {
+        throw new AppError('Error al actualizar info de tienda', 500);
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      logger.error('Update store info error:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * POST /api/client/store/sync
+ * Trigger product sync
+ */
+router.post(
+  '/store/sync',
+  requireClientAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = (req as any).user;
+
+      const { data: store, error: storeError } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('client_stores')
+        .select('id, shop_domain, access_token, platform')
+        .eq('user_id', user.id)
+        .single();
+
+      if (storeError || !store) {
+        throw new AppError('Tienda no encontrada', 404);
+      }
+
+      // Mark sync as in_progress
+      await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .update({ sync_status: 'in_progress', sync_total: 0 })
+        .eq('id', store.id);
+
+      // Start async sync
+      (async () => {
+        try {
+          const products = await shopifyService.getAllProducts(
+            store.shop_domain,
+            store.access_token
+          );
+
+          // Update total
+          await (supabaseService as any).serviceClient
+            .from('client_stores')
+            .update({ sync_total: products.length })
+            .eq('id', store.id);
+
+          let syncedCount = 0;
+          for (const product of products) {
+            try {
+              await supabaseService.saveProduct(store.shop_domain, product);
+              syncedCount++;
+              // Update progress every 10 products
+              if (syncedCount % 10 === 0) {
+                await (supabaseService as any).serviceClient
+                  .from('client_stores')
+                  .update({ products_synced: syncedCount })
+                  .eq('id', store.id);
+              }
+            } catch (err) {
+              logger.error(`Failed to save product ${product.id}:`, err);
+            }
+          }
+
+          // Mark sync complete
+          await (supabaseService as any).serviceClient
+            .from('client_stores')
+            .update({
+              sync_status: 'completed',
+              products_synced: syncedCount,
+              last_sync_at: new Date().toISOString(),
+            })
+            .eq('id', store.id);
+
+          // Create webhooks
+          try {
+            await shopifyService.createWebhooks(store.shop_domain, store.access_token);
+            await (supabaseService as any).serviceClient
+              .from('client_stores')
+              .update({ webhooks_configured: true })
+              .eq('id', store.id);
+          } catch (err) {
+            logger.error('Failed to create webhooks:', err);
+          }
+
+          logger.info(`Sync completed for ${store.shop_domain}: ${syncedCount}/${products.length}`);
+        } catch (err) {
+          logger.error('Product sync failed:', err);
+          await (supabaseService as any).serviceClient
+            .from('client_stores')
+            .update({ sync_status: 'failed' })
+            .eq('id', store.id);
+        }
+      })();
+
+      res.json({
+        success: true,
+        data: { message: 'Sync started' },
+      });
+    } catch (error) {
+      logger.error('Store sync error:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * GET /api/client/store/sync-status
+ * Get sync status
+ */
+router.get(
+  '/store/sync-status',
+  requireClientAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = (req as any).user;
+
+      const { data: store, error } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('client_stores')
+        .select('sync_status, products_synced, sync_total, webhooks_configured')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw new AppError('Error al obtener estado de sync', 500);
+      }
+
+      res.json({
+        success: true,
+        data: {
+          status: store?.sync_status || 'pending',
+          synced: store?.products_synced || 0,
+          total: store?.sync_total || 0,
+          webhooksConfigured: store?.webhooks_configured || false,
+        },
+      });
+    } catch (error) {
+      logger.error('Get sync status error:', error);
       next(error);
     }
   }

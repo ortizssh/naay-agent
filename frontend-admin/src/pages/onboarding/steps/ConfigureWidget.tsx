@@ -5,6 +5,8 @@ interface ConfigureWidgetProps {
     position: string;
     color: string;
     welcomeMessage: string;
+    brandName: string;
+    subtitle: string;
   };
   onConfigChange: (key: string, value: string) => void;
   onBack: () => void;
@@ -28,6 +30,28 @@ function ConfigureWidget({ config, onConfigChange, onBack, onNext }: ConfigureWi
 
       <div className="widget-preview-container">
         <div className="widget-config-form">
+          <div className="form-group">
+            <label className="form-label">Nombre de marca</label>
+            <input
+              type="text"
+              className="form-input"
+              value={config.brandName}
+              onChange={(e) => onConfigChange('brandName', e.target.value)}
+              placeholder="Tu marca"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Subtitulo</label>
+            <input
+              type="text"
+              className="form-input"
+              value={config.subtitle}
+              onChange={(e) => onConfigChange('subtitle', e.target.value)}
+              placeholder="Asistente de compras con IA"
+            />
+          </div>
+
           <div className="form-group">
             <label className="form-label">Color principal</label>
             <div className="color-picker-wrapper">

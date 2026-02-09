@@ -22,13 +22,68 @@ class Kova_Admin {
     public function __construct() {
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_init', array($this, 'register_settings'));
+        add_action('admin_init', array($this, 'activation_redirect'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
+        add_action('admin_notices', array($this, 'setup_wizard_notice'));
         add_action('wp_ajax_kova_test_connection', array($this, 'ajax_test_connection'));
         add_action('wp_ajax_kova_sync_products', array($this, 'ajax_sync_products'));
         add_action('wp_ajax_kova_setup_webhooks', array($this, 'ajax_setup_webhooks'));
         add_action('wp_ajax_kova_get_analytics', array($this, 'ajax_get_analytics'));
         add_action('wp_ajax_kova_get_conversations', array($this, 'ajax_get_conversations'));
         add_action('wp_ajax_kova_get_conversions', array($this, 'ajax_get_conversions'));
+        add_action('wp_ajax_kova_wizard_auto_generate_keys', array($this, 'ajax_wizard_auto_generate_keys'));
+        add_action('wp_ajax_kova_wizard_connect', array($this, 'ajax_wizard_connect'));
+        add_action('wp_ajax_kova_wizard_sync_products', array($this, 'ajax_wizard_sync_products'));
+        add_action('wp_ajax_kova_wizard_complete', array($this, 'ajax_wizard_complete'));
+    }
+
+    /**
+     * Redirect to setup wizard on activation
+     */
+    public function activation_redirect() {
+        if (!get_transient('kova_agent_activation_redirect')) {
+            return;
+        }
+        delete_transient('kova_agent_activation_redirect');
+
+        // Don't redirect on multisite or bulk activation
+        if (is_network_admin() || isset($_GET['activate-multi'])) {
+            return;
+        }
+
+        $settings = get_option('kova_agent_settings', array());
+        if (empty($settings['consumer_key'])) {
+            wp_safe_redirect(admin_url('admin.php?page=kova-agent-setup'));
+            exit;
+        }
+    }
+
+    /**
+     * Show admin notice if onboarding not completed
+     */
+    public function setup_wizard_notice() {
+        $settings = get_option('kova_agent_settings', array());
+        $onboarding_complete = get_option('kova_agent_onboarding_complete', false);
+
+        if ($onboarding_complete || !empty($settings['consumer_key'])) {
+            return;
+        }
+
+        $current_screen = get_current_screen();
+        if ($current_screen && strpos($current_screen->id, 'kova-agent-setup') !== false) {
+            return;
+        }
+        ?>
+        <div class="notice notice-info is-dismissible">
+            <p>
+                <strong><?php _e('Kova Agent esta casi listo.', 'kova-agent'); ?></strong>
+                <?php _e('Completa la configuracion para activar tu asistente de IA.', 'kova-agent'); ?>
+                <a href="<?php echo admin_url('admin.php?page=kova-agent-setup'); ?>" class="button button-primary" style="margin-left: 10px;">
+                    <?php _e('Ejecutar Setup Wizard', 'kova-agent'); ?>
+                </a>
+            </p>
+        </div>
+        <?php
     }
 
     /**
@@ -43,6 +98,16 @@ class Kova_Admin {
             array($this, 'render_admin_page'),
             'dashicons-format-chat',
             56
+        );
+
+        // Hidden setup wizard page
+        add_submenu_page(
+            null,
+            __('Kova Agent Setup', 'kova-agent'),
+            __('Setup', 'kova-agent'),
+            'manage_woocommerce',
+            'kova-agent-setup',
+            array($this, 'render_setup_wizard')
         );
     }
 
@@ -165,6 +230,36 @@ class Kova_Admin {
     public function enqueue_admin_scripts($hook) {
         if (strpos($hook, 'kova-agent') === false) {
             return;
+        }
+
+        // Setup wizard page - load wizard-specific assets
+        if (strpos($hook, 'kova-agent-setup') !== false) {
+            wp_enqueue_style(
+                'kova-wizard-css',
+                KOVA_AGENT_PLUGIN_URL . 'assets/css/wizard.css',
+                array(),
+                KOVA_AGENT_VERSION
+            );
+            wp_enqueue_script(
+                'kova-wizard-js',
+                KOVA_AGENT_PLUGIN_URL . 'assets/js/wizard.js',
+                array('jquery'),
+                KOVA_AGENT_VERSION,
+                true
+            );
+            wp_localize_script('kova-wizard-js', 'kovaWizard', array(
+                'ajax_url' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('kova_admin_nonce'),
+                'siteUrl' => site_url(),
+                'storeName' => get_bloginfo('name'),
+                'storeEmail' => get_option('admin_email'),
+                'currency' => function_exists('get_woocommerce_currency') ? get_woocommerce_currency() : 'USD',
+                'country' => class_exists('WC') && WC()->countries ? WC()->countries->get_base_country() : '',
+                'timezone' => wp_timezone_string(),
+                'locale' => get_locale(),
+                'dashboardUrl' => admin_url('admin.php?page=kova-agent'),
+            ));
+            return; // Don't load main admin scripts for wizard page
         }
 
         // Modern CSS
@@ -1754,5 +1849,381 @@ class Kova_Admin {
         } else {
             wp_send_json_error(array('message' => $body['error'] ?? __('Failed to load conversions.', 'kova-agent')));
         }
+    }
+
+    /**
+     * AJAX: Auto-generate WooCommerce API keys
+     */
+    public function ajax_wizard_auto_generate_keys() {
+        check_ajax_referer('kova_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+        }
+
+        global $wpdb;
+
+        // Check if WC functions exist
+        if (!function_exists('wc_rand_hash') || !function_exists('wc_api_hash')) {
+            wp_send_json_error(array('message' => 'WooCommerce functions not available'));
+        }
+
+        $consumer_key = 'ck_' . wc_rand_hash();
+        $consumer_secret = 'cs_' . wc_rand_hash();
+
+        $result = $wpdb->insert(
+            $wpdb->prefix . 'woocommerce_api_keys',
+            array(
+                'user_id'         => get_current_user_id(),
+                'description'     => 'Kova Agent - Auto Generated',
+                'permissions'     => 'read_write',
+                'consumer_key'    => wc_api_hash($consumer_key),
+                'consumer_secret' => $consumer_secret,
+                'truncated_key'   => substr($consumer_key, -7),
+            ),
+            array('%d', '%s', '%s', '%s', '%s', '%s')
+        );
+
+        if ($result === false) {
+            wp_send_json_error(array('message' => 'Failed to generate API keys'));
+        }
+
+        // Save keys in plugin settings
+        $settings = get_option('kova_agent_settings', array());
+        $settings['consumer_key'] = $consumer_key;
+        $settings['consumer_secret'] = $consumer_secret;
+        update_option('kova_agent_settings', $settings);
+
+        wp_send_json_success(array(
+            'consumer_key' => $consumer_key,
+            'consumer_secret' => $consumer_secret,
+        ));
+    }
+
+    /**
+     * AJAX: Connect to Kova backend with full store metadata
+     */
+    public function ajax_wizard_connect() {
+        check_ajax_referer('kova_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+        }
+
+        $settings = get_option('kova_agent_settings', array());
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+
+        if (empty($settings['consumer_key']) || empty($settings['consumer_secret'])) {
+            wp_send_json_error(array('message' => 'API keys not configured'));
+        }
+
+        $body = array(
+            'siteUrl'       => site_url(),
+            'consumerKey'   => $settings['consumer_key'],
+            'consumerSecret'=> $settings['consumer_secret'],
+            'storeName'     => get_bloginfo('name'),
+            'storeEmail'    => get_option('admin_email'),
+            'currency'      => function_exists('get_woocommerce_currency') ? get_woocommerce_currency() : 'USD',
+            'country'       => class_exists('WC') && WC()->countries ? WC()->countries->get_base_country() : '',
+            'timezone'      => wp_timezone_string(),
+            'locale'        => get_locale(),
+        );
+
+        $response = wp_remote_post($api_endpoint . '/api/woo/connect', array(
+            'headers' => array('Content-Type' => 'application/json'),
+            'body' => json_encode($body),
+            'timeout' => 30,
+        ));
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => $response->get_error_message()));
+        }
+
+        $response_body = json_decode(wp_remote_retrieve_body($response), true);
+
+        if (!empty($response_body['success'])) {
+            // Store webhook secret
+            if (!empty($response_body['data']['webhookSecret'])) {
+                $settings['webhook_secret'] = $response_body['data']['webhookSecret'];
+                update_option('kova_agent_settings', $settings);
+            }
+            wp_send_json_success($response_body['data']);
+        } else {
+            wp_send_json_error(array('message' => $response_body['error'] ?? 'Connection failed'));
+        }
+    }
+
+    /**
+     * AJAX: Trigger product sync from wizard
+     */
+    public function ajax_wizard_sync_products() {
+        check_ajax_referer('kova_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+        }
+
+        $settings = get_option('kova_agent_settings', array());
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+
+        $response = wp_remote_post($api_endpoint . '/api/woo/sync-products', array(
+            'headers' => array('Content-Type' => 'application/json'),
+            'body' => json_encode(array('siteUrl' => site_url())),
+            'timeout' => 120,
+        ));
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => $response->get_error_message()));
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+
+        if (!empty($body['success'])) {
+            // Also set up webhooks
+            wp_remote_post($api_endpoint . '/api/woo/setup-webhooks', array(
+                'headers' => array('Content-Type' => 'application/json'),
+                'body' => json_encode(array('siteUrl' => site_url())),
+                'timeout' => 30,
+            ));
+
+            wp_send_json_success($body['data']);
+        } else {
+            wp_send_json_error(array('message' => $body['error'] ?? 'Sync failed'));
+        }
+    }
+
+    /**
+     * AJAX: Complete wizard and enable widget
+     */
+    public function ajax_wizard_complete() {
+        check_ajax_referer('kova_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+        }
+
+        // Get widget config from request
+        $brand_name = isset($_POST['brand_name']) ? sanitize_text_field($_POST['brand_name']) : get_bloginfo('name');
+        $widget_color = isset($_POST['widget_color']) ? sanitize_hex_color($_POST['widget_color']) : '#6366f1';
+        $widget_position = isset($_POST['widget_position']) ? sanitize_text_field($_POST['widget_position']) : 'bottom-right';
+        $welcome_message = isset($_POST['welcome_message']) ? sanitize_textarea_field($_POST['welcome_message']) : '';
+        $widget_subtitle = isset($_POST['widget_subtitle']) ? sanitize_text_field($_POST['widget_subtitle']) : 'Asistente de compras con IA';
+
+        $settings = get_option('kova_agent_settings', array());
+        $settings['enabled'] = true;
+        $settings['widget_brand_name'] = $brand_name;
+        $settings['widget_color'] = $widget_color;
+        $settings['widget_position'] = $widget_position;
+        $settings['welcome_message'] = $welcome_message;
+        $settings['widget_subtitle'] = $widget_subtitle;
+        update_option('kova_agent_settings', $settings);
+
+        // Mark onboarding as complete
+        update_option('kova_agent_onboarding_complete', true);
+
+        // Sync widget config to backend
+        $api = new Kova_API();
+
+        wp_send_json_success(array('message' => 'Setup completed'));
+    }
+
+    /**
+     * Render setup wizard page
+     */
+    public function render_setup_wizard() {
+        $store_name = get_bloginfo('name');
+        ?>
+        <!DOCTYPE html>
+        <html <?php language_attributes(); ?>>
+        <head>
+            <meta charset="<?php bloginfo('charset'); ?>">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title><?php _e('Kova Agent Setup', 'kova-agent'); ?></title>
+            <?php wp_head(); ?>
+        </head>
+        <body class="kova-wizard-body">
+            <div class="kova-wizard-wrapper">
+                <div class="kova-wizard-header">
+                    <div class="kova-wizard-logo">
+                        <div class="kova-wizard-logo-icon">K</div>
+                        <span class="kova-wizard-logo-text">Kova Agent</span>
+                    </div>
+                    <a href="<?php echo admin_url('admin.php?page=kova-agent'); ?>" class="kova-wizard-skip">
+                        <?php _e('Saltar', 'kova-agent'); ?> &rarr;
+                    </a>
+                </div>
+
+                <div class="kova-wizard-progress">
+                    <div class="kova-wizard-progress-bar" id="wizard-progress-bar" style="width: 20%"></div>
+                </div>
+
+                <!-- Step 1: Welcome -->
+                <div class="kova-wizard-step active" id="wizard-step-1">
+                    <h1><?php _e('Bienvenido a Kova Agent', 'kova-agent'); ?></h1>
+                    <p class="kova-wizard-desc"><?php _e('Configura tu asistente de IA en pocos minutos. Kova ayudara a tus clientes a encontrar productos, obtener recomendaciones y completar compras.', 'kova-agent'); ?></p>
+
+                    <div class="kova-wizard-features">
+                        <div class="kova-wizard-feature">
+                            <div class="kova-wizard-feature-icon">&#128269;</div>
+                            <div>
+                                <strong><?php _e('Busqueda inteligente', 'kova-agent'); ?></strong>
+                                <p><?php _e('Busqueda semantica de productos con IA', 'kova-agent'); ?></p>
+                            </div>
+                        </div>
+                        <div class="kova-wizard-feature">
+                            <div class="kova-wizard-feature-icon">&#128172;</div>
+                            <div>
+                                <strong><?php _e('Chat conversacional', 'kova-agent'); ?></strong>
+                                <p><?php _e('Atencion al cliente automatizada 24/7', 'kova-agent'); ?></p>
+                            </div>
+                        </div>
+                        <div class="kova-wizard-feature">
+                            <div class="kova-wizard-feature-icon">&#128722;</div>
+                            <div>
+                                <strong><?php _e('Gestion de carrito', 'kova-agent'); ?></strong>
+                                <p><?php _e('Agregar productos al carrito desde el chat', 'kova-agent'); ?></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="kova-wizard-btn kova-wizard-btn-primary" onclick="kovaWizardNext(2)">
+                        <?php _e('Comenzar', 'kova-agent'); ?> &rarr;
+                    </button>
+                </div>
+
+                <!-- Step 2: Connection -->
+                <div class="kova-wizard-step" id="wizard-step-2">
+                    <h1><?php _e('Conectar tu tienda', 'kova-agent'); ?></h1>
+                    <p class="kova-wizard-desc"><?php _e('Generaremos las claves API de WooCommerce automaticamente para conectar tu tienda.', 'kova-agent'); ?></p>
+
+                    <div class="kova-wizard-store-info">
+                        <div class="kova-wizard-info-row">
+                            <span class="kova-wizard-info-label"><?php _e('Tienda', 'kova-agent'); ?></span>
+                            <span class="kova-wizard-info-value"><?php echo esc_html($store_name); ?></span>
+                        </div>
+                        <div class="kova-wizard-info-row">
+                            <span class="kova-wizard-info-label"><?php _e('URL', 'kova-agent'); ?></span>
+                            <span class="kova-wizard-info-value"><?php echo esc_html(site_url()); ?></span>
+                        </div>
+                        <div class="kova-wizard-info-row">
+                            <span class="kova-wizard-info-label"><?php _e('Moneda', 'kova-agent'); ?></span>
+                            <span class="kova-wizard-info-value"><?php echo function_exists('get_woocommerce_currency') ? esc_html(get_woocommerce_currency()) : 'USD'; ?></span>
+                        </div>
+                    </div>
+
+                    <div id="wizard-connection-status" class="kova-wizard-status" style="display:none;"></div>
+
+                    <div class="kova-wizard-nav">
+                        <button class="kova-wizard-btn kova-wizard-btn-secondary" onclick="kovaWizardNext(1)">
+                            &larr; <?php _e('Atras', 'kova-agent'); ?>
+                        </button>
+                        <button class="kova-wizard-btn kova-wizard-btn-primary" id="wizard-connect-btn" onclick="kovaWizardConnect()">
+                            <?php _e('Generar claves y conectar', 'kova-agent'); ?> &rarr;
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Branding & Widget -->
+                <div class="kova-wizard-step" id="wizard-step-3">
+                    <h1><?php _e('Personaliza tu widget', 'kova-agent'); ?></h1>
+                    <p class="kova-wizard-desc"><?php _e('Configura la apariencia del asistente para que combine con tu marca.', 'kova-agent'); ?></p>
+
+                    <div class="kova-wizard-form">
+                        <div class="kova-wizard-field">
+                            <label><?php _e('Nombre de marca', 'kova-agent'); ?></label>
+                            <input type="text" id="wizard-brand-name" value="<?php echo esc_attr($store_name); ?>">
+                        </div>
+                        <div class="kova-wizard-field">
+                            <label><?php _e('Color principal', 'kova-agent'); ?></label>
+                            <div class="kova-wizard-color-row">
+                                <input type="color" id="wizard-widget-color" value="#6366f1">
+                                <input type="text" id="wizard-widget-color-text" value="#6366f1" class="kova-wizard-color-text">
+                            </div>
+                        </div>
+                        <div class="kova-wizard-field">
+                            <label><?php _e('Posicion', 'kova-agent'); ?></label>
+                            <select id="wizard-widget-position">
+                                <option value="bottom-right"><?php _e('Abajo Derecha', 'kova-agent'); ?></option>
+                                <option value="bottom-left"><?php _e('Abajo Izquierda', 'kova-agent'); ?></option>
+                                <option value="top-right"><?php _e('Arriba Derecha', 'kova-agent'); ?></option>
+                                <option value="top-left"><?php _e('Arriba Izquierda', 'kova-agent'); ?></option>
+                            </select>
+                        </div>
+                        <div class="kova-wizard-field">
+                            <label><?php _e('Mensaje de bienvenida', 'kova-agent'); ?></label>
+                            <textarea id="wizard-welcome-message" rows="2" placeholder="<?php esc_attr_e('Hola! Como puedo ayudarte?', 'kova-agent'); ?>"></textarea>
+                        </div>
+                        <div class="kova-wizard-field">
+                            <label><?php _e('Subtitulo', 'kova-agent'); ?></label>
+                            <input type="text" id="wizard-widget-subtitle" value="<?php esc_attr_e('Asistente de compras con IA', 'kova-agent'); ?>">
+                        </div>
+                    </div>
+
+                    <div class="kova-wizard-nav">
+                        <button class="kova-wizard-btn kova-wizard-btn-secondary" onclick="kovaWizardNext(2)">
+                            &larr; <?php _e('Atras', 'kova-agent'); ?>
+                        </button>
+                        <button class="kova-wizard-btn kova-wizard-btn-primary" onclick="kovaWizardNext(4)">
+                            <?php _e('Continuar', 'kova-agent'); ?> &rarr;
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 4: Sync -->
+                <div class="kova-wizard-step" id="wizard-step-4">
+                    <h1><?php _e('Sincronizar productos', 'kova-agent'); ?></h1>
+                    <p class="kova-wizard-desc"><?php _e('Sincronizamos tus productos para que el asistente pueda recomendarlos a tus clientes.', 'kova-agent'); ?></p>
+
+                    <div id="wizard-sync-status" class="kova-wizard-sync-container">
+                        <div class="kova-wizard-sync-idle">
+                            <p><?php _e('Haz clic para iniciar la sincronizacion de productos.', 'kova-agent'); ?></p>
+                            <button class="kova-wizard-btn kova-wizard-btn-primary" id="wizard-sync-btn" onclick="kovaWizardSync()">
+                                <?php _e('Sincronizar productos', 'kova-agent'); ?>
+                            </button>
+                        </div>
+                        <div class="kova-wizard-sync-progress" style="display:none;">
+                            <div class="kova-wizard-progress-container">
+                                <div class="kova-wizard-progress-fill" id="wizard-sync-progress-fill"></div>
+                            </div>
+                            <p id="wizard-sync-text"><?php _e('Sincronizando...', 'kova-agent'); ?></p>
+                        </div>
+                        <div class="kova-wizard-sync-done" style="display:none;">
+                            <div class="kova-wizard-check">&#10003;</div>
+                            <p id="wizard-sync-result"></p>
+                        </div>
+                    </div>
+
+                    <div class="kova-wizard-nav">
+                        <button class="kova-wizard-btn kova-wizard-btn-secondary" onclick="kovaWizardNext(3)">
+                            &larr; <?php _e('Atras', 'kova-agent'); ?>
+                        </button>
+                        <button class="kova-wizard-btn kova-wizard-btn-primary" id="wizard-sync-next-btn" onclick="kovaWizardNext(5)">
+                            <?php _e('Continuar', 'kova-agent'); ?> &rarr;
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 5: Activate -->
+                <div class="kova-wizard-step" id="wizard-step-5">
+                    <div class="kova-wizard-check-large">&#10003;</div>
+                    <h1><?php _e('Tu asistente esta listo!', 'kova-agent'); ?></h1>
+                    <p class="kova-wizard-desc"><?php _e('Kova Agent se ha configurado correctamente. Tu asistente de IA esta activo.', 'kova-agent'); ?></p>
+
+                    <div class="kova-wizard-checklist">
+                        <div class="kova-wizard-checklist-item">&#10003; <?php _e('Tienda conectada', 'kova-agent'); ?></div>
+                        <div class="kova-wizard-checklist-item">&#10003; <?php _e('Widget personalizado', 'kova-agent'); ?></div>
+                        <div class="kova-wizard-checklist-item">&#10003; <?php _e('Productos sincronizados', 'kova-agent'); ?></div>
+                        <div class="kova-wizard-checklist-item">&#10003; <?php _e('Widget activo en tu tienda', 'kova-agent'); ?></div>
+                    </div>
+
+                    <button class="kova-wizard-btn kova-wizard-btn-primary" onclick="kovaWizardFinish()">
+                        <?php _e('Ir al Dashboard', 'kova-agent'); ?> &rarr;
+                    </button>
+                </div>
+            </div>
+            <?php wp_footer(); ?>
+        </body>
+        </html>
+        <?php
     }
 }

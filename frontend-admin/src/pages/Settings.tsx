@@ -12,9 +12,13 @@ interface UserProfile {
 }
 
 function Settings() {
-  const [apiUrl, setApiUrl] = useState(
-    import.meta.env.VITE_API_URL || 'https://naay-agent-app1763504937.azurewebsites.net'
-  );
+  const [apiUrl, setApiUrl] = useState(() => {
+    const stored = localStorage.getItem('api_url');
+    if (stored) return stored;
+    if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') return 'http://localhost:3000';
+    return window.location.origin;
+  });
   const [saved, setSaved] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [activeTab, setActiveTab] = useState<'general' | 'account' | 'plans'>('general');

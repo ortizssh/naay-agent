@@ -142,18 +142,18 @@ export interface TenantsResponse {
 
 // API Configuration
 const getApiUrl = (): string => {
-  // Check localStorage first
+  // Auto-detect: if running on localhost, always use local backend
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return `http://localhost:3000`;
+  }
+
+  // Check localStorage (for production API URL override)
   const storedUrl = localStorage.getItem('api_url');
   if (storedUrl) return storedUrl;
 
   // Check environment variable
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
-  }
-
-  // Auto-detect: if running on localhost, use local backend
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return `http://localhost:3000`;
   }
 
   // Default to same origin (for production)
@@ -399,6 +399,29 @@ class ClientApiClient {
   // Conversion Stats
   async getConversionStats(days: number = 7): Promise<{ success: boolean; data: any }> {
     return this.request(`/api/client/conversions/stats?days=${days}`);
+  }
+
+  // Store Info
+  async getStoreInfo(): Promise<{ success: boolean; data: any }> {
+    return this.request('/api/client/store/info');
+  }
+
+  async updateStoreInfo(data: { brandName?: string; supportEmail?: string }): Promise<{ success: boolean; data: any }> {
+    return this.request('/api/client/store/info', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Product Sync
+  async triggerSync(): Promise<{ success: boolean; data: any }> {
+    return this.request('/api/client/store/sync', {
+      method: 'POST',
+    });
+  }
+
+  async getSyncStatus(): Promise<{ success: boolean; data: { status: string; synced: number; total: number; webhooksConfigured: boolean } }> {
+    return this.request('/api/client/store/sync-status');
   }
 }
 

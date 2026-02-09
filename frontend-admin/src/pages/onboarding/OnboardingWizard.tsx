@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import StepIndicator from '../../components/common/StepIndicator';
 import PlatformSelect from './steps/PlatformSelect';
 import ConnectStore from './steps/ConnectStore';
+import StoreInfo from './steps/StoreInfo';
 import ConfigureWidget from './steps/ConfigureWidget';
-import Activate from './steps/Activate';
+import SyncAndActivate from './steps/SyncAndActivate';
 import { clientApi } from '../../services/api';
 import logoKova from '../../img/logo-kova.png';
 
@@ -16,25 +17,40 @@ function OnboardingWizard({ initialStep = 0, onComplete }: OnboardingWizardProps
   const [currentStep, setCurrentStep] = useState(initialStep);
   const [selectedPlatform, setSelectedPlatform] = useState('shopify');
   const [isConnecting, setIsConnecting] = useState(false);
-  const [isActivating, setIsActivating] = useState(false);
-  const [widgetCode, setWidgetCode] = useState('');
-  const [shopDomain, setShopDomain] = useState('');
   const [widgetConfig, setWidgetConfig] = useState({
     position: 'bottom-right',
     color: '#6d5cff',
     welcomeMessage: 'Hola! Como puedo ayudarte?',
+    brandName: '',
+    subtitle: 'Asistente de compras con IA',
   });
+
+  const totalSteps = 5;
 
   useEffect(() => {
     // Check URL for oauth success
     const params = new URLSearchParams(window.location.search);
     if (params.get('oauth') === 'success') {
-      const step = parseInt(params.get('step') || '3', 10);
+      const step = parseInt(params.get('step') || '2', 10);
       setCurrentStep(step);
       // Clean URL
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, []);
+
+  // Load brand name from store info when reaching ConfigureWidget
+  useEffect(() => {
+    if (currentStep === 3 && !widgetConfig.brandName) {
+      clientApi.getStoreInfo().then(response => {
+        if (response.data?.widget_brand_name) {
+          setWidgetConfig(prev => ({
+            ...prev,
+            brandName: response.data.widget_brand_name || prev.brandName,
+          }));
+        }
+      }).catch(() => {});
+    }
+  }, [currentStep]);
 
   const handleConnectStore = async (domain: string) => {
     setIsConnecting(true);
@@ -61,36 +77,38 @@ function OnboardingWizard({ initialStep = 0, onComplete }: OnboardingWizardProps
         widgetPosition: widgetConfig.position,
         widgetColor: widgetConfig.color,
         welcomeMessage: widgetConfig.welcomeMessage,
+        widgetBrandName: widgetConfig.brandName,
+        widgetSubtitle: widgetConfig.subtitle,
       });
 
-      // Get widget code
-      const codeResponse = await clientApi.getWidgetCode();
-      setWidgetCode(codeResponse.data?.code || '');
-      setShopDomain(codeResponse.data?.shopDomain || '');
-
       // Update onboarding step
-      await clientApi.updateOnboardingStep(3, widgetConfig);
+      await clientApi.updateOnboardingStep(3, {
+        widgetPosition: widgetConfig.position,
+        widgetColor: widgetConfig.color,
+        welcomeMessage: widgetConfig.welcomeMessage,
+        widgetBrandName: widgetConfig.brandName,
+        widgetSubtitle: widgetConfig.subtitle,
+      });
 
-      setCurrentStep(3);
+      setCurrentStep(4);
     } catch (error) {
       console.error('Error saving config:', error);
     }
   };
 
   const handleComplete = async () => {
-    setIsActivating(true);
     try {
-      await clientApi.updateOnboardingStep(4);
+      await clientApi.updateOnboardingStep(5);
       onComplete();
     } catch (error) {
       console.error('Error completing onboarding:', error);
-      setIsActivating(false);
+      onComplete();
     }
   };
 
   const handleSkip = async () => {
     try {
-      await clientApi.updateOnboardingStep(4);
+      await clientApi.updateOnboardingStep(5);
       onComplete();
     } catch (error) {
       console.error('Error skipping onboarding:', error);
@@ -107,6 +125,7 @@ function OnboardingWizard({ initialStep = 0, onComplete }: OnboardingWizardProps
             selectedPlatform={selectedPlatform}
             onSelect={setSelectedPlatform}
             onNext={() => setCurrentStep(1)}
+            onComplete={onComplete}
           />
         );
       case 1:
@@ -119,21 +138,25 @@ function OnboardingWizard({ initialStep = 0, onComplete }: OnboardingWizardProps
         );
       case 2:
         return (
-          <ConfigureWidget
-            config={widgetConfig}
-            onConfigChange={handleConfigChange}
+          <StoreInfo
             onBack={() => setCurrentStep(1)}
-            onNext={handleNextFromConfig}
+            onNext={() => setCurrentStep(3)}
           />
         );
       case 3:
         return (
-          <Activate
-            widgetCode={widgetCode}
-            shopDomain={shopDomain}
+          <ConfigureWidget
+            config={widgetConfig}
+            onConfigChange={handleConfigChange}
             onBack={() => setCurrentStep(2)}
+            onNext={handleNextFromConfig}
+          />
+        );
+      case 4:
+        return (
+          <SyncAndActivate
+            onBack={() => setCurrentStep(3)}
             onComplete={handleComplete}
-            isActivating={isActivating}
           />
         );
       default:
@@ -148,7 +171,7 @@ function OnboardingWizard({ initialStep = 0, onComplete }: OnboardingWizardProps
           <img src={logoKova} alt="Kova" className="sidebar-logo-img" />
         </div>
         <div className="onboarding-header-right">
-          <span className="onboarding-step-text">Paso {currentStep + 1} de 4</span>
+          <span className="onboarding-step-text">Paso {currentStep + 1} de {totalSteps}</span>
           <button onClick={handleSkip} className="btn-skip">
             Saltar configuracion
           </button>
@@ -157,7 +180,7 @@ function OnboardingWizard({ initialStep = 0, onComplete }: OnboardingWizardProps
 
       <div className="onboarding-content">
         <div className="onboarding-card">
-          <StepIndicator currentStep={currentStep} totalSteps={4} />
+          <StepIndicator currentStep={currentStep} totalSteps={totalSteps} />
           {renderStep()}
         </div>
       </div>

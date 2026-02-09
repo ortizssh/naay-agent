@@ -121,6 +121,9 @@ function kova_agent_activate() {
         add_option('kova_agent_settings', $default_options);
     }
 
+    // Set transient for activation redirect to setup wizard
+    set_transient('kova_agent_activation_redirect', true, 30);
+
     // Flush rewrite rules
     flush_rewrite_rules();
 }

@@ -23,7 +23,7 @@ const supabaseService = new SupabaseService();
  */
 router.post('/connect', async (req: Request, res: Response) => {
   try {
-    const { siteUrl, consumerKey, consumerSecret } = req.body;
+    const { siteUrl, consumerKey, consumerSecret, storeName, storeEmail, currency, country, timezone, locale } = req.body;
 
     if (!siteUrl || !consumerKey || !consumerSecret) {
       return res.status(400).json({
@@ -72,6 +72,14 @@ router.post('/connect', async (req: Request, res: Response) => {
     // First check if store already exists
     const existingStore = await supabaseService.getStore(normalizedUrl);
 
+    // Build store metadata from provided fields
+    const storeMetadata: any = {};
+    if (storeName) storeMetadata.shop_name = storeName;
+    if (storeEmail) storeMetadata.shop_email = storeEmail;
+    if (currency) storeMetadata.shop_currency = currency;
+    if (country) storeMetadata.shop_country = country;
+    if (timezone) storeMetadata.shop_timezone = timezone;
+
     if (existingStore) {
       // Update existing store
       await (supabaseService as any).serviceClient
@@ -85,6 +93,7 @@ router.post('/connect', async (req: Request, res: Response) => {
           },
           webhook_secret: webhookSecret,
           updated_at: new Date().toISOString(),
+          ...storeMetadata,
         })
         .eq('shop_domain', normalizedUrl);
     } else {
@@ -101,6 +110,7 @@ router.post('/connect', async (req: Request, res: Response) => {
         webhook_secret: webhookSecret,
         installed_at: new Date().toISOString(),
         scopes: 'read_write',
+        ...storeMetadata,
       });
     }
 
@@ -113,6 +123,15 @@ router.post('/connect', async (req: Request, res: Response) => {
       .eq('shop_domain', normalizedUrl)
       .single();
 
+    // Build client_stores metadata
+    const clientStoreMetadata: any = {};
+    if (storeName) clientStoreMetadata.shop_name = storeName;
+    if (storeEmail) clientStoreMetadata.shop_email = storeEmail;
+    if (currency) clientStoreMetadata.shop_currency = currency;
+    if (country) clientStoreMetadata.shop_country = country;
+    if (timezone) clientStoreMetadata.shop_timezone = timezone;
+    if (locale) clientStoreMetadata.shop_locale = locale;
+
     if (!existingClient) {
       await (supabaseService as any).serviceClient
         .from('client_stores')
@@ -122,10 +141,35 @@ router.post('/connect', async (req: Request, res: Response) => {
           widget_enabled: true,
           widget_position: 'bottom-right',
           widget_color: '#6366f1',
-          widget_brand_name: connectionResult.storeName || 'Store',
+          widget_brand_name: storeName || connectionResult.storeName || 'Store',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+          ...clientStoreMetadata,
         });
+    } else {
+      // Update existing client_stores with metadata
+      if (Object.keys(clientStoreMetadata).length > 0) {
+        await (supabaseService as any).serviceClient
+          .from('client_stores')
+          .update({
+            ...clientStoreMetadata,
+            widget_brand_name: storeName || connectionResult.storeName || undefined,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('shop_domain', normalizedUrl);
+      }
+    }
+
+    // Update tenants table with metadata
+    if (storeName || storeEmail) {
+      const tenantUpdate: any = {};
+      if (storeName) tenantUpdate.shop_name = storeName;
+      if (storeEmail) tenantUpdate.shop_email = storeEmail;
+
+      await (supabaseService as any).serviceClient
+        .from('tenants')
+        .update(tenantUpdate)
+        .eq('shop_domain', normalizedUrl);
     }
 
     logger.info('WooCommerce store connected successfully', {

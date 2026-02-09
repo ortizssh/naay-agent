@@ -63,12 +63,12 @@ class Kova_Widget {
 
         $api_endpoint = $this->settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
 
-        // Enqueue the Kova widget script
+        // Enqueue the Kova widget script (use timestamp to bust cache on backend updates)
         wp_enqueue_script(
             'kova-widget',
             $api_endpoint . '/widget/kova-widget.js',
             array(),
-            KOVA_AGENT_VERSION,
+            KOVA_AGENT_VERSION . '.' . time(),
             true
         );
     }

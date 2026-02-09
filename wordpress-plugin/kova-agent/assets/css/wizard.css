@@ -1,0 +1,369 @@
+/* Kova Agent Setup Wizard Styles */
+
+.kova-wizard-body {
+    margin: 0;
+    padding: 0;
+    background: #f6f6f7;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    color: #1a1a1a;
+    min-height: 100vh;
+}
+
+.kova-wizard-wrapper {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+}
+
+/* Header */
+.kova-wizard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.kova-wizard-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.kova-wizard-logo-icon {
+    width: 36px;
+    height: 36px;
+    background: #6366f1;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.kova-wizard-logo-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.kova-wizard-skip {
+    color: #6b7280;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.kova-wizard-skip:hover {
+    color: #1a1a1a;
+}
+
+/* Progress bar */
+.kova-wizard-progress {
+    height: 4px;
+    background: #e5e7eb;
+    border-radius: 2px;
+    margin-bottom: 2.5rem;
+    overflow: hidden;
+}
+
+.kova-wizard-progress-bar {
+    height: 100%;
+    background: #6366f1;
+    border-radius: 2px;
+    transition: width 0.4s ease;
+}
+
+/* Steps */
+.kova-wizard-step {
+    display: none;
+    background: white;
+    border-radius: 12px;
+    padding: 2.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.kova-wizard-step.active {
+    display: block;
+}
+
+.kova-wizard-step h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+    color: #1a1a1a;
+}
+
+.kova-wizard-desc {
+    color: #6b7280;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin: 0 0 2rem;
+}
+
+/* Features list */
+.kova-wizard-features {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.kova-wizard-feature {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    padding: 1rem;
+    background: #f9fafb;
+    border-radius: 8px;
+}
+
+.kova-wizard-feature-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.kova-wizard-feature strong {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-size: 0.95rem;
+}
+
+.kova-wizard-feature p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 0.85rem;
+}
+
+/* Store info */
+.kova-wizard-store-info {
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.kova-wizard-info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.kova-wizard-info-row:last-child {
+    border-bottom: none;
+}
+
+.kova-wizard-info-label {
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+.kova-wizard-info-value {
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+/* Status messages */
+.kova-wizard-status {
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+}
+
+.kova-wizard-status.success {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.kova-wizard-status.error {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.kova-wizard-status.loading {
+    background: #eff6ff;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+
+/* Form */
+.kova-wizard-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+}
+
+.kova-wizard-field label {
+    display: block;
+    font-weight: 500;
+    font-size: 0.9rem;
+    margin-bottom: 0.4rem;
+    color: #374151;
+}
+
+.kova-wizard-field input[type="text"],
+.kova-wizard-field input[type="email"],
+.kova-wizard-field select,
+.kova-wizard-field textarea {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    background: white;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+
+.kova-wizard-field input:focus,
+.kova-wizard-field select:focus,
+.kova-wizard-field textarea:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.kova-wizard-color-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.kova-wizard-color-row input[type="color"] {
+    width: 40px;
+    height: 40px;
+    padding: 2px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.kova-wizard-color-text {
+    flex: 1;
+}
+
+/* Sync container */
+.kova-wizard-sync-container {
+    padding: 2rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.kova-wizard-progress-container {
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+}
+
+.kova-wizard-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: #6366f1;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.kova-wizard-sync-done .kova-wizard-check {
+    width: 48px;
+    height: 48px;
+    background: #10b981;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin: 0 auto 1rem;
+}
+
+/* Final check */
+.kova-wizard-check-large {
+    width: 64px;
+    height: 64px;
+    background: #10b981;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin: 0 auto 1.5rem;
+}
+
+/* Checklist */
+.kova-wizard-checklist {
+    text-align: left;
+    margin: 1.5rem auto 2rem;
+    max-width: 320px;
+}
+
+.kova-wizard-checklist-item {
+    padding: 0.5rem 0;
+    font-size: 0.95rem;
+    color: #065f46;
+}
+
+/* Buttons */
+.kova-wizard-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.7rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.kova-wizard-btn-primary {
+    background: #6366f1;
+    color: white;
+}
+
+.kova-wizard-btn-primary:hover {
+    background: #4f46e5;
+}
+
+.kova-wizard-btn-primary:disabled {
+    background: #a5b4fc;
+    cursor: not-allowed;
+}
+
+.kova-wizard-btn-secondary {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.kova-wizard-btn-secondary:hover {
+    background: #e5e7eb;
+}
+
+/* Nav */
+.kova-wizard-nav {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .kova-wizard-wrapper {
+        padding: 1rem;
+    }
+    .kova-wizard-step {
+        padding: 1.5rem;
+    }
+}

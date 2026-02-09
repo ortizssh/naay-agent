@@ -1016,6 +1016,63 @@ export class ShopifyService {
     return `https://${shop}/admin/oauth/authorize?${params.toString()}`;
   }
 
+  async getShopInfo(
+    shop: string,
+    accessToken: string
+  ): Promise<{
+    name: string;
+    email: string;
+    domain: string;
+    currency: string;
+    timezone: string;
+    country: string;
+    locale: string;
+  }> {
+    const client = this.getAdminClient(shop, accessToken);
+
+    try {
+      const query = `
+        query {
+          shop {
+            name
+            email
+            myshopifyDomain
+            primaryDomain {
+              url
+              host
+            }
+            currencyCode
+            ianaTimezone
+            billingAddress {
+              countryCodeV2
+            }
+            primaryLocale
+          }
+        }
+      `;
+
+      const response = await client.request(query);
+      const shopData = response.data?.shop;
+
+      if (!shopData) {
+        throw new AppError('Failed to fetch shop info', 500);
+      }
+
+      return {
+        name: shopData.name || '',
+        email: shopData.email || '',
+        domain: shopData.myshopifyDomain || shop,
+        currency: shopData.currencyCode || 'USD',
+        timezone: shopData.ianaTimezone || 'UTC',
+        country: shopData.billingAddress?.countryCodeV2 || '',
+        locale: shopData.primaryLocale || 'en',
+      };
+    } catch (error) {
+      logger.error('Error fetching shop info from Shopify:', error);
+      throw new AppError(`Failed to fetch shop info: ${error}`, 500);
+    }
+  }
+
   async exchangeCodeForToken(shop: string, code: string): Promise<string> {
     try {
       const response = await fetch(`https://${shop}/admin/oauth/access_token`, {

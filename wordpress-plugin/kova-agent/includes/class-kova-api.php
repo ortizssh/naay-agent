@@ -195,9 +195,15 @@ class Kova_API {
         $response = wp_remote_post($api_endpoint . '/api/woo/connect', array(
             'headers' => array('Content-Type' => 'application/json'),
             'body' => json_encode(array(
-                'siteUrl' => site_url(),
-                'consumerKey' => $settings['consumer_key'],
-                'consumerSecret' => $settings['consumer_secret'],
+                'siteUrl'       => site_url(),
+                'consumerKey'   => $settings['consumer_key'],
+                'consumerSecret'=> $settings['consumer_secret'],
+                'storeName'     => get_bloginfo('name'),
+                'storeEmail'    => get_option('admin_email'),
+                'currency'      => function_exists('get_woocommerce_currency') ? get_woocommerce_currency() : 'USD',
+                'country'       => class_exists('WC') && WC()->countries ? WC()->countries->get_base_country() : '',
+                'timezone'      => wp_timezone_string(),
+                'locale'        => get_locale(),
             )),
             'timeout' => 30,
         ));
