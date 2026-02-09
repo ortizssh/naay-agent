@@ -924,7 +924,10 @@ router.post(
             if (typeof p.images === 'string') {
               imageUrl = p.images;
             } else if (Array.isArray(p.images) && p.images.length > 0) {
-              imageUrl = typeof p.images[0] === 'string' ? p.images[0] : (p.images[0]?.src || '');
+              imageUrl =
+                typeof p.images[0] === 'string'
+                  ? p.images[0]
+                  : p.images[0]?.src || '';
             }
 
             // Resolve price from direct field or variants array
@@ -936,9 +939,10 @@ router.post(
             }
 
             // Resolve variant ID
-            const variantId = p.variantId
-              || (p.variants && p.variants.length > 0 ? p.variants[0].id : null)
-              || p.id;
+            const variantId =
+              p.variantId ||
+              (p.variants && p.variants.length > 0 ? p.variants[0].id : null) ||
+              p.id;
 
             return {
               product: {
@@ -947,13 +951,18 @@ router.post(
                 image: imageUrl ? { src: imageUrl } : { src: '' },
                 price,
                 handle: p.handle || '',
-                variant_id: isNaN(Number(variantId)) ? variantId : Number(variantId),
+                variant_id: isNaN(Number(variantId))
+                  ? variantId
+                  : Number(variantId),
               },
             };
           });
 
         if (widgetProducts.length > 0) {
-          widgetResponse = response + '\n\n' + JSON.stringify({ output: widgetProducts }, null, 2);
+          widgetResponse =
+            response +
+            '\n\n' +
+            JSON.stringify({ output: widgetProducts }, null, 2);
         }
       }
 
