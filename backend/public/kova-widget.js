@@ -1523,22 +1523,22 @@
 
         .kova-recommendations-container {
           width: 100% !important;
-          margin: 8px 0 !important;
+          margin: 6px 0 !important;
         }
 
         .kova-recommendations-grid {
           display: flex !important;
           flex-direction: column !important;
-          gap: 10px !important;
+          gap: 6px !important;
           padding: 0 !important;
         }
 
         .kova-product-card {
           background: var(--kova-white) !important;
-          border-radius: 12px !important;
+          border-radius: 10px !important;
           border: 1px solid rgba(212, 196, 184, 0.3) !important;
           overflow: hidden !important;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06) !important;
           transition: all 0.2s ease !important;
           margin: 0 !important;
           width: 100% !important;
@@ -1546,24 +1546,24 @@
           display: flex !important;
           flex-direction: row !important;
           height: auto !important;
-          min-height: 120px !important;
+          min-height: 80px !important;
         }
 
         .kova-product-card:hover {
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+          box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1) !important;
           border-color: var(--kova-perfect) !important;
         }
 
         .kova-product-card__discount-badge {
           position: absolute !important;
-          top: 8px !important;
-          left: 8px !important;
+          top: 4px !important;
+          left: 4px !important;
           background: #e53935 !important;
           color: white !important;
-          font-size: 11px !important;
-          font-weight: 600 !important;
-          padding: 3px 7px !important;
-          border-radius: 4px !important;
+          font-size: 9px !important;
+          font-weight: 700 !important;
+          padding: 2px 5px !important;
+          border-radius: 3px !important;
           z-index: 2 !important;
         }
 
@@ -1575,15 +1575,15 @@
 
         .kova-product-card__media {
           position: relative !important;
-          width: 110px !important;
-          height: 120px !important;
+          width: 76px !important;
+          height: 80px !important;
           flex-shrink: 0 !important;
           overflow: hidden !important;
           background: #f5f5f5 !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
-          border-radius: 12px 0 0 12px !important;
+          border-radius: 10px 0 0 10px !important;
           margin: 0 !important;
         }
 
@@ -1603,8 +1603,8 @@
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
-          width: 48px !important;
-          height: 48px !important;
+          width: 32px !important;
+          height: 32px !important;
           color: #bdbdbd !important;
           opacity: 0.6 !important;
         }
@@ -1615,12 +1615,13 @@
         }
 
         .kova-product-card__content {
-          padding: 12px 14px !important;
+          padding: 8px 10px !important;
           flex: 1 !important;
           display: flex !important;
           flex-direction: column !important;
-          justify-content: space-between !important;
+          justify-content: center !important;
           min-width: 0 !important;
+          gap: 4px !important;
         }
 
         .kova-product-card__info {
@@ -1639,10 +1640,10 @@
         }
 
         .kova-product-card__title {
-          font-size: 14px !important;
+          font-size: 12px !important;
           font-weight: 600 !important;
-          line-height: 1.35 !important;
-          margin: 0 0 6px 0 !important;
+          line-height: 1.3 !important;
+          margin: 0 !important;
           color: #1a1a1a !important;
           display: -webkit-box !important;
           -webkit-line-clamp: 2 !important;
@@ -1652,39 +1653,32 @@
         }
 
         .kova-product-card__description {
-          font-size: 12px !important;
-          line-height: 1.4 !important;
-          color: #666 !important;
-          margin: 0 0 8px 0 !important;
-          display: -webkit-box !important;
-          -webkit-line-clamp: 2 !important;
-          -webkit-box-orient: vertical !important;
-          overflow: hidden !important;
+          display: none !important;
         }
 
         .kova-product-card__footer {
           display: flex !important;
           align-items: center !important;
           justify-content: space-between !important;
-          gap: 10px !important;
-          margin-top: auto !important;
+          gap: 6px !important;
+          margin-top: 0 !important;
         }
 
         .kova-product-card__pricing {
           display: flex !important;
-          flex-direction: column !important;
-          gap: 2px !important;
+          align-items: baseline !important;
+          gap: 4px !important;
         }
 
         .kova-product-card__price {
-          font-size: 16px !important;
+          font-size: 13px !important;
           font-weight: 700 !important;
           color: var(--kova-perfect) !important;
           line-height: 1.2 !important;
         }
 
         .kova-product-card__compare-price {
-          font-size: 12px !important;
+          font-size: 10px !important;
           font-weight: 400 !important;
           color: #999 !important;
           text-decoration: line-through !important;
@@ -1699,23 +1693,23 @@
           background: var(--kova-perfect) !important;
           color: var(--kova-white) !important;
           border: none !important;
-          border-radius: 8px !important;
-          padding: 10px 16px !important;
-          font-size: 13px !important;
+          border-radius: 6px !important;
+          padding: 5px 8px !important;
+          font-size: 11px !important;
           font-weight: 600 !important;
           cursor: pointer !important;
           transition: all 0.2s ease !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
-          gap: 6px !important;
+          gap: 3px !important;
           white-space: nowrap !important;
         }
 
         .kova-product-card__add-btn:hover {
           background: var(--kova-rich) !important;
           transform: translateY(-1px) !important;
-          box-shadow: 0 4px 12px rgba(165, 148, 87, 0.3) !important;
+          box-shadow: 0 2px 8px rgba(165, 148, 87, 0.3) !important;
         }
 
         .kova-product-card__add-btn:active {
@@ -1735,8 +1729,8 @@
         }
 
         .kova-product-card__add-btn svg {
-          width: 14px !important;
-          height: 14px !important;
+          width: 12px !important;
+          height: 12px !important;
         }
 
         .kova-spinner {
@@ -2442,30 +2436,12 @@
           
           /* Product cards tablet */
           .kova-product-card {
-            min-height: 130px !important;
+            min-height: 80px !important;
           }
 
           .kova-product-card__media {
-            width: 120px !important;
-            height: 130px !important;
-          }
-
-          .kova-product-card__content {
-            padding: 14px 16px !important;
-          }
-
-          .kova-product-card__title {
-            font-size: 15px !important;
-          }
-
-          .kova-product-card__description {
-            font-size: 12px !important;
-            -webkit-line-clamp: 1 !important;
-          }
-
-          .kova-product-card__add-btn {
-            padding: 10px 14px !important;
-            font-size: 13px !important;
+            width: 76px !important;
+            height: 80px !important;
           }
           
           .kova-widget__promotional-message {
@@ -2736,14 +2712,7 @@
 
           /* Product cards mobile */
           .kova-product-card {
-            border-radius: 10px !important;
-          }
-
-          .kova-product-card__add-btn {
-            min-height: 36px !important;
-            border-radius: 6px !important;
-            font-size: 12px !important;
-            padding: 8px 12px !important;
+            border-radius: 8px !important;
           }
 
           /* Loading and error states mobile */
@@ -3665,53 +3634,56 @@
 
           /* Mobile Product Recommendations */
           .kova-product-card {
-            min-height: 110px !important;
-            border-radius: 10px !important;
+            min-height: 68px !important;
+            border-radius: 8px !important;
           }
 
           .kova-product-card__media {
-            width: 100px !important;
-            height: 110px !important;
-            border-radius: 10px 0 0 10px !important;
+            width: 64px !important;
+            height: auto !important;
+            min-height: 68px !important;
+            border-radius: 8px 0 0 8px !important;
           }
 
           .kova-product-card__content {
-            padding: 10px 12px !important;
+            padding: 6px 8px !important;
+            gap: 3px !important;
           }
 
           .kova-product-card__title {
-            font-size: 13px !important;
-            margin-bottom: 4px !important;
+            font-size: 11px !important;
+            -webkit-line-clamp: 1 !important;
           }
 
-          .kova-product-card__description {
-            display: none !important;
+          .kova-product-card__footer {
+            flex-wrap: nowrap !important;
+            gap: 4px !important;
           }
 
           .kova-product-card__price {
-            font-size: 15px !important;
+            font-size: 12px !important;
           }
 
           .kova-product-card__compare-price {
-            font-size: 11px !important;
+            font-size: 9px !important;
           }
 
           .kova-product-card__add-btn {
-            padding: 8px 12px !important;
-            font-size: 12px !important;
-            border-radius: 6px !important;
+            padding: 4px 6px !important;
+            font-size: 10px !important;
+            border-radius: 5px !important;
           }
 
           .kova-product-card__add-btn svg {
-            width: 12px !important;
-            height: 12px !important;
+            width: 10px !important;
+            height: 10px !important;
           }
 
           .kova-product-card__discount-badge {
-            font-size: 10px !important;
-            padding: 2px 5px !important;
-            top: 6px !important;
-            left: 6px !important;
+            font-size: 8px !important;
+            padding: 1px 4px !important;
+            top: 3px !important;
+            left: 3px !important;
           }
           
           /* Mobile Cart Items */
