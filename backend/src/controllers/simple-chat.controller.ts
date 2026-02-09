@@ -621,17 +621,19 @@ router.post(
             siteUrl = storeData[0].site_url;
           }
           const platform = (agentConfig?.platform || 'shopify') as any;
-          if (accessToken || (credentials?.consumer_key && credentials?.consumer_secret)) {
-            commerceProvider = getCommerceProvider(
+          if (
+            accessToken ||
+            (credentials?.consumer_key && credentials?.consumer_secret)
+          ) {
+            commerceProvider = getCommerceProvider(platform, {
               platform,
-              {
-                platform,
-                access_token: accessToken,
-                consumer_key: credentials?.consumer_key,
-                consumer_secret: credentials?.consumer_secret,
-                siteUrl: siteUrl || (platform === 'woocommerce' ? `https://${shop}` : undefined),
-              }
-            );
+              access_token: accessToken,
+              consumer_key: credentials?.consumer_key,
+              consumer_secret: credentials?.consumer_secret,
+              siteUrl:
+                siteUrl ||
+                (platform === 'woocommerce' ? `https://${shop}` : undefined),
+            });
           }
         } catch (providerErr) {
           logger.warn('Could not initialize commerce provider:', providerErr);
@@ -651,9 +653,12 @@ router.post(
 
       // Persist user message to database (non-blocking)
       if (shop) {
-        persistChatMessage(currentConversationId, shop, 'client', message).catch(
-          () => {}
-        );
+        persistChatMessage(
+          currentConversationId,
+          shop,
+          'client',
+          message
+        ).catch(() => {});
       }
 
       // Keep conversation history manageable (last 20 messages)
@@ -1118,15 +1123,13 @@ router.post('/persist', async (req: Request, res: Response) => {
     for (const msg of messages) {
       if (msg.role && msg.content) {
         // Map OpenAI roles to our DB convention if needed
-        const dbRole = msg.role === 'user' ? 'client'
-          : msg.role === 'assistant' ? 'agent'
-          : (msg.role as 'client' | 'agent');
-        await persistChatMessage(
-          sessionId,
-          shopDomain,
-          dbRole,
-          msg.content
-        );
+        const dbRole =
+          msg.role === 'user'
+            ? 'client'
+            : msg.role === 'assistant'
+              ? 'agent'
+              : (msg.role as 'client' | 'agent');
+        await persistChatMessage(sessionId, shopDomain, dbRole, msg.content);
       }
     }
 

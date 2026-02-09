@@ -1768,9 +1768,7 @@ router.put(
         updateData.chatbot_endpoint = chatbotEndpoint;
 
       // Update all stores for this user (handles duplicate rows)
-      const { error } = await (
-        supabaseService as any
-      ).serviceClient
+      const { error } = await (supabaseService as any).serviceClient
         .from('client_stores')
         .update(updateData)
         .eq('user_id', user.id);
@@ -1781,9 +1779,7 @@ router.put(
       }
 
       // Fetch updated config
-      const { data: updated } = await (
-        supabaseService as any
-      ).serviceClient
+      const { data: updated } = await (supabaseService as any).serviceClient
         .from('client_stores')
         .select('*')
         .eq('user_id', user.id)

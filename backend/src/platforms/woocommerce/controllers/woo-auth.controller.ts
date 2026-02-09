@@ -392,7 +392,11 @@ router.get('/store/:siteUrl', async (req: Request, res: Response) => {
 
     // Try host-only first, then full URL
     let hostOnly: string;
-    try { hostOnly = new URL(siteUrl).host; } catch { hostOnly = siteUrl; }
+    try {
+      hostOnly = new URL(siteUrl).host;
+    } catch {
+      hostOnly = siteUrl;
+    }
     let store = await supabaseService.getStore(hostOnly);
     if (!store) {
       store = await supabaseService.getStore(siteUrl);
@@ -566,9 +570,15 @@ router.post('/setup-webhooks', async (req: Request, res: Response) => {
 
     // Get store credentials — try host-only first, then full URL
     let whHost: string;
-    try { whHost = new URL(siteUrl).host; } catch { whHost = siteUrl; }
+    try {
+      whHost = new URL(siteUrl).host;
+    } catch {
+      whHost = siteUrl;
+    }
     let store = await supabaseService.getStore(whHost);
-    if (!store) { store = await supabaseService.getStore(siteUrl); }
+    if (!store) {
+      store = await supabaseService.getStore(siteUrl);
+    }
 
     if (!store) {
       return res.status(404).json({
@@ -806,9 +816,7 @@ router.get('/widget-config/:siteUrl', async (req: Request, res: Response) => {
 
     // Try host-only first, then full URL
     const hostOnly = new URL(normalizedUrl).host;
-    let { data: clientStore } = await (
-      supabaseService as any
-    ).serviceClient
+    let { data: clientStore } = await (supabaseService as any).serviceClient
       .from('client_stores')
       .select('*')
       .eq('shop_domain', hostOnly)
