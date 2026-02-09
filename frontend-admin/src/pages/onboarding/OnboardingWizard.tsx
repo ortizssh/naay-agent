@@ -3,6 +3,7 @@ import StepIndicator from '../../components/common/StepIndicator';
 import PlatformSelect from './steps/PlatformSelect';
 import ConnectStore from './steps/ConnectStore';
 import StoreInfo from './steps/StoreInfo';
+import SelectPlan from './steps/SelectPlan';
 import ConfigureWidget from './steps/ConfigureWidget';
 import SyncAndActivate from './steps/SyncAndActivate';
 import { clientApi } from '../../services/api';
@@ -25,22 +26,36 @@ function OnboardingWizard({ initialStep = 0, onComplete }: OnboardingWizardProps
     subtitle: 'Asistente de compras con IA',
   });
 
-  const totalSteps = 5;
+  const totalSteps = 6;
+  const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check URL for oauth success
     const params = new URLSearchParams(window.location.search);
+
+    // Check URL for oauth success
     if (params.get('oauth') === 'success') {
       const step = parseInt(params.get('step') || '2', 10);
       setCurrentStep(step);
-      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+
+    // Check URL for Stripe checkout success/cancel
+    if (params.get('checkout') === 'success') {
+      const step = parseInt(params.get('step') || '4', 10);
+      setCurrentStep(step);
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+    if (params.get('checkout') === 'cancelled') {
+      const step = parseInt(params.get('step') || '3', 10);
+      setCurrentStep(step);
+      setCheckoutMessage('El pago fue cancelado. Puedes intentar de nuevo o elegir otro plan.');
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, []);
 
   // Load brand name from store info when reaching ConfigureWidget
   useEffect(() => {
-    if (currentStep === 3 && !widgetConfig.brandName) {
+    if (currentStep === 4 && !widgetConfig.brandName) {
       clientApi.getStoreInfo().then(response => {
         if (response.data?.widget_brand_name) {
           setWidgetConfig(prev => ({
@@ -82,7 +97,7 @@ function OnboardingWizard({ initialStep = 0, onComplete }: OnboardingWizardProps
       });
 
       // Update onboarding step
-      await clientApi.updateOnboardingStep(3, {
+      await clientApi.updateOnboardingStep(4, {
         widgetPosition: widgetConfig.position,
         widgetColor: widgetConfig.color,
         welcomeMessage: widgetConfig.welcomeMessage,
@@ -90,7 +105,7 @@ function OnboardingWizard({ initialStep = 0, onComplete }: OnboardingWizardProps
         widgetSubtitle: widgetConfig.subtitle,
       });
 
-      setCurrentStep(4);
+      setCurrentStep(5);
     } catch (error) {
       console.error('Error saving config:', error);
     }
@@ -98,7 +113,7 @@ function OnboardingWizard({ initialStep = 0, onComplete }: OnboardingWizardProps
 
   const handleComplete = async () => {
     try {
-      await clientApi.updateOnboardingStep(5);
+      await clientApi.updateOnboardingStep(6);
       onComplete();
     } catch (error) {
       console.error('Error completing onboarding:', error);
@@ -108,7 +123,7 @@ function OnboardingWizard({ initialStep = 0, onComplete }: OnboardingWizardProps
 
   const handleSkip = async () => {
     try {
-      await clientApi.updateOnboardingStep(5);
+      await clientApi.updateOnboardingStep(6);
       onComplete();
     } catch (error) {
       console.error('Error skipping onboarding:', error);
@@ -145,17 +160,33 @@ function OnboardingWizard({ initialStep = 0, onComplete }: OnboardingWizardProps
         );
       case 3:
         return (
-          <ConfigureWidget
-            config={widgetConfig}
-            onConfigChange={handleConfigChange}
-            onBack={() => setCurrentStep(2)}
-            onNext={handleNextFromConfig}
-          />
+          <>
+            {checkoutMessage && (
+              <div className="alert alert-warning" style={{ marginBottom: '1rem' }}>
+                <div className="alert-content">
+                  <div className="alert-message">{checkoutMessage}</div>
+                </div>
+              </div>
+            )}
+            <SelectPlan
+              onBack={() => setCurrentStep(2)}
+              onNext={() => setCurrentStep(4)}
+            />
+          </>
         );
       case 4:
         return (
-          <SyncAndActivate
+          <ConfigureWidget
+            config={widgetConfig}
+            onConfigChange={handleConfigChange}
             onBack={() => setCurrentStep(3)}
+            onNext={handleNextFromConfig}
+          />
+        );
+      case 5:
+        return (
+          <SyncAndActivate
+            onBack={() => setCurrentStep(4)}
             onComplete={handleComplete}
           />
         );

@@ -423,6 +423,28 @@ class ClientApiClient {
   async getSyncStatus(): Promise<{ success: boolean; data: { status: string; synced: number; total: number; webhooksConfigured: boolean } }> {
     return this.request('/api/client/store/sync-status');
   }
+
+  // Billing
+  async createCheckout(planSlug: string): Promise<{ success: boolean; data: { checkoutUrl?: string; free?: boolean } }> {
+    return this.request('/api/billing/checkout', {
+      method: 'POST',
+      body: JSON.stringify({ planSlug }),
+    });
+  }
+
+  async createPortalSession(): Promise<{ success: boolean; data: { portalUrl: string } }> {
+    return this.request('/api/billing/portal', {
+      method: 'POST',
+    });
+  }
+
+  async getBillingStatus(): Promise<{ success: boolean; data: any }> {
+    return this.request('/api/billing/status');
+  }
+
+  async getAvailablePlans(): Promise<{ success: boolean; data: Plan[] }> {
+    return this.request('/api/billing/plans');
+  }
 }
 
 // Types for Conversion Dashboard

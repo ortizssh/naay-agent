@@ -626,13 +626,13 @@ router.post(
       const user = (req as any).user;
       const { step, data } = req.body;
 
-      if (step === undefined || step < 0 || step > 5) {
+      if (step === undefined || step < 0 || step > 6) {
         throw new AppError('Paso invalido', 400);
       }
 
       const updateData: any = {
         onboarding_step: step,
-        onboarding_completed: step >= 5,
+        onboarding_completed: step >= 6,
       };
 
       // Update user
@@ -658,8 +658,23 @@ router.post(
         }
       }
 
-      // Step 3 (widget config): update widget settings
-      if (step === 3 && data) {
+      // Step 3 (SelectPlan): update plan on tenant
+      if (step === 3 && data?.planSlug) {
+        const { data: store } = await (supabaseService as any).serviceClient
+          .from('client_stores')
+          .select('shop_domain')
+          .eq('user_id', user.id)
+          .single();
+
+        if (store?.shop_domain) {
+          const { TenantService } = await import('@/services/tenant.service');
+          const tenantSvc = new TenantService();
+          await tenantSvc.updatePlan(store.shop_domain, data.planSlug);
+        }
+      }
+
+      // Step 4 (widget config): update widget settings
+      if (step === 4 && data) {
         await (supabaseService as any).serviceClient
           .from('client_stores')
           .update({
@@ -673,8 +688,8 @@ router.post(
           .eq('user_id', user.id);
       }
 
-      // Step 5 (complete): mark store as active
-      if (step >= 5) {
+      // Step 6 (complete): mark store as active
+      if (step >= 6) {
         await (supabaseService as any).serviceClient
           .from('client_stores')
           .update({
@@ -689,7 +704,7 @@ router.post(
         success: true,
         data: {
           step,
-          completed: step >= 5,
+          completed: step >= 6,
         },
       });
     } catch (error) {

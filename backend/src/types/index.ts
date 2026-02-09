@@ -264,6 +264,10 @@ export interface AppConfig {
     password?: string;
     enabled: boolean;
   };
+  stripe: {
+    secretKey: string;
+    webhookSecret: string;
+  };
 }
 
 // Enhanced Error Types and Codes for Shopify App
@@ -702,6 +706,7 @@ export interface Plan {
   badge_color: string;
   sort_order: number;
   is_active: boolean;
+  stripe_price_id?: string;
 }
 
 // Fallback plan limits — used when DB is unavailable

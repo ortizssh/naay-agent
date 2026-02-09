@@ -24,6 +24,8 @@ function Settings() {
   const [activeTab, setActiveTab] = useState<'general' | 'account' | 'plans'>('general');
   const [dynamicPlans, setDynamicPlans] = useState<Plan[]>([]);
   const [tenantPlan, setTenantPlan] = useState<string | null>(null);
+  const [billingStatus, setBillingStatus] = useState<any>(null);
+  const [billingLoading, setBillingLoading] = useState(false);
 
   // Password change state
   const [currentPassword, setCurrentPassword] = useState('');
@@ -45,12 +47,18 @@ function Settings() {
     // Fetch dynamic plans
     api.getPlans().then(setDynamicPlans).catch(() => {});
 
-    // For client users, fetch real tenant plan
+    // For client users, fetch real tenant plan and billing status
     const parsed = storedUser ? JSON.parse(storedUser) : null;
     if (parsed?.userType === 'client') {
       clientApi.getDashboard().then(res => {
         if (res.data?.plan) {
           setTenantPlan(res.data.plan);
+        }
+      }).catch(() => {});
+
+      clientApi.getBillingStatus().then(res => {
+        if (res.data) {
+          setBillingStatus(res.data);
         }
       }).catch(() => {});
     }
@@ -387,6 +395,59 @@ function Settings() {
         {/* Plans Tab */}
         {activeTab === 'plans' && (
           <div>
+            {/* Billing status info */}
+            {billingStatus?.subscription && (
+              <div className="card" style={{ marginBottom: '1.5rem' }}>
+                <div className="card-header">
+                  <h3 className="card-title">Estado de Facturacion</h3>
+                  <span className={`badge badge-${billingStatus.status === 'active' ? 'success' : billingStatus.status === 'trial' ? 'warning' : 'neutral'}`}>
+                    {billingStatus.status === 'active' ? 'Activo' : billingStatus.status === 'trial' ? 'Periodo de prueba' : billingStatus.status}
+                  </span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                  <div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>Estado suscripcion</div>
+                    <div style={{ fontWeight: '600' }}>{billingStatus.subscription.status}</div>
+                  </div>
+                  {billingStatus.subscription.trialEnd && (
+                    <div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>Fin de prueba</div>
+                      <div style={{ fontWeight: '600' }}>{new Date(billingStatus.subscription.trialEnd).toLocaleDateString()}</div>
+                    </div>
+                  )}
+                  <div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>Proximo cobro</div>
+                    <div style={{ fontWeight: '600' }}>{new Date(billingStatus.subscription.currentPeriodEnd).toLocaleDateString()}</div>
+                  </div>
+                </div>
+                <div style={{ marginTop: '1rem' }}>
+                  <button
+                    className="btn btn-secondary"
+                    disabled={billingLoading}
+                    onClick={async () => {
+                      setBillingLoading(true);
+                      try {
+                        const res = await clientApi.createPortalSession();
+                        if (res.data?.portalUrl) {
+                          window.location.href = res.data.portalUrl;
+                        }
+                      } catch (err: any) {
+                        alert(err.message || 'Error al abrir portal de facturacion');
+                      } finally {
+                        setBillingLoading(false);
+                      }
+                    }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                      <line x1="1" y1="10" x2="23" y2="10" />
+                    </svg>
+                    {billingLoading ? 'Abriendo...' : 'Gestionar Facturacion'}
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div style={{ display: 'grid', gridTemplateColumns: `repeat(${dynamicPlans.length || 4}, 1fr)`, gap: '1.5rem' }}>
               {dynamicPlans.map((plan) => {
                 const isCurrentPlan = currentPlanSlug === plan.slug;
@@ -446,9 +507,25 @@ function Settings() {
                     <button
                       className={`btn ${isCurrentPlan ? 'btn-secondary' : 'btn-primary'}`}
                       style={{ width: '100%' }}
-                      disabled={isCurrentPlan}
+                      disabled={isCurrentPlan || billingLoading}
+                      onClick={async () => {
+                        if (isCurrentPlan) return;
+                        setBillingLoading(true);
+                        try {
+                          const res = await clientApi.createCheckout(plan.slug);
+                          if (res.data?.checkoutUrl) {
+                            window.location.href = res.data.checkoutUrl;
+                          } else if (res.data?.free) {
+                            window.location.reload();
+                          }
+                        } catch (err: any) {
+                          alert(err.message || 'Error al cambiar plan');
+                        } finally {
+                          setBillingLoading(false);
+                        }
+                      }}
                     >
-                      {isCurrentPlan ? 'Plan Actual' : 'Seleccionar'}
+                      {isCurrentPlan ? 'Plan Actual' : billingLoading ? 'Procesando...' : plan.price === 0 ? 'Cambiar a Gratis' : 'Seleccionar'}
                     </button>
                   </div>
                 );

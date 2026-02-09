@@ -45,6 +45,10 @@ export const config: AppConfig = {
     password: process.env.REDIS_PASSWORD,
     enabled: process.env.REDIS_ENABLED !== 'false',
   },
+  stripe: {
+    secretKey: process.env.STRIPE_SECRET_KEY || '',
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
+  },
 };
 
 export function validateConfig(): void {

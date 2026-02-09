@@ -116,7 +116,7 @@ router.post(
           last_name: lastName,
           company: company || null,
           role: finalUserType === 'admin' ? 'admin' : 'viewer',
-          plan: plan || 'starter',
+          plan: plan || 'free',
           status: 'active',
           user_type: finalUserType,
           onboarding_completed: finalUserType === 'admin',

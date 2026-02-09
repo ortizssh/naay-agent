@@ -93,6 +93,7 @@ export class PlanService {
       badge_color: row.badge_color || 'neutral',
       sort_order: row.sort_order || 0,
       is_active: row.is_active ?? true,
+      stripe_price_id: row.stripe_price_id || undefined,
     };
   }
 
