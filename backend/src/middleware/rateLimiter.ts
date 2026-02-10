@@ -27,6 +27,17 @@ export const rateLimiter = rateLimit({
   },
 });
 
+export const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 50, // 50 auth requests per 15 min per IP
+  message: {
+    success: false,
+    error: 'Demasiados intentos. Intenta de nuevo en unos minutos.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 export const chatRateLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 30, // 30 chat messages per minute

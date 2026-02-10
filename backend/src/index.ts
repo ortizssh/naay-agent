@@ -6,7 +6,7 @@ import helmet from 'helmet';
 import { config, validateConfig } from '@/utils/config';
 import { logger } from '@/utils/logger';
 import { errorHandler } from '@/middleware/errorHandler';
-import { rateLimiter } from '@/middleware/rateLimiter';
+import { rateLimiter, authRateLimiter } from '@/middleware/rateLimiter';
 import { requestLogger } from '@/middleware/requestLogger';
 import {
   securityHeaders,
@@ -61,6 +61,9 @@ async function startServer() {
     console.log('✅ Configuration validated');
 
     const app = express();
+
+    // Trust proxy for correct IP detection behind Azure/reverse proxy
+    app.set('trust proxy', 1);
 
     // Widget-specific middleware BEFORE other security middleware
     app.use('/static', (req, res, next) => {
@@ -433,14 +436,15 @@ async function startServer() {
       next();
     });
 
-    // Rate limiting (exclude widget routes from rate limiting)
+    // Rate limiting (exclude high-frequency and public routes)
     app.use((req, res, next) => {
-      // Skip rate limiting for widget routes, admin panel, static assets, and health checks
       if (
         req.path.startsWith('/widget/') ||
         req.path.startsWith('/static/kova-widget') ||
         req.path.startsWith('/api/widget/') ||
         req.path.startsWith('/api/public/') ||
+        req.path.startsWith('/api/auth/') ||
+        req.path.startsWith('/api/billing/') ||
         req.path === '/' ||
         req.path.startsWith('/static/admin/') ||
         req.path.startsWith('/assets/') ||
@@ -797,7 +801,7 @@ async function startServer() {
     app.use('/api/settings', settingsRoutes);
     app.use('/api/admin', adminRoutes);
     app.use('/api/admin/tenants', tenantAdminRoutes);
-    app.use('/api/auth', adminAuthRoutes);
+    app.use('/api/auth', authRateLimiter, adminAuthRoutes);
     app.use('/api/client', clientRoutes);
     app.use('/api/client/knowledge', knowledgeRoutes);
     app.use('/api/billing', billingRoutes);
