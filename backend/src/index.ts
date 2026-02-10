@@ -435,7 +435,7 @@ async function startServer() {
 
     // Rate limiting (exclude widget routes from rate limiting)
     app.use((req, res, next) => {
-      // Skip rate limiting for widget routes, admin panel, and health checks
+      // Skip rate limiting for widget routes, admin panel, static assets, and health checks
       if (
         req.path.startsWith('/widget/') ||
         req.path.startsWith('/static/kova-widget') ||
@@ -443,6 +443,7 @@ async function startServer() {
         req.path.startsWith('/api/public/') ||
         req.path === '/' ||
         req.path.startsWith('/static/admin/') ||
+        req.path.startsWith('/assets/') ||
         req.path.startsWith('/health')
       ) {
         return next();
