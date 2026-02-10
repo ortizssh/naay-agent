@@ -13,7 +13,7 @@
   // Kova Widget Configuration - Production endpoint
   window.KovaConfig = {
     shopDomain: '{{ shop.permanent_domain }}',
-    apiEndpoint: 'https://naay-agent-app1763504937.azurewebsites.net',
+    apiEndpoint: 'https://app.heykova.io',
     chatEndpoint: 'https://n8n.dustkey.com/webhook/chat-naay',
     position: 'bottom-right',
     primaryColor: '#a59457',
@@ -52,7 +52,7 @@
     }
 
     // Load the official Kova widget script
-    var widgetBaseUrl = window.KovaConfig.apiEndpoint || 'https://naay-agent-app1763504937.azurewebsites.net';
+    var widgetBaseUrl = window.KovaConfig.apiEndpoint || 'https://app.heykova.io';
     var script = document.createElement('script');
     script.src = widgetBaseUrl + '/widget/kova-widget.js?v=' + Date.now();
     script.async = true;

@@ -63,13 +63,13 @@ Una vez deployado, verifica que los fixes funcionen:
 
 ```bash
 # 1. Health check
-curl https://naay-agent-app1763504937.azurewebsites.net/health
+curl https://app.heykova.io/health
 
 # 2. Rate limit test (ya no debería dar 429)
-curl https://naay-agent-app1763504937.azurewebsites.net/api/admin-bypass/stats?shopDomain=test.myshopify.com
+curl https://app.heykova.io/api/admin-bypass/stats?shopDomain=test.myshopify.com
 
 # 3. Widget test
-curl https://naay-agent-app1763504937.azurewebsites.net/naay-widget.js | head -5
+curl https://app.heykova.io/naay-widget.js | head -5
 ```
 
 ## 📋 PRÓXIMOS PASOS
@@ -89,4 +89,4 @@ Después del deployment exitoso:
 
 ---
 
-**URL de la aplicación**: https://naay-agent-app1763504937.azurewebsites.net
+**URL de la aplicación**: https://app.heykova.io

@@ -85,7 +85,7 @@ echo ""
 echo "Or use Azure CLI:"
 echo "az webapp deployment source config-zip --src azure-manual-deploy.zip --name naay-agent-app1763504937 --resource-group naay-agent-rg"
 echo ""
-echo "🌐 App URL: https://naay-agent-app1763504937.azurewebsites.net"
+echo "🌐 App URL: https://app.heykova.io"
 
 # Cleanup
 rm -rf manual-deploy

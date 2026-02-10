@@ -157,7 +157,7 @@ class Kova_Admin {
 
         // General settings (Settings tab)
         $sanitized['enabled'] = $get_checkbox('enabled', false);
-        $sanitized['api_endpoint'] = sanitize_url($get_value('api_endpoint', 'https://naay-agent-app1763504937.azurewebsites.net'));
+        $sanitized['api_endpoint'] = sanitize_url($get_value('api_endpoint', 'https://app.heykova.io'));
         $sanitized['chat_endpoint'] = sanitize_url($get_value('chat_endpoint', 'https://n8n.dustkey.com/webhook/chat-naay'));
         $sanitized['api_key'] = sanitize_text_field($get_value('api_key', ''));
         $sanitized['consumer_key'] = sanitize_text_field($get_value('consumer_key', ''));
@@ -300,7 +300,7 @@ class Kova_Admin {
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('kova_admin_nonce'),
             'siteUrl' => site_url(),
-            'apiEndpoint' => $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net',
+            'apiEndpoint' => $settings['api_endpoint'] ?? 'https://app.heykova.io',
             'strings' => array(
                 'testing' => __('Testing connection...', 'kova-agent'),
                 'syncing' => __('Syncing products...', 'kova-agent'),
@@ -1548,7 +1548,7 @@ class Kova_Admin {
                                 <input type="url"
                                        id="kova_api_endpoint"
                                        name="kova_agent_settings[api_endpoint]"
-                                       value="<?php echo esc_attr($settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net'); ?>"
+                                       value="<?php echo esc_attr($settings['api_endpoint'] ?? 'https://app.heykova.io'); ?>"
                                        class="kova-form-input">
                                 <p class="kova-form-hint"><?php _e('The Kova Agent API endpoint URL.', 'kova-agent'); ?></p>
                             </div>
@@ -1658,7 +1658,7 @@ class Kova_Admin {
         }
 
         $settings = get_option('kova_agent_settings', array());
-        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
         $consumer_key = $settings['consumer_key'] ?? '';
         $consumer_secret = $settings['consumer_secret'] ?? '';
 
@@ -1705,7 +1705,7 @@ class Kova_Admin {
         }
 
         $settings = get_option('kova_agent_settings', array());
-        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
 
         $response = wp_remote_post($api_endpoint . '/api/woo/sync-products', array(
             'headers' => array('Content-Type' => 'application/json'),
@@ -1745,7 +1745,7 @@ class Kova_Admin {
         }
 
         $settings = get_option('kova_agent_settings', array());
-        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
 
         $response = wp_remote_post($api_endpoint . '/api/woo/setup-webhooks', array(
             'headers' => array('Content-Type' => 'application/json'),
@@ -1782,7 +1782,7 @@ class Kova_Admin {
         }
 
         $settings = get_option('kova_agent_settings', array());
-        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
         $start_date = sanitize_text_field($_POST['startDate'] ?? '');
         $end_date = sanitize_text_field($_POST['endDate'] ?? '');
 
@@ -1801,7 +1801,28 @@ class Kova_Admin {
         $body = json_decode(wp_remote_retrieve_body($response), true);
 
         if (!empty($body['success'])) {
-            wp_send_json_success($body['data']);
+            // Remap backend response to format expected by admin.js
+            $analytics = $body['data']['analytics'] ?? array();
+            $convByDay = $analytics['conversationsByDay'] ?? array();
+
+            $mapped = array(
+                'summary' => array(
+                    'totalConversations' => $analytics['conversations'] ?? 0,
+                    'totalMessages' => $analytics['messages'] ?? 0,
+                    'totalRecommendations' => $analytics['recommendations'] ?? 0,
+                    'productsCount' => $analytics['products'] ?? 0,
+                    'totalConversions' => $analytics['conversions'] ?? 0,
+                ),
+                'dailyStats' => array_map(function($item) {
+                    return array(
+                        'date' => $item['date'] ?? '',
+                        'conversations' => $item['conversations'] ?? 0,
+                        'messages' => $item['messages'] ?? 0,
+                    );
+                }, $convByDay),
+            );
+
+            wp_send_json_success($mapped);
         } else {
             wp_send_json_error(array('message' => $body['error'] ?? __('Failed to load analytics.', 'kova-agent')));
         }
@@ -1818,7 +1839,7 @@ class Kova_Admin {
         }
 
         $settings = get_option('kova_agent_settings', array());
-        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
         $date = sanitize_text_field($_POST['date'] ?? date('Y-m-d'));
 
         $url = $api_endpoint . '/api/woo/embedded/conversations?' . http_build_query(array(
@@ -1852,7 +1873,7 @@ class Kova_Admin {
         }
 
         $settings = get_option('kova_agent_settings', array());
-        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
         $days = intval($_POST['days'] ?? 30);
 
         $url = $api_endpoint . '/api/woo/embedded/conversions/dashboard?' . http_build_query(array(
@@ -1869,7 +1890,45 @@ class Kova_Admin {
         $body = json_decode(wp_remote_retrieve_body($response), true);
 
         if (!empty($body['success'])) {
-            wp_send_json_success($body['data']);
+            // Remap backend response to format expected by admin.js
+            $overview = $body['data']['overview'] ?? array();
+            $timeline = $body['data']['timeline'] ?? array();
+            $topProducts = $body['data']['topProducts'] ?? array();
+            $recentActivity = $body['data']['recentActivity'] ?? array();
+
+            $mapped = array(
+                'summary' => array(
+                    'totalConversions' => $overview['totalConversions'] ?? 0,
+                    'conversionRate' => ($overview['conversionRate'] ?? 0) / 100,
+                    'totalRevenue' => $overview['totalRevenue'] ?? 0,
+                    'avgOrderValue' => $overview['averageOrderValue'] ?? 0,
+                ),
+                'dailyConversions' => array_map(function($item) {
+                    return array(
+                        'date' => $item['date'] ?? '',
+                        'conversions' => $item['conversions'] ?? 0,
+                        'revenue' => $item['revenue'] ?? 0,
+                    );
+                }, $timeline),
+                'topProducts' => array_map(function($item) {
+                    return array(
+                        'name' => $item['productTitle'] ?? 'Producto',
+                        'recommendations' => $item['recommendations'] ?? 0,
+                        'conversions' => $item['conversions'] ?? 0,
+                        'revenue' => $item['revenue'] ?? 0,
+                    );
+                }, $topProducts),
+                'recentActivity' => array_map(function($item) {
+                    return array(
+                        'type' => $item['type'] ?? 'recommendation',
+                        'title' => $item['productTitle'] ?? '',
+                        'created_at' => $item['timestamp'] ?? '',
+                        'amount' => $item['amount'] ?? 0,
+                    );
+                }, $recentActivity),
+            );
+
+            wp_send_json_success($mapped);
         } else {
             wp_send_json_error(array('message' => $body['error'] ?? __('Failed to load conversions.', 'kova-agent')));
         }
@@ -1935,7 +1994,7 @@ class Kova_Admin {
         }
 
         $settings = get_option('kova_agent_settings', array());
-        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
 
         if (empty($settings['consumer_key']) || empty($settings['consumer_secret'])) {
             wp_send_json_error(array('message' => 'API keys not configured'));
@@ -1988,7 +2047,7 @@ class Kova_Admin {
         }
 
         $settings = get_option('kova_agent_settings', array());
-        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
 
         $response = wp_remote_post($api_endpoint . '/api/woo/sync-products', array(
             'headers' => array('Content-Type' => 'application/json'),
@@ -2440,7 +2499,7 @@ class Kova_Admin {
         }
 
         $settings = get_option('kova_agent_settings', array());
-        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
 
         $url = $api_endpoint . '/api/woo/embedded/ai-config?' . http_build_query(array(
             'siteUrl' => site_url(),
@@ -2472,7 +2531,7 @@ class Kova_Admin {
         }
 
         $settings = get_option('kova_agent_settings', array());
-        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
 
         $config = array(
             'chatMode' => sanitize_text_field($_POST['chatMode'] ?? 'internal'),
@@ -2519,7 +2578,7 @@ class Kova_Admin {
         }
 
         $settings = get_option('kova_agent_settings', array());
-        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
 
         $url = $api_endpoint . '/api/woo/embedded/knowledge?' . http_build_query(array(
             'siteUrl' => site_url(),
@@ -2551,7 +2610,7 @@ class Kova_Admin {
         }
 
         $settings = get_option('kova_agent_settings', array());
-        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
 
         $title = sanitize_text_field($_POST['title'] ?? '');
         $content = sanitize_textarea_field($_POST['content'] ?? '');
@@ -2598,7 +2657,7 @@ class Kova_Admin {
         }
 
         $settings = get_option('kova_agent_settings', array());
-        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
 
         $title = sanitize_text_field($_POST['title'] ?? '');
         $file = $_FILES['file'];
@@ -2658,7 +2717,7 @@ class Kova_Admin {
         }
 
         $settings = get_option('kova_agent_settings', array());
-        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
 
         $document_id = sanitize_text_field($_POST['documentId'] ?? '');
 
@@ -2699,7 +2758,7 @@ class Kova_Admin {
         }
 
         $settings = get_option('kova_agent_settings', array());
-        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
 
         $document_id = sanitize_text_field($_POST['documentId'] ?? '');
 

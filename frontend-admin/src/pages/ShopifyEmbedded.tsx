@@ -462,7 +462,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
     }
 
     // Fallback to production URL for Shopify embedded context
-    return 'https://naay-agent-app1763504937.azurewebsites.net';
+    return 'https://app.heykova.io';
   }, []);
 
   // Apply preset filter

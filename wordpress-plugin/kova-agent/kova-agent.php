@@ -51,15 +51,21 @@ function kova_agent_migrate_settings() {
     $settings = get_option('kova_agent_settings', array());
     $needs_update = false;
 
-    // Migrate from old api.kova.ai to new Azure endpoint
+    // Migrate from old api.kova.ai endpoint
     if (isset($settings['api_endpoint']) && $settings['api_endpoint'] === 'https://api.kova.ai') {
-        $settings['api_endpoint'] = 'https://naay-agent-app1763504937.azurewebsites.net';
+        $settings['api_endpoint'] = 'https://app.heykova.io';
+        $needs_update = true;
+    }
+
+    // Migrate from old Azure endpoint
+    if (isset($settings['api_endpoint']) && $settings['api_endpoint'] === 'https://naay-agent-app1763504937.azurewebsites.net') {
+        $settings['api_endpoint'] = 'https://app.heykova.io';
         $needs_update = true;
     }
 
     // Also handle empty endpoint
     if (empty($settings['api_endpoint'])) {
-        $settings['api_endpoint'] = 'https://naay-agent-app1763504937.azurewebsites.net';
+        $settings['api_endpoint'] = 'https://app.heykova.io';
         $needs_update = true;
     }
 
@@ -101,7 +107,7 @@ function kova_agent_activate() {
     // Create default options
     $default_options = array(
         'enabled' => false,
-        'api_endpoint' => 'https://naay-agent-app1763504937.azurewebsites.net',
+        'api_endpoint' => 'https://app.heykova.io',
         'api_key' => '',
         'consumer_key' => '',
         'consumer_secret' => '',

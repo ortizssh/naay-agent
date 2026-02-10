@@ -11,7 +11,7 @@ SKU: Free (F1)
 Runtime: Node.js 20-lts
 
 URLs:
-- Production: https://naay-agent-app1763504937.azurewebsites.net
+- Production: https://app.heykova.io
 - Azure Portal: https://portal.azure.com
 
 Subscription ID: 4d9fb822-c8cc-4f7d-beaf-25b34d7a6068
@@ -31,7 +31,7 @@ PRÓXIMOS PASOS REQUERIDOS:
 
    SHOPIFY_API_KEY=1c7a47abe69b8020f7ed37d3528e0552
    SHOPIFY_API_SECRET=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
-   SHOPIFY_APP_URL=https://naay-agent-app1763504937.azurewebsites.net
+   SHOPIFY_APP_URL=https://app.heykova.io
    SHOPIFY_SCOPES=read_products,write_products,read_orders,read_customers,write_draft_orders
    
    SUPABASE_URL=https://tu-proyecto.supabase.co
@@ -54,9 +54,9 @@ PRÓXIMOS PASOS REQUERIDOS:
 
 3. 📱 ACTUALIZAR SHOPIFY APP:
    - Partner Dashboard > Tu App
-   - App URL: https://naay-agent-app1763504937.azurewebsites.net
-   - Redirect URLs: https://naay-agent-app1763504937.azurewebsites.net/auth/callback
-   - Webhook URLs: https://naay-agent-app1763504937.azurewebsites.net/api/webhooks/*
+   - App URL: https://app.heykova.io
+   - Redirect URLs: https://app.heykova.io/auth/callback
+   - Webhook URLs: https://app.heykova.io/api/webhooks/*
 
 ===========================================
 COMANDOS ÚTILES:
@@ -83,8 +83,8 @@ SHOPIFY INTEGRATION:
 - Secret: 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
 
 📝 URLs para Partner Dashboard:
-- App URL: https://naay-agent-app1763504937.azurewebsites.net
-- Redirect: https://naay-agent-app1763504937.azurewebsites.net/auth/callback
+- App URL: https://app.heykova.io
+- Redirect: https://app.heykova.io/auth/callback
 
 ===========================================
 

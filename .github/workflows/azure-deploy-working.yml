@@ -122,7 +122,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     environment:
       name: 'Production'
-      url: https://naay-agent-app1763504937.azurewebsites.net
+      url: https://app.heykova.io
     concurrency:
       group: production-deployment
       cancel-in-progress: false
@@ -154,4 +154,4 @@ jobs:
         echo "🚀 Deployment completed!"
         echo "🌐 Waiting 45 seconds for app to start..."
         sleep 45
-        curl -f https://naay-agent-app1763504937.azurewebsites.net/health || echo "Health check failed - app may still be starting"
+        curl -f https://app.heykova.io/health || echo "Health check failed - app may still be starting"

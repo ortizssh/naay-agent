@@ -115,7 +115,7 @@ class Kova_API {
      * Sync widget configuration with Kova backend
      */
     private function sync_widget_config($settings) {
-        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
 
         $config = array(
             'enabled' => !empty($settings['enabled']),
@@ -190,7 +190,7 @@ class Kova_API {
      * Connect to Kova API
      */
     private function connect_to_kova($settings) {
-        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
 
         $response = wp_remote_post($api_endpoint . '/api/woo/connect', array(
             'headers' => array('Content-Type' => 'application/json'),
@@ -233,7 +233,7 @@ class Kova_API {
      */
     public function disconnect_from_kova() {
         $settings = get_option('kova_agent_settings', array());
-        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
 
         $response = wp_remote_post($api_endpoint . '/api/woo/disconnect', array(
             'headers' => array('Content-Type' => 'application/json'),
@@ -255,6 +255,6 @@ class Kova_API {
      */
     public static function get_api_endpoint() {
         $settings = get_option('kova_agent_settings', array());
-        return $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+        return $settings['api_endpoint'] ?? 'https://app.heykova.io';
     }
 }

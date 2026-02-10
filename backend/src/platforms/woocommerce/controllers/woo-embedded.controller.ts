@@ -15,13 +15,13 @@ const router = Router();
 const supabaseService = new SupabaseService();
 
 /**
- * Normalize WooCommerce site URL
- * Unlike Shopify (which uses .myshopify.com), WooCommerce uses full URLs
+ * Normalize WooCommerce site URL to host-only format
+ * Must match registration format in woo-auth.controller.ts which stores shop_domain as url.host (e.g., "cactus.mx")
  */
 function normalizeWooSiteUrl(siteUrl: string): string {
   try {
     const url = new URL(siteUrl);
-    return `${url.protocol}//${url.host}`;
+    return url.host; // host only, e.g., "cactus.mx" — matches DB shop_domain
   } catch {
     // If URL parsing fails, try to add protocol
     if (!siteUrl.startsWith('http')) {
@@ -1361,11 +1361,14 @@ async function getAnalyticsForStore(
     `WooCommerce Analytics: Found ${messageCount} messages, ${conversationCount} conversations`
   );
 
-  // Group by day
+  // Group by day (sessions and messages)
   const sessionsByDay: Record<string, Set<string>> = {};
+  const messagesByDay: Record<string, number> = {};
   chatMessagesData.forEach(msg => {
-    if (!msg.session_id || !msg.timestamp) return;
+    if (!msg.timestamp) return;
     const date = new Date(msg.timestamp).toISOString().split('T')[0];
+    messagesByDay[date] = (messagesByDay[date] || 0) + 1;
+    if (!msg.session_id) return;
     if (!sessionsByDay[date]) sessionsByDay[date] = new Set();
     sessionsByDay[date].add(msg.session_id);
   });
@@ -1511,6 +1514,7 @@ async function getAnalyticsForStore(
   const convByDayMap = new Map(
     conversationsByDayData.map(d => [d.date, d.count])
   );
+  const msgByDayMap = new Map(Object.entries(messagesByDay));
   const recByDayMap = new Map(
     recommendationsByDayData.map(d => [d.date, d.count])
   );
@@ -1521,6 +1525,7 @@ async function getAnalyticsForStore(
   const chartDataByDay = allDatesInRange.map(date => ({
     date,
     conversations: convByDayMap.get(date) || 0,
+    messages: msgByDayMap.get(date) || 0,
     recommendations: recByDayMap.get(date) || 0,
     conversions: conversionByDayMap.get(date) || 0,
   }));

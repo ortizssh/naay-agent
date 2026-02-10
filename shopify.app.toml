@@ -2,7 +2,7 @@
 
 name = "kova-agent"
 client_id = "0172a0c3012d86608e6e7b6234448a03"
-application_url = "https://naay-agent-app1763504937.azurewebsites.net"
+application_url = "https://app.heykova.io"
 embedded = true
 
 # Modern authentication configuration for 2024
@@ -15,9 +15,9 @@ scopes = "read_products,write_products,read_orders,read_customers,write_draft_or
 [auth]
 # Modern authentication redirect URLs for Session Token + OAuth flow
 redirect_urls = [
-  "https://naay-agent-app1763504937.azurewebsites.net/auth/callback",
-  "https://naay-agent-app1763504937.azurewebsites.net/auth/shopify/callback",
-  "https://naay-agent-app1763504937.azurewebsites.net/api/client/oauth/callback",
+  "https://app.heykova.io/auth/callback",
+  "https://app.heykova.io/auth/shopify/callback",
+  "https://app.heykova.io/api/client/oauth/callback",
 ]
 
 # Enable session tokens for embedded apps (App Bridge 3.0)
@@ -29,28 +29,28 @@ api_version = "2025-10"
 
   [[webhooks.subscriptions]]
   topics = ["products/create"]
-  uri = "https://naay-agent-app1763504937.azurewebsites.net/api/webhooks/products/create"
+  uri = "https://app.heykova.io/api/webhooks/products/create"
 
   [[webhooks.subscriptions]]
   topics = ["products/update"] 
-  uri = "https://naay-agent-app1763504937.azurewebsites.net/api/webhooks/products/update"
+  uri = "https://app.heykova.io/api/webhooks/products/update"
 
   [[webhooks.subscriptions]]
   topics = ["products/delete"]
-  uri = "https://naay-agent-app1763504937.azurewebsites.net/api/webhooks/products/delete"
+  uri = "https://app.heykova.io/api/webhooks/products/delete"
 
   [[webhooks.subscriptions]]
   topics = ["app/uninstalled"]
-  uri = "https://naay-agent-app1763504937.azurewebsites.net/api/webhooks/app/uninstalled"
+  uri = "https://app.heykova.io/api/webhooks/app/uninstalled"
 
   # Order webhooks for conversion tracking
   [[webhooks.subscriptions]]
   topics = ["orders/create"]
-  uri = "https://naay-agent-app1763504937.azurewebsites.net/api/webhooks/orders/create"
+  uri = "https://app.heykova.io/api/webhooks/orders/create"
 
   [[webhooks.subscriptions]]
   topics = ["orders/paid"]
-  uri = "https://naay-agent-app1763504937.azurewebsites.net/api/webhooks/orders/paid"
+  uri = "https://app.heykova.io/api/webhooks/orders/paid"
 
 [pos]
 embedded = false

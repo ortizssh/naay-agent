@@ -61,7 +61,7 @@ class Kova_Widget {
             return;
         }
 
-        $api_endpoint = $this->settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+        $api_endpoint = $this->settings['api_endpoint'] ?? 'https://app.heykova.io';
 
         // Enqueue the Kova widget script (use timestamp to bust cache on backend updates)
         wp_enqueue_script(
@@ -154,7 +154,7 @@ class Kova_Widget {
             return;
         }
 
-        $api_endpoint = $this->settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+        $api_endpoint = $this->settings['api_endpoint'] ?? 'https://app.heykova.io';
         $chat_endpoint = $this->settings['chat_endpoint'] ?? 'https://n8n.dustkey.com/webhook/chat-naay';
         $page_context = $this->get_page_context();
         $customer = $this->get_customer_info();

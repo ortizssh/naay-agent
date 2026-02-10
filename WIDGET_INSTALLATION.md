@@ -53,7 +53,7 @@ Since the Theme App Extension isn't appearing in the theme editor, here's how to
 <script>
   window.NaayConfig = {
     shopDomain: '{{ shop.permanent_domain }}',
-    apiEndpoint: 'https://naay-agent-app1763504937.azurewebsites.net',
+    apiEndpoint: 'https://app.heykova.io',
     position: 'bottom-right',
     primaryColor: '#008060',
     greeting: '¡Hola! 👋 Soy tu asistente virtual. ¿En qué puedo ayudarte?',
@@ -81,7 +81,7 @@ Since the Theme App Extension isn't appearing in the theme editor, here's how to
     }
     
     var script = document.createElement('script');
-    script.src = 'https://naay-agent-app1763504937.azurewebsites.net/static/naay-widget.js';
+    script.src = 'https://app.heykova.io/static/naay-widget.js';
     script.async = true;
     script.onload = function() {
       if (window.NaayWidget && window.NaayConfig) {
@@ -138,7 +138,7 @@ The widget loads settings from your admin panel:
 
 If widget doesn't appear:
 1. Check browser console for errors (F12 → Console tab)
-2. Verify the script loads: `https://naay-agent-app1763504937.azurewebsites.net/static/naay-widget.js`
+2. Verify the script loads: `https://app.heykova.io/static/naay-widget.js`
 3. Ensure you're not in admin preview mode
 4. Clear browser cache and refresh
 

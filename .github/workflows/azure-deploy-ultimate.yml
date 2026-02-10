@@ -105,7 +105,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     environment:
       name: 'Production'
-      url: https://naay-agent-app1763504937.azurewebsites.net
+      url: https://app.heykova.io
 
     steps:
     - name: Download deployment artifact
@@ -184,5 +184,5 @@ jobs:
       run: |
         echo "🌐 Verifying deployment..."
         sleep 30
-        curl -f https://naay-agent-app1763504937.azurewebsites.net/health || echo "Health check failed - app may still be starting"
+        curl -f https://app.heykova.io/health || echo "Health check failed - app may still be starting"
         echo "🚀 Deployment process completed!"

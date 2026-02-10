@@ -34,7 +34,7 @@ echo "================================="
 
 # Test app endpoints
 echo "Health endpoint:"
-curl -s -w "HTTP Status: %{http_code}\n" "https://naay-agent-app1763504937.azurewebsites.net/health" | head -3
+curl -s -w "HTTP Status: %{http_code}\n" "https://app.heykova.io/health" | head -3
 
 echo ""
 echo "🔍 Common Azure Free Plan Limitations:"

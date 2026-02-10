@@ -49,7 +49,7 @@ class Kova_Updater {
 
         // Get update URL from settings or use default
         $settings = get_option('kova_agent_settings', array());
-        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
         $this->update_url = trailingslashit($api_endpoint) . 'api/woo/plugin/update-info';
 
         // Hook into WordPress update system
