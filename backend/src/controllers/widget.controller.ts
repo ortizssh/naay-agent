@@ -5,6 +5,9 @@ import { AppError } from '@/types';
 import { validateAuth } from '@/middleware/shopify-auth.middleware';
 import { config as appConfig } from '@/utils/config';
 
+const RETELL_API_KEY = process.env.RETELL_API_KEY || '';
+const RETELL_AGENT_ID = process.env.RETELL_AGENT_ID || '';
+
 const router = Router();
 const supabaseService = new SupabaseService();
 
@@ -151,6 +154,7 @@ router.get(
         chatHeight: 600,
         showPromoMessage: true,
         showCart: true,
+        showContact: false,
         enableAnimations: true,
         theme: 'light',
         promoBadgeEnabled: false,
@@ -233,6 +237,7 @@ router.get(
             widget_avatar,
             widget_show_promo_message,
             widget_show_cart,
+            widget_show_contact,
             widget_enable_animations,
             widget_theme,
             widget_brand_name,
@@ -325,6 +330,7 @@ router.get(
               clientStore.widget_show_promo_message ??
               defaultConfig.showPromoMessage,
             showCart: clientStore.widget_show_cart ?? defaultConfig.showCart,
+            showContact: clientStore.widget_show_contact ?? defaultConfig.showContact,
             enableAnimations:
               clientStore.widget_enable_animations ??
               defaultConfig.enableAnimations,
@@ -423,6 +429,74 @@ router.get(
       });
     } catch (error) {
       logger.error('Error getting widget config:', error);
+      next(error);
+    }
+  }
+);
+
+// Initiate a phone call via Retell AI
+router.post(
+  '/contact',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { name, phone, email, shopDomain, sessionId } = req.body;
+
+      if (!name || !phone || !email) {
+        throw new AppError('Name, phone, and email are required', 400);
+      }
+
+      if (!RETELL_API_KEY || !RETELL_AGENT_ID) {
+        logger.error('Retell AI configuration missing');
+        throw new AppError('Contact service not configured', 503);
+      }
+
+      logger.info('Initiating contact call via Retell AI', {
+        shopDomain,
+        sessionId,
+        phone,
+      });
+
+      const retellResponse = await fetch(
+        'https://api.retellai.com/v2/create-phone-call',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${RETELL_API_KEY}`,
+          },
+          body: JSON.stringify({
+            agent_id: RETELL_AGENT_ID,
+            customer_number: phone,
+            metadata: {
+              customer_name: name,
+              customer_email: email,
+              shop_domain: shopDomain || '',
+              session_id: sessionId || '',
+            },
+          }),
+        }
+      );
+
+      if (!retellResponse.ok) {
+        const errorData = await retellResponse.text();
+        logger.error('Retell AI API error', {
+          status: retellResponse.status,
+          body: errorData,
+        });
+        throw new AppError('Failed to initiate call', 502);
+      }
+
+      const callData = await retellResponse.json();
+
+      res.json({
+        success: true,
+        data: {
+          message: 'Call initiated successfully',
+          callId: (callData as any).call_id,
+        },
+      });
+    } catch (error) {
+      logger.error('Contact call error:', error);
       next(error);
     }
   }

@@ -510,6 +510,7 @@ router.put(
         widgetAvatar,
         widgetShowPromoMessage,
         widgetShowCart,
+        widgetShowContact,
         widgetEnableAnimations,
         widgetTheme,
         widgetBrandName,
@@ -548,6 +549,8 @@ router.put(
         updateData.widget_show_promo_message = widgetShowPromoMessage;
       if (widgetShowCart !== undefined)
         updateData.widget_show_cart = widgetShowCart;
+      if (widgetShowContact !== undefined)
+        updateData.widget_show_contact = widgetShowContact;
       if (widgetEnableAnimations !== undefined)
         updateData.widget_enable_animations = widgetEnableAnimations;
       if (widgetTheme) updateData.widget_theme = widgetTheme;

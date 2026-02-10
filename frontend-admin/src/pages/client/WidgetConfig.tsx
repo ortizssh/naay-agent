@@ -20,6 +20,7 @@ interface WidgetConfigData {
   widget_avatar: string;
   widget_show_promo_message: boolean;
   widget_show_cart: boolean;
+  widget_show_contact: boolean;
   widget_enable_animations: boolean;
   widget_theme: string;
   widget_brand_name: string;
@@ -43,6 +44,7 @@ function WidgetConfig() {
     widget_avatar: '🌿',
     widget_show_promo_message: true,
     widget_show_cart: true,
+    widget_show_contact: false,
     widget_enable_animations: true,
     widget_theme: 'light',
     widget_brand_name: 'Kova',
@@ -100,6 +102,7 @@ function WidgetConfig() {
         widgetAvatar: config.widget_avatar,
         widgetShowPromoMessage: config.widget_show_promo_message,
         widgetShowCart: config.widget_show_cart,
+        widgetShowContact: config.widget_show_contact,
         widgetEnableAnimations: config.widget_enable_animations,
         widgetTheme: config.widget_theme,
         widgetBrandName: config.widget_brand_name,
@@ -540,6 +543,23 @@ function WidgetConfig() {
                       <span style={{ fontWeight: '500' }}>Carrito integrado</span>
                       <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
                         Permite agregar productos al carrito desde el chat
+                      </p>
+                    </div>
+                  </label>
+                </div>
+
+                <div className="form-group">
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={config.widget_show_contact}
+                      onChange={(e) => setConfig({ ...config, widget_show_contact: e.target.checked })}
+                      style={{ width: '20px', height: '20px' }}
+                    />
+                    <div>
+                      <span style={{ fontWeight: '500' }}>Contacto telefonico</span>
+                      <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                        Permite solicitar una llamada desde el chat
                       </p>
                     </div>
                   </label>

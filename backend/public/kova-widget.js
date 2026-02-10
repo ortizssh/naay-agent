@@ -428,6 +428,45 @@
             </footer>
           </div>
           
+          <!-- Contact Panel - Slides from left -->
+          <div class="kova-contact-panel" id="kova-contact-panel">
+            <header class="kova-contact-panel__header">
+              <div class="kova-contact-panel__title">
+                <svg class="kova-contact-panel__icon" viewBox="0 0 24 24" fill="none">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <h3>Contacto</h3>
+              </div>
+              <button class="kova-contact-panel__close" id="kova-contact-close" aria-label="Cerrar contacto">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/>
+                </svg>
+              </button>
+            </header>
+
+            <div class="kova-contact-panel__content">
+              <p class="kova-contact-panel__description">¿Quieres que te contacte un agente por teléfono para continuar tu conversación?</p>
+              <form class="kova-contact-panel__form" id="kova-contact-form">
+                <div class="kova-contact-panel__field">
+                  <label for="kova-contact-name">Nombre</label>
+                  <input type="text" id="kova-contact-name" placeholder="Tu nombre" required />
+                </div>
+                <div class="kova-contact-panel__field">
+                  <label for="kova-contact-phone">Teléfono</label>
+                  <input type="tel" id="kova-contact-phone" placeholder="+56 9 1234 5678" required />
+                </div>
+                <div class="kova-contact-panel__field">
+                  <label for="kova-contact-email">Correo</label>
+                  <input type="email" id="kova-contact-email" placeholder="tu@correo.com" required />
+                </div>
+                <button type="submit" class="kova-contact-panel__submit" id="kova-contact-submit">
+                  <span>Solicitar llamada</span>
+                </button>
+              </form>
+              <div class="kova-contact-panel__status" id="kova-contact-status" style="display: none;"></div>
+            </div>
+          </div>
+
           <!-- Chat Container -->
           <div class="kova-chat-container" id="kova-chat-container">
             <div class="kova-widget__promotional-message" id="kova-promotional-message" role="dialog" aria-label="Mensaje promocional">
@@ -462,6 +501,12 @@
                     <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19C17 19.6 16.6 20 16 20H14C13.4 20 13 19.6 13 19V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                   <span class="kova-cart-toggle-count" id="kova-widget-cart-count">0</span>
+                </button>
+
+                <button class="kova-widget__contact-toggle-btn" id="kova-widget-contact-toggle-btn" aria-label="Solicitar llamada">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
                 </button>
 
                 <button class="kova-widget__close" id="kova-widget-close" aria-label="Cerrar chat">
@@ -577,6 +622,13 @@
       this.cartCheckout = this.container.querySelector('#kova-cart-checkout');
       this.cartClose = this.container.querySelector('#kova-cart-close');
 
+      // Contact elements
+      this.contactToggle = this.container.querySelector('#kova-widget-contact-toggle-btn');
+      this.contactPanel = this.container.querySelector('#kova-contact-panel');
+      this.contactClose = this.container.querySelector('#kova-contact-close');
+      this.contactForm = this.container.querySelector('#kova-contact-form');
+      this.contactStatus = this.container.querySelector('#kova-contact-status');
+
       console.log('✨ Luxury DOM Elements found:', {
         button: !!this.button,
         chat: !!this.chat,
@@ -658,10 +710,34 @@
 
       // Show/hide cart button and panel based on showCart setting
       if (this.cartSmallToggle) {
-        this.cartSmallToggle.style.display = this.config.showCart === false ? 'none' : '';
+        if (this.config.showCart === false) {
+          this.cartSmallToggle.style.setProperty('display', 'none', 'important');
+        } else {
+          this.cartSmallToggle.style.removeProperty('display');
+        }
       }
       if (this.cartPanel) {
-        this.cartPanel.style.display = this.config.showCart === false ? 'none' : '';
+        if (this.config.showCart === false) {
+          this.cartPanel.style.setProperty('display', 'none', 'important');
+        } else {
+          this.cartPanel.style.removeProperty('display');
+        }
+      }
+
+      // Show/hide contact button and panel based on showContact setting
+      if (this.contactToggle) {
+        if (this.config.showContact === false || this.config.showContact === undefined) {
+          this.contactToggle.style.setProperty('display', 'none', 'important');
+        } else {
+          this.contactToggle.style.removeProperty('display');
+        }
+      }
+      if (this.contactPanel) {
+        if (this.config.showContact === false || this.config.showContact === undefined) {
+          this.contactPanel.style.setProperty('display', 'none', 'important');
+        } else {
+          this.contactPanel.style.removeProperty('display');
+        }
       }
 
       // Enable/disable animations based on enableAnimations setting
@@ -769,6 +845,7 @@
         avatar,
         showPromoMessage: this.config.showPromoMessage,
         showCart: this.config.showCart,
+        showContact: this.config.showContact,
         enableAnimations: this.config.enableAnimations,
         promoBadgeEnabled: this.config.promoBadgeEnabled,
         promoBadgeDiscount: this.config.promoBadgeDiscount
@@ -2059,6 +2136,39 @@
           display: none !important;
         }
 
+        /* Contact Toggle Button */
+        .kova-widget__contact-toggle-btn {
+          position: relative !important;
+          background: rgba(255, 255, 255, 0.95) !important;
+          backdrop-filter: blur(10px) !important;
+          -webkit-backdrop-filter: blur(10px) !important;
+          border: 1px solid rgba(0, 0, 0, 0.06) !important;
+          border-radius: 12px !important;
+          padding: 10px !important;
+          cursor: pointer !important;
+          transition: all 0.2s cubic-bezier(0.32, 0.72, 0, 1) !important;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+
+        .kova-widget__contact-toggle-btn:hover {
+          background: var(--kova-white) !important;
+          transform: scale(1.05) !important;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+        }
+
+        .kova-widget__contact-toggle-btn:active {
+          transform: scale(0.95) !important;
+        }
+
+        .kova-widget__contact-toggle-btn svg {
+          width: 16px !important;
+          height: 16px !important;
+          color: var(--kova-perfect) !important;
+        }
+
         .kova-widget__messages::-webkit-scrollbar {
           width: 6px !important;
         }
@@ -2455,6 +2565,25 @@
             height: 48px !important;
           }
           
+          /* Contact panel as bottom drawer on tablet */
+          .kova-contact-panel {
+            bottom: -100vh !important;
+            left: 12px !important;
+            right: auto !important;
+            width: calc(100vw - 24px) !important;
+            height: auto !important;
+            max-height: 500px !important;
+            border-radius: 24px 24px 0 0 !important;
+            border: 1px solid rgba(212, 196, 184, 0.3) !important;
+            border-bottom: none !important;
+            box-shadow: 0 -10px 40px rgba(207, 121, 94, 0.18) !important;
+            transition: bottom 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+          }
+
+          .kova-contact-panel--open {
+            bottom: 0 !important;
+          }
+
           /* Cart panel as bottom drawer on tablet */
           .kova-cart-panel {
             bottom: -100vh !important; /* Hidden below screen */
@@ -2648,6 +2777,67 @@
             pointer-events: auto !important;
             left: 50% !important;
             top: 50% !important;
+          }
+
+          /* Contact panel - centered on mobile with High Specificity */
+          .kova-contact-panel,
+          .kova-widget .kova-contact-panel,
+          .kova-widget--bottom-left .kova-contact-panel,
+          .kova-widget--bottom-right .kova-contact-panel,
+          .kova-widget--top-left .kova-contact-panel,
+          .kova-widget--top-right .kova-contact-panel {
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            right: auto !important;
+            bottom: auto !important;
+            transform: translate(-50%, -50%) scale(0.95) !important;
+            width: calc(100vw - 32px) !important;
+            max-width: 380px !important;
+            height: auto !important;
+            max-height: 75dvh !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            display: none !important;
+            z-index: 1000001 !important;
+            transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease, visibility 0.3s !important;
+            background: white !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            border-radius: 20px !important;
+            border: none !important;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.25), 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+            overflow: hidden !important;
+          }
+
+          .kova-widget .kova-contact-panel--open,
+          html .kova-widget .kova-contact-panel--open,
+          .kova-contact-panel--open,
+          .kova-widget--bottom-left .kova-contact-panel--open,
+          .kova-widget--bottom-right .kova-contact-panel--open,
+          .kova-widget--top-left .kova-contact-panel--open,
+          .kova-widget--top-right .kova-contact-panel--open {
+            display: flex !important;
+            transform: translate(-50%, -50%) scale(1) !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+            left: 50% !important;
+            top: 50% !important;
+          }
+
+          /* Mobile contact backdrop */
+          .kova-widget--contact-open::before {
+            content: '' !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            background: rgba(0, 0, 0, 0.5) !important;
+            z-index: 999999 !important;
+            animation: fadeIn 0.3s ease !important;
           }
 
           /* Mobile cart backdrop */
@@ -3051,6 +3241,210 @@
           border: 2px solid var(--kova-white) !important;
           box-shadow: var(--kova-shadow-medium) !important;
           transition: all 0.2s var(--kova-transition) !important;
+        }
+
+        /* Contact Panel - Floating panel to the left of chat widget */
+        .kova-contact-panel {
+          position: fixed !important;
+          bottom: 88px !important;
+          right: auto !important;
+          left: auto !important;
+          width: 340px !important;
+          height: auto !important;
+          max-height: 520px !important;
+          background: rgba(255, 255, 255, 0.98) !important;
+          backdrop-filter: blur(24px) !important;
+          -webkit-backdrop-filter: blur(24px) !important;
+          border-radius: 16px !important;
+          border: 1px solid rgba(212, 196, 184, 0.25) !important;
+          box-shadow:
+            0 20px 60px rgba(0, 0, 0, 0.12),
+            0 8px 24px rgba(165, 148, 87, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+          display: flex !important;
+          flex-direction: column !important;
+          overflow: hidden !important;
+          opacity: 0 !important;
+          visibility: hidden !important;
+          pointer-events: none !important;
+          z-index: 999997 !important;
+          transform: translateX(30px) scale(0.95) !important;
+          transition: all 0.35s cubic-bezier(0.32, 0.72, 0, 1) !important;
+        }
+
+        .kova-contact-panel--open {
+          opacity: 1 !important;
+          visibility: visible !important;
+          pointer-events: auto !important;
+          transform: translateX(0) scale(1) !important;
+        }
+
+        .kova-widget--bottom-right .kova-contact-panel {
+          right: calc(var(--kova-chat-width, 420px) + 32px + 20px) !important;
+          left: auto !important;
+        }
+
+        .kova-widget--bottom-left .kova-contact-panel {
+          left: calc(var(--kova-chat-width, 420px) + 32px + 20px) !important;
+          right: auto !important;
+        }
+
+        .kova-contact-panel__header {
+          padding: 18px 20px !important;
+          background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(248,249,248,0.95) 100%) !important;
+          color: var(--kova-black) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: space-between !important;
+          border-bottom: 1px solid rgba(212, 196, 184, 0.15) !important;
+          flex-shrink: 0 !important;
+        }
+
+        .kova-contact-panel__title {
+          display: flex !important;
+          align-items: center !important;
+          gap: 10px !important;
+        }
+
+        .kova-contact-panel__title h3 {
+          margin: 0 !important;
+          font-size: 15px !important;
+          font-weight: 600 !important;
+          color: var(--kova-black) !important;
+          letter-spacing: 0.3px !important;
+        }
+
+        .kova-contact-panel__icon {
+          width: 20px !important;
+          height: 20px !important;
+          color: var(--kova-perfect) !important;
+        }
+
+        .kova-contact-panel__close {
+          background: none !important;
+          border: none !important;
+          cursor: pointer !important;
+          padding: 6px !important;
+          border-radius: 8px !important;
+          transition: all 0.2s !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+
+        .kova-contact-panel__close:hover {
+          background: rgba(0, 0, 0, 0.05) !important;
+        }
+
+        .kova-contact-panel__close svg {
+          width: 18px !important;
+          height: 18px !important;
+          color: var(--kova-black) !important;
+          opacity: 0.5 !important;
+        }
+
+        .kova-contact-panel__content {
+          padding: 20px !important;
+          overflow-y: auto !important;
+          flex: 1 !important;
+        }
+
+        .kova-contact-panel__description {
+          margin: 0 0 20px 0 !important;
+          font-size: 14px !important;
+          line-height: 1.5 !important;
+          color: var(--kova-dark) !important;
+        }
+
+        .kova-contact-panel__field {
+          margin-bottom: 16px !important;
+        }
+
+        .kova-contact-panel__field label {
+          display: block !important;
+          font-size: 12px !important;
+          font-weight: 600 !important;
+          color: var(--kova-black) !important;
+          margin-bottom: 6px !important;
+          letter-spacing: 0.3px !important;
+        }
+
+        .kova-contact-panel__field input {
+          width: 100% !important;
+          padding: 10px 14px !important;
+          border: 1px solid rgba(212, 196, 184, 0.4) !important;
+          border-radius: 10px !important;
+          font-size: 14px !important;
+          font-family: var(--kova-font-family) !important;
+          background: rgba(248, 249, 248, 0.6) !important;
+          color: var(--kova-black) !important;
+          transition: all 0.2s !important;
+          box-sizing: border-box !important;
+          outline: none !important;
+        }
+
+        .kova-contact-panel__field input:focus {
+          border-color: var(--kova-perfect) !important;
+          box-shadow: 0 0 0 3px rgba(165, 148, 87, 0.1) !important;
+          background: white !important;
+        }
+
+        .kova-contact-panel__field input::placeholder {
+          color: rgba(0, 0, 0, 0.3) !important;
+        }
+
+        .kova-contact-panel__submit {
+          width: 100% !important;
+          padding: 12px 20px !important;
+          background: var(--kova-perfect) !important;
+          color: white !important;
+          border: none !important;
+          border-radius: 10px !important;
+          font-size: 14px !important;
+          font-weight: 600 !important;
+          font-family: var(--kova-font-family) !important;
+          cursor: pointer !important;
+          transition: all 0.2s !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          gap: 8px !important;
+          margin-top: 4px !important;
+        }
+
+        .kova-contact-panel__submit:hover {
+          opacity: 0.9 !important;
+          transform: translateY(-1px) !important;
+        }
+
+        .kova-contact-panel__submit:active {
+          transform: translateY(0) !important;
+        }
+
+        .kova-contact-panel__submit:disabled {
+          opacity: 0.6 !important;
+          cursor: not-allowed !important;
+        }
+
+        .kova-contact-panel__status {
+          margin-top: 16px !important;
+          padding: 12px 16px !important;
+          border-radius: 10px !important;
+          font-size: 13px !important;
+          line-height: 1.4 !important;
+          text-align: center !important;
+        }
+
+        .kova-contact-panel__status--success {
+          background: rgba(144, 162, 132, 0.15) !important;
+          color: #5a7a4a !important;
+          border: 1px solid rgba(144, 162, 132, 0.3) !important;
+        }
+
+        .kova-contact-panel__status--error {
+          background: rgba(207, 121, 94, 0.12) !important;
+          color: #b5553a !important;
+          border: 1px solid rgba(207, 121, 94, 0.3) !important;
         }
 
         /* Cart Panel - Floating panel to the left of chat widget */
@@ -4198,6 +4592,39 @@
         console.log('✅ Cart close button event listener added');
       }
 
+      // Contact toggle button
+      if (this.contactToggle) {
+        this.contactToggle.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('📞 Contact toggle clicked!');
+          this.toggleContact();
+        });
+        console.log('✅ Contact toggle event listener added');
+      }
+
+      // Contact close button
+      if (this.contactClose) {
+        this.contactClose.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('📞 Contact close button clicked!');
+          this.hideContact();
+        });
+        console.log('✅ Contact close event listener added');
+      }
+
+      // Contact form submit
+      if (this.contactForm) {
+        this.contactForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('📞 Contact form submitted!');
+          this.submitContactForm();
+        });
+        console.log('✅ Contact form event listener added');
+      }
+
       // Cart checkout
       if (this.cartCheckout) {
         this.cartCheckout.addEventListener('click', (e) => {
@@ -4216,6 +4643,9 @@
         }
         if (e.key === 'Escape' && this.cartVisible) {
           this.hideCart();
+        }
+        if (e.key === 'Escape' && this.contactVisible) {
+          this.hideContact();
         }
       });
 
@@ -5600,6 +6030,108 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       }
 
       console.log('🧪 Product recommendations test completed');
+    }
+
+    // ======= CONTACT FUNCTIONALITY =======
+
+    toggleContact() {
+      if (this.contactVisible) {
+        this.hideContact();
+      } else {
+        this.showContact();
+      }
+    }
+
+    showContact() {
+      if (this.config.showContact === false) {
+        console.log('📞 Contact is disabled by config, skipping showContact');
+        return;
+      }
+      console.log('📞 Showing contact panel...');
+
+      this.contactVisible = true;
+      if (this.contactPanel) {
+        this.contactPanel.style.cssText = '';
+        this.container.classList.add('kova-widget--contact-open');
+        this.contactPanel.classList.add('kova-contact-panel--open');
+        this.contactPanel.setAttribute('aria-hidden', 'false');
+      }
+      // Reset status
+      if (this.contactStatus) {
+        this.contactStatus.style.display = 'none';
+        this.contactStatus.textContent = '';
+      }
+      console.log('✅ Contact panel shown');
+    }
+
+    hideContact() {
+      console.log('📞 Hiding contact panel...');
+      this.contactVisible = false;
+      if (this.contactPanel) {
+        this.contactPanel.classList.remove('kova-contact-panel--open');
+        this.contactPanel.setAttribute('aria-hidden', 'true');
+      }
+      this.container.classList.remove('kova-widget--contact-open');
+      console.log('✅ Contact panel hidden');
+    }
+
+    async submitContactForm() {
+      const nameInput = this.container.querySelector('#kova-contact-name');
+      const phoneInput = this.container.querySelector('#kova-contact-phone');
+      const emailInput = this.container.querySelector('#kova-contact-email');
+      const submitBtn = this.container.querySelector('#kova-contact-submit');
+
+      const name = nameInput?.value?.trim();
+      const phone = phoneInput?.value?.trim();
+      const email = emailInput?.value?.trim();
+
+      if (!name || !phone || !email) return;
+
+      // Show loading
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span>Enviando...</span>';
+      }
+
+      try {
+        const apiEndpoint = this.config.apiEndpoint || '';
+        const response = await fetch(`${apiEndpoint}/api/widget/contact`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            phone,
+            email,
+            shopDomain: this.config.shopDomain || '',
+            sessionId: this.sessionId || '',
+          }),
+        });
+
+        if (!response.ok) throw new Error('Request failed');
+
+        // Show success
+        if (this.contactStatus) {
+          this.contactStatus.style.display = 'block';
+          this.contactStatus.className = 'kova-contact-panel__status kova-contact-panel__status--success';
+          this.contactStatus.textContent = 'Solicitud enviada. Te llamaremos pronto.';
+        }
+        // Reset form
+        if (nameInput) nameInput.value = '';
+        if (phoneInput) phoneInput.value = '';
+        if (emailInput) emailInput.value = '';
+      } catch (err) {
+        console.error('📞 Contact form error:', err);
+        if (this.contactStatus) {
+          this.contactStatus.style.display = 'block';
+          this.contactStatus.className = 'kova-contact-panel__status kova-contact-panel__status--error';
+          this.contactStatus.textContent = 'Error al enviar. Intenta nuevamente.';
+        }
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span>Solicitar llamada</span>';
+        }
+      }
     }
 
     // ======= CART FUNCTIONALITY =======
