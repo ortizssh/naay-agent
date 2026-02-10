@@ -291,6 +291,8 @@ REGLAS CRÍTICAS:
 - Si no encuentras productos adecuados, ofrece consejos generales y sugiere reformular la consulta
 
 FORMATO DE RESPUESTA:
+- Tu respuesta de texto NO debe superar los 350 caracteres. Sé breve, directa y conversacional.
+- Recomienda MÁXIMO 3 productos por respuesta.
 - Los productos se mostrarán automáticamente como tarjetas visuales con imagen, precio y botón de compra.
 - Tu texto debe ser un párrafo breve y natural de recomendación, NO un listado con precios ni descripciones extensas.
 - Menciona los productos por nombre de forma conversacional. Ejemplo: "Te recomiendo la Tarjeta NFC Metálica Black, ideal para networking profesional."
@@ -703,7 +705,7 @@ router.post(
                 limit: {
                   type: 'number',
                   description:
-                    'Número máximo de productos a devolver (default: 5)',
+                    'Número máximo de productos a devolver (default: 3, max: 3)',
                 },
               },
               required: ['query'],
@@ -727,7 +729,7 @@ router.post(
                 limit: {
                   type: 'number',
                   description:
-                    'Número máximo de productos a recomendar (default: 5)',
+                    'Número máximo de productos a recomendar (default: 3, max: 3)',
                 },
               },
               required: ['intent'],
@@ -783,7 +785,7 @@ router.post(
         messages: messages,
         tools: tools,
         tool_choice: 'auto',
-        max_tokens: 1000,
+        max_tokens: 500,
         temperature: 0.7,
       });
 
@@ -804,7 +806,7 @@ router.post(
             const products = await searchProductsViaProvider(
               shop,
               args.query,
-              args.limit || 5,
+              Math.min(args.limit || 3, 3),
               commerceProvider
             );
             allRecommendedProducts.push(...products);
@@ -817,7 +819,7 @@ router.post(
             const products = await getProductRecommendationsViaProvider(
               shop,
               args.intent,
-              args.limit || 5,
+              Math.min(args.limit || 3, 3),
               commerceProvider
             );
             allRecommendedProducts.push(...products);
@@ -906,7 +908,7 @@ router.post(
           const finalCompletion = await openai.chat.completions.create({
             model: aiModel,
             messages: messagesWithTools,
-            max_tokens: 1000,
+            max_tokens: 500,
             temperature: 0.7,
           });
 
@@ -919,6 +921,9 @@ router.post(
         role: 'assistant',
         content: response,
       });
+
+      // Cap products to max 3 before sending to widget
+      allRecommendedProducts = allRecommendedProducts.slice(0, 3);
 
       // Build widget response: append product JSON so the widget renders product cards
       // Format matches n8n output: {"output":[{"product":{id,title,image:{src},price,handle,variant_id}}]}
