@@ -1399,3 +1399,181 @@
 .kova-modern-admin .error:not(.kova-alert) {
   display: none !important;
 }
+
+/* ========================================
+   AI Config Tab Styles
+   ======================================== */
+
+.kova-ai-mode-toggle {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.kova-mode-btn {
+  flex: 1;
+  padding: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border: 2px solid var(--kova-border, #e5e7eb);
+  border-radius: 10px;
+  background: var(--kova-bg, #ffffff);
+  color: var(--kova-text, #374151);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.kova-mode-btn:hover {
+  border-color: var(--kova-primary, #6b5afc);
+}
+
+.kova-mode-btn.active {
+  border-color: var(--kova-primary, #6b5afc);
+  background: var(--kova-primary, #6b5afc);
+  color: #ffffff;
+}
+
+.kova-tone-selector,
+.kova-language-selector {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.kova-tone-btn,
+.kova-lang-btn {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border: 1px solid var(--kova-border, #e5e7eb);
+  border-radius: 8px;
+  background: var(--kova-bg, #ffffff);
+  color: var(--kova-text, #374151);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.kova-tone-btn:hover,
+.kova-lang-btn:hover {
+  border-color: var(--kova-primary, #6b5afc);
+}
+
+.kova-tone-btn.active,
+.kova-lang-btn.active {
+  border-color: var(--kova-primary, #6b5afc);
+  background: var(--kova-primary, #6b5afc);
+  color: #ffffff;
+}
+
+.kova-inline-status {
+  display: inline-block;
+  margin-left: 1rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.kova-form-help {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* ========================================
+   Knowledge Base Tab Styles
+   ======================================== */
+
+.kova-knowledge-table th {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.75rem 0.5rem;
+  border-bottom: 1px solid var(--kova-border, #e5e7eb);
+}
+
+.kova-knowledge-table td {
+  padding: 0.75rem 0.5rem;
+  border-bottom: 1px solid var(--kova-border, #e5e7eb);
+  font-size: 0.9rem;
+}
+
+.kova-type-badge {
+  display: inline-block;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.kova-type-badge.kova-type-file {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.kova-type-badge.kova-type-text {
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.kova-status-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.kova-status-badge--completed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.kova-status-badge--processing {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.kova-status-badge--pending {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.kova-status-badge--error {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+.kova-add-doc-toggle {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.kova-doc-mode-btn {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border: 1px solid var(--kova-border, #e5e7eb);
+  border-radius: 8px;
+  background: var(--kova-bg, #ffffff);
+  color: var(--kova-text, #374151);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.kova-doc-mode-btn:hover {
+  border-color: var(--kova-primary, #6b5afc);
+}
+
+.kova-doc-mode-btn.active {
+  border-color: var(--kova-primary, #6b5afc);
+  background: var(--kova-primary, #6b5afc);
+  color: #ffffff;
+}
+
+.kova-file-input {
+  padding: 0.5rem;
+  border: 1px solid var(--kova-border, #e5e7eb);
+  border-radius: 8px;
+  width: 100%;
+  font-size: 0.9rem;
+}

@@ -35,6 +35,13 @@ class Kova_Admin {
         add_action('wp_ajax_kova_wizard_connect', array($this, 'ajax_wizard_connect'));
         add_action('wp_ajax_kova_wizard_sync_products', array($this, 'ajax_wizard_sync_products'));
         add_action('wp_ajax_kova_wizard_complete', array($this, 'ajax_wizard_complete'));
+        add_action('wp_ajax_kova_get_ai_config', array($this, 'ajax_get_ai_config'));
+        add_action('wp_ajax_kova_save_ai_config', array($this, 'ajax_save_ai_config'));
+        add_action('wp_ajax_kova_get_knowledge', array($this, 'ajax_get_knowledge'));
+        add_action('wp_ajax_kova_create_knowledge', array($this, 'ajax_create_knowledge'));
+        add_action('wp_ajax_kova_upload_knowledge', array($this, 'ajax_upload_knowledge'));
+        add_action('wp_ajax_kova_delete_knowledge', array($this, 'ajax_delete_knowledge'));
+        add_action('wp_ajax_kova_get_knowledge_status', array($this, 'ajax_get_knowledge_status'));
     }
 
     /**
@@ -333,6 +340,8 @@ class Kova_Admin {
             'star' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>',
             'cart' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>',
             'products' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>',
+            'ai' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2a4 4 0 014 4v1a1 1 0 001 1h1a4 4 0 010 8h-1a1 1 0 00-1 1v1a4 4 0 01-8 0v-1a1 1 0 00-1-1H6a4 4 0 010-8h1a1 1 0 001-1V6a4 4 0 014-4z"/><circle cx="12" cy="12" r="2"/></svg>',
+            'knowledge' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>',
         );
 
         return isset($icons[$icon]) ? $icons[$icon] : '';
@@ -394,6 +403,16 @@ class Kova_Admin {
                                 <?php echo $this->render_icon('widget'); ?>
                                 <?php _e('Widget', 'kova-agent'); ?>
                             </a>
+                            <a href="<?php echo admin_url('admin.php?page=kova-agent&tab=ai'); ?>"
+                               class="kova-nav-item <?php echo $current_tab === 'ai' ? 'active' : ''; ?>">
+                                <?php echo $this->render_icon('ai'); ?>
+                                <?php _e('AI Agent', 'kova-agent'); ?>
+                            </a>
+                            <a href="<?php echo admin_url('admin.php?page=kova-agent&tab=knowledge'); ?>"
+                               class="kova-nav-item <?php echo $current_tab === 'knowledge' ? 'active' : ''; ?>">
+                                <?php echo $this->render_icon('knowledge'); ?>
+                                <?php _e('Knowledge Base', 'kova-agent'); ?>
+                            </a>
                             <a href="<?php echo admin_url('admin.php?page=kova-agent&tab=settings'); ?>"
                                class="kova-nav-item <?php echo $current_tab === 'settings' ? 'active' : ''; ?>">
                                 <?php echo $this->render_icon('settings'); ?>
@@ -436,6 +455,12 @@ class Kova_Admin {
                             break;
                         case 'widget':
                             $this->render_widget_tab();
+                            break;
+                        case 'ai':
+                            $this->render_ai_tab();
+                            break;
+                        case 'knowledge':
+                            $this->render_knowledge_tab();
                             break;
                         case 'settings':
                             $this->render_settings_tab();
@@ -2223,5 +2248,481 @@ class Kova_Admin {
         </body>
         </html>
         <?php
+    }
+
+    /**
+     * Render AI Agent Tab
+     */
+    private function render_ai_tab() {
+        ?>
+        <div class="kova-page-header">
+            <div>
+                <h1 class="kova-page-title"><?php _e('AI Agent Configuration', 'kova-agent'); ?></h1>
+                <p class="kova-page-desc"><?php _e('Configure how your AI assistant behaves and responds to customers.', 'kova-agent'); ?></p>
+            </div>
+        </div>
+
+        <div id="kova-ai-container">
+            <div class="kova-loading" id="kova-ai-loading">
+                <div class="kova-spinner"></div>
+                <p><?php _e('Loading AI configuration...', 'kova-agent'); ?></p>
+            </div>
+
+            <div id="kova-ai-content" style="display: none;">
+                <!-- Chat Mode Toggle -->
+                <div class="kova-card" style="margin-bottom: 1.5rem;">
+                    <h3 style="margin: 0 0 0.75rem; font-size: 1rem; font-weight: 600;"><?php _e('Chat Mode', 'kova-agent'); ?></h3>
+                    <div class="kova-ai-mode-toggle">
+                        <button type="button" class="kova-mode-btn active" data-mode="internal"><?php _e('Internal AI (Kova)', 'kova-agent'); ?></button>
+                        <button type="button" class="kova-mode-btn" data-mode="external"><?php _e('External Endpoint', 'kova-agent'); ?></button>
+                    </div>
+                </div>
+
+                <!-- Internal Mode Config -->
+                <div class="kova-card" id="kova-ai-internal">
+                    <div class="kova-form-group">
+                        <label class="kova-form-label"><?php _e('Agent Name', 'kova-agent'); ?></label>
+                        <input type="text" class="kova-form-input" id="kova-ai-agent-name" placeholder="Kova">
+                    </div>
+
+                    <div class="kova-form-group">
+                        <label class="kova-form-label"><?php _e('Brand Description', 'kova-agent'); ?></label>
+                        <textarea class="kova-form-input" id="kova-ai-brand-desc" rows="3" placeholder="<?php _e('Describe your brand, products and communication style...', 'kova-agent'); ?>"></textarea>
+                    </div>
+
+                    <div class="kova-form-group">
+                        <label class="kova-form-label"><?php _e('Agent Tone', 'kova-agent'); ?></label>
+                        <div class="kova-tone-selector">
+                            <button type="button" class="kova-tone-btn active" data-tone="friendly"><?php _e('Friendly', 'kova-agent'); ?></button>
+                            <button type="button" class="kova-tone-btn" data-tone="professional"><?php _e('Professional', 'kova-agent'); ?></button>
+                            <button type="button" class="kova-tone-btn" data-tone="casual"><?php _e('Casual', 'kova-agent'); ?></button>
+                            <button type="button" class="kova-tone-btn" data-tone="enthusiastic"><?php _e('Enthusiastic', 'kova-agent'); ?></button>
+                        </div>
+                    </div>
+
+                    <div class="kova-form-group">
+                        <label class="kova-form-label"><?php _e('Language', 'kova-agent'); ?></label>
+                        <div class="kova-language-selector">
+                            <button type="button" class="kova-lang-btn active" data-lang="es"><?php _e('Spanish', 'kova-agent'); ?></button>
+                            <button type="button" class="kova-lang-btn" data-lang="en"><?php _e('English', 'kova-agent'); ?></button>
+                            <button type="button" class="kova-lang-btn" data-lang="pt"><?php _e('Portuguese', 'kova-agent'); ?></button>
+                        </div>
+                    </div>
+
+                    <div class="kova-form-group">
+                        <label class="kova-form-label"><?php _e('Additional Instructions', 'kova-agent'); ?></label>
+                        <textarea class="kova-form-input" id="kova-ai-instructions" rows="4" placeholder="<?php _e('Specific instructions for agent behavior...', 'kova-agent'); ?>"></textarea>
+                    </div>
+
+                    <div class="kova-form-group">
+                        <label class="kova-form-label"><?php _e('AI Model', 'kova-agent'); ?></label>
+                        <select class="kova-form-input" id="kova-ai-model">
+                            <option value="gpt-4.1-mini">GPT-4.1 Mini (Fast)</option>
+                            <option value="gpt-4.1">GPT-4.1 (Advanced)</option>
+                            <option value="gpt-4o">GPT-4o</option>
+                            <option value="gpt-4o-mini">GPT-4o Mini</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- External Mode Config -->
+                <div class="kova-card" id="kova-ai-external" style="display: none;">
+                    <div class="kova-form-group">
+                        <label class="kova-form-label"><?php _e('Endpoint URL', 'kova-agent'); ?></label>
+                        <input type="url" class="kova-form-input" id="kova-ai-endpoint" placeholder="https://your-endpoint.com/webhook/chat">
+                        <p class="kova-form-help"><?php _e('URL that will receive chat messages via POST', 'kova-agent'); ?></p>
+                    </div>
+                </div>
+
+                <div style="margin-top: 1.5rem;">
+                    <button type="button" class="kova-btn kova-btn-primary" id="kova-save-ai-config"><?php _e('Save Configuration', 'kova-agent'); ?></button>
+                    <span id="kova-ai-status" class="kova-inline-status"></span>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render Knowledge Base Tab
+     */
+    private function render_knowledge_tab() {
+        ?>
+        <div class="kova-page-header">
+            <div>
+                <h1 class="kova-page-title"><?php _e('Knowledge Base', 'kova-agent'); ?></h1>
+                <p class="kova-page-desc"><?php _e('Add documents so your AI agent has more context about your business.', 'kova-agent'); ?></p>
+            </div>
+        </div>
+
+        <div id="kova-knowledge-container">
+            <div class="kova-loading" id="kova-knowledge-loading">
+                <div class="kova-spinner"></div>
+                <p><?php _e('Loading documents...', 'kova-agent'); ?></p>
+            </div>
+
+            <div id="kova-knowledge-content" style="display: none;">
+                <!-- Documents Table -->
+                <div class="kova-card" style="margin-bottom: 1.5rem;">
+                    <div class="kova-card-header">
+                        <h3 class="kova-card-title"><?php _e('Documents', 'kova-agent'); ?> (<span id="kova-knowledge-count">0</span>)</h3>
+                    </div>
+                    <div class="kova-table-container">
+                        <table class="kova-table kova-knowledge-table">
+                            <thead>
+                                <tr>
+                                    <th><?php _e('Title', 'kova-agent'); ?></th>
+                                    <th style="text-align:center;"><?php _e('Type', 'kova-agent'); ?></th>
+                                    <th style="text-align:center;"><?php _e('Chunks', 'kova-agent'); ?></th>
+                                    <th style="text-align:center;"><?php _e('Status', 'kova-agent'); ?></th>
+                                    <th style="text-align:center;"><?php _e('Date', 'kova-agent'); ?></th>
+                                    <th style="text-align:center;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="kova-knowledge-tbody">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="kova-knowledge-empty" style="display: none; text-align: center; padding: 2rem;">
+                        <p style="color: #6b7280;"><?php _e('No documents yet. Add documents below to give your AI agent more context.', 'kova-agent'); ?></p>
+                    </div>
+                </div>
+
+                <!-- Add Document Section -->
+                <div class="kova-card">
+                    <div class="kova-card-header">
+                        <h3 class="kova-card-title"><?php _e('Add Document', 'kova-agent'); ?></h3>
+                    </div>
+
+                    <div class="kova-add-doc-toggle" style="margin-bottom: 1rem;">
+                        <button type="button" class="kova-doc-mode-btn active" data-mode="text"><?php _e('Text', 'kova-agent'); ?></button>
+                        <button type="button" class="kova-doc-mode-btn" data-mode="file"><?php _e('File', 'kova-agent'); ?></button>
+                    </div>
+
+                    <div class="kova-form-group">
+                        <label class="kova-form-label"><?php _e('Title', 'kova-agent'); ?></label>
+                        <input type="text" class="kova-form-input" id="kova-doc-title" placeholder="<?php _e('Document name...', 'kova-agent'); ?>">
+                    </div>
+
+                    <!-- Text Mode -->
+                    <div id="kova-doc-text-mode">
+                        <div class="kova-form-group">
+                            <label class="kova-form-label"><?php _e('Content', 'kova-agent'); ?></label>
+                            <textarea class="kova-form-input" id="kova-doc-content" rows="6" placeholder="<?php _e('Paste the content you want your agent to know...', 'kova-agent'); ?>"></textarea>
+                        </div>
+                        <button type="button" class="kova-btn kova-btn-primary" id="kova-create-doc"><?php _e('Create Document', 'kova-agent'); ?></button>
+                    </div>
+
+                    <!-- File Mode -->
+                    <div id="kova-doc-file-mode" style="display: none;">
+                        <div class="kova-form-group">
+                            <label class="kova-form-label"><?php _e('File (PDF, TXT, MD - max 10MB)', 'kova-agent'); ?></label>
+                            <input type="file" class="kova-file-input" id="kova-doc-file" accept=".pdf,.txt,.md">
+                        </div>
+                        <button type="button" class="kova-btn kova-btn-primary" id="kova-upload-doc"><?php _e('Upload File', 'kova-agent'); ?></button>
+                    </div>
+
+                    <span id="kova-knowledge-status" class="kova-inline-status"></span>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * AJAX: Get AI config
+     */
+    public function ajax_get_ai_config() {
+        check_ajax_referer('kova_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => __('Permission denied.', 'kova-agent')));
+        }
+
+        $settings = get_option('kova_agent_settings', array());
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+
+        $url = $api_endpoint . '/api/woo/embedded/ai-config?' . http_build_query(array(
+            'siteUrl' => site_url(),
+        ));
+
+        $response = wp_remote_get($url, array('timeout' => 30));
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => $response->get_error_message()));
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+
+        if (!empty($body['success'])) {
+            wp_send_json_success($body['data']);
+        } else {
+            wp_send_json_error(array('message' => $body['error'] ?? __('Failed to load AI config.', 'kova-agent')));
+        }
+    }
+
+    /**
+     * AJAX: Save AI config
+     */
+    public function ajax_save_ai_config() {
+        check_ajax_referer('kova_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => __('Permission denied.', 'kova-agent')));
+        }
+
+        $settings = get_option('kova_agent_settings', array());
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+
+        $config = array(
+            'chatMode' => sanitize_text_field($_POST['chatMode'] ?? 'internal'),
+            'aiModel' => sanitize_text_field($_POST['aiModel'] ?? 'gpt-4.1-mini'),
+            'agentName' => sanitize_text_field($_POST['agentName'] ?? ''),
+            'agentTone' => sanitize_text_field($_POST['agentTone'] ?? 'friendly'),
+            'brandDescription' => sanitize_textarea_field($_POST['brandDescription'] ?? ''),
+            'agentInstructions' => sanitize_textarea_field($_POST['agentInstructions'] ?? ''),
+            'agentLanguage' => sanitize_text_field($_POST['agentLanguage'] ?? 'es'),
+            'chatbotEndpoint' => esc_url_raw($_POST['chatbotEndpoint'] ?? ''),
+        );
+
+        $response = wp_remote_request($api_endpoint . '/api/woo/embedded/ai-config', array(
+            'method' => 'PUT',
+            'timeout' => 30,
+            'headers' => array('Content-Type' => 'application/json'),
+            'body' => wp_json_encode(array(
+                'siteUrl' => site_url(),
+                'config' => $config,
+            )),
+        ));
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => $response->get_error_message()));
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+
+        if (!empty($body['success'])) {
+            wp_send_json_success($body['data']);
+        } else {
+            wp_send_json_error(array('message' => $body['error'] ?? __('Failed to save AI config.', 'kova-agent')));
+        }
+    }
+
+    /**
+     * AJAX: Get knowledge documents
+     */
+    public function ajax_get_knowledge() {
+        check_ajax_referer('kova_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => __('Permission denied.', 'kova-agent')));
+        }
+
+        $settings = get_option('kova_agent_settings', array());
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+
+        $url = $api_endpoint . '/api/woo/embedded/knowledge?' . http_build_query(array(
+            'siteUrl' => site_url(),
+        ));
+
+        $response = wp_remote_get($url, array('timeout' => 30));
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => $response->get_error_message()));
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+
+        if (!empty($body['success'])) {
+            wp_send_json_success($body['data']);
+        } else {
+            wp_send_json_error(array('message' => $body['error'] ?? __('Failed to load knowledge documents.', 'kova-agent')));
+        }
+    }
+
+    /**
+     * AJAX: Create knowledge document (text)
+     */
+    public function ajax_create_knowledge() {
+        check_ajax_referer('kova_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => __('Permission denied.', 'kova-agent')));
+        }
+
+        $settings = get_option('kova_agent_settings', array());
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+
+        $title = sanitize_text_field($_POST['title'] ?? '');
+        $content = sanitize_textarea_field($_POST['content'] ?? '');
+
+        if (empty($title) || empty($content)) {
+            wp_send_json_error(array('message' => __('Title and content are required.', 'kova-agent')));
+        }
+
+        $response = wp_remote_post($api_endpoint . '/api/woo/embedded/knowledge', array(
+            'timeout' => 30,
+            'headers' => array('Content-Type' => 'application/json'),
+            'body' => wp_json_encode(array(
+                'siteUrl' => site_url(),
+                'title' => $title,
+                'content' => $content,
+            )),
+        ));
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => $response->get_error_message()));
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+
+        if (!empty($body['success'])) {
+            wp_send_json_success($body['data']);
+        } else {
+            wp_send_json_error(array('message' => $body['error'] ?? __('Failed to create document.', 'kova-agent')));
+        }
+    }
+
+    /**
+     * AJAX: Upload knowledge document (file)
+     */
+    public function ajax_upload_knowledge() {
+        check_ajax_referer('kova_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => __('Permission denied.', 'kova-agent')));
+        }
+
+        if (empty($_FILES['file'])) {
+            wp_send_json_error(array('message' => __('File is required.', 'kova-agent')));
+        }
+
+        $settings = get_option('kova_agent_settings', array());
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+
+        $title = sanitize_text_field($_POST['title'] ?? '');
+        $file = $_FILES['file'];
+
+        $boundary = wp_generate_password(24);
+        $body = '';
+
+        // siteUrl field
+        $body .= '--' . $boundary . "\r\n";
+        $body .= 'Content-Disposition: form-data; name="siteUrl"' . "\r\n\r\n";
+        $body .= site_url() . "\r\n";
+
+        // title field
+        if (!empty($title)) {
+            $body .= '--' . $boundary . "\r\n";
+            $body .= 'Content-Disposition: form-data; name="title"' . "\r\n\r\n";
+            $body .= $title . "\r\n";
+        }
+
+        // file field
+        $file_content = file_get_contents($file['tmp_name']);
+        $body .= '--' . $boundary . "\r\n";
+        $body .= 'Content-Disposition: form-data; name="file"; filename="' . $file['name'] . '"' . "\r\n";
+        $body .= 'Content-Type: ' . $file['type'] . "\r\n\r\n";
+        $body .= $file_content . "\r\n";
+        $body .= '--' . $boundary . '--' . "\r\n";
+
+        $response = wp_remote_post($api_endpoint . '/api/woo/embedded/knowledge/upload', array(
+            'timeout' => 60,
+            'headers' => array(
+                'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
+            ),
+            'body' => $body,
+        ));
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => $response->get_error_message()));
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+
+        if (!empty($body['success'])) {
+            wp_send_json_success($body['data']);
+        } else {
+            wp_send_json_error(array('message' => $body['error'] ?? __('Failed to upload document.', 'kova-agent')));
+        }
+    }
+
+    /**
+     * AJAX: Delete knowledge document
+     */
+    public function ajax_delete_knowledge() {
+        check_ajax_referer('kova_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => __('Permission denied.', 'kova-agent')));
+        }
+
+        $settings = get_option('kova_agent_settings', array());
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+
+        $document_id = sanitize_text_field($_POST['documentId'] ?? '');
+
+        if (empty($document_id)) {
+            wp_send_json_error(array('message' => __('Document ID is required.', 'kova-agent')));
+        }
+
+        $url = $api_endpoint . '/api/woo/embedded/knowledge/' . $document_id . '?' . http_build_query(array(
+            'siteUrl' => site_url(),
+        ));
+
+        $response = wp_remote_request($url, array(
+            'method' => 'DELETE',
+            'timeout' => 30,
+        ));
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => $response->get_error_message()));
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+
+        if (!empty($body['success'])) {
+            wp_send_json_success();
+        } else {
+            wp_send_json_error(array('message' => $body['error'] ?? __('Failed to delete document.', 'kova-agent')));
+        }
+    }
+
+    /**
+     * AJAX: Get knowledge document status
+     */
+    public function ajax_get_knowledge_status() {
+        check_ajax_referer('kova_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => __('Permission denied.', 'kova-agent')));
+        }
+
+        $settings = get_option('kova_agent_settings', array());
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://naay-agent-app1763504937.azurewebsites.net';
+
+        $document_id = sanitize_text_field($_POST['documentId'] ?? '');
+
+        if (empty($document_id)) {
+            wp_send_json_error(array('message' => __('Document ID is required.', 'kova-agent')));
+        }
+
+        $url = $api_endpoint . '/api/woo/embedded/knowledge/' . $document_id . '/status?' . http_build_query(array(
+            'siteUrl' => site_url(),
+        ));
+
+        $response = wp_remote_get($url, array('timeout' => 30));
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => $response->get_error_message()));
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+
+        if (!empty($body['success'])) {
+            wp_send_json_success($body['data']);
+        } else {
+            wp_send_json_error(array('message' => $body['error'] ?? __('Failed to get document status.', 'kova-agent')));
+        }
     }
 }

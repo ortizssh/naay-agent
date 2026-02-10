@@ -850,6 +850,396 @@
         initConversationsPage();
         initConversionsPage();
         initWidgetTab();
+        initAiTab();
+        initKnowledgeTab();
     });
+
+    // ===========================================
+    // AI Config Tab
+    // ===========================================
+
+    function initAiTab() {
+        var $container = $('#kova-ai-container');
+        if (!$container.length) return;
+
+        loadAiConfig();
+
+        // Chat mode toggle
+        $container.on('click', '.kova-mode-btn', function() {
+            var mode = $(this).data('mode');
+            $('.kova-mode-btn').removeClass('active');
+            $(this).addClass('active');
+            if (mode === 'internal') {
+                $('#kova-ai-internal').show();
+                $('#kova-ai-external').hide();
+            } else {
+                $('#kova-ai-internal').hide();
+                $('#kova-ai-external').show();
+            }
+        });
+
+        // Tone selector
+        $container.on('click', '.kova-tone-btn', function() {
+            $('.kova-tone-btn').removeClass('active');
+            $(this).addClass('active');
+        });
+
+        // Language selector
+        $container.on('click', '.kova-lang-btn', function() {
+            $('.kova-lang-btn').removeClass('active');
+            $(this).addClass('active');
+        });
+
+        // Save AI config
+        $('#kova-save-ai-config').on('click', function() {
+            saveAiConfig();
+        });
+    }
+
+    function loadAiConfig() {
+        $('#kova-ai-loading').show();
+        $('#kova-ai-content').hide();
+
+        $.ajax({
+            url: kovaAdmin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'kova_get_ai_config',
+                nonce: kovaAdmin.nonce
+            },
+            success: function(response) {
+                if (response.success && response.data) {
+                    var d = response.data;
+                    // Set mode
+                    var mode = d.chat_mode || 'internal';
+                    $('.kova-mode-btn').removeClass('active');
+                    $('.kova-mode-btn[data-mode="' + mode + '"]').addClass('active');
+                    if (mode === 'external') {
+                        $('#kova-ai-internal').hide();
+                        $('#kova-ai-external').show();
+                    }
+
+                    // Set fields
+                    $('#kova-ai-agent-name').val(d.agent_name || '');
+                    $('#kova-ai-brand-desc').val(d.brand_description || '');
+                    $('#kova-ai-instructions').val(d.agent_instructions || '');
+                    $('#kova-ai-model').val(d.ai_model || 'gpt-4.1-mini');
+                    $('#kova-ai-endpoint').val(d.chatbot_endpoint || '');
+
+                    // Set tone
+                    var tone = d.agent_tone || 'friendly';
+                    $('.kova-tone-btn').removeClass('active');
+                    $('.kova-tone-btn[data-tone="' + tone + '"]').addClass('active');
+
+                    // Set language
+                    var lang = d.agent_language || 'es';
+                    $('.kova-lang-btn').removeClass('active');
+                    $('.kova-lang-btn[data-lang="' + lang + '"]').addClass('active');
+                }
+                $('#kova-ai-loading').hide();
+                $('#kova-ai-content').show();
+            },
+            error: function() {
+                $('#kova-ai-loading').hide();
+                $('#kova-ai-content').show();
+            }
+        });
+    }
+
+    function saveAiConfig() {
+        var $btn = $('#kova-save-ai-config');
+        var $status = $('#kova-ai-status');
+        $btn.prop('disabled', true).text('Saving...');
+
+        $.ajax({
+            url: kovaAdmin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'kova_save_ai_config',
+                nonce: kovaAdmin.nonce,
+                chatMode: $('.kova-mode-btn.active').data('mode'),
+                aiModel: $('#kova-ai-model').val(),
+                agentName: $('#kova-ai-agent-name').val(),
+                agentTone: $('.kova-tone-btn.active').data('tone'),
+                brandDescription: $('#kova-ai-brand-desc').val(),
+                agentInstructions: $('#kova-ai-instructions').val(),
+                agentLanguage: $('.kova-lang-btn.active').data('lang'),
+                chatbotEndpoint: $('#kova-ai-endpoint').val()
+            },
+            success: function(response) {
+                $btn.prop('disabled', false).text('Save Configuration');
+                if (response.success) {
+                    $status.text('Saved!').css('color', '#10b981').show();
+                    setTimeout(function() { $status.fadeOut(); }, 3000);
+                } else {
+                    $status.text('Error: ' + (response.data?.message || 'Unknown')).css('color', '#ef4444').show();
+                }
+            },
+            error: function() {
+                $btn.prop('disabled', false).text('Save Configuration');
+                $status.text('Connection error').css('color', '#ef4444').show();
+            }
+        });
+    }
+
+    // ===========================================
+    // Knowledge Base Tab
+    // ===========================================
+
+    var knowledgePollInterval = null;
+
+    function initKnowledgeTab() {
+        var $container = $('#kova-knowledge-container');
+        if (!$container.length) return;
+
+        loadKnowledgeDocs();
+
+        // Doc mode toggle
+        $container.on('click', '.kova-doc-mode-btn', function() {
+            var mode = $(this).data('mode');
+            $('.kova-doc-mode-btn').removeClass('active');
+            $(this).addClass('active');
+            if (mode === 'text') {
+                $('#kova-doc-text-mode').show();
+                $('#kova-doc-file-mode').hide();
+            } else {
+                $('#kova-doc-text-mode').hide();
+                $('#kova-doc-file-mode').show();
+            }
+        });
+
+        // Create text document
+        $('#kova-create-doc').on('click', function() {
+            createTextDocument();
+        });
+
+        // Upload file document
+        $('#kova-upload-doc').on('click', function() {
+            uploadFileDocument();
+        });
+    }
+
+    function loadKnowledgeDocs() {
+        $('#kova-knowledge-loading').show();
+        $('#kova-knowledge-content').hide();
+
+        $.ajax({
+            url: kovaAdmin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'kova_get_knowledge',
+                nonce: kovaAdmin.nonce
+            },
+            success: function(response) {
+                $('#kova-knowledge-loading').hide();
+                $('#kova-knowledge-content').show();
+
+                if (response.success && response.data) {
+                    renderKnowledgeDocs(response.data);
+                } else {
+                    renderKnowledgeDocs([]);
+                }
+            },
+            error: function() {
+                $('#kova-knowledge-loading').hide();
+                $('#kova-knowledge-content').show();
+                renderKnowledgeDocs([]);
+            }
+        });
+    }
+
+    function renderKnowledgeDocs(docs) {
+        var $tbody = $('#kova-knowledge-tbody');
+        var $empty = $('#kova-knowledge-empty');
+        var $count = $('#kova-knowledge-count');
+        var $table = $tbody.closest('table');
+
+        $count.text(docs.length);
+        $tbody.empty();
+
+        if (docs.length === 0) {
+            $table.hide();
+            $empty.show();
+            stopKnowledgePolling();
+            return;
+        }
+
+        $table.show();
+        $empty.hide();
+
+        var hasPending = false;
+
+        docs.forEach(function(doc) {
+            var statusClass = 'pending';
+            var statusText = 'Pending';
+            if (doc.embedding_status === 'completed') { statusClass = 'completed'; statusText = 'Ready'; }
+            else if (doc.embedding_status === 'processing') { statusClass = 'processing'; statusText = 'Processing...'; hasPending = true; }
+            else if (doc.embedding_status === 'failed') { statusClass = 'error'; statusText = 'Error'; }
+            else { hasPending = true; }
+
+            var typeLabel = doc.source_type === 'file' ? 'File' : 'Text';
+            var dateStr = new Date(doc.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+
+            var row = '<tr>' +
+                '<td style="font-weight:500; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + escHtml(doc.title) + '</td>' +
+                '<td style="text-align:center;"><span class="kova-type-badge kova-type-' + doc.source_type + '">' + typeLabel + '</span></td>' +
+                '<td style="text-align:center;">' + (doc.chunk_count || 0) + '</td>' +
+                '<td style="text-align:center;"><span class="kova-status-badge kova-status-badge--' + statusClass + '">' + statusText + '</span></td>' +
+                '<td style="text-align:center; font-size:0.85em; color:#6b7280;">' + dateStr + '</td>' +
+                '<td style="text-align:center;"><button type="button" class="kova-delete-doc" data-id="' + doc.id + '" title="Delete" style="background:none;border:none;cursor:pointer;color:#ef4444;padding:4px;">&times;</button></td>' +
+                '</tr>';
+
+            $tbody.append(row);
+        });
+
+        // Bind delete buttons
+        $tbody.find('.kova-delete-doc').off('click').on('click', function() {
+            var docId = $(this).data('id');
+            if (confirm('Delete this document?')) {
+                deleteKnowledgeDoc(docId);
+            }
+        });
+
+        // Start/stop polling
+        if (hasPending) {
+            startKnowledgePolling();
+        } else {
+            stopKnowledgePolling();
+        }
+    }
+
+    function createTextDocument() {
+        var title = $('#kova-doc-title').val();
+        var content = $('#kova-doc-content').val();
+        var $status = $('#kova-knowledge-status');
+
+        if (!title || !content) {
+            $status.text('Title and content are required.').css('color', '#ef4444').show();
+            return;
+        }
+
+        var $btn = $('#kova-create-doc');
+        $btn.prop('disabled', true).text('Creating...');
+
+        $.ajax({
+            url: kovaAdmin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'kova_create_knowledge',
+                nonce: kovaAdmin.nonce,
+                title: title,
+                content: content
+            },
+            success: function(response) {
+                $btn.prop('disabled', false).text('Create Document');
+                if (response.success) {
+                    $('#kova-doc-title').val('');
+                    $('#kova-doc-content').val('');
+                    $status.text('Document created!').css('color', '#10b981').show();
+                    setTimeout(function() { $status.fadeOut(); }, 3000);
+                    loadKnowledgeDocs();
+                } else {
+                    $status.text('Error: ' + (response.data?.message || 'Unknown')).css('color', '#ef4444').show();
+                }
+            },
+            error: function() {
+                $btn.prop('disabled', false).text('Create Document');
+                $status.text('Connection error').css('color', '#ef4444').show();
+            }
+        });
+    }
+
+    function uploadFileDocument() {
+        var fileInput = document.getElementById('kova-doc-file');
+        var file = fileInput.files[0];
+        var $status = $('#kova-knowledge-status');
+
+        if (!file) {
+            $status.text('Please select a file.').css('color', '#ef4444').show();
+            return;
+        }
+
+        var $btn = $('#kova-upload-doc');
+        $btn.prop('disabled', true).text('Uploading...');
+
+        var formData = new FormData();
+        formData.append('action', 'kova_upload_knowledge');
+        formData.append('nonce', kovaAdmin.nonce);
+        formData.append('file', file);
+        formData.append('title', $('#kova-doc-title').val() || '');
+
+        $.ajax({
+            url: kovaAdmin.ajax_url,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                $btn.prop('disabled', false).text('Upload File');
+                if (response.success) {
+                    $('#kova-doc-title').val('');
+                    fileInput.value = '';
+                    $status.text('File uploaded!').css('color', '#10b981').show();
+                    setTimeout(function() { $status.fadeOut(); }, 3000);
+                    loadKnowledgeDocs();
+                } else {
+                    $status.text('Error: ' + (response.data?.message || 'Unknown')).css('color', '#ef4444').show();
+                }
+            },
+            error: function() {
+                $btn.prop('disabled', false).text('Upload File');
+                $status.text('Connection error').css('color', '#ef4444').show();
+            }
+        });
+    }
+
+    function deleteKnowledgeDoc(docId) {
+        $.ajax({
+            url: kovaAdmin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'kova_delete_knowledge',
+                nonce: kovaAdmin.nonce,
+                documentId: docId
+            },
+            success: function(response) {
+                if (response.success) {
+                    loadKnowledgeDocs();
+                }
+            }
+        });
+    }
+
+    function startKnowledgePolling() {
+        if (knowledgePollInterval) return;
+        knowledgePollInterval = setInterval(function() {
+            $.ajax({
+                url: kovaAdmin.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'kova_get_knowledge',
+                    nonce: kovaAdmin.nonce
+                },
+                success: function(response) {
+                    if (response.success && response.data) {
+                        renderKnowledgeDocs(response.data);
+                    }
+                }
+            });
+        }, 5000);
+    }
+
+    function stopKnowledgePolling() {
+        if (knowledgePollInterval) {
+            clearInterval(knowledgePollInterval);
+            knowledgePollInterval = null;
+        }
+    }
+
+    function escHtml(str) {
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(str || ''));
+        return div.innerHTML;
+    }
 
 })(jQuery);

@@ -5,7 +5,10 @@
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
+import multer from 'multer';
+import pdfParse from 'pdf-parse';
 import { SupabaseService } from '@/services/supabase.service';
+import { knowledgeService } from '@/services/knowledge.service';
 import { logger } from '@/utils/logger';
 
 const router = Router();
@@ -906,6 +909,295 @@ router.get(
       });
     } catch (error) {
       logger.error('WooCommerce embedded widget config error:', error);
+      return next(error);
+    }
+  }
+);
+
+// ==================== Multer Config ====================
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['application/pdf', 'text/plain', 'text/markdown'];
+    if (
+      allowed.includes(file.mimetype) ||
+      file.originalname.match(/\.(txt|md|pdf)$/i)
+    ) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only .txt, .md and .pdf files are allowed'));
+    }
+  },
+});
+
+// ==================== AI Config Endpoints ====================
+
+/**
+ * GET /api/woo/embedded/ai-config
+ * Get AI agent configuration for a WooCommerce store
+ */
+router.get(
+  '/ai-config',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const siteUrl = req.query.siteUrl as string;
+      if (!siteUrl) {
+        return res.status(400).json({ success: false, error: 'Site URL is required' });
+      }
+
+      const normalizedUrl = normalizeWooSiteUrl(siteUrl);
+
+      const { data: store, error } = await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .select('chat_mode, ai_model, agent_name, agent_tone, brand_description, agent_instructions, agent_language, chatbot_endpoint')
+        .eq('shop_domain', normalizedUrl)
+        .single();
+
+      if (error || !store) {
+        return res.json({
+          success: true,
+          data: {
+            chat_mode: 'internal',
+            ai_model: 'gpt-4.1-mini',
+            agent_name: null,
+            agent_tone: 'friendly',
+            brand_description: null,
+            agent_instructions: null,
+            agent_language: 'es',
+            chatbot_endpoint: null,
+          },
+        });
+      }
+
+      return res.json({ success: true, data: store });
+    } catch (error) {
+      logger.error('WooCommerce embedded AI config get error:', error);
+      return next(error);
+    }
+  }
+);
+
+/**
+ * PUT /api/woo/embedded/ai-config
+ * Update AI agent configuration for a WooCommerce store
+ */
+router.put(
+  '/ai-config',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { siteUrl, config } = req.body;
+      if (!siteUrl) {
+        return res.status(400).json({ success: false, error: 'Site URL is required' });
+      }
+
+      const normalizedUrl = normalizeWooSiteUrl(siteUrl);
+
+      const {
+        chatMode,
+        aiModel,
+        agentName,
+        agentTone,
+        brandDescription,
+        agentInstructions,
+        agentLanguage,
+        chatbotEndpoint,
+      } = config || {};
+
+      if (chatMode === 'external' && !chatbotEndpoint) {
+        return res.status(400).json({
+          success: false,
+          error: 'URL del endpoint es requerida para modo externo',
+        });
+      }
+
+      const updateData: Record<string, unknown> = {};
+      if (chatMode !== undefined) updateData.chat_mode = chatMode;
+      if (aiModel !== undefined) updateData.ai_model = aiModel;
+      if (agentName !== undefined) updateData.agent_name = agentName;
+      if (agentTone !== undefined) updateData.agent_tone = agentTone;
+      if (brandDescription !== undefined) updateData.brand_description = brandDescription;
+      if (agentInstructions !== undefined) updateData.agent_instructions = agentInstructions;
+      if (agentLanguage !== undefined) updateData.agent_language = agentLanguage;
+      if (chatbotEndpoint !== undefined) updateData.chatbot_endpoint = chatbotEndpoint;
+
+      const { data, error } = await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .update(updateData)
+        .eq('shop_domain', normalizedUrl)
+        .select('chat_mode, ai_model, agent_name, agent_tone, brand_description, agent_instructions, agent_language, chatbot_endpoint')
+        .single();
+
+      if (error) {
+        logger.error('Error updating WooCommerce AI config:', error);
+        return res.status(500).json({ success: false, error: 'Failed to update AI configuration' });
+      }
+
+      return res.json({ success: true, data });
+    } catch (error) {
+      logger.error('WooCommerce embedded AI config update error:', error);
+      return next(error);
+    }
+  }
+);
+
+// ==================== Knowledge Endpoints ====================
+
+/**
+ * GET /api/woo/embedded/knowledge
+ * List knowledge documents for a WooCommerce store
+ */
+router.get(
+  '/knowledge',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const siteUrl = req.query.siteUrl as string;
+      if (!siteUrl) {
+        return res.status(400).json({ success: false, error: 'Site URL is required' });
+      }
+
+      const normalizedUrl = normalizeWooSiteUrl(siteUrl);
+      const documents = await knowledgeService.listDocuments(normalizedUrl);
+
+      return res.json({ success: true, data: documents });
+    } catch (error) {
+      logger.error('WooCommerce embedded knowledge list error:', error);
+      return next(error);
+    }
+  }
+);
+
+/**
+ * POST /api/woo/embedded/knowledge
+ * Create a text-based knowledge document
+ */
+router.post(
+  '/knowledge',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { siteUrl, title, content } = req.body;
+      if (!siteUrl) {
+        return res.status(400).json({ success: false, error: 'Site URL is required' });
+      }
+      if (!title || !content) {
+        return res.status(400).json({ success: false, error: 'Title and content are required' });
+      }
+
+      const normalizedUrl = normalizeWooSiteUrl(siteUrl);
+      const document = await knowledgeService.createDocument(normalizedUrl, {
+        title,
+        content,
+        sourceType: 'text',
+      });
+
+      return res.status(201).json({ success: true, data: document });
+    } catch (error) {
+      logger.error('WooCommerce embedded knowledge create error:', error);
+      return next(error);
+    }
+  }
+);
+
+/**
+ * POST /api/woo/embedded/knowledge/upload
+ * Upload a file (PDF/TXT/MD) as knowledge document
+ */
+router.post(
+  '/knowledge/upload',
+  upload.single('file'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const siteUrl = req.body.siteUrl as string;
+      if (!siteUrl) {
+        return res.status(400).json({ success: false, error: 'Site URL is required' });
+      }
+
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({ success: false, error: 'File is required' });
+      }
+
+      const normalizedUrl = normalizeWooSiteUrl(siteUrl);
+      const title = req.body.title || file.originalname;
+      let content: string;
+
+      if (file.mimetype === 'application/pdf' || file.originalname.endsWith('.pdf')) {
+        const pdfData = await pdfParse(file.buffer);
+        content = pdfData.text;
+      } else {
+        content = file.buffer.toString('utf-8');
+      }
+
+      if (!content.trim()) {
+        return res.status(400).json({ success: false, error: 'File contains no extractable text' });
+      }
+
+      const document = await knowledgeService.createDocument(normalizedUrl, {
+        title,
+        content,
+        sourceType: 'file',
+        originalFilename: file.originalname,
+      });
+
+      return res.status(201).json({ success: true, data: document });
+    } catch (error) {
+      logger.error('WooCommerce embedded knowledge upload error:', error);
+      return next(error);
+    }
+  }
+);
+
+/**
+ * DELETE /api/woo/embedded/knowledge/:documentId
+ * Delete a knowledge document
+ */
+router.delete(
+  '/knowledge/:documentId',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const siteUrl = req.query.siteUrl as string;
+      if (!siteUrl) {
+        return res.status(400).json({ success: false, error: 'Site URL is required' });
+      }
+
+      const normalizedUrl = normalizeWooSiteUrl(siteUrl);
+      await knowledgeService.deleteDocument(req.params.documentId, normalizedUrl);
+
+      return res.json({ success: true });
+    } catch (error) {
+      logger.error('WooCommerce embedded knowledge delete error:', error);
+      return next(error);
+    }
+  }
+);
+
+/**
+ * GET /api/woo/embedded/knowledge/:documentId/status
+ * Get document processing status
+ */
+router.get(
+  '/knowledge/:documentId/status',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const siteUrl = req.query.siteUrl as string;
+      if (!siteUrl) {
+        return res.status(400).json({ success: false, error: 'Site URL is required' });
+      }
+
+      const normalizedUrl = normalizeWooSiteUrl(siteUrl);
+      const status = await knowledgeService.getDocumentStatus(
+        req.params.documentId,
+        normalizedUrl
+      );
+
+      if (!status) {
+        return res.status(404).json({ success: false, error: 'Document not found' });
+      }
+
+      return res.json({ success: true, data: status });
+    } catch (error) {
+      logger.error('WooCommerce embedded knowledge status error:', error);
       return next(error);
     }
   }

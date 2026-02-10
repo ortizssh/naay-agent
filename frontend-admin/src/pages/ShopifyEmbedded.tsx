@@ -142,7 +142,31 @@ interface ConversionDashboardData {
   };
 }
 
-type TabType = 'dashboard' | 'analytics' | 'widget' | 'conversations';
+interface AiConfig {
+  chat_mode: 'internal' | 'external';
+  ai_model: string;
+  agent_name: string | null;
+  agent_tone: string;
+  brand_description: string | null;
+  agent_instructions: string | null;
+  agent_language: string;
+  chatbot_endpoint: string | null;
+}
+
+interface KnowledgeDocument {
+  id: string;
+  shop_domain: string;
+  title: string;
+  source_type: 'text' | 'file' | 'url';
+  original_filename: string | null;
+  chunk_count: number;
+  embedding_status: 'pending' | 'processing' | 'completed' | 'failed';
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+type TabType = 'dashboard' | 'analytics' | 'widget' | 'conversations' | 'ai' | 'knowledge';
 type DatePreset = 'today' | 'yesterday' | '3d' | '7d' | '14d' | '30d' | 'thisWeek' | 'thisMonth' | 'custom';
 
 // Helper functions for date calculations
@@ -400,6 +424,29 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
   const [isFilterLoading, setIsFilterLoading] = useState(false);
   const [pendingFilter, setPendingFilter] = useState(false);
 
+  // AI Config state
+  const [aiConfig, setAiConfig] = useState<AiConfig>({
+    chat_mode: 'internal',
+    ai_model: 'gpt-4.1-mini',
+    agent_name: null,
+    agent_tone: 'friendly',
+    brand_description: null,
+    agent_instructions: null,
+    agent_language: 'es',
+    chatbot_endpoint: null,
+  });
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiSaving, setAiSaving] = useState(false);
+
+  // Knowledge state
+  const [knowledgeDocs, setKnowledgeDocs] = useState<KnowledgeDocument[]>([]);
+  const [knowledgeLoading, setKnowledgeLoading] = useState(false);
+  const [knowledgeSubmitting, setKnowledgeSubmitting] = useState(false);
+  const [docTitle, setDocTitle] = useState('');
+  const [docContent, setDocContent] = useState('');
+  const [addMode, setAddMode] = useState<'text' | 'file'>('text');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Get API URL - for embedded Shopify context, we need the app URL, not the iframe origin
   const getApiUrl = useCallback(() => {
     // Check for environment variable first
@@ -558,6 +605,160 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
       console.error('Error loading conversion dashboard:', err);
     } finally {
       setConversionLoading(false);
+    }
+  };
+
+  // AI Config load
+  useEffect(() => {
+    if (currentTab === 'ai') {
+      loadAiConfig();
+    }
+  }, [currentTab, shop]);
+
+  // Knowledge load
+  useEffect(() => {
+    if (currentTab === 'knowledge') {
+      loadKnowledgeDocs();
+    }
+  }, [currentTab, shop]);
+
+  // Knowledge polling for pending/processing docs
+  useEffect(() => {
+    if (currentTab !== 'knowledge') return;
+    const hasPending = knowledgeDocs.some(d => d.embedding_status === 'pending' || d.embedding_status === 'processing');
+    if (!hasPending) return;
+
+    const interval = setInterval(() => {
+      loadKnowledgeDocs();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [currentTab, knowledgeDocs]);
+
+  const loadAiConfig = async () => {
+    try {
+      setAiLoading(true);
+      const apiUrl = getApiUrl();
+      const res = await fetch(`${apiUrl}/api/shopify/embedded/ai-config?shop=${encodeURIComponent(shop)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.data) {
+          setAiConfig(data.data);
+        }
+      }
+    } catch (err) {
+      console.error('Error loading AI config:', err);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const saveAiConfig = async () => {
+    try {
+      setAiSaving(true);
+      setError(null);
+      const apiUrl = getApiUrl();
+      const res = await fetch(`${apiUrl}/api/shopify/embedded/ai-config`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shop,
+          config: {
+            chatMode: aiConfig.chat_mode,
+            aiModel: aiConfig.ai_model,
+            agentName: aiConfig.agent_name,
+            agentTone: aiConfig.agent_tone,
+            brandDescription: aiConfig.brand_description,
+            agentInstructions: aiConfig.agent_instructions,
+            agentLanguage: aiConfig.agent_language,
+            chatbotEndpoint: aiConfig.chatbot_endpoint,
+          },
+        }),
+      });
+      if (!res.ok) throw new Error('Error al guardar');
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err: any) {
+      setError(err.message || 'Error al guardar configuracion de IA');
+    } finally {
+      setAiSaving(false);
+    }
+  };
+
+  const loadKnowledgeDocs = async () => {
+    try {
+      setKnowledgeLoading(true);
+      const apiUrl = getApiUrl();
+      const res = await fetch(`${apiUrl}/api/shopify/embedded/knowledge?shop=${encodeURIComponent(shop)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setKnowledgeDocs(data.data || []);
+        }
+      }
+    } catch (err) {
+      console.error('Error loading knowledge docs:', err);
+    } finally {
+      setKnowledgeLoading(false);
+    }
+  };
+
+  const createTextDoc = async () => {
+    if (!docTitle.trim() || !docContent.trim()) return;
+    try {
+      setKnowledgeSubmitting(true);
+      const apiUrl = getApiUrl();
+      const res = await fetch(`${apiUrl}/api/shopify/embedded/knowledge`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shop, title: docTitle, content: docContent }),
+      });
+      if (res.ok) {
+        setDocTitle('');
+        setDocContent('');
+        loadKnowledgeDocs();
+      }
+    } catch (err) {
+      console.error('Error creating document:', err);
+    } finally {
+      setKnowledgeSubmitting(false);
+    }
+  };
+
+  const uploadFileDoc = async (file: File) => {
+    try {
+      setKnowledgeSubmitting(true);
+      const apiUrl = getApiUrl();
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('shop', shop);
+      if (docTitle.trim()) formData.append('title', docTitle);
+
+      const res = await fetch(`${apiUrl}/api/shopify/embedded/knowledge/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (res.ok) {
+        setDocTitle('');
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        loadKnowledgeDocs();
+      }
+    } catch (err) {
+      console.error('Error uploading document:', err);
+    } finally {
+      setKnowledgeSubmitting(false);
+    }
+  };
+
+  const deleteDoc = async (documentId: string) => {
+    if (!confirm('¿Eliminar este documento?')) return;
+    try {
+      const apiUrl = getApiUrl();
+      await fetch(`${apiUrl}/api/shopify/embedded/knowledge/${documentId}?shop=${encodeURIComponent(shop)}`, {
+        method: 'DELETE',
+      });
+      loadKnowledgeDocs();
+    } catch (err) {
+      console.error('Error deleting document:', err);
     }
   };
 
@@ -867,6 +1068,26 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
             <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
           </svg>
           Conversaciones
+        </button>
+        <button
+          className={`embedded-tab ${currentTab === 'ai' ? 'active' : ''}`}
+          onClick={() => setCurrentTab('ai')}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 2a4 4 0 0 1 4 4v1a1 1 0 0 0 1 1h1a4 4 0 0 1 0 8h-1a1 1 0 0 0-1 1v1a4 4 0 0 1-8 0v-1a1 1 0 0 0-1-1H6a4 4 0 0 1 0-8h1a1 1 0 0 0 1-1V6a4 4 0 0 1 4-4z" />
+            <circle cx="12" cy="12" r="2" />
+          </svg>
+          IA
+        </button>
+        <button
+          className={`embedded-tab ${currentTab === 'knowledge' ? 'active' : ''}`}
+          onClick={() => setCurrentTab('knowledge')}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+          </svg>
+          Knowledge
         </button>
       </nav>
 
@@ -2626,6 +2847,361 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                     ))}
                   </div>
                 )}
+              </>
+            )}
+          </>
+        )}
+        {/* AI Config Tab */}
+        {currentTab === 'ai' && (
+          <>
+            {aiLoading ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+                <div style={{
+                  width: '30px', height: '30px',
+                  border: '3px solid var(--color-border)',
+                  borderTopColor: 'var(--color-primary)',
+                  borderRadius: '50%',
+                  animation: 'spin 0.8s linear infinite',
+                }} />
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+                  <button className="btn btn-primary" onClick={saveAiConfig} disabled={aiSaving}>
+                    {aiSaving ? 'Guardando...' : 'Guardar Configuracion'}
+                  </button>
+                </div>
+
+                {/* Chat Mode Toggle */}
+                <div className="card" style={{ marginBottom: '1rem' }}>
+                  <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem', fontWeight: '600' }}>Modo del Chat</h3>
+                  <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <button
+                      className={`btn ${aiConfig.chat_mode === 'internal' ? 'btn-primary' : 'btn-secondary'}`}
+                      onClick={() => setAiConfig({ ...aiConfig, chat_mode: 'internal' })}
+                      style={{ flex: 1, padding: '0.75rem', fontSize: '0.9rem' }}
+                    >
+                      IA Interna (Kova)
+                    </button>
+                    <button
+                      className={`btn ${aiConfig.chat_mode === 'external' ? 'btn-primary' : 'btn-secondary'}`}
+                      onClick={() => setAiConfig({ ...aiConfig, chat_mode: 'external' })}
+                      style={{ flex: 1, padding: '0.75rem', fontSize: '0.9rem' }}
+                    >
+                      Endpoint Externo
+                    </button>
+                  </div>
+                </div>
+
+                {/* Internal Mode Config */}
+                {aiConfig.chat_mode === 'internal' && (
+                  <div className="card">
+                    <div className="form-group">
+                      <label className="form-label">Nombre del agente</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={aiConfig.agent_name || ''}
+                        onChange={e => setAiConfig({ ...aiConfig, agent_name: e.target.value || null })}
+                        placeholder="Kova"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Descripcion de tu marca</label>
+                      <textarea
+                        className="form-input"
+                        rows={3}
+                        value={aiConfig.brand_description || ''}
+                        onChange={e => setAiConfig({ ...aiConfig, brand_description: e.target.value || null })}
+                        placeholder="Describe tu marca, productos y estilo de comunicacion..."
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Tono del agente</label>
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        {[
+                          { value: 'friendly', label: 'Amigable' },
+                          { value: 'professional', label: 'Profesional' },
+                          { value: 'casual', label: 'Casual' },
+                          { value: 'enthusiastic', label: 'Entusiasta' },
+                        ].map(tone => (
+                          <button
+                            key={tone.value}
+                            className={`btn ${aiConfig.agent_tone === tone.value ? 'btn-primary' : 'btn-secondary'}`}
+                            onClick={() => setAiConfig({ ...aiConfig, agent_tone: tone.value })}
+                            style={{ fontSize: '0.85rem', padding: '0.4rem 0.75rem' }}
+                          >
+                            {tone.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Idioma</label>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        {[
+                          { value: 'es', label: 'Espanol' },
+                          { value: 'en', label: 'English' },
+                          { value: 'pt', label: 'Portugues' },
+                        ].map(lang => (
+                          <button
+                            key={lang.value}
+                            className={`btn ${aiConfig.agent_language === lang.value ? 'btn-primary' : 'btn-secondary'}`}
+                            onClick={() => setAiConfig({ ...aiConfig, agent_language: lang.value })}
+                            style={{ fontSize: '0.85rem', padding: '0.4rem 0.75rem' }}
+                          >
+                            {lang.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Instrucciones adicionales</label>
+                      <textarea
+                        className="form-input"
+                        rows={4}
+                        value={aiConfig.agent_instructions || ''}
+                        onChange={e => setAiConfig({ ...aiConfig, agent_instructions: e.target.value || null })}
+                        placeholder="Instrucciones especificas para el comportamiento del agente..."
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Modelo de IA</label>
+                      <select
+                        className="form-input"
+                        value={aiConfig.ai_model}
+                        onChange={e => setAiConfig({ ...aiConfig, ai_model: e.target.value })}
+                      >
+                        <option value="gpt-4.1-mini">GPT-4.1 Mini (Rapido)</option>
+                        <option value="gpt-4.1">GPT-4.1 (Avanzado)</option>
+                        <option value="gpt-4o">GPT-4o</option>
+                        <option value="gpt-4o-mini">GPT-4o Mini</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {/* External Mode Config */}
+                {aiConfig.chat_mode === 'external' && (
+                  <div className="card">
+                    <div className="form-group">
+                      <label className="form-label">URL del Endpoint</label>
+                      <input
+                        type="url"
+                        className="form-input"
+                        value={aiConfig.chatbot_endpoint || ''}
+                        onChange={e => setAiConfig({ ...aiConfig, chatbot_endpoint: e.target.value || null })}
+                        placeholder="https://tu-endpoint.com/webhook/chat"
+                      />
+                      <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                        URL que recibira los mensajes del chat en formato POST
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </>
+        )}
+
+        {/* Knowledge Tab */}
+        {currentTab === 'knowledge' && (
+          <>
+            {knowledgeLoading && knowledgeDocs.length === 0 ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+                <div style={{
+                  width: '30px', height: '30px',
+                  border: '3px solid var(--color-border)',
+                  borderTopColor: 'var(--color-primary)',
+                  borderRadius: '50%',
+                  animation: 'spin 0.8s linear infinite',
+                }} />
+              </div>
+            ) : (
+              <>
+                {/* Documents Table */}
+                {knowledgeDocs.length > 0 ? (
+                  <div className="card" style={{ marginBottom: '1rem' }}>
+                    <div className="card-header">
+                      <h3 className="card-title">Documentos ({knowledgeDocs.length})</h3>
+                    </div>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                            <th style={{ padding: '0.5rem', textAlign: 'left', fontWeight: '600', color: 'var(--color-text-muted)' }}>Titulo</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'center', fontWeight: '600', color: 'var(--color-text-muted)' }}>Tipo</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'center', fontWeight: '600', color: 'var(--color-text-muted)' }}>Fragmentos</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'center', fontWeight: '600', color: 'var(--color-text-muted)' }}>Estado</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'center', fontWeight: '600', color: 'var(--color-text-muted)' }}>Fecha</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'center', fontWeight: '600', color: 'var(--color-text-muted)' }}></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {knowledgeDocs.map(doc => (
+                            <tr key={doc.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                              <td style={{ padding: '0.5rem', fontWeight: '500', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {doc.title}
+                              </td>
+                              <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                                <span style={{
+                                  padding: '0.15rem 0.4rem',
+                                  borderRadius: '4px',
+                                  fontSize: '0.75rem',
+                                  background: doc.source_type === 'file' ? '#dbeafe' : '#f0fdf4',
+                                  color: doc.source_type === 'file' ? '#1e40af' : '#166534',
+                                }}>
+                                  {doc.source_type === 'file' ? 'Archivo' : 'Texto'}
+                                </span>
+                              </td>
+                              <td style={{ padding: '0.5rem', textAlign: 'center' }}>{doc.chunk_count || 0}</td>
+                              <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                                <span style={{
+                                  padding: '0.15rem 0.5rem',
+                                  borderRadius: '10px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '600',
+                                  background:
+                                    doc.embedding_status === 'completed' ? '#dcfce7' :
+                                    doc.embedding_status === 'processing' ? '#fef9c3' :
+                                    doc.embedding_status === 'failed' ? '#fecaca' : '#f3f4f6',
+                                  color:
+                                    doc.embedding_status === 'completed' ? '#166534' :
+                                    doc.embedding_status === 'processing' ? '#854d0e' :
+                                    doc.embedding_status === 'failed' ? '#991b1b' : '#6b7280',
+                                }}>
+                                  {doc.embedding_status === 'completed' ? 'Listo' :
+                                   doc.embedding_status === 'processing' ? 'Procesando...' :
+                                   doc.embedding_status === 'failed' ? 'Error' : 'Pendiente'}
+                                </span>
+                              </td>
+                              <td style={{ padding: '0.5rem', textAlign: 'center', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                                {new Date(doc.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                              </td>
+                              <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); deleteDoc(doc.id); }}
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    color: '#ef4444',
+                                    padding: '0.25rem',
+                                  }}
+                                  title="Eliminar"
+                                >
+                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <polyline points="3 6 5 6 21 6" />
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                  </svg>
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="card" style={{ textAlign: 'center', padding: '2rem', marginBottom: '1rem' }}>
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" strokeWidth="1.5" style={{ margin: '0 auto 1rem' }}>
+                      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                    </svg>
+                    <h3 style={{ margin: '0 0 0.5rem', fontSize: '1rem', fontWeight: '600' }}>Sin documentos</h3>
+                    <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+                      Agrega documentos para que tu agente de IA tenga mas contexto sobre tu negocio
+                    </p>
+                  </div>
+                )}
+
+                {/* Add Document Section */}
+                <div className="card">
+                  <div className="card-header">
+                    <h3 className="card-title">Agregar Documento</h3>
+                  </div>
+
+                  {/* Toggle Text/File */}
+                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                    <button
+                      className={`btn ${addMode === 'text' ? 'btn-primary' : 'btn-secondary'}`}
+                      onClick={() => setAddMode('text')}
+                      style={{ fontSize: '0.85rem', padding: '0.4rem 0.75rem' }}
+                    >
+                      Texto
+                    </button>
+                    <button
+                      className={`btn ${addMode === 'file' ? 'btn-primary' : 'btn-secondary'}`}
+                      onClick={() => setAddMode('file')}
+                      style={{ fontSize: '0.85rem', padding: '0.4rem 0.75rem' }}
+                    >
+                      Archivo
+                    </button>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Titulo</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={docTitle}
+                      onChange={e => setDocTitle(e.target.value)}
+                      placeholder="Nombre del documento..."
+                    />
+                  </div>
+
+                  {addMode === 'text' ? (
+                    <>
+                      <div className="form-group">
+                        <label className="form-label">Contenido</label>
+                        <textarea
+                          className="form-input"
+                          rows={6}
+                          value={docContent}
+                          onChange={e => setDocContent(e.target.value)}
+                          placeholder="Pega aqui el contenido que quieres que tu agente conozca..."
+                        />
+                      </div>
+                      <button
+                        className="btn btn-primary"
+                        onClick={createTextDoc}
+                        disabled={knowledgeSubmitting || !docTitle.trim() || !docContent.trim()}
+                      >
+                        {knowledgeSubmitting ? 'Creando...' : 'Crear Documento'}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="form-group">
+                        <label className="form-label">Archivo (PDF, TXT, MD - max 10MB)</label>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".pdf,.txt,.md"
+                          onChange={e => {
+                            const file = e.target.files?.[0];
+                            if (file) uploadFileDoc(file);
+                          }}
+                          disabled={knowledgeSubmitting}
+                          style={{
+                            padding: '0.5rem',
+                            border: '1px solid var(--color-border)',
+                            borderRadius: '8px',
+                            width: '100%',
+                          }}
+                        />
+                      </div>
+                      {knowledgeSubmitting && (
+                        <p style={{ fontSize: '0.85rem', color: 'var(--color-primary)' }}>Subiendo archivo...</p>
+                      )}
+                    </>
+                  )}
+                </div>
               </>
             )}
           </>
