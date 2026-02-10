@@ -944,14 +944,20 @@ router.get(
     try {
       const siteUrl = req.query.siteUrl as string;
       if (!siteUrl) {
-        return res.status(400).json({ success: false, error: 'Site URL is required' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'Site URL is required' });
       }
 
       const normalizedUrl = normalizeWooSiteUrl(siteUrl);
 
-      const { data: store, error } = await (supabaseService as any).serviceClient
+      const { data: store, error } = await (
+        supabaseService as any
+      ).serviceClient
         .from('client_stores')
-        .select('chat_mode, ai_model, agent_name, agent_tone, brand_description, agent_instructions, agent_language, chatbot_endpoint')
+        .select(
+          'chat_mode, ai_model, agent_name, agent_tone, brand_description, agent_instructions, agent_language, chatbot_endpoint'
+        )
         .eq('shop_domain', normalizedUrl)
         .single();
 
@@ -989,7 +995,9 @@ router.put(
     try {
       const { siteUrl, config } = req.body;
       if (!siteUrl) {
-        return res.status(400).json({ success: false, error: 'Site URL is required' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'Site URL is required' });
       }
 
       const normalizedUrl = normalizeWooSiteUrl(siteUrl);
@@ -1017,21 +1025,29 @@ router.put(
       if (aiModel !== undefined) updateData.ai_model = aiModel;
       if (agentName !== undefined) updateData.agent_name = agentName;
       if (agentTone !== undefined) updateData.agent_tone = agentTone;
-      if (brandDescription !== undefined) updateData.brand_description = brandDescription;
-      if (agentInstructions !== undefined) updateData.agent_instructions = agentInstructions;
-      if (agentLanguage !== undefined) updateData.agent_language = agentLanguage;
-      if (chatbotEndpoint !== undefined) updateData.chatbot_endpoint = chatbotEndpoint;
+      if (brandDescription !== undefined)
+        updateData.brand_description = brandDescription;
+      if (agentInstructions !== undefined)
+        updateData.agent_instructions = agentInstructions;
+      if (agentLanguage !== undefined)
+        updateData.agent_language = agentLanguage;
+      if (chatbotEndpoint !== undefined)
+        updateData.chatbot_endpoint = chatbotEndpoint;
 
       const { data, error } = await (supabaseService as any).serviceClient
         .from('client_stores')
         .update(updateData)
         .eq('shop_domain', normalizedUrl)
-        .select('chat_mode, ai_model, agent_name, agent_tone, brand_description, agent_instructions, agent_language, chatbot_endpoint')
+        .select(
+          'chat_mode, ai_model, agent_name, agent_tone, brand_description, agent_instructions, agent_language, chatbot_endpoint'
+        )
         .single();
 
       if (error) {
         logger.error('Error updating WooCommerce AI config:', error);
-        return res.status(500).json({ success: false, error: 'Failed to update AI configuration' });
+        return res
+          .status(500)
+          .json({ success: false, error: 'Failed to update AI configuration' });
       }
 
       return res.json({ success: true, data });
@@ -1054,7 +1070,9 @@ router.get(
     try {
       const siteUrl = req.query.siteUrl as string;
       if (!siteUrl) {
-        return res.status(400).json({ success: false, error: 'Site URL is required' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'Site URL is required' });
       }
 
       const normalizedUrl = normalizeWooSiteUrl(siteUrl);
@@ -1078,10 +1096,14 @@ router.post(
     try {
       const { siteUrl, title, content } = req.body;
       if (!siteUrl) {
-        return res.status(400).json({ success: false, error: 'Site URL is required' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'Site URL is required' });
       }
       if (!title || !content) {
-        return res.status(400).json({ success: false, error: 'Title and content are required' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'Title and content are required' });
       }
 
       const normalizedUrl = normalizeWooSiteUrl(siteUrl);
@@ -1110,19 +1132,26 @@ router.post(
     try {
       const siteUrl = req.body.siteUrl as string;
       if (!siteUrl) {
-        return res.status(400).json({ success: false, error: 'Site URL is required' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'Site URL is required' });
       }
 
       const file = req.file;
       if (!file) {
-        return res.status(400).json({ success: false, error: 'File is required' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'File is required' });
       }
 
       const normalizedUrl = normalizeWooSiteUrl(siteUrl);
       const title = req.body.title || file.originalname;
       let content: string;
 
-      if (file.mimetype === 'application/pdf' || file.originalname.endsWith('.pdf')) {
+      if (
+        file.mimetype === 'application/pdf' ||
+        file.originalname.endsWith('.pdf')
+      ) {
         const pdfData = await pdfParse(file.buffer);
         content = pdfData.text;
       } else {
@@ -1130,7 +1159,9 @@ router.post(
       }
 
       if (!content.trim()) {
-        return res.status(400).json({ success: false, error: 'File contains no extractable text' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'File contains no extractable text' });
       }
 
       const document = await knowledgeService.createDocument(normalizedUrl, {
@@ -1158,11 +1189,16 @@ router.delete(
     try {
       const siteUrl = req.query.siteUrl as string;
       if (!siteUrl) {
-        return res.status(400).json({ success: false, error: 'Site URL is required' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'Site URL is required' });
       }
 
       const normalizedUrl = normalizeWooSiteUrl(siteUrl);
-      await knowledgeService.deleteDocument(req.params.documentId, normalizedUrl);
+      await knowledgeService.deleteDocument(
+        req.params.documentId,
+        normalizedUrl
+      );
 
       return res.json({ success: true });
     } catch (error) {
@@ -1182,7 +1218,9 @@ router.get(
     try {
       const siteUrl = req.query.siteUrl as string;
       if (!siteUrl) {
-        return res.status(400).json({ success: false, error: 'Site URL is required' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'Site URL is required' });
       }
 
       const normalizedUrl = normalizeWooSiteUrl(siteUrl);
@@ -1192,7 +1230,9 @@ router.get(
       );
 
       if (!status) {
-        return res.status(404).json({ success: false, error: 'Document not found' });
+        return res
+          .status(404)
+          .json({ success: false, error: 'Document not found' });
       }
 
       return res.json({ success: true, data: status });
