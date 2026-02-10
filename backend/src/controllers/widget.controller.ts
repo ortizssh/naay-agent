@@ -330,7 +330,8 @@ router.get(
               clientStore.widget_show_promo_message ??
               defaultConfig.showPromoMessage,
             showCart: clientStore.widget_show_cart ?? defaultConfig.showCart,
-            showContact: clientStore.widget_show_contact ?? defaultConfig.showContact,
+            showContact:
+              clientStore.widget_show_contact ?? defaultConfig.showContact,
             enableAnimations:
               clientStore.widget_enable_animations ??
               defaultConfig.enableAnimations,
