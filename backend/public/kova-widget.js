@@ -656,9 +656,12 @@
         this.promotionalMessage.style.display = this.config.showPromoMessage === false ? 'none' : '';
       }
 
-      // Show/hide cart button based on showCart setting
+      // Show/hide cart button and panel based on showCart setting
       if (this.cartSmallToggle) {
         this.cartSmallToggle.style.display = this.config.showCart === false ? 'none' : '';
+      }
+      if (this.cartPanel) {
+        this.cartPanel.style.display = this.config.showCart === false ? 'none' : '';
       }
 
       // Enable/disable animations based on enableAnimations setting
@@ -5245,7 +5248,8 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
               </div>
 
               <div class="kova-product-card__actions">
-                ${!available ?
+                ${this.config.showCart === false ? '' :
+            (!available ?
           `<button class="kova-product-card__add-btn kova-product-card__add-btn--disabled" disabled>
                     Agotado
                   </button>` :
@@ -5254,7 +5258,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
                       <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
                     </svg>
                     Agregar
-                  </button>`
+                  </button>`)
         }
               </div>
             </div>
@@ -5610,6 +5614,10 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
 
     showCart() {
+      if (this.config.showCart === false) {
+        console.log('🛒 Cart is disabled by config, skipping showCart');
+        return;
+      }
       console.log('🛒 Showing cart panel...');
 
       this.cartVisible = true;
@@ -5643,6 +5651,10 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     }
 
     async addToCart(product) {
+      if (this.config.showCart === false) {
+        console.log('🛒 Cart is disabled by config, skipping addToCart');
+        return;
+      }
       console.log('🛒 Adding product to cart:', product);
       console.log('🏪 Platform:', this.config.platform);
 
