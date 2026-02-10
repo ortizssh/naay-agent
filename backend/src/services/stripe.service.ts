@@ -121,7 +121,9 @@ export class StripeService {
   /**
    * Cancel a subscription at end of current billing period
    */
-  async cancelSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
+  async cancelSubscription(
+    subscriptionId: string
+  ): Promise<Stripe.Subscription> {
     const stripe = getStripe();
     const sub = await stripe.subscriptions.update(subscriptionId, {
       cancel_at_period_end: true,
@@ -133,7 +135,9 @@ export class StripeService {
   /**
    * Reactivate a subscription that is pending cancellation
    */
-  async reactivateSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
+  async reactivateSubscription(
+    subscriptionId: string
+  ): Promise<Stripe.Subscription> {
     const stripe = getStripe();
     const sub = await stripe.subscriptions.update(subscriptionId, {
       cancel_at_period_end: false,

@@ -426,9 +426,7 @@ router.post(
         throw new AppError('No se encontro suscripcion activa', 400);
       }
 
-      await stripeService.reactivateSubscription(
-        tenant.stripe_subscription_id
-      );
+      await stripeService.reactivateSubscription(tenant.stripe_subscription_id);
 
       res.json({
         success: true,
