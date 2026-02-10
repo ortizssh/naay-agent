@@ -294,4 +294,151 @@ router.get(
   }
 );
 
+/**
+ * GET /api/billing/usage
+ * Get current usage stats (messages + products)
+ */
+router.get(
+  '/usage',
+  requireClientAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = (req as any).user;
+
+      const { data: store } = await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .select('shop_domain, products_synced')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!store?.shop_domain) {
+        return res.json({
+          success: true,
+          data: {
+            messages_used: 0,
+            messages_limit: 0,
+            messages_remaining: 0,
+            usage_percentage: 0,
+            is_over_limit: false,
+            products_synced: 0,
+            products_limit: 0,
+          },
+        });
+      }
+
+      const usageInfo = await tenantService.getUsageInfo(store.shop_domain);
+
+      const tenant = await tenantService.getTenant(store.shop_domain);
+      const planLimits = await planService.getPlanLimits(
+        (tenant?.plan as TenantPlan) || 'free'
+      );
+
+      res.json({
+        success: true,
+        data: {
+          ...(usageInfo || {
+            messages_used: 0,
+            messages_limit: 0,
+            messages_remaining: 0,
+            usage_percentage: 0,
+            is_over_limit: false,
+          }),
+          products_synced: store.products_synced || 0,
+          products_limit: planLimits.products,
+        },
+      });
+    } catch (error) {
+      logger.error('Get usage error:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * POST /api/billing/cancel
+ * Cancel subscription at end of billing period
+ */
+router.post(
+  '/cancel',
+  requireClientAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = (req as any).user;
+
+      const { data: store } = await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .select('shop_domain')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!store?.shop_domain) {
+        throw new AppError('Tienda no encontrada', 404);
+      }
+
+      const tenant = await tenantService.getTenant(store.shop_domain);
+      if (!tenant?.stripe_subscription_id) {
+        throw new AppError('No se encontro suscripcion activa', 400);
+      }
+
+      const sub = await stripeService.cancelSubscription(
+        tenant.stripe_subscription_id
+      );
+
+      res.json({
+        success: true,
+        data: {
+          cancelAtPeriodEnd: true,
+          currentPeriodEnd: new Date(
+            (sub as any).current_period_end * 1000
+          ).toISOString(),
+        },
+      });
+    } catch (error) {
+      logger.error('Cancel subscription error:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * POST /api/billing/reactivate
+ * Reactivate a subscription pending cancellation
+ */
+router.post(
+  '/reactivate',
+  requireClientAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = (req as any).user;
+
+      const { data: store } = await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .select('shop_domain')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!store?.shop_domain) {
+        throw new AppError('Tienda no encontrada', 404);
+      }
+
+      const tenant = await tenantService.getTenant(store.shop_domain);
+      if (!tenant?.stripe_subscription_id) {
+        throw new AppError('No se encontro suscripcion activa', 400);
+      }
+
+      await stripeService.reactivateSubscription(
+        tenant.stripe_subscription_id
+      );
+
+      res.json({
+        success: true,
+        data: { cancelAtPeriodEnd: false },
+      });
+    } catch (error) {
+      logger.error('Reactivate subscription error:', error);
+      next(error);
+    }
+  }
+);
+
 export default router;

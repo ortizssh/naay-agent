@@ -69,6 +69,16 @@ function ClientSidebar({ currentPage, onPageChange, user, onLogout }: ClientSide
             Conversiones
           </button>
           <button
+            className={`nav-item ${currentPage === 'ai-config' ? 'active' : ''}`}
+            onClick={() => onPageChange('ai-config')}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 2a4 4 0 0 0-4 4v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2h-2V6a4 4 0 0 0-4-4z" />
+              <circle cx="12" cy="15" r="2" />
+            </svg>
+            Configuracion IA
+          </button>
+          <button
             className={`nav-item ${currentPage === 'knowledge' ? 'active' : ''}`}
             onClick={() => onPageChange('knowledge')}
           >
@@ -77,6 +87,16 @@ function ClientSidebar({ currentPage, onPageChange, user, onLogout }: ClientSide
               <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
             </svg>
             Knowledge Base
+          </button>
+          <button
+            className={`nav-item ${currentPage === 'subscription' ? 'active' : ''}`}
+            onClick={() => onPageChange('subscription')}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+              <line x1="1" y1="10" x2="23" y2="10" />
+            </svg>
+            Suscripcion
           </button>
         </div>
 

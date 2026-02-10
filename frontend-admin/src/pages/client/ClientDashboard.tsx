@@ -10,12 +10,20 @@ interface DashboardData {
   plan: string;
 }
 
-interface ClientDashboardProps {
-  onStartOnboarding: () => void;
+interface UsageData {
+  messages_used: number;
+  messages_limit: number;
+  usage_percentage: number;
 }
 
-function ClientDashboard({ onStartOnboarding }: ClientDashboardProps) {
+interface ClientDashboardProps {
+  onStartOnboarding: () => void;
+  onPageChange?: (page: string) => void;
+}
+
+function ClientDashboard({ onStartOnboarding, onPageChange }: ClientDashboardProps) {
   const [data, setData] = useState<DashboardData | null>(null);
+  const [usage, setUsage] = useState<UsageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,14 +34,24 @@ function ClientDashboard({ onStartOnboarding }: ClientDashboardProps) {
   const loadDashboard = async () => {
     try {
       setLoading(true);
-      const response = await clientApi.getDashboard();
-      setData(response.data);
+      const [dashRes, usageRes] = await Promise.all([
+        clientApi.getDashboard(),
+        clientApi.getUsage().catch(() => null),
+      ]);
+      setData(dashRes.data);
+      if (usageRes) setUsage(usageRes.data);
       setError(null);
     } catch (err: any) {
       setError(err.message || 'Error al cargar dashboard');
     } finally {
       setLoading(false);
     }
+  };
+
+  const getUsageColor = (percentage: number) => {
+    if (percentage >= 90) return 'var(--color-error)';
+    if (percentage >= 70) return 'var(--color-warning)';
+    return 'var(--color-success)';
   };
 
   if (loading) {
@@ -129,16 +147,46 @@ function ClientDashboard({ onStartOnboarding }: ClientDashboardProps) {
             <div className="stat-label">Productos Sincronizados</div>
           </div>
 
-          <div className="stat-card">
+          <div className="stat-card" style={{ cursor: onPageChange ? 'pointer' : undefined }} onClick={() => onPageChange?.('subscription')}>
             <div className="stat-icon warning">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 2L2 7l10 5 10-5-10-5z" />
                 <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
               </svg>
             </div>
-            <div className="stat-value" style={{ textTransform: 'capitalize' }}>{data?.plan || 'starter'}</div>
+            <div className="stat-value" style={{ textTransform: 'capitalize' }}>{data?.plan || 'free'}</div>
             <div className="stat-label">Plan Actual</div>
           </div>
+
+          {usage && (
+            <div className="stat-card">
+              <div className="stat-icon" style={{ background: `${getUsageColor(usage.usage_percentage)}20`, color: getUsageColor(usage.usage_percentage) }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+              </div>
+              <div className="stat-value">
+                {usage.messages_used?.toLocaleString()}{' / '}{usage.messages_limit === -1 ? 'Ilim.' : usage.messages_limit?.toLocaleString()}
+              </div>
+              <div className="stat-label">Mensajes este mes</div>
+              <div style={{
+                width: '100%',
+                height: '4px',
+                background: 'var(--color-border)',
+                borderRadius: '2px',
+                overflow: 'hidden',
+                marginTop: '0.5rem',
+              }}>
+                <div style={{
+                  width: usage.messages_limit === -1 ? '5%' : `${Math.min(usage.usage_percentage, 100)}%`,
+                  height: '100%',
+                  background: usage.messages_limit === -1 ? 'var(--color-success)' : getUsageColor(usage.usage_percentage),
+                  borderRadius: '2px',
+                  transition: 'width 0.3s ease',
+                }} />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Quick actions */}
@@ -148,13 +196,13 @@ function ClientDashboard({ onStartOnboarding }: ClientDashboardProps) {
               <h3 className="card-title">Acciones Rapidas</h3>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <button className="btn btn-secondary" style={{ justifyContent: 'flex-start' }}>
+              <button className="btn btn-secondary" style={{ justifyContent: 'flex-start' }} onClick={() => onPageChange?.('widget')}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 </svg>
                 Configurar Widget
               </button>
-              <button className="btn btn-secondary" style={{ justifyContent: 'flex-start' }}>
+              <button className="btn btn-secondary" style={{ justifyContent: 'flex-start' }} onClick={() => onPageChange?.('analytics')}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="18" y1="20" x2="18" y2="10" />
                   <line x1="12" y1="20" x2="12" y2="4" />
@@ -162,7 +210,7 @@ function ClientDashboard({ onStartOnboarding }: ClientDashboardProps) {
                 </svg>
                 Ver Estadisticas
               </button>
-              <button className="btn btn-secondary" style={{ justifyContent: 'flex-start' }}>
+              <button className="btn btn-secondary" style={{ justifyContent: 'flex-start' }} onClick={() => onPageChange?.('store')}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polyline points="23 4 23 10 17 10" />
                   <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />

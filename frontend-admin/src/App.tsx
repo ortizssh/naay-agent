@@ -18,6 +18,8 @@ import MyStore from './pages/client/MyStore';
 import WidgetConfig from './pages/client/WidgetConfig';
 import Analytics from './pages/client/Analytics';
 import KnowledgeBase from './pages/client/KnowledgeBase';
+import Subscription from './pages/client/Subscription';
+import AiConfigPage from './pages/client/AiConfigPage';
 
 // Onboarding
 import OnboardingWizard from './pages/onboarding/OnboardingWizard';
@@ -29,7 +31,7 @@ import ClientSidebar from './components/layout/ClientSidebar';
 import ShopifyEmbedded from './pages/ShopifyEmbedded';
 
 type AdminPageType = 'dashboard' | 'tenants' | 'settings';
-type ClientPageType = 'dashboard' | 'store' | 'widget' | 'analytics' | 'knowledge';
+type ClientPageType = 'dashboard' | 'store' | 'widget' | 'analytics' | 'ai-config' | 'knowledge' | 'subscription';
 type PageType = 'landing' | 'login' | 'register' | 'dashboard';
 
 interface User {
@@ -269,17 +271,21 @@ function App() {
     const renderClientPage = () => {
       switch (currentClientPage) {
         case 'dashboard':
-          return <ClientDashboard onStartOnboarding={handleStartOnboarding} />;
+          return <ClientDashboard onStartOnboarding={handleStartOnboarding} onPageChange={(page) => setCurrentClientPage(page as ClientPageType)} />;
         case 'store':
           return <MyStore />;
         case 'widget':
           return <WidgetConfig />;
         case 'analytics':
           return <Analytics />;
+        case 'ai-config':
+          return <AiConfigPage />;
         case 'knowledge':
           return <KnowledgeBase />;
+        case 'subscription':
+          return <Subscription />;
         default:
-          return <ClientDashboard onStartOnboarding={handleStartOnboarding} />;
+          return <ClientDashboard onStartOnboarding={handleStartOnboarding} onPageChange={(page) => setCurrentClientPage(page as ClientPageType)} />;
       }
     };
 

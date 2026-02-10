@@ -499,6 +499,26 @@ class ClientApiClient {
     return this.request('/api/billing/plans');
   }
 
+  async getUsage(): Promise<{ success: boolean; data: {
+    messages_used: number;
+    messages_limit: number;
+    messages_remaining: number;
+    usage_percentage: number;
+    is_over_limit: boolean;
+    products_synced: number;
+    products_limit: number;
+  } }> {
+    return this.request('/api/billing/usage');
+  }
+
+  async cancelSubscription(): Promise<{ success: boolean; data: { cancelAtPeriodEnd: boolean; currentPeriodEnd: string } }> {
+    return this.request('/api/billing/cancel', { method: 'POST' });
+  }
+
+  async reactivateSubscription(): Promise<{ success: boolean; data: { cancelAtPeriodEnd: boolean } }> {
+    return this.request('/api/billing/reactivate', { method: 'POST' });
+  }
+
   // Knowledge Base
   async getKnowledgeDocuments(): Promise<{ success: boolean; data: KnowledgeDocument[] }> {
     return this.request('/api/client/knowledge');

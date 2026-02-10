@@ -117,6 +117,30 @@ export class StripeService {
     const stripe = getStripe();
     return stripe.subscriptions.retrieve(subscriptionId);
   }
+
+  /**
+   * Cancel a subscription at end of current billing period
+   */
+  async cancelSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
+    const stripe = getStripe();
+    const sub = await stripe.subscriptions.update(subscriptionId, {
+      cancel_at_period_end: true,
+    });
+    logger.info('Scheduled subscription cancellation', { subscriptionId });
+    return sub;
+  }
+
+  /**
+   * Reactivate a subscription that is pending cancellation
+   */
+  async reactivateSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
+    const stripe = getStripe();
+    const sub = await stripe.subscriptions.update(subscriptionId, {
+      cancel_at_period_end: false,
+    });
+    logger.info('Reactivated subscription', { subscriptionId });
+    return sub;
+  }
 }
 
 export const stripeService = new StripeService();
