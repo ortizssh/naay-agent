@@ -1742,6 +1742,43 @@
           to { transform: rotate(360deg); }
         }
 
+        /* ======= TYPING & FADE-IN ANIMATIONS ======= */
+
+        @keyframes kovaTypeReveal {
+          from { max-height: 0; opacity: 0; }
+          to   { max-height: 2000px; opacity: 1; }
+        }
+
+        .kova-widget__message--typing-animate {
+          overflow: hidden !important;
+        }
+
+        .kova-widget__message--typing-animate .kova-typing-char {
+          opacity: 0;
+          display: inline;
+        }
+
+        .kova-widget__message--typing-animate .kova-typing-char.kova-char-visible {
+          opacity: 1;
+        }
+
+        /* Product card fade-in */
+        @keyframes kovaCardFadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(8px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .kova-product-card--animate {
+          opacity: 0;
+          animation: kovaCardFadeIn 0.35s ease-out forwards !important;
+        }
+
         /* ======= PRODUCT MODAL STYLES ======= */
 
         .kova-product-modal {
@@ -4830,7 +4867,6 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
       // Format text with proper line breaks and structure
       const formattedText = this.formatMessage(text);
-      messageDiv.innerHTML = formattedText;
 
       // Remove welcome message when first real message is added
       const welcome = this.messagesContainer.querySelector('.kova-widget__welcome');
@@ -4838,10 +4874,82 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         welcome.style.display = 'none';
       }
 
-      if (this.messagesContainer) {
-        this.messagesContainer.appendChild(messageDiv);
-        this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+      if (sender === 'assistant') {
+        // Typing animation for assistant messages
+        messageDiv.innerHTML = '';
+        if (this.messagesContainer) {
+          this.messagesContainer.appendChild(messageDiv);
+          this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+        }
+        this._animateTyping(messageDiv, formattedText);
+      } else {
+        messageDiv.innerHTML = formattedText;
+        if (this.messagesContainer) {
+          this.messagesContainer.appendChild(messageDiv);
+          this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+        }
       }
+    }
+
+    /**
+     * Fast typing animation for assistant messages
+     * Renders HTML progressively, revealing characters rapidly
+     */
+    _animateTyping(container, html) {
+      // Insert the full HTML but hide text nodes via spans
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+
+      // Wrap each text character in a span for reveal
+      const wrapTextNodes = (node) => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          const text = node.textContent;
+          if (!text.trim() && !text.includes(' ')) return;
+          const frag = document.createDocumentFragment();
+          for (let i = 0; i < text.length; i++) {
+            const span = document.createElement('span');
+            span.className = 'kova-typing-char';
+            span.textContent = text[i];
+            frag.appendChild(span);
+          }
+          node.parentNode.replaceChild(frag, node);
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          // Process child nodes (copy to array first since we modify in-place)
+          Array.from(node.childNodes).forEach(wrapTextNodes);
+        }
+      };
+
+      Array.from(tempDiv.childNodes).forEach(wrapTextNodes);
+      container.innerHTML = tempDiv.innerHTML;
+      container.classList.add('kova-widget__message--typing-animate');
+
+      const chars = container.querySelectorAll('.kova-typing-char');
+      const totalChars = chars.length;
+      if (totalChars === 0) return;
+
+      // Fast typing: ~15ms per character, minimum 8ms
+      const interval = Math.max(8, Math.min(15, 800 / totalChars));
+      let index = 0;
+
+      const revealNext = () => {
+        // Reveal in batches for very fast feel
+        const batchSize = interval <= 10 ? 3 : 2;
+        for (let b = 0; b < batchSize && index < totalChars; b++, index++) {
+          chars[index].classList.add('kova-char-visible');
+        }
+        if (this.messagesContainer) {
+          this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+        }
+        if (index < totalChars) {
+          requestAnimationFrame(() => setTimeout(revealNext, interval));
+        } else {
+          // Animation done — replace with clean HTML (remove spans)
+          container.classList.remove('kova-widget__message--typing-animate');
+          container.innerHTML = html;
+        }
+      };
+
+      requestAnimationFrame(() => setTimeout(revealNext, 80));
     }
 
     addTypingIndicator() {
@@ -4993,11 +5101,19 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         if (product) {
           this.setupProductCardListeners(card, product);
         }
+        // Staggered fade-in animation
+        card.classList.add('kova-product-card--animate');
+        card.style.animationDelay = `${index * 120}ms`;
       });
 
       if (this.messagesContainer) {
         this.messagesContainer.appendChild(recommendationsContainer);
         this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+        // Keep scrolling as cards animate in
+        const scrollInterval = setInterval(() => {
+          this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+        }, 150);
+        setTimeout(() => clearInterval(scrollInterval), productCards.length * 120 + 400);
       }
 
       console.log('🔍 Total unique products added so far:', this.addedProducts.size);
