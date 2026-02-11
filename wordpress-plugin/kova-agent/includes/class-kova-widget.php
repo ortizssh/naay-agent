@@ -203,6 +203,7 @@ class Kova_Widget {
 
             // Features
             'showCart' => $this->settings['widget_show_cart'] ?? true,
+            'showContact' => !empty($this->settings['widget_show_contact']),
             'showPromoMessage' => $this->settings['widget_show_promo_message'] ?? true,
             'enableAnimations' => $this->settings['widget_enable_animations'] ?? true,
 

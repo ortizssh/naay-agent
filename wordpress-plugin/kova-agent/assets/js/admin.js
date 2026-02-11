@@ -727,6 +727,15 @@
         $('#kova_welcome_message').on('input', function() {
             $('#kova-preview-message').text($(this).val() || 'Hello! How can I help you today?');
         });
+
+        // Show/hide Retell Agent ID field based on contact toggle
+        $('#kova_widget_show_contact').on('change', function() {
+            if ($(this).is(':checked')) {
+                $('#kova-retell-agent-id-group').show();
+            } else {
+                $('#kova-retell-agent-id-group').hide();
+            }
+        });
     }
 
     // ===========================================

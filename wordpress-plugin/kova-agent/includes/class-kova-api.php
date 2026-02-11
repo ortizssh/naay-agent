@@ -141,6 +141,8 @@ class Kova_API {
             'chatHeight' => intval($settings['widget_chat_height'] ?? 600),
             'showPromoMessage' => !empty($settings['widget_show_promo_message']),
             'showCart' => isset($settings['widget_show_cart']) ? !empty($settings['widget_show_cart']) : true,
+            'showContact' => !empty($settings['widget_show_contact']),
+            'retellAgentId' => $settings['retell_agent_id'] ?? '',
             'enableAnimations' => isset($settings['widget_enable_animations']) ? !empty($settings['widget_enable_animations']) : true,
             'theme' => $settings['widget_theme'] ?? 'light',
             'promoBadgeEnabled' => !empty($settings['promo_badge_enabled']),

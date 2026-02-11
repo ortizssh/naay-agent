@@ -200,6 +200,8 @@ class Kova_Admin {
         // Features (Widget tab)
         $sanitized['widget_show_promo_message'] = $get_checkbox('widget_show_promo_message', true);
         $sanitized['widget_show_cart'] = $get_checkbox('widget_show_cart', true);
+        $sanitized['widget_show_contact'] = $get_checkbox('widget_show_contact', false);
+        $sanitized['retell_agent_id'] = sanitize_text_field($get_value('retell_agent_id', ''));
         $sanitized['widget_enable_animations'] = $get_checkbox('widget_enable_animations', true);
 
         // Promo Badge (Widget tab)
@@ -1125,6 +1127,31 @@ class Kova_Admin {
                                     <span class="kova-toggle-slider"></span>
                                 </label>
                                 <span style="margin-left: 0.75rem;"><?php _e('Show Promo Messages', 'kova-agent'); ?></span>
+                            </div>
+
+                            <div class="kova-form-group">
+                                <label class="kova-toggle">
+                                    <input type="hidden" name="kova_agent_settings[widget_show_contact]" value="0">
+                                    <input type="checkbox"
+                                           name="kova_agent_settings[widget_show_contact]"
+                                           value="1"
+                                           id="kova_widget_show_contact"
+                                           <?php checked(!empty($settings['widget_show_contact'])); ?>>
+                                    <span class="kova-toggle-slider"></span>
+                                </label>
+                                <span style="margin-left: 0.75rem;"><?php _e('Phone Contact Button', 'kova-agent'); ?></span>
+                                <p class="kova-form-hint"><?php _e('Show a phone contact button in the widget', 'kova-agent'); ?></p>
+                            </div>
+
+                            <div class="kova-form-group" id="kova-retell-agent-id-group" style="<?php echo empty($settings['widget_show_contact']) ? 'display:none;' : ''; ?>">
+                                <label for="kova_retell_agent_id" style="font-weight: 500;"><?php _e('Retell Agent ID', 'kova-agent'); ?></label>
+                                <input type="text"
+                                       id="kova_retell_agent_id"
+                                       name="kova_agent_settings[retell_agent_id]"
+                                       value="<?php echo esc_attr($settings['retell_agent_id'] ?? ''); ?>"
+                                       class="regular-text"
+                                       placeholder="agent_xxxxxxxxxxxxxxxx">
+                                <p class="kova-form-hint"><?php _e('Your Retell AI agent ID for phone calls', 'kova-agent'); ?></p>
                             </div>
 
                             <div class="kova-form-group">
