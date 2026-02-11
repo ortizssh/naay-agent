@@ -456,16 +456,39 @@ router.post(
         throw new AppError('Shop domain is required', 400);
       }
 
-      // Look up the client's Retell agent ID from the database
-      const { data: clientStore, error: storeError } = await (
-        supabaseService as any
-      ).serviceClient
-        .from('client_stores')
-        .select('retell_agent_id')
-        .eq('shop_domain', shopDomain)
-        .single();
+      // Build list of possible shop domain formats to try
+      const contactShopVariants: string[] = [shopDomain];
+      if (shopDomain.startsWith('http://') || shopDomain.startsWith('https://')) {
+        try {
+          const url = new URL(shopDomain);
+          contactShopVariants.push(url.host);
+          contactShopVariants.push(url.hostname);
+          contactShopVariants.push(`${url.protocol}//${url.host}/`);
+        } catch {
+          // Ignore parse errors
+        }
+      } else {
+        contactShopVariants.push(`https://${shopDomain}`);
+        contactShopVariants.push(`https://${shopDomain}/`);
+      }
 
-      if (storeError || !clientStore?.retell_agent_id) {
+      // Look up the client's Retell agent ID from the database
+      let clientStore = null;
+      for (const variant of contactShopVariants) {
+        const { data } = await (
+          supabaseService as any
+        ).serviceClient
+          .from('client_stores')
+          .select('retell_agent_id')
+          .eq('shop_domain', variant)
+          .single();
+        if (data?.retell_agent_id) {
+          clientStore = data;
+          break;
+        }
+      }
+
+      if (!clientStore?.retell_agent_id) {
         logger.error('Retell agent ID not configured for shop', { shopDomain });
         throw new AppError(
           'Contact service not configured for this store',

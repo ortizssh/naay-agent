@@ -238,7 +238,7 @@
 
     async loadSettings() {
       try {
-        const response = await fetch(`${this.config.apiEndpoint}/api/widget/config?shop=${this.config.shopDomain}`);
+        const response = await fetch(`${this.config.apiEndpoint}/api/widget/config?shop=${encodeURIComponent(this.config.shopDomain)}`);
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.data) {
