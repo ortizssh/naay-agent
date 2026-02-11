@@ -458,7 +458,10 @@ router.post(
 
       // Build list of possible shop domain formats to try
       const contactShopVariants: string[] = [shopDomain];
-      if (shopDomain.startsWith('http://') || shopDomain.startsWith('https://')) {
+      if (
+        shopDomain.startsWith('http://') ||
+        shopDomain.startsWith('https://')
+      ) {
         try {
           const url = new URL(shopDomain);
           contactShopVariants.push(url.host);
@@ -475,9 +478,7 @@ router.post(
       // Look up the client's Retell agent ID from the database
       let clientStore = null;
       for (const variant of contactShopVariants) {
-        const { data } = await (
-          supabaseService as any
-        ).serviceClient
+        const { data } = await (supabaseService as any).serviceClient
           .from('client_stores')
           .select('retell_agent_id')
           .eq('shop_domain', variant)
