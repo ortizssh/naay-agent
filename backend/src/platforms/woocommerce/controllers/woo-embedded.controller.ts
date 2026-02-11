@@ -229,6 +229,10 @@ router.put(
         updateData.widget_show_promo_message = config.widgetShowPromoMessage;
       if (config.widgetShowCart !== undefined)
         updateData.widget_show_cart = config.widgetShowCart;
+      if (config.widgetShowContact !== undefined)
+        updateData.widget_show_contact = config.widgetShowContact;
+      if (config.retellAgentId !== undefined)
+        updateData.retell_agent_id = config.retellAgentId;
       if (config.widgetEnableAnimations !== undefined)
         updateData.widget_enable_animations = config.widgetEnableAnimations;
       if (config.widgetTheme) updateData.widget_theme = config.widgetTheme;
@@ -866,6 +870,8 @@ router.get(
             widgetAvatar: clientStore.widget_avatar,
             widgetShowPromoMessage: clientStore.widget_show_promo_message,
             widgetShowCart: clientStore.widget_show_cart,
+            widgetShowContact: clientStore.widget_show_contact,
+            retellAgentId: clientStore.retell_agent_id,
             widgetEnableAnimations: clientStore.widget_enable_animations,
             widgetTheme: clientStore.widget_theme,
             widgetBrandName: clientStore.widget_brand_name,

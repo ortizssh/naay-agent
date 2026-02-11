@@ -734,6 +734,8 @@ router.put(
         'widget_avatar',
         'widget_show_promo_message',
         'widget_show_cart',
+        'widget_show_contact',
+        'retell_agent_id',
         'widget_enable_animations',
         'widget_theme',
         'widget_brand_name',

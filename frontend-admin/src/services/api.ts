@@ -50,6 +50,8 @@ export interface ClientStore {
   widget_avatar?: string;
   widget_show_promo_message?: boolean;
   widget_show_cart?: boolean;
+  widget_show_contact?: boolean;
+  retell_agent_id?: string;
   widget_enable_animations?: boolean;
   widget_theme?: string;
   welcome_message?: string;
@@ -399,6 +401,8 @@ class ClientApiClient {
     widgetAvatar?: string;
     widgetShowPromoMessage?: boolean;
     widgetShowCart?: boolean;
+    widgetShowContact?: boolean;
+    retellAgentId?: string;
     widgetEnableAnimations?: boolean;
     widgetTheme?: string;
     widgetBrandName?: string;

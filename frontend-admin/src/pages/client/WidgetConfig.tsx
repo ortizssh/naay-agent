@@ -21,6 +21,7 @@ interface WidgetConfigData {
   widget_show_promo_message: boolean;
   widget_show_cart: boolean;
   widget_show_contact: boolean;
+  retell_agent_id: string;
   widget_enable_animations: boolean;
   widget_theme: string;
   widget_brand_name: string;
@@ -45,6 +46,7 @@ function WidgetConfig() {
     widget_show_promo_message: true,
     widget_show_cart: true,
     widget_show_contact: false,
+    retell_agent_id: '',
     widget_enable_animations: true,
     widget_theme: 'light',
     widget_brand_name: 'Kova',
@@ -103,6 +105,7 @@ function WidgetConfig() {
         widgetShowPromoMessage: config.widget_show_promo_message,
         widgetShowCart: config.widget_show_cart,
         widgetShowContact: config.widget_show_contact,
+        retellAgentId: config.retell_agent_id,
         widgetEnableAnimations: config.widget_enable_animations,
         widgetTheme: config.widget_theme,
         widgetBrandName: config.widget_brand_name,
@@ -563,6 +566,21 @@ function WidgetConfig() {
                       </p>
                     </div>
                   </label>
+                  {config.widget_show_contact && (
+                    <div style={{ marginTop: '0.75rem', paddingLeft: '2.75rem' }}>
+                      <label className="form-label" style={{ fontSize: '0.85rem' }}>Retell Agent ID</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={config.retell_agent_id}
+                        onChange={(e) => setConfig({ ...config, retell_agent_id: e.target.value })}
+                        placeholder="agent_xxxxxxxxxxxxxxxx"
+                      />
+                      <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                        ID del agente en Retell AI para las llamadas
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="form-group">

@@ -105,6 +105,8 @@ function Tenants() {
         widget_avatar: detail.clientStore?.widget_avatar || '',
         widget_show_promo_message: detail.clientStore?.widget_show_promo_message ?? true,
         widget_show_cart: detail.clientStore?.widget_show_cart ?? true,
+        widget_show_contact: detail.clientStore?.widget_show_contact ?? false,
+        retell_agent_id: detail.clientStore?.retell_agent_id || '',
         widget_enable_animations: detail.clientStore?.widget_enable_animations ?? true,
         widget_theme: detail.clientStore?.widget_theme || 'light',
         widget_brand_name: detail.clientStore?.widget_brand_name || '',
@@ -814,17 +816,25 @@ function Tenants() {
                         ['widget_show_pulse', 'Animacion Pulse', 'Muestra efecto pulse en el boton del chat'],
                         ['widget_show_promo_message', 'Mensaje Promocional', 'Muestra un mensaje promocional junto al boton'],
                         ['widget_show_cart', 'Carrito Integrado', 'Permite gestionar el carrito desde el chat'],
+                        ['widget_show_contact', 'Contacto Telefonico', 'Solicitar llamada desde el chat'],
                         ['widget_enable_animations', 'Animaciones', 'Habilita animaciones en el widget'],
                         ['widget_enabled', 'Widget Activo', 'El widget esta visible en la tienda'],
                       ].map(([field, label, desc]) => (
                         <div className="form-group" key={field}>
                           <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', cursor: 'pointer' }}>
-                            <input type="checkbox" checked={detailForm[field] ?? true} onChange={e => updateDetailForm(field, e.target.checked)} style={{ width: 20, height: 20, marginTop: 2 }} />
+                            <input type="checkbox" checked={detailForm[field] ?? (field === 'widget_show_contact' ? false : true)} onChange={e => updateDetailForm(field, e.target.checked)} style={{ width: 20, height: 20, marginTop: 2 }} />
                             <div>
                               <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{label}</div>
                               <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{desc}</div>
                             </div>
                           </label>
+                          {field === 'widget_show_contact' && detailForm.widget_show_contact && (
+                            <div style={{ marginTop: '0.5rem', paddingLeft: '2.5rem' }}>
+                              <div style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Retell Agent ID</div>
+                              <input type="text" className="form-input" value={detailForm.retell_agent_id || ''} onChange={e => updateDetailForm('retell_agent_id', e.target.value)} placeholder="agent_xxxxxxxxxxxxxxxx" />
+                              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>ID del agente en Retell AI</div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>

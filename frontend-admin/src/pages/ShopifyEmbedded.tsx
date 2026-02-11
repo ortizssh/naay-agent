@@ -56,6 +56,8 @@ interface WidgetConfig {
   widget_avatar: string;
   widget_show_promo_message: boolean;
   widget_show_cart: boolean;
+  widget_show_contact: boolean;
+  retell_agent_id: string;
   widget_enable_animations: boolean;
   widget_theme: string;
   widget_brand_name: string;
@@ -377,6 +379,8 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
     widget_avatar: '🌿',
     widget_show_promo_message: true,
     widget_show_cart: true,
+    widget_show_contact: false,
+    retell_agent_id: '',
     widget_enable_animations: true,
     widget_theme: 'light',
     widget_brand_name: 'Kova',
@@ -814,6 +818,8 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
             widget_avatar: data.data.avatar || prev.widget_avatar,
             widget_show_promo_message: data.data.showPromoMessage ?? prev.widget_show_promo_message,
             widget_show_cart: data.data.showCart ?? prev.widget_show_cart,
+            widget_show_contact: data.data.showContact ?? prev.widget_show_contact,
+            retell_agent_id: data.data.retellAgentId || prev.retell_agent_id,
             widget_enable_animations: data.data.enableAnimations ?? prev.widget_enable_animations,
             widget_theme: data.data.theme || prev.widget_theme,
             widget_brand_name: data.data.brandName || prev.widget_brand_name,
@@ -877,6 +883,8 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
             widgetAvatar: widgetConfig.widget_avatar,
             widgetShowPromoMessage: widgetConfig.widget_show_promo_message,
             widgetShowCart: widgetConfig.widget_show_cart,
+            widgetShowContact: widgetConfig.widget_show_contact,
+            retellAgentId: widgetConfig.retell_agent_id,
             widgetEnableAnimations: widgetConfig.widget_enable_animations,
             widgetTheme: widgetConfig.widget_theme,
             widgetBrandName: widgetConfig.widget_brand_name,
@@ -2211,6 +2219,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                     { key: 'widget_show_pulse', label: 'Animacion de pulso', desc: 'Efecto para llamar la atencion' },
                     { key: 'widget_show_promo_message', label: 'Mensaje promocional', desc: 'Junto al boton' },
                     { key: 'widget_show_cart', label: 'Carrito integrado', desc: 'Agregar productos desde el chat' },
+                    { key: 'widget_show_contact', label: 'Contacto telefonico', desc: 'Solicitar llamada desde el chat' },
                     { key: 'widget_enable_animations', label: 'Animaciones', desc: 'Transiciones y efectos' },
                   ].map(item => (
                     <div className="form-group" key={item.key}>
@@ -2228,6 +2237,20 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                           </p>
                         </div>
                       </label>
+                      {item.key === 'widget_show_contact' && widgetConfig.widget_show_contact && (
+                        <div style={{ marginTop: '0.5rem', paddingLeft: '2.5rem' }}>
+                          <label style={{ fontSize: '0.8rem', fontWeight: 500, marginBottom: '0.25rem', display: 'block' }}>Retell Agent ID</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            value={widgetConfig.retell_agent_id}
+                            onChange={e => setWidgetConfig({ ...widgetConfig, retell_agent_id: e.target.value })}
+                            placeholder="agent_xxxxxxxxxxxxxxxx"
+                            style={{ fontSize: '0.85rem' }}
+                          />
+                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>ID del agente en Retell AI</span>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </>

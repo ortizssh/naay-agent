@@ -6,7 +6,6 @@ import { validateAuth } from '@/middleware/shopify-auth.middleware';
 import { config as appConfig } from '@/utils/config';
 
 const RETELL_API_KEY = process.env.RETELL_API_KEY || '';
-const RETELL_AGENT_ID = process.env.RETELL_AGENT_ID || '';
 
 const router = Router();
 const supabaseService = new SupabaseService();
@@ -238,6 +237,7 @@ router.get(
             widget_show_promo_message,
             widget_show_cart,
             widget_show_contact,
+            retell_agent_id,
             widget_enable_animations,
             widget_theme,
             widget_brand_name,
@@ -332,6 +332,7 @@ router.get(
             showCart: clientStore.widget_show_cart ?? defaultConfig.showCart,
             showContact:
               clientStore.widget_show_contact ?? defaultConfig.showContact,
+            retellAgentId: clientStore.retell_agent_id || '',
             enableAnimations:
               clientStore.widget_enable_animations ??
               defaultConfig.enableAnimations,
@@ -446,15 +447,34 @@ router.post(
         throw new AppError('Name, phone, and email are required', 400);
       }
 
-      if (!RETELL_API_KEY || !RETELL_AGENT_ID) {
-        logger.error('Retell AI configuration missing');
+      if (!RETELL_API_KEY) {
+        logger.error('Retell API key not configured');
         throw new AppError('Contact service not configured', 503);
+      }
+
+      if (!shopDomain) {
+        throw new AppError('Shop domain is required', 400);
+      }
+
+      // Look up the client's Retell agent ID from the database
+      const { data: clientStore, error: storeError } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('client_stores')
+        .select('retell_agent_id')
+        .eq('shop_domain', shopDomain)
+        .single();
+
+      if (storeError || !clientStore?.retell_agent_id) {
+        logger.error('Retell agent ID not configured for shop', { shopDomain });
+        throw new AppError('Contact service not configured for this store', 503);
       }
 
       logger.info('Initiating contact call via Retell AI', {
         shopDomain,
         sessionId,
         phone,
+        agentId: clientStore.retell_agent_id,
       });
 
       const retellResponse = await fetch(
@@ -466,12 +486,12 @@ router.post(
             Authorization: `Bearer ${RETELL_API_KEY}`,
           },
           body: JSON.stringify({
-            agent_id: RETELL_AGENT_ID,
+            agent_id: clientStore.retell_agent_id,
             customer_number: phone,
             metadata: {
               customer_name: name,
               customer_email: email,
-              shop_domain: shopDomain || '',
+              shop_domain: shopDomain,
               session_id: sessionId || '',
             },
           }),

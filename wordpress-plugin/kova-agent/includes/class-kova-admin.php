@@ -970,6 +970,7 @@ class Kova_Admin {
 
                             <div class="kova-form-group">
                                 <label class="kova-toggle">
+                                    <input type="hidden" name="kova_agent_settings[widget_show_pulse]" value="0">
                                     <input type="checkbox"
                                            name="kova_agent_settings[widget_show_pulse]"
                                            value="1"
@@ -1044,6 +1045,7 @@ class Kova_Admin {
 
                             <div class="kova-form-group">
                                 <label class="kova-toggle">
+                                    <input type="hidden" name="kova_agent_settings[rotating_messages_enabled]" value="0">
                                     <input type="checkbox"
                                            name="kova_agent_settings[rotating_messages_enabled]"
                                            value="1"
@@ -1103,6 +1105,7 @@ class Kova_Admin {
 
                             <div class="kova-form-group">
                                 <label class="kova-toggle">
+                                    <input type="hidden" name="kova_agent_settings[widget_show_cart]" value="0">
                                     <input type="checkbox"
                                            name="kova_agent_settings[widget_show_cart]"
                                            value="1"
@@ -1114,6 +1117,7 @@ class Kova_Admin {
 
                             <div class="kova-form-group">
                                 <label class="kova-toggle">
+                                    <input type="hidden" name="kova_agent_settings[widget_show_promo_message]" value="0">
                                     <input type="checkbox"
                                            name="kova_agent_settings[widget_show_promo_message]"
                                            value="1"
@@ -1125,6 +1129,7 @@ class Kova_Admin {
 
                             <div class="kova-form-group">
                                 <label class="kova-toggle">
+                                    <input type="hidden" name="kova_agent_settings[widget_enable_animations]" value="0">
                                     <input type="checkbox"
                                            name="kova_agent_settings[widget_enable_animations]"
                                            value="1"
@@ -1143,6 +1148,7 @@ class Kova_Admin {
 
                             <div class="kova-form-group">
                                 <label class="kova-toggle">
+                                    <input type="hidden" name="kova_agent_settings[promo_badge_enabled]" value="0">
                                     <input type="checkbox"
                                            name="kova_agent_settings[promo_badge_enabled]"
                                            value="1"
@@ -1369,6 +1375,7 @@ class Kova_Admin {
 
                             <div class="kova-form-group">
                                 <label class="kova-toggle">
+                                    <input type="hidden" name="kova_agent_settings[show_on_mobile]" value="0">
                                     <input type="checkbox"
                                            name="kova_agent_settings[show_on_mobile]"
                                            value="1"
@@ -1380,6 +1387,7 @@ class Kova_Admin {
 
                             <div class="kova-form-group">
                                 <label class="kova-toggle">
+                                    <input type="hidden" name="kova_agent_settings[show_on_product_pages]" value="0">
                                     <input type="checkbox"
                                            name="kova_agent_settings[show_on_product_pages]"
                                            value="1"
@@ -1391,6 +1399,7 @@ class Kova_Admin {
 
                             <div class="kova-form-group">
                                 <label class="kova-toggle">
+                                    <input type="hidden" name="kova_agent_settings[show_on_cart_page]" value="0">
                                     <input type="checkbox"
                                            name="kova_agent_settings[show_on_cart_page]"
                                            value="1"
@@ -1402,6 +1411,7 @@ class Kova_Admin {
 
                             <div class="kova-form-group">
                                 <label class="kova-toggle">
+                                    <input type="hidden" name="kova_agent_settings[show_on_checkout]" value="0">
                                     <input type="checkbox"
                                            name="kova_agent_settings[show_on_checkout]"
                                            value="1"
@@ -1526,6 +1536,7 @@ class Kova_Admin {
 
                             <div class="kova-form-group">
                                 <label class="kova-toggle">
+                                    <input type="hidden" name="kova_agent_settings[enabled]" value="0">
                                     <input type="checkbox"
                                            id="kova_enabled"
                                            name="kova_agent_settings[enabled]"
