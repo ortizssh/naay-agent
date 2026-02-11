@@ -732,6 +732,7 @@ router.post('/widget-config', async (req: Request, res: Response) => {
       widget_show_cart: config.showCart ?? true,
       widget_show_contact: config.showContact ?? false,
       retell_agent_id: config.retellAgentId || null,
+      retell_from_number: config.retellFromNumber || null,
       widget_enable_animations: config.enableAnimations ?? true,
       widget_theme: config.theme || 'light',
       promo_badge_enabled: config.promoBadgeEnabled ?? false,

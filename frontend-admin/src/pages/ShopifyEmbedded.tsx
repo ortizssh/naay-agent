@@ -58,6 +58,7 @@ interface WidgetConfig {
   widget_show_cart: boolean;
   widget_show_contact: boolean;
   retell_agent_id: string;
+  retell_from_number: string;
   widget_enable_animations: boolean;
   widget_theme: string;
   widget_brand_name: string;
@@ -381,6 +382,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
     widget_show_cart: true,
     widget_show_contact: false,
     retell_agent_id: '',
+    retell_from_number: '',
     widget_enable_animations: true,
     widget_theme: 'light',
     widget_brand_name: 'Kova',
@@ -820,6 +822,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
             widget_show_cart: data.data.showCart ?? prev.widget_show_cart,
             widget_show_contact: data.data.showContact ?? prev.widget_show_contact,
             retell_agent_id: data.data.retellAgentId || prev.retell_agent_id,
+            retell_from_number: data.data.retellFromNumber || prev.retell_from_number,
             widget_enable_animations: data.data.enableAnimations ?? prev.widget_enable_animations,
             widget_theme: data.data.theme || prev.widget_theme,
             widget_brand_name: data.data.brandName || prev.widget_brand_name,
@@ -885,6 +888,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
             widgetShowCart: widgetConfig.widget_show_cart,
             widgetShowContact: widgetConfig.widget_show_contact,
             retellAgentId: widgetConfig.retell_agent_id,
+            retellFromNumber: widgetConfig.retell_from_number,
             widgetEnableAnimations: widgetConfig.widget_enable_animations,
             widgetTheme: widgetConfig.widget_theme,
             widgetBrandName: widgetConfig.widget_brand_name,
@@ -2249,6 +2253,16 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                             style={{ fontSize: '0.85rem' }}
                           />
                           <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>ID del agente en Retell AI</span>
+                          <label style={{ fontSize: '0.8rem', fontWeight: 500, marginTop: '0.5rem', marginBottom: '0.25rem', display: 'block' }}>Retell From Number</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            value={widgetConfig.retell_from_number}
+                            onChange={e => setWidgetConfig({ ...widgetConfig, retell_from_number: e.target.value })}
+                            placeholder="+1234567890"
+                            style={{ fontSize: '0.85rem' }}
+                          />
+                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Número desde el cual se realizará la llamada</span>
                         </div>
                       )}
                     </div>

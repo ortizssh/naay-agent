@@ -22,6 +22,7 @@ interface WidgetConfigData {
   widget_show_cart: boolean;
   widget_show_contact: boolean;
   retell_agent_id: string;
+  retell_from_number: string;
   widget_enable_animations: boolean;
   widget_theme: string;
   widget_brand_name: string;
@@ -47,6 +48,7 @@ function WidgetConfig() {
     widget_show_cart: true,
     widget_show_contact: false,
     retell_agent_id: '',
+    retell_from_number: '',
     widget_enable_animations: true,
     widget_theme: 'light',
     widget_brand_name: 'Kova',
@@ -106,6 +108,7 @@ function WidgetConfig() {
         widgetShowCart: config.widget_show_cart,
         widgetShowContact: config.widget_show_contact,
         retellAgentId: config.retell_agent_id,
+        retellFromNumber: config.retell_from_number,
         widgetEnableAnimations: config.widget_enable_animations,
         widgetTheme: config.widget_theme,
         widgetBrandName: config.widget_brand_name,
@@ -578,6 +581,17 @@ function WidgetConfig() {
                       />
                       <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
                         ID del agente en Retell AI para las llamadas
+                      </span>
+                      <label className="form-label" style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>Retell From Number</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={config.retell_from_number}
+                        onChange={(e) => setConfig({ ...config, retell_from_number: e.target.value })}
+                        placeholder="+1234567890"
+                      />
+                      <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                        Número de teléfono desde el cual se realizará la llamada
                       </span>
                     </div>
                   )}

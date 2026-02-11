@@ -143,6 +143,7 @@ class Kova_API {
             'showCart' => isset($settings['widget_show_cart']) ? !empty($settings['widget_show_cart']) : true,
             'showContact' => !empty($settings['widget_show_contact']),
             'retellAgentId' => $settings['retell_agent_id'] ?? '',
+            'retellFromNumber' => $settings['retell_from_number'] ?? '',
             'enableAnimations' => isset($settings['widget_enable_animations']) ? !empty($settings['widget_enable_animations']) : true,
             'theme' => $settings['widget_theme'] ?? 'light',
             'promoBadgeEnabled' => !empty($settings['promo_badge_enabled']),

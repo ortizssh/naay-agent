@@ -202,6 +202,7 @@ class Kova_Admin {
         $sanitized['widget_show_cart'] = $get_checkbox('widget_show_cart', true);
         $sanitized['widget_show_contact'] = $get_checkbox('widget_show_contact', false);
         $sanitized['retell_agent_id'] = sanitize_text_field($get_value('retell_agent_id', ''));
+        $sanitized['retell_from_number'] = sanitize_text_field($get_value('retell_from_number', ''));
         $sanitized['widget_enable_animations'] = $get_checkbox('widget_enable_animations', true);
 
         // Promo Badge (Widget tab)
@@ -1152,6 +1153,17 @@ class Kova_Admin {
                                        class="regular-text"
                                        placeholder="agent_xxxxxxxxxxxxxxxx">
                                 <p class="kova-form-hint"><?php _e('Your Retell AI agent ID for phone calls', 'kova-agent'); ?></p>
+                            </div>
+
+                            <div class="kova-form-group" id="kova-retell-from-number-group" style="<?php echo empty($settings['widget_show_contact']) ? 'display:none;' : ''; ?>">
+                                <label for="kova_retell_from_number" style="font-weight: 500;"><?php _e('Retell From Number', 'kova-agent'); ?></label>
+                                <input type="text"
+                                       id="kova_retell_from_number"
+                                       name="kova_agent_settings[retell_from_number]"
+                                       value="<?php echo esc_attr($settings['retell_from_number'] ?? ''); ?>"
+                                       class="regular-text"
+                                       placeholder="+1234567890">
+                                <p class="kova-form-hint"><?php _e('Phone number from which the call will be made', 'kova-agent'); ?></p>
                             </div>
 
                             <div class="kova-form-group">

@@ -512,6 +512,7 @@ router.put(
         widgetShowCart,
         widgetShowContact,
         retellAgentId,
+        retellFromNumber,
         widgetEnableAnimations,
         widgetTheme,
         widgetBrandName,
@@ -554,6 +555,8 @@ router.put(
         updateData.widget_show_contact = widgetShowContact;
       if (retellAgentId !== undefined)
         updateData.retell_agent_id = retellAgentId;
+      if (retellFromNumber !== undefined)
+        updateData.retell_from_number = retellFromNumber;
       if (widgetEnableAnimations !== undefined)
         updateData.widget_enable_animations = widgetEnableAnimations;
       if (widgetTheme) updateData.widget_theme = widgetTheme;

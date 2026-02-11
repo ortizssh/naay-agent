@@ -480,7 +480,7 @@ router.post(
       for (const variant of contactShopVariants) {
         const { data } = await (supabaseService as any).serviceClient
           .from('client_stores')
-          .select('retell_agent_id')
+          .select('retell_agent_id, retell_from_number')
           .eq('shop_domain', variant)
           .single();
         if (data?.retell_agent_id) {
@@ -502,6 +502,7 @@ router.post(
         sessionId,
         phone,
         agentId: clientStore.retell_agent_id,
+        fromNumber: clientStore.retell_from_number,
       });
 
       const retellResponse = await fetch(
@@ -513,12 +514,13 @@ router.post(
             Authorization: `Bearer ${RETELL_API_KEY}`,
           },
           body: JSON.stringify({
-            agent_id: clientStore.retell_agent_id,
-            customer_number: phone,
-            metadata: {
-              customer_name: name,
-              customer_email: email,
-              shop_domain: shopDomain,
+            from_number: clientStore.retell_from_number || '',
+            to_number: phone,
+            override_agent_id: clientStore.retell_agent_id,
+            retell_llm_dynamic_variables: {
+              name,
+              email,
+              phone,
               session_id: sessionId || '',
             },
           }),

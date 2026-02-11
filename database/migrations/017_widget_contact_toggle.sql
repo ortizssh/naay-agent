@@ -4,3 +4,4 @@
 
 ALTER TABLE client_stores ADD COLUMN IF NOT EXISTS widget_show_contact BOOLEAN DEFAULT FALSE;
 ALTER TABLE client_stores ADD COLUMN IF NOT EXISTS retell_agent_id TEXT DEFAULT NULL;
+ALTER TABLE client_stores ADD COLUMN IF NOT EXISTS retell_from_number TEXT DEFAULT NULL;

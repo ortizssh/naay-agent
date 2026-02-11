@@ -732,8 +732,10 @@
         $('#kova_widget_show_contact').on('change', function() {
             if ($(this).is(':checked')) {
                 $('#kova-retell-agent-id-group').show();
+                $('#kova-retell-from-number-group').show();
             } else {
                 $('#kova-retell-agent-id-group').hide();
+                $('#kova-retell-from-number-group').hide();
             }
         });
     }

@@ -107,6 +107,7 @@ function Tenants() {
         widget_show_cart: detail.clientStore?.widget_show_cart ?? true,
         widget_show_contact: detail.clientStore?.widget_show_contact ?? false,
         retell_agent_id: detail.clientStore?.retell_agent_id || '',
+        retell_from_number: detail.clientStore?.retell_from_number || '',
         widget_enable_animations: detail.clientStore?.widget_enable_animations ?? true,
         widget_theme: detail.clientStore?.widget_theme || 'light',
         widget_brand_name: detail.clientStore?.widget_brand_name || '',
@@ -833,6 +834,9 @@ function Tenants() {
                               <div style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Retell Agent ID</div>
                               <input type="text" className="form-input" value={detailForm.retell_agent_id || ''} onChange={e => updateDetailForm('retell_agent_id', e.target.value)} placeholder="agent_xxxxxxxxxxxxxxxx" />
                               <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>ID del agente en Retell AI</div>
+                              <div style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem', marginTop: '0.5rem' }}>Retell From Number</div>
+                              <input type="text" className="form-input" value={detailForm.retell_from_number || ''} onChange={e => updateDetailForm('retell_from_number', e.target.value)} placeholder="+1234567890" />
+                              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Número desde el cual se realizará la llamada</div>
                             </div>
                           )}
                         </div>

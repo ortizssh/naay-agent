@@ -52,6 +52,7 @@ export interface ClientStore {
   widget_show_cart?: boolean;
   widget_show_contact?: boolean;
   retell_agent_id?: string;
+  retell_from_number?: string;
   widget_enable_animations?: boolean;
   widget_theme?: string;
   welcome_message?: string;
@@ -403,6 +404,7 @@ class ClientApiClient {
     widgetShowCart?: boolean;
     widgetShowContact?: boolean;
     retellAgentId?: string;
+    retellFromNumber?: string;
     widgetEnableAnimations?: boolean;
     widgetTheme?: string;
     widgetBrandName?: string;

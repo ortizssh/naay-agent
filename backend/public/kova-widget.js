@@ -435,7 +435,7 @@
                 <svg class="kova-contact-panel__icon" viewBox="0 0 24 24" fill="none">
                   <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
-                <h3>Contacto</h3>
+                <h3>¡Sigamos por teléfono!</h3>
               </div>
               <button class="kova-contact-panel__close" id="kova-contact-close" aria-label="Cerrar contacto">
                 <svg viewBox="0 0 24 24" fill="none">
@@ -496,18 +496,20 @@
             <div class="kova-widget__chat" id="kova-widget-chat" role="dialog" aria-label="Chat de Kova">
               <!-- Floating action buttons -->
               <div class="kova-widget__floating-actions">
-                <button class="kova-widget__cart-toggle-btn" id="kova-widget-cart-toggle-btn" aria-label="Ver carrito">
-                  <svg class="kova-cart-toggle-icon" viewBox="0 0 24 24" fill="none">
-                    <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19C17 19.6 16.6 20 16 20H14C13.4 20 13 19.6 13 19V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  <span class="kova-cart-toggle-count" id="kova-widget-cart-count">0</span>
-                </button>
+                <div class="kova-widget__floating-actions-left">
+                  <button class="kova-widget__cart-toggle-btn" id="kova-widget-cart-toggle-btn" aria-label="Ver carrito">
+                    <svg class="kova-cart-toggle-icon" viewBox="0 0 24 24" fill="none">
+                      <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19C17 19.6 16.6 20 16 20H14C13.4 20 13 19.6 13 19V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span class="kova-cart-toggle-count" id="kova-widget-cart-count">0</span>
+                  </button>
 
-                <button class="kova-widget__contact-toggle-btn" id="kova-widget-contact-toggle-btn" aria-label="Solicitar llamada">
-                  <svg viewBox="0 0 24 24" fill="none">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </button>
+                  <button class="kova-widget__contact-toggle-btn" id="kova-widget-contact-toggle-btn" aria-label="Solicitar llamada">
+                    <svg viewBox="0 0 24 24" fill="none">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </button>
+                </div>
 
                 <button class="kova-widget__close" id="kova-widget-close" aria-label="Cerrar chat">
                   <svg viewBox="0 0 24 24" fill="none">
@@ -2002,6 +2004,17 @@
         }
 
         .kova-widget__floating-actions > * {
+          pointer-events: auto !important;
+        }
+
+        .kova-widget__floating-actions-left {
+          display: flex !important;
+          align-items: center !important;
+          gap: 8px !important;
+          pointer-events: none !important;
+        }
+
+        .kova-widget__floating-actions-left > * {
           pointer-events: auto !important;
         }
 

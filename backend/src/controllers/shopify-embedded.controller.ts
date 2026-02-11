@@ -212,6 +212,8 @@ router.put(
         updateData.widget_show_contact = config.widgetShowContact;
       if (config.retellAgentId !== undefined)
         updateData.retell_agent_id = config.retellAgentId;
+      if (config.retellFromNumber !== undefined)
+        updateData.retell_from_number = config.retellFromNumber;
       if (config.widgetEnableAnimations !== undefined)
         updateData.widget_enable_animations = config.widgetEnableAnimations;
       if (config.widgetTheme) updateData.widget_theme = config.widgetTheme;
