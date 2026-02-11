@@ -6120,7 +6120,11 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           }),
         });
 
-        if (!response.ok) throw new Error('Request failed');
+        if (!response.ok) {
+          const errBody = await response.json().catch(() => ({}));
+          console.error('📞 Contact API error:', response.status, errBody);
+          throw new Error(errBody.retellError || errBody.error || 'Request failed');
+        }
 
         // Show success
         if (this.contactStatus) {

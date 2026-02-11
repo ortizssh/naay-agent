@@ -533,7 +533,11 @@ router.post(
           status: retellResponse.status,
           body: errorData,
         });
-        throw new AppError('Failed to initiate call', 502);
+        return res.status(502).json({
+          success: false,
+          error: 'Failed to initiate call',
+          retellError: errorData,
+        });
       }
 
       const callData = await retellResponse.json();
