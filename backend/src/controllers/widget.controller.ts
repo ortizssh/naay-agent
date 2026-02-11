@@ -467,7 +467,10 @@ router.post(
 
       if (storeError || !clientStore?.retell_agent_id) {
         logger.error('Retell agent ID not configured for shop', { shopDomain });
-        throw new AppError('Contact service not configured for this store', 503);
+        throw new AppError(
+          'Contact service not configured for this store',
+          503
+        );
       }
 
       logger.info('Initiating contact call via Retell AI', {
