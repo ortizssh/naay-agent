@@ -563,7 +563,7 @@ export class SupabaseService {
     const ext = extMap[mimeType] || 'bin';
     const filePath = `${shopDomain}/${sessionId}/${Date.now()}.${ext}`;
 
-    const { error } = await this.serviceClient.storage
+    const { error } = await (this.serviceClient as any).storage
       .from(bucket)
       .upload(filePath, buffer, { contentType: mimeType, upsert: false });
 
@@ -572,7 +572,7 @@ export class SupabaseService {
       throw new Error(`Failed to upload chat file: ${error.message}`);
     }
 
-    const { data } = this.serviceClient.storage
+    const { data } = (this.serviceClient as any).storage
       .from(bucket)
       .getPublicUrl(filePath);
 

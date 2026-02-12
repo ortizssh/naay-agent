@@ -20,7 +20,7 @@ registerCommerceProvider('shopify', (credentials: StoreCredentials) => {
   const accessToken = credentials.access_token || '';
   const apiVersion = '2024-01';
 
-  async function shopifyRest(shop: string, endpoint: string) {
+  async function shopifyRest(shop: string, endpoint: string): Promise<any> {
     const url = `https://${shop}/admin/api/${apiVersion}/${endpoint}`;
     const res = await fetch(url, {
       headers: {
