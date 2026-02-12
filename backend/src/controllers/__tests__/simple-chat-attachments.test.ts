@@ -43,12 +43,28 @@ jest.mock('@/services/tenant.service', () => ({
 function createChainMock(resolveValue: any = { data: null }) {
   const resolved = Promise.resolve(resolveValue);
   const chain: any = {};
-  const methods = ['from', 'select', 'eq', 'or', 'limit', 'single', 'gte', 'lte', 'in', 'order', 'insert', 'update', 'delete', 'upsert'];
+  const methods = [
+    'from',
+    'select',
+    'eq',
+    'or',
+    'limit',
+    'single',
+    'gte',
+    'lte',
+    'in',
+    'order',
+    'insert',
+    'update',
+    'delete',
+    'upsert',
+  ];
   for (const method of methods) {
     chain[method] = jest.fn().mockImplementation(() => chain);
   }
   // Make the chain a full thenable (supports both await and .catch())
-  chain.then = (onFulfilled: any, onRejected?: any) => resolved.then(onFulfilled, onRejected);
+  chain.then = (onFulfilled: any, onRejected?: any) =>
+    resolved.then(onFulfilled, onRejected);
   chain.catch = (onRejected: any) => resolved.catch(onRejected);
   return chain;
 }
@@ -128,15 +144,19 @@ beforeEach(() => {
 
   // Default successful completion
   mockChatCreate.mockResolvedValue({
-    choices: [{
-      message: { content: 'Respuesta del asistente', tool_calls: null },
-    }],
+    choices: [
+      {
+        message: { content: 'Respuesta del asistente', tool_calls: null },
+      },
+    ],
   });
 
   mockToFile.mockResolvedValue({ name: 'audio.webm' });
 
   // Default: upload succeeds with a fake URL
-  mockUploadChatFile.mockResolvedValue('https://storage.example.com/chat-audio/test/file.webm');
+  mockUploadChatFile.mockResolvedValue(
+    'https://storage.example.com/chat-audio/test/file.webm'
+  );
 
   // Default tenant mocks
   mockGetTenant.mockResolvedValue(null);
@@ -148,7 +168,6 @@ beforeEach(() => {
 // ── Tests ──────────────────────────────────────────────────────────
 
 describe('POST /api/simple-chat — attachment handling', () => {
-
   // ─── Validation ────────────────────────────────────────────────
 
   describe('validation', () => {
@@ -203,7 +222,11 @@ describe('POST /api/simple-chat — attachment handling', () => {
         .post('/api/simple-chat')
         .send({
           shop: 'test.myshopify.com',
-          attachment: { type: 'image', data: largeData, mimeType: 'image/jpeg' },
+          attachment: {
+            type: 'image',
+            data: largeData,
+            mimeType: 'image/jpeg',
+          },
         });
 
       expect(res.status).toBe(400);
@@ -216,7 +239,11 @@ describe('POST /api/simple-chat — attachment handling', () => {
         .post('/api/simple-chat')
         .send({
           shop: 'test.myshopify.com',
-          attachment: { type: 'audio', data: largeData, mimeType: 'audio/webm' },
+          attachment: {
+            type: 'audio',
+            data: largeData,
+            mimeType: 'audio/webm',
+          },
         });
 
       expect(res.status).toBe(400);
@@ -237,7 +264,11 @@ describe('POST /api/simple-chat — attachment handling', () => {
         .post('/api/simple-chat')
         .send({
           shop: 'test.myshopify.com',
-          attachment: { type: 'image', data: 'base64data', mimeType: 'image/jpeg' },
+          attachment: {
+            type: 'image',
+            data: 'base64data',
+            mimeType: 'image/jpeg',
+          },
         });
 
       expect(res.status).toBe(200);
@@ -254,7 +285,11 @@ describe('POST /api/simple-chat — attachment handling', () => {
         .send({
           message: 'Busca algo similar',
           shop: 'test.myshopify.com',
-          attachment: { type: 'image', data: 'fakeBase64ImageData', mimeType: 'image/jpeg' },
+          attachment: {
+            type: 'image',
+            data: 'fakeBase64ImageData',
+            mimeType: 'image/jpeg',
+          },
         });
 
       expect(res.status).toBe(200);
@@ -269,10 +304,16 @@ describe('POST /api/simple-chat — attachment handling', () => {
       expect(lastMsg.role).toBe('user');
       expect(Array.isArray(lastMsg.content)).toBe(true);
       expect(lastMsg.content).toHaveLength(2);
-      expect(lastMsg.content[0]).toEqual({ type: 'text', text: 'Busca algo similar' });
+      expect(lastMsg.content[0]).toEqual({
+        type: 'text',
+        text: 'Busca algo similar',
+      });
       expect(lastMsg.content[1]).toEqual({
         type: 'image_url',
-        image_url: { url: 'data:image/jpeg;base64,fakeBase64ImageData', detail: 'low' },
+        image_url: {
+          url: 'data:image/jpeg;base64,fakeBase64ImageData',
+          detail: 'low',
+        },
       });
     });
 
@@ -281,7 +322,11 @@ describe('POST /api/simple-chat — attachment handling', () => {
         .post('/api/simple-chat')
         .send({
           shop: 'test.myshopify.com',
-          attachment: { type: 'image', data: 'fakeBase64ImageData', mimeType: 'image/jpeg' },
+          attachment: {
+            type: 'image',
+            data: 'fakeBase64ImageData',
+            mimeType: 'image/jpeg',
+          },
         });
 
       expect(res.status).toBe(200);
@@ -296,7 +341,11 @@ describe('POST /api/simple-chat — attachment handling', () => {
         .post('/api/simple-chat')
         .send({
           shop: 'test.myshopify.com',
-          attachment: { type: 'image', data: 'fakeBase64', mimeType: 'image/jpeg' },
+          attachment: {
+            type: 'image',
+            data: 'fakeBase64',
+            mimeType: 'image/jpeg',
+          },
         });
 
       expect(res.status).toBe(200);
@@ -308,7 +357,11 @@ describe('POST /api/simple-chat — attachment handling', () => {
         .post('/api/simple-chat')
         .send({
           shop: 'test.myshopify.com',
-          attachment: { type: 'image', data: 'fakeBase64', mimeType: 'image/jpeg' },
+          attachment: {
+            type: 'image',
+            data: 'fakeBase64',
+            mimeType: 'image/jpeg',
+          },
         });
 
       expect(res.status).toBe(200);
@@ -329,7 +382,9 @@ describe('POST /api/simple-chat — attachment handling', () => {
 
   describe('audio attachment', () => {
     beforeEach(() => {
-      mockTranscriptionsCreate.mockResolvedValue({ text: 'Hola, busco zapatillas rojas' });
+      mockTranscriptionsCreate.mockResolvedValue({
+        text: 'Hola, busco zapatillas rojas',
+      });
     });
 
     it('should transcribe audio and use transcription as message', async () => {
@@ -337,7 +392,11 @@ describe('POST /api/simple-chat — attachment handling', () => {
         .post('/api/simple-chat')
         .send({
           shop: 'test.myshopify.com',
-          attachment: { type: 'audio', data: 'fakeBase64Audio', mimeType: 'audio/webm' },
+          attachment: {
+            type: 'audio',
+            data: 'fakeBase64Audio',
+            mimeType: 'audio/webm',
+          },
         });
 
       expect(res.status).toBe(200);
@@ -362,7 +421,11 @@ describe('POST /api/simple-chat — attachment handling', () => {
         .post('/api/simple-chat')
         .send({
           shop: 'test.myshopify.com',
-          attachment: { type: 'audio', data: 'fakeBase64Audio', mimeType: 'audio/webm' },
+          attachment: {
+            type: 'audio',
+            data: 'fakeBase64Audio',
+            mimeType: 'audio/webm',
+          },
         });
 
       expect(res.status).toBe(200);
@@ -376,14 +439,16 @@ describe('POST /api/simple-chat — attachment handling', () => {
         .post('/api/simple-chat')
         .send({
           shop: 'test.myshopify.com',
-          attachment: { type: 'audio', data: 'fakeBase64', mimeType: 'audio/mp4' },
+          attachment: {
+            type: 'audio',
+            data: 'fakeBase64',
+            mimeType: 'audio/mp4',
+          },
         });
 
-      expect(mockToFile).toHaveBeenCalledWith(
-        expect.any(Buffer),
-        'audio.mp4',
-        { type: 'audio/mp4' }
-      );
+      expect(mockToFile).toHaveBeenCalledWith(expect.any(Buffer), 'audio.mp4', {
+        type: 'audio/mp4',
+      });
     });
 
     it('should default to webm mime type when not provided', async () => {
@@ -405,13 +470,19 @@ describe('POST /api/simple-chat — attachment handling', () => {
     });
 
     it('should return 500 when Whisper transcription fails', async () => {
-      mockTranscriptionsCreate.mockRejectedValue(new Error('Whisper API error'));
+      mockTranscriptionsCreate.mockRejectedValue(
+        new Error('Whisper API error')
+      );
 
       const res = await request(app)
         .post('/api/simple-chat')
         .send({
           shop: 'test.myshopify.com',
-          attachment: { type: 'audio', data: 'fakeBase64Audio', mimeType: 'audio/webm' },
+          attachment: {
+            type: 'audio',
+            data: 'fakeBase64Audio',
+            mimeType: 'audio/webm',
+          },
         });
 
       expect(res.status).toBe(500);
@@ -428,7 +499,11 @@ describe('POST /api/simple-chat — attachment handling', () => {
         .send({
           message: 'Quiero algo como esto',
           shop: 'test.myshopify.com',
-          attachment: { type: 'image', data: 'imgData', mimeType: 'image/jpeg' },
+          attachment: {
+            type: 'image',
+            data: 'imgData',
+            mimeType: 'image/jpeg',
+          },
         });
 
       expect(res.status).toBe(200);
@@ -441,14 +516,20 @@ describe('POST /api/simple-chat — attachment handling', () => {
     });
 
     it('should use transcription (not original text) for audio attachment', async () => {
-      mockTranscriptionsCreate.mockResolvedValue({ text: 'Transcripción del audio' });
+      mockTranscriptionsCreate.mockResolvedValue({
+        text: 'Transcripción del audio',
+      });
 
       const res = await request(app)
         .post('/api/simple-chat')
         .send({
           message: 'texto original que se ignora',
           shop: 'test.myshopify.com',
-          attachment: { type: 'audio', data: 'audioData', mimeType: 'audio/webm' },
+          attachment: {
+            type: 'audio',
+            data: 'audioData',
+            mimeType: 'audio/webm',
+          },
         });
 
       expect(res.status).toBe(200);
@@ -465,19 +546,21 @@ describe('POST /api/simple-chat — attachment handling', () => {
           message: 'Mira esto',
           shop: 'test.myshopify.com',
           conversationId: 'conv_img_hist',
-          attachment: { type: 'image', data: 'imgData', mimeType: 'image/jpeg' },
+          attachment: {
+            type: 'image',
+            data: 'imgData',
+            mimeType: 'image/jpeg',
+          },
         });
 
       expect(res.status).toBe(200);
 
       // Send a follow-up text message to same conversation — the history should contain the text version
-      const res2 = await request(app)
-        .post('/api/simple-chat')
-        .send({
-          message: 'Y algo más',
-          shop: 'test.myshopify.com',
-          conversationId: 'conv_img_hist',
-        });
+      const res2 = await request(app).post('/api/simple-chat').send({
+        message: 'Y algo más',
+        shop: 'test.myshopify.com',
+        conversationId: 'conv_img_hist',
+      });
 
       expect(res2.status).toBe(200);
 
@@ -500,7 +583,11 @@ describe('POST /api/simple-chat — attachment handling', () => {
         .send({
           shop: 'test.myshopify.com',
           conversationId: 'conv_123',
-          attachment: { type: 'image', data: 'imgData', mimeType: 'image/jpeg' },
+          attachment: {
+            type: 'image',
+            data: 'imgData',
+            mimeType: 'image/jpeg',
+          },
         });
 
       expect(res.status).toBe(200);
@@ -512,7 +599,11 @@ describe('POST /api/simple-chat — attachment handling', () => {
         .post('/api/simple-chat')
         .send({
           shop: 'test.myshopify.com',
-          attachment: { type: 'image', data: 'imgData', mimeType: 'image/jpeg' },
+          attachment: {
+            type: 'image',
+            data: 'imgData',
+            mimeType: 'image/jpeg',
+          },
         });
 
       expect(res.status).toBe(200);
@@ -521,16 +612,25 @@ describe('POST /api/simple-chat — attachment handling', () => {
 
     it('should return assistant response for attachment messages', async () => {
       mockChatCreate.mockResolvedValue({
-        choices: [{
-          message: { content: 'Veo una imagen interesante', tool_calls: null },
-        }],
+        choices: [
+          {
+            message: {
+              content: 'Veo una imagen interesante',
+              tool_calls: null,
+            },
+          },
+        ],
       });
 
       const res = await request(app)
         .post('/api/simple-chat')
         .send({
           shop: 'test.myshopify.com',
-          attachment: { type: 'image', data: 'imgData', mimeType: 'image/jpeg' },
+          attachment: {
+            type: 'image',
+            data: 'imgData',
+            mimeType: 'image/jpeg',
+          },
         });
 
       expect(res.status).toBe(200);
@@ -543,17 +643,25 @@ describe('POST /api/simple-chat — attachment handling', () => {
   describe('storage upload URLs', () => {
     it('should return audioUrl when audio upload succeeds', async () => {
       mockTranscriptionsCreate.mockResolvedValue({ text: 'Hola mundo' });
-      mockUploadChatFile.mockResolvedValue('https://storage.example.com/chat-audio/shop/sess/123.webm');
+      mockUploadChatFile.mockResolvedValue(
+        'https://storage.example.com/chat-audio/shop/sess/123.webm'
+      );
 
       const res = await request(app)
         .post('/api/simple-chat')
         .send({
           shop: 'test.myshopify.com',
-          attachment: { type: 'audio', data: 'fakeBase64Audio', mimeType: 'audio/webm' },
+          attachment: {
+            type: 'audio',
+            data: 'fakeBase64Audio',
+            mimeType: 'audio/webm',
+          },
         });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.audioUrl).toBe('https://storage.example.com/chat-audio/shop/sess/123.webm');
+      expect(res.body.data.audioUrl).toBe(
+        'https://storage.example.com/chat-audio/shop/sess/123.webm'
+      );
       expect(mockUploadChatFile).toHaveBeenCalledWith(
         'chat-audio',
         expect.any(String),
@@ -564,17 +672,25 @@ describe('POST /api/simple-chat — attachment handling', () => {
     });
 
     it('should return imageUrl when image upload succeeds', async () => {
-      mockUploadChatFile.mockResolvedValue('https://storage.example.com/chat-images/shop/sess/123.jpg');
+      mockUploadChatFile.mockResolvedValue(
+        'https://storage.example.com/chat-images/shop/sess/123.jpg'
+      );
 
       const res = await request(app)
         .post('/api/simple-chat')
         .send({
           shop: 'test.myshopify.com',
-          attachment: { type: 'image', data: 'fakeBase64Image', mimeType: 'image/jpeg' },
+          attachment: {
+            type: 'image',
+            data: 'fakeBase64Image',
+            mimeType: 'image/jpeg',
+          },
         });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.imageUrl).toBe('https://storage.example.com/chat-images/shop/sess/123.jpg');
+      expect(res.body.data.imageUrl).toBe(
+        'https://storage.example.com/chat-images/shop/sess/123.jpg'
+      );
       expect(mockUploadChatFile).toHaveBeenCalledWith(
         'chat-images',
         expect.any(String),
@@ -592,7 +708,11 @@ describe('POST /api/simple-chat — attachment handling', () => {
         .post('/api/simple-chat')
         .send({
           shop: 'test.myshopify.com',
-          attachment: { type: 'audio', data: 'fakeBase64Audio', mimeType: 'audio/webm' },
+          attachment: {
+            type: 'audio',
+            data: 'fakeBase64Audio',
+            mimeType: 'audio/webm',
+          },
         });
 
       expect(res.status).toBe(200);
@@ -608,7 +728,11 @@ describe('POST /api/simple-chat — attachment handling', () => {
         .post('/api/simple-chat')
         .send({
           shop: 'test.myshopify.com',
-          attachment: { type: 'image', data: 'fakeBase64Image', mimeType: 'image/jpeg' },
+          attachment: {
+            type: 'image',
+            data: 'fakeBase64Image',
+            mimeType: 'image/jpeg',
+          },
         });
 
       expect(res.status).toBe(200);
