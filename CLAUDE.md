@@ -31,6 +31,7 @@ npm run lint                 # Lint TypeScript files
 npm run lint:fix             # Auto-fix linting issues
 
 npm run verify:sync          # Verify widget files synced between source/dist
+npm run build:wp-plugin      # Build WooCommerce plugin ZIP
 ```
 
 ### Backend-Specific Commands (run from `backend/`)
@@ -86,14 +87,16 @@ naay-agent/
 
 The Express app in `backend/src/index.ts` applies middleware in this order:
 
-1. **Per-prefix CORS** — Different CORS policies per route prefix (`/static`, `/api/widget`, `/api/chat`, `/api/woo`, `/api/public`, `/api/admin`)
-2. **Helmet** — Security headers (with iframe exceptions for Shopify/WooCommerce embeds)
-3. **Rate limiting** — Endpoint-specific limits (chat: 30/min per session, webhooks: 1000/min per shop, default: 100/15min)
-4. **Security middleware** — XSS sanitization, script tag prevention, event handler stripping
-5. **Raw body capture** — For webhook HMAC signature verification (must come before JSON parsing)
-6. **JSON/URL parsing** — 10MB limit
-7. **Route handlers** — Controllers export Express Routers mounted via `app.use()`
-8. **SPA fallback** — Non-API routes serve `backend/public/app/index.html` for React client-side routing
+1. **Trust proxy** — Required for Azure App Service
+2. **Per-prefix CORS** — Different CORS policies per route prefix (`/static`, `/api/widget`, `/api/chat`, `/api/simple-chat`, `/api/billing`, `/api/woo`, `/api/public`, `/api/admin`)
+3. **Helmet** — Security headers (conditional — skipped for widget routes; iframe exceptions for Shopify/WooCommerce embeds)
+4. **Rate limiting** — Endpoint-specific limits (chat: 30/min per session, webhooks: 1000/min per shop, default: 100/15min). Widget/public routes excluded.
+5. **Security middleware** — `securityHeaders`, `sanitizeInput`, `auditLog`
+6. **Raw body capture** — For webhook HMAC verification on `/api/webhooks`, `/api/stripe/webhooks`, `/api/woo/webhooks` (must come before JSON parsing)
+7. **JSON/URL parsing** — 10MB limit
+8. **Static file serving** — Widget JS, admin SPA, downloads
+9. **Route handlers** — Controllers export Express Routers mounted via `app.use()`
+10. **SPA fallback** — Non-API routes serve `backend/public/app/index.html` for React client-side routing
 
 ### Multi-Platform Commerce Abstraction (`backend/src/platforms/`)
 
@@ -108,18 +111,25 @@ Key difference: Shopify identifies stores by `*.myshopify.com` domain; WooCommer
 
 ### Key Architectural Patterns
 - **Controllers → Services → Supabase** (no repository layer)
-- **Type casting** used in some services: `(supabaseService as any).serviceClient`
 - **Queue-based async processing** — BullMQ + Redis for product sync and embedding generation
 - **Dual-layer caching** — Redis primary, in-memory fallback (via `cache.service.ts`)
-- **Chat is HTTP request-response** — No WebSockets; no real-time streaming
+- **Chat is HTTP request-response** — No WebSockets; no real-time streaming. Supports multimodal: audio (Whisper transcription) and image uploads with Supabase Storage persistence
 - **`modern-shopify.service.ts`** extends `ShopifyService` adding session-token-based methods (App Bridge 3.0 pattern); both coexist
+- **Inline Shopify provider** in `simple-chat.controller.ts` — Registers Shopify commerce provider using REST Admin API directly for product search/recommendations
 
 ### Multi-Tenancy
 
 - **TenantService** (`backend/src/services/tenant.service.ts`) — Lookups by shop domain, 5-min Redis cache with `tenant:` prefix
-- **Plan-based feature gating** — `TENANT_PLAN_LIMITS` controls product limits, message limits, analytics access per plan (free/professional/enterprise)
-- **Tenant middleware** (`middleware/tenant.middleware.ts`) — `validateShopContext` ensures request shop matches authenticated shop; extracts shop from body, query, params, or `x-shopify-shop-domain` header
+- **Plan-based feature gating** — `plans` table (source of truth) + `TENANT_PLAN_LIMITS` (hardcoded fallback) control product limits, message limits, analytics access per plan (free/professional/enterprise)
+- **Tenant middleware** (`middleware/tenant.middleware.ts`) — `validateShopContext` extracts shop from body, query, params, or `x-shopify-shop-domain` header. Also provides `trackMessageUsage()` and `requireFeature()` middlewares.
 - **Request context** — Controllers access `(req as TenantRequest).tenant` for feature checks
+- **Monthly message counting** — Direct query on `chat_messages` (role='agent', current month) with 60-sec Redis cache. Counts AI responses only (not user messages). Cache key: `tenant:monthly_msgs:{shopDomain}`
+
+### Chat Message Persistence
+- **`chat_messages` table** — `role: 'client'` for customer messages, `role: 'agent'` for AI responses
+- **Backend inline persist** — `simple-chat.controller.ts` saves messages during chat request processing
+- **Widget persist endpoint** — `POST /api/simple-chat/persist` for external chatbot persistence
+- **Dual-persist guard** — Widget checks `chatEndpoint.includes('/api/simple-chat')` to skip its own persist call when backend already handles it (prevents duplicates)
 
 ### Frontend Admin (`frontend-admin/`)
 - **React 18.2 + Vite** — Dev server on port 3001, proxies `/api` to localhost:3000
@@ -128,20 +138,37 @@ Key difference: Shopify identifies stores by `*.myshopify.com` domain; WooCommer
 - **Embedded contexts** — `ShopifyEmbedded` component for Shopify Admin iframe; WooCommerce embedded views via `woo-embedded.controller.ts`
 
 ### Database (Supabase + pgvector)
-**Core Tables**: `shops`, `products`, `product_variants`, `product_embeddings`, `conversations`, `webhook_events`, `shopify_sessions`, `app_settings`
+**Core Tables**: `shops`, `products`, `product_variants`, `product_embeddings`, `conversations`, `chat_messages`, `webhook_events`, `shopify_sessions`, `app_settings`, `client_stores`, `plans`
 
 - pgvector extension for semantic similarity search
 - Row-level security for multi-tenant isolation
 - Direct Supabase client calls (not abstracted through repositories)
-- Migrations in `database/migrations/`
+- 20 migrations in `database/migrations/`
 - Semantic search function: `database/functions/search_products_semantic.sql`
+- **Supabase Storage buckets**: `chat-audio` (audio/webm, mp4, ogg, wav — 5MB limit), `chat-images` (jpeg, png, webp, gif — 2MB limit). Files uploaded via `supabaseService.uploadChatFile()`, public read access.
+- **`client_stores`** is the primary table for per-tenant widget configuration (colors, messages, features). `stores` table holds platform credentials.
 
-### Widget Serving
+### Widget System
+
+**Serving** (`widget.controller.ts`):
 - Served at `/static/kova-widget.js` and `/widget/kova-widget.js`
 - Dynamic file lookup across 4 possible paths (dist, build, cwd variations)
 - Anti-cache headers (no-cache, max-age=0, ETag with timestamp)
 - Legacy redirect: `naay-widget.js` → `kova-widget.js`
 - Test pages in project root: `test-cart.html`, `test-cart-widget.html`, `test-cart-remove.html`
+
+**Config endpoint** (`GET /api/widget/config?shop=`):
+- Normalizes shop domain (strips paths, protocols, trailing slashes) and tries multiple variants
+- Data source priority: `client_stores` → `stores` → `app_settings`
+- Determines `chatEndpoint`: external mode uses `chatbot_endpoint` from DB; internal mode uses `/api/simple-chat/`
+- Returns 50+ config fields (colors, messages, features, badge, contact toggle, etc.)
+
+**Widget file** (`backend/public/kova-widget.js`):
+- Single vanilla JS file (~7000 lines) — the embeddable chat widget
+- `KovaWidget` class: constructor receives config, calls `loadSettings()` to fetch server config, then `createWidget()` to render
+- CSS is injected dynamically via `<style>` tags (base styles + dynamic theme overrides)
+- CSS variables: `--kova-perfect` (primary), `--kova-forever` (primary), `--kova-rich` (darker primary), `--kova-terracotta` (accent), `--kova-secondary`/`--kova-dark` (secondary)
+- `applyDynamicStyles()` overrides base CSS variables with tenant-specific colors from server config
 
 ## Environment Configuration
 
@@ -152,6 +179,10 @@ SHOPIFY_API_KEY, SHOPIFY_API_SECRET, SHOPIFY_APP_URL
 SUPABASE_URL, SUPABASE_SERVICE_KEY
 OPENAI_API_KEY
 JWT_SECRET
+
+# Stripe Billing
+STRIPE_SECRET_KEY
+STRIPE_WEBHOOK_SECRET
 
 # Optional
 REDIS_URL                    # Falls back to memory cache if unavailable
@@ -172,6 +203,14 @@ PORT=3000
 - Test setup: `backend/src/test/setup.ts`
 - Uses `tsconfig.test.json` for test compilation
 
+## Stripe Billing
+
+- **Service**: `stripe.service.ts` — `getOrCreateCustomer()`, `createCheckoutSession()`, `createPortalSession()`, `constructEvent()`
+- **Controllers**: `billing.controller.ts` (`/api/billing/*`), `stripe-webhook.controller.ts` (`/api/stripe/webhooks`)
+- **`plans` table** is the source of truth for plan limits (has `stripe_price_id` column). `planService` reads with 5-min cache. `TENANT_PLAN_LIMITS` in `types/index.ts` is the hardcoded fallback.
+- **Onboarding flow**: 6 steps (0=Platform, 1=Connect, 2=StoreInfo, 3=SelectPlan, 4=ConfigureWidget, 5=SyncAndActivate). Complete at step >= 6.
+- Default registration plan: `free`
+
 ## Shopify Integration
 
 ### Authentication
@@ -183,9 +222,10 @@ PORT=3000
 `products/create`, `products/update`, `products/delete`, `app/uninstalled`
 
 ### Theme Extension (`extensions/kova-chat-widget/`)
-- `blocks/kova-chat.liquid` — Chat widget block
+- `blocks/kova-chat.liquid` — Chat widget block (fully configurable from Shopify Theme Editor)
 - `snippets/kova-*.liquid` — Injection scripts (init, body-inject, auto-inject)
 - `shopify.extension.toml` — Extension config
+- Widget config from Liquid is defaults only — server config (`/api/widget/config`) overrides at runtime
 
 ## WooCommerce Integration
 

@@ -3,7 +3,6 @@ import './styles/admin.css';
 import logoKova from './img/kova-logo.svg';
 
 // Public pages
-import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
@@ -32,7 +31,7 @@ import ShopifyEmbedded from './pages/ShopifyEmbedded';
 
 type AdminPageType = 'dashboard' | 'tenants' | 'settings';
 type ClientPageType = 'dashboard' | 'store' | 'widget' | 'analytics' | 'ai-config' | 'knowledge' | 'subscription';
-type PageType = 'landing' | 'login' | 'register' | 'dashboard';
+type PageType = 'login' | 'register' | 'dashboard';
 
 interface User {
   id: string;
@@ -69,7 +68,7 @@ function getShopifyEmbedParams(): { shop: string; host: string } | null {
 function App() {
   const [currentAdminPage, setCurrentAdminPage] = useState<AdminPageType>('dashboard');
   const [currentClientPage, setCurrentClientPage] = useState<ClientPageType>('dashboard');
-  const [currentPage, setCurrentPage] = useState<PageType>('landing');
+  const [currentPage, setCurrentPage] = useState<PageType>('login');
   const [user, setUser] = useState<User | null>(null);
   const [sidebarOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -79,7 +78,6 @@ function App() {
   const navigateTo = (page: PageType) => {
     setCurrentPage(page);
     const paths: Record<PageType, string> = {
-      landing: '/',
       login: '/login',
       register: '/register',
       dashboard: '/dashboard',
@@ -100,7 +98,7 @@ function App() {
 
       // Check current path for routing
       const path = window.location.pathname;
-      let initialPage: PageType = 'landing';
+      let initialPage: PageType = 'login';
 
       if (path === '/register') {
         initialPage = 'register';
@@ -127,7 +125,7 @@ function App() {
             localStorage.setItem('user', JSON.stringify(userData));
 
             // If user is authenticated and on landing/login/register, go to dashboard
-            if (initialPage === 'landing' || initialPage === 'login' || initialPage === 'register') {
+            if (initialPage === 'login' || initialPage === 'register') {
               initialPage = 'dashboard';
               window.history.replaceState({}, '', '/dashboard');
             }
@@ -226,16 +224,6 @@ function App() {
   // Show Shopify embedded view (no login required)
   if (shopifyEmbed) {
     return <ShopifyEmbedded shop={shopifyEmbed.shop} host={shopifyEmbed.host} />;
-  }
-
-  // Show landing page
-  if (currentPage === 'landing') {
-    return (
-      <Landing
-        onLoginClick={() => navigateTo('login')}
-        onRegisterClick={() => navigateTo('register')}
-      />
-    );
   }
 
   // Show auth pages if not logged in
