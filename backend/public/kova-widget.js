@@ -400,7 +400,9 @@
             <header class="kova-cart-panel__header">
               <div class="kova-cart-panel__title">
                 <svg class="kova-cart-panel__icon" viewBox="0 0 24 24" fill="none">
-                  <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19C17 19.6 16.6 20 16 20H14C13.4 20 13 19.6 13 19V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <circle cx="9" cy="21" r="1" stroke="currentColor" stroke-width="1.5"/>
+                  <circle cx="20" cy="21" r="1" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
                 <h3 id="kova-cart-title">Mi Carrito</h3>
               </div>
@@ -414,7 +416,9 @@
             <div class="kova-cart-panel__content" id="kova-cart-content">
               <div class="kova-cart-panel__empty" id="kova-cart-empty">
                 <svg class="kova-cart-panel__empty-icon" viewBox="0 0 24 24" fill="none">
-                  <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19C17 19.6 16.6 20 16 20H14C13.4 20 13 19.6 13 19V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <circle cx="9" cy="21" r="1" stroke="currentColor" stroke-width="1.5"/>
+                  <circle cx="20" cy="21" r="1" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
                 <p class="kova-cart-panel__empty-text">Tu carrito está vacío</p>
                 <p class="kova-cart-panel__empty-subtitle">¡Agrega productos para comenzar a comprar!</p>
@@ -521,19 +525,17 @@
                     </span>
                   </div>
                 </div>
-                <div class="kova-widget__header-center">
+                <div class="kova-widget__header-actions">
                   <button class="kova-widget__contact-toggle-btn" id="kova-widget-contact-toggle-btn" aria-label="Solicitar llamada">
-                    <span class="kova-widget__contact-pulse"></span>
-                    <span class="kova-widget__contact-pulse kova-widget__contact-pulse--delayed"></span>
                     <svg viewBox="0 0 24 24" fill="none">
                       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                   </button>
-                </div>
-                <div class="kova-widget__header-actions">
                   <button class="kova-widget__cart-toggle-btn" id="kova-widget-cart-toggle-btn" aria-label="Ver carrito">
                     <svg class="kova-cart-toggle-icon" viewBox="0 0 24 24" fill="none">
-                      <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19C17 19.6 16.6 20 16 20H14C13.4 20 13 19.6 13 19V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      <circle cx="9" cy="21" r="1" stroke="currentColor" stroke-width="1.5"/>
+                      <circle cx="20" cy="21" r="1" stroke="currentColor" stroke-width="1.5"/>
+                      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                     <span class="kova-cart-toggle-count" id="kova-widget-cart-count">0</span>
                   </button>
@@ -599,7 +601,7 @@
                 </div>
               </div>
               <div class="kova-widget__powered-by" id="kova-widget-powered-by">
-                Powered by <a href="https://kovaai.com" target="_blank" rel="noopener">Kova AI</a>
+                Powered by <a href="https://heykova.io" target="_blank" rel="noopener"><svg viewBox="0 0 155 161" width="12" height="12" style="vertical-align:-1px;margin-right:2px;display:inline-block;"><rect fill="currentColor" x="0" y="0" width="55.94" height="161.03" rx="27.97" ry="27.97"/><path fill="currentColor" d="M102.81,0C88.46,0,76.63,10.81,75.03,24.74c-.12,1.06-.19,2.14-.19,3.23c0,.99.05,1.97.15,2.94l-.15,25.04h27.97c15.45,0,27.97-12.52,27.97-27.97C130.78,12.52,118.26,0,102.81,0Z"/><path fill="currentColor" d="M114.74,158.27c-20.48,0-37.34-15.43-39.63-35.29c-.17-1.51-.27-3.05-.27-4.61c0-1.41.08-2.81.22-4.19l-.22-35.71h39.9c22.04,0,39.9,17.87,39.9,39.9c0,22.04-17.87,39.9-39.9,39.9Z"/></svg>Kova</a>
               </div>
             </div>
           </div>
@@ -2297,22 +2299,21 @@
 
         .kova-widget__contact-toggle-btn {
           position: relative !important;
-          background: var(--kova-perfect) !important;
+          background: transparent !important;
           border: none !important;
-          border-radius: 50% !important;
-          width: 36px !important;
-          height: 36px !important;
+          border-radius: 8px !important;
+          width: 32px !important;
+          height: 32px !important;
           padding: 0 !important;
           cursor: pointer !important;
-          transition: transform 0.2s cubic-bezier(0.32, 0.72, 0, 1) !important;
+          transition: all 0.2s ease !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
-          z-index: 1 !important;
         }
 
         .kova-widget__contact-toggle-btn:hover {
-          transform: scale(1.1) !important;
+          background: rgba(0,0,0,0.06) !important;
         }
 
         .kova-widget__contact-toggle-btn:active {
@@ -2322,27 +2323,11 @@
         .kova-widget__contact-toggle-btn svg {
           width: 18px !important;
           height: 18px !important;
-          color: #fff !important;
-          position: relative !important;
-          z-index: 2 !important;
+          color: var(--kova-secondary) !important;
         }
 
         .kova-widget__contact-pulse {
-          position: absolute !important;
-          top: 50% !important;
-          left: 50% !important;
-          transform: translate(-50%, -50%) !important;
-          width: 36px !important;
-          height: 36px !important;
-          border-radius: 50% !important;
-          background: var(--kova-perfect) !important;
-          opacity: 0 !important;
-          animation: kova-pulse-wave 2.5s cubic-bezier(0, 0, 0.2, 1) infinite !important;
-          pointer-events: none !important;
-        }
-
-        .kova-widget__contact-pulse--delayed {
-          animation-delay: 0.8s !important;
+          display: none !important;
         }
 
         @keyframes kova-pulse-wave {
@@ -2601,7 +2586,7 @@
           box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
           min-width: 160px !important;
           overflow: hidden !important;
-          z-index: 9999 !important;
+          z-index: 1000002 !important;
         }
 
         .kova-widget__attach-option {
@@ -2780,12 +2765,19 @@
         .kova-widget__powered-by a {
           color: #9ca3af !important;
           text-decoration: none !important;
-          font-weight: 500 !important;
+          font-weight: 600 !important;
         }
 
         .kova-widget__powered-by a:hover {
           color: var(--kova-perfect) !important;
-          text-decoration: underline !important;
+        }
+
+        .kova-widget__powered-by a svg {
+          opacity: 0.5 !important;
+        }
+
+        .kova-widget__powered-by a:hover svg {
+          opacity: 1 !important;
         }
 
         /* Reset Button */
