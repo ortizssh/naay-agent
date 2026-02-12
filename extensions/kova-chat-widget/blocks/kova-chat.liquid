@@ -21,7 +21,6 @@
     // Basic Configuration
     shopDomain: '{{ shop.permanent_domain }}',
     apiEndpoint: '{{ block.settings.api_endpoint | default: "https://app.heykova.io" }}',
-    chatEndpoint: '{{ block.settings.chat_endpoint | default: "https://n8n.dustkey.com/webhook/chat-naay" }}',
     enabled: true,
     blockId: '{{ block.id }}',
 
@@ -148,13 +147,6 @@
       "label": "API Endpoint",
       "default": "https://app.heykova.io",
       "info": "URL del servidor backend"
-    },
-    {
-      "type": "text",
-      "id": "chat_endpoint",
-      "label": "Chat Endpoint",
-      "default": "https://n8n.dustkey.com/webhook/chat-naay",
-      "info": "URL del webhook de chat"
     },
     {
       "type": "header",

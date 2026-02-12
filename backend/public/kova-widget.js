@@ -1060,7 +1060,8 @@
           border: 1px solid var(--kova-secondary) !important;
           border-radius: 12px !important;
           padding: 12px 16px !important;
-          max-width: 260px !important;
+          max-width: 320px !important;
+          min-width: 240px !important;
           width: auto !important;
           box-shadow: var(--kova-shadow-medium) !important;
           cursor: pointer !important;
@@ -4627,6 +4628,15 @@
           --kova-chat-width: ${chatWidth}px !important;
           --kova-chat-height: ${chatHeight}px !important;
           --kova-button-size: ${buttonSize}px !important;
+          --kova-perfect: ${primaryColor} !important;
+          --kova-forever: ${primaryColor} !important;
+          --kova-primary: ${primaryColor} !important;
+          --kova-rich: ${this.adjustColor(primaryColor, -20)} !important;
+          --kova-highlight: ${primaryColor} !important;
+          --kova-text-secondary: ${primaryColor} !important;
+          --kova-secondary: ${secondaryColor} !important;
+          --kova-dark: ${secondaryColor} !important;
+          --kova-terracotta: ${accentColor} !important;
         }
 
         /* Override base colors with dynamic values */
@@ -4692,6 +4702,11 @@
         }
 
         /* Message bubbles */
+        .kova-widget__message--user .kova-widget__message-content {
+          background: ${primaryColor} !important;
+          color: white !important;
+        }
+
         .kova-widget__message--assistant .kova-widget__message-content {
           border-left-color: ${primaryColor} !important;
         }
