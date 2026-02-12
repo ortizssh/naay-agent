@@ -141,12 +141,15 @@
         platform: this.config.platform
       });
 
-      // Load settings from server
+      // Render immediately with local/default config
+      this.initializeWidget();
+
+      // Then load server config and update styles
       this.loadSettings().then(() => {
-        this.initializeWidget();
+        this.applyDynamicStyles();
+        this.setupRotatingMessages();
       }).catch(error => {
-        console.error('Failed to load widget settings, using defaults:', error);
-        this.initializeWidget();
+        console.error('Failed to load widget settings:', error);
       });
     }
 
@@ -253,9 +256,6 @@
           if (data.success && data.data) {
             Object.assign(this.config, data.data);
             console.log('Loaded widget settings from server:', data.data);
-
-            // Start rotating messages if enabled
-            this.setupRotatingMessages();
           }
         }
       } catch (error) {
