@@ -2893,33 +2893,41 @@
         .kova-typing-indicator {
           display: flex !important;
           align-items: center !important;
+          gap: 8px !important;
         }
 
         .kova-typing-dots {
           display: flex !important;
-          gap: 5px !important;
+          gap: 4px !important;
           align-items: center !important;
         }
 
-        .kova-dot {
-          width: 7px !important;
-          height: 7px !important;
-          background: #9ca3af !important;
-          border-radius: 50% !important;
-          animation: kova-typing-bounce 1.4s infinite ease-in-out both !important;
+        .kova-typing-label {
+          font-size: 13px !important;
+          color: #6b7280 !important;
+          font-style: italic !important;
         }
 
-        .kova-dot:nth-child(1) { animation-delay: -0.32s !important; }
-        .kova-dot:nth-child(2) { animation-delay: -0.16s !important; }
+        .kova-dot {
+          width: 8px !important;
+          height: 8px !important;
+          background: #9ca3af !important;
+          border-radius: 50% !important;
+          animation: kova-typing-bounce 1.4s infinite ease-in-out !important;
+        }
+
+        .kova-dot:nth-child(1) { animation-delay: 0s !important; }
+        .kova-dot:nth-child(2) { animation-delay: 0.2s !important; }
+        .kova-dot:nth-child(3) { animation-delay: 0.4s !important; }
 
         @keyframes kova-typing-bounce {
           0%, 80%, 100% {
-            transform: scale(0.8) !important;
-            opacity: 0.6 !important;
+            transform: scale(0.8);
+            opacity: 0.5;
           }
           40% {
-            transform: scale(1) !important;
-            opacity: 1 !important;
+            transform: scale(1.2);
+            opacity: 1;
           }
         }
 
@@ -4733,8 +4741,12 @@
         }
 
         /* Typing indicator */
-        .kova-typing-dot {
+        .kova-dot {
           background: ${primaryColor} !important;
+        }
+
+        .kova-typing-label {
+          color: ${primaryColor} !important;
         }
 
         /* Welcome title accent */
@@ -6440,6 +6452,7 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
             <div class="kova-dot"></div>
             <div class="kova-dot"></div>
           </div>
+          <span class="kova-typing-label">Escribiendo</span>
         </div>
       `;
 
