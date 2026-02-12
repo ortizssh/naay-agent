@@ -62,19 +62,19 @@
         chatEndpoint: '',
         platform: '', // 'shopify' or 'woocommerce' - auto-detected if not set
         position: 'bottom-right',
-        // Kova Brand Colors - Updated Palette 2024
-        everyday: '#cec8ae',    // Warm cream (preserved)
-        fresh: '#90a284',       // Sage green (preserved)  
-        delicate: '#c3ab79',    // Soft gold (preserved)
-        forever: '#a59457',     // NEW Primary - Golden mustard
-        hydra: '#A8C4C4',       // Soft blue-gray (preserved)
-        deep: '#D4B82C',        // Mustard yellow (preserved)
-        rich: '#B8943C',        // Golden brown (preserved)
-        radiant: '#A68A3C',     // Olive gold (preserved)
-        perfect: '#a59457',     // NEW Primary - Golden mustard
-        sage: '#F8F9F8',        // Ultra-light sage (preserved)
-        dark: '#212120',        // NEW Secondary - Dark charcoal
-        terracotta: '#cf795e',  // NEW Tertiary - Warm terracotta
+        // Kova Brand Colors
+        everyday: '#cec8ae',
+        fresh: '#90a284',
+        delicate: '#c3ab79',
+        forever: '#6b5afc',     // Primary - Kova purple
+        hydra: '#A8C4C4',
+        deep: '#D4B82C',
+        rich: '#5a4ad4',        // Darker purple for hover
+        radiant: '#A68A3C',
+        perfect: '#6b5afc',     // Primary - Kova purple
+        sage: '#F8F9F8',
+        dark: '#212120',
+        terracotta: '#cf795e',
         greeting: '',
         greeting2: '',
         subtitle2: '',
@@ -83,7 +83,7 @@
         rotatingMessagesEnabled: false,
         rotatingMessagesInterval: 5,
         placeholder: 'Pregúntanos sobre tu compra...',
-        avatar: '🌿',
+        avatar: '',
         brandName: 'Kova',
         language: 'es',
         enabled: true,
@@ -105,6 +105,15 @@
       this.conversationId = this.getStoredConversationId();
       this.eventListenersAdded = false; // Prevent duplicate event listeners
       this.isSending = false; // Prevent duplicate message sending
+      this.isConversationActive = false; // Track if conversation has started
+
+      // Attachment state
+      this.pendingAttachment = null; // {type, data, mimeType}
+      this.isRecording = false;
+      this.mediaRecorder = null;
+      this.audioChunks = [];
+      this.recordingStartTime = null;
+      this.recordingTimer = null;
 
       // Cart state - visible only when chat is open
       this.cartVisible = false;
@@ -475,7 +484,7 @@
               </div>
               <div class="kova-widget__promotional-content">
                 <div class="kova-widget__promotional-text">
-                  ¿Necesitas ayuda? 🌿
+                  ¿Necesitas ayuda?
                   <span class="kova-widget__promotional-subtitle">Te guiamos en tu compra</span>
                 </div>
               </div>
@@ -494,9 +503,34 @@
             </button>
             
             <div class="kova-widget__chat" id="kova-widget-chat" role="dialog" aria-label="Chat de Kova">
-              <!-- Floating action buttons -->
-              <div class="kova-widget__floating-actions">
-                <div class="kova-widget__floating-actions-left">
+              <!-- Header bar -->
+              <header class="kova-widget__header">
+                <div class="kova-widget__header-left">
+                  <button class="kova-widget__back-btn" id="kova-widget-back-btn" aria-label="Volver" style="display: none;">
+                    <svg viewBox="0 0 24 24" fill="none">
+                      <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </button>
+                  <div class="kova-widget__header-avatar" id="kova-widget-header-avatar">
+                  </div>
+                  <div class="kova-widget__header-info">
+                    <span class="kova-widget__header-name" id="kova-widget-header-name">Kova</span>
+                    <span class="kova-widget__header-status">
+                      <span class="kova-widget__header-status-dot"></span>
+                      En línea
+                    </span>
+                  </div>
+                </div>
+                <div class="kova-widget__header-center">
+                  <button class="kova-widget__contact-toggle-btn" id="kova-widget-contact-toggle-btn" aria-label="Solicitar llamada">
+                    <span class="kova-widget__contact-pulse"></span>
+                    <span class="kova-widget__contact-pulse kova-widget__contact-pulse--delayed"></span>
+                    <svg viewBox="0 0 24 24" fill="none">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="kova-widget__header-actions">
                   <button class="kova-widget__cart-toggle-btn" id="kova-widget-cart-toggle-btn" aria-label="Ver carrito">
                     <svg class="kova-cart-toggle-icon" viewBox="0 0 24 24" fill="none">
                       <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19C17 19.6 16.6 20 16 20H14C13.4 20 13 19.6 13 19V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -504,25 +538,13 @@
                     <span class="kova-cart-toggle-count" id="kova-widget-cart-count">0</span>
                   </button>
 
-                  <button class="kova-widget__contact-toggle-btn" id="kova-widget-contact-toggle-btn" aria-label="Solicitar llamada">
+                  <button class="kova-widget__close" id="kova-widget-close" aria-label="Cerrar chat">
                     <svg viewBox="0 0 24 24" fill="none">
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                   </button>
                 </div>
-
-                <button class="kova-widget__close" id="kova-widget-close" aria-label="Cerrar chat">
-                  <svg viewBox="0 0 24 24" fill="none">
-                    <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </button>
-              </div>
-
-              <button class="kova-widget__back-btn" id="kova-widget-back-btn" aria-label="Volver" style="display: none;">
-                <svg viewBox="0 0 24 24" fill="none">
-                  <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </button>
+              </header>
 
               <main class="kova-widget__messages" id="kova-widget-messages" role="main">
                 
@@ -530,44 +552,43 @@
                   <div class="kova-widget__welcome-header">
                     <h4 class="kova-widget__welcome-title">
                       ¡Hola! Soy tu asesora personal de Kova.
-                      <span class="kova-widget__welcome-subtitle">¿En qué puedo ayudarte? ✨🌿</span>
+                      <span class="kova-widget__welcome-subtitle">¿En qué puedo ayudarte?</span>
                     </h4>
                   </div>
                   <div class="kova-widget__welcome-features">
                     <div class="kova-widget__feature" data-message="¿Qué productos recomiendas para mi tipo de piel?">
-                      <svg class="kova-feature-icon" viewBox="0 0 24 24" fill="none">
-                        <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                      </svg>
                       <span>Recomendaciones personalizadas para tu piel</span>
                     </div>
                     <div class="kova-widget__feature" data-message="¿Me ayudas a conocer mi tipo de piel?">
-                      <svg class="kova-feature-icon" viewBox="0 0 24 24" fill="none">
-                        <path d="M13 10V3L4 14H11L11 21L20 10H13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                      </svg>
                       <span>Test rápido para conocer tu tipo de piel</span>
                     </div>
                     <div class="kova-widget__feature" data-message="¿Puedes ayudarme a elegir productos para mi rutina?">
-                      <svg class="kova-feature-icon" viewBox="0 0 24 24" fill="none">
-                        <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19C17 19.6 16.6 20 16 20H14C13.4 20 13 19.6 13 19V13M17 13H13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                      </svg>
                       <span>Ayuda con tu compra</span>
                     </div>
                   </div>
                 </div>
               </main>
-              
+
+              <div class="kova-widget__attach-float" id="kova-widget-attach-float">
+                <button class="kova-widget__attach-btn" id="kova-widget-attach-btn" type="button" aria-label="Adjuntar">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                </button>
+              </div>
+
               <div class="kova-widget__input-container">
                 <div class="kova-widget__input-wrapper">
-                  <input 
-                    type="text" 
-                    class="kova-widget__input" 
-                    id="kova-widget-input" 
+                  <input
+                    type="text"
+                    class="kova-widget__input"
+                    id="kova-widget-input"
                     placeholder="Pregúntanos sobre tu compra..."
                     aria-label="Campo de mensaje"
                   />
-                  <button 
-                    class="kova-widget__send" 
-                    id="kova-widget-send" 
+                  <button
+                    class="kova-widget__send"
+                    id="kova-widget-send"
                     aria-label="Enviar mensaje"
                     disabled
                   >
@@ -576,6 +597,9 @@
                     </svg>
                   </button>
                 </div>
+              </div>
+              <div class="kova-widget__powered-by" id="kova-widget-powered-by">
+                Powered by <a href="https://kovaai.com" target="_blank" rel="noopener">Kova AI</a>
               </div>
             </div>
           </div>
@@ -605,6 +629,58 @@
       this.messagesContainer = this.container.querySelector('#kova-widget-messages');
       this.input = this.container.querySelector('#kova-widget-input');
       this.sendButton = this.container.querySelector('#kova-widget-send');
+      this.attachBtn = this.container.querySelector('#kova-widget-attach-btn');
+
+      // Menu as child of kova-widget-layout (OUTSIDE chat, avoids overflow:hidden + backdrop-filter)
+      const layout = this.container.querySelector('#kova-widget-layout');
+      if (layout && !layout.querySelector('#kova-widget-attach-menu')) {
+        const menu = document.createElement('div');
+        menu.className = 'kova-widget__attach-menu';
+        menu.id = 'kova-widget-attach-menu';
+        menu.innerHTML = `
+          <button class="kova-widget__attach-option" data-action="audio" type="button">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Audio</span>
+          </button>
+          <button class="kova-widget__attach-option" data-action="camera" type="button">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            <span>Cámara</span>
+          </button>
+          <button class="kova-widget__attach-option" data-action="image" type="button">
+            <svg viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" stroke-width="2"/>
+              <path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Imagen</span>
+          </button>
+        `;
+        layout.appendChild(menu);
+      }
+      this.attachMenu = this.container.querySelector('#kova-widget-attach-menu');
+
+      // Hidden file inputs for image selection
+      this.fileInputGallery = document.createElement('input');
+      this.fileInputGallery.type = 'file';
+      this.fileInputGallery.accept = 'image/*';
+      this.fileInputGallery.style.display = 'none';
+      this.fileInputGallery.addEventListener('change', (e) => this.handleImageSelected(e));
+      this.container.appendChild(this.fileInputGallery);
+
+      this.fileInputCamera = document.createElement('input');
+      this.fileInputCamera.type = 'file';
+      this.fileInputCamera.accept = 'image/*';
+      this.fileInputCamera.setAttribute('capture', 'environment');
+      this.fileInputCamera.style.display = 'none';
+      this.fileInputCamera.addEventListener('change', (e) => this.handleImageSelected(e));
+      this.container.appendChild(this.fileInputCamera);
+
       this.resetButton = this.container.querySelector('#kova-widget-reset');
       this.closeButton = this.container.querySelector('#kova-widget-close');
       this.backButton = this.container.querySelector('#kova-widget-back-btn');
@@ -656,7 +732,7 @@
     applyDynamicContent() {
       const brandName = this.config.brandName || 'Kova';
       const subtitle = this.config.subtitle || 'Asistente de compras con IA';
-      const avatar = this.config.avatar || '🌿';
+      const avatar = this.config.avatar || '';
 
       // Update input placeholder
       if (this.input && this.config.placeholder) {
@@ -676,7 +752,7 @@
           // Default greeting with dynamic brand name
           welcomeTitle.innerHTML = `
             ¡Hola! Soy tu asesora personal de ${brandName}.
-            <span class="kova-widget__welcome-subtitle">¿En qué puedo ayudarte? ✨${avatar}</span>
+            <span class="kova-widget__welcome-subtitle">¿En qué puedo ayudarte?</span>
           `;
         }
       }
@@ -691,10 +767,29 @@
           `;
         } else {
           promoText.innerHTML = `
-            ¿Necesitas ayuda? ${avatar}
+            ¿Necesitas ayuda?
             <span class="kova-widget__promotional-subtitle">Te guiamos en tu compra</span>
           `;
         }
+      }
+
+      // Update header name and avatar
+      const headerName = this.container.querySelector('.kova-widget__header-name');
+      if (headerName) {
+        headerName.textContent = brandName;
+      }
+      const headerAvatar = this.container.querySelector('#kova-widget-header-avatar');
+      if (headerAvatar) {
+        headerAvatar.innerHTML = this.getAvatarContent('header');
+        if (this.isConversationActive) {
+          headerAvatar.style.setProperty('display', 'none', 'important');
+        }
+      }
+
+      // Update welcome avatar
+      const welcomeAvatar = this.container.querySelector('#kova-widget-welcome-avatar');
+      if (welcomeAvatar) {
+        welcomeAvatar.innerHTML = this.getAvatarContent('large');
       }
 
       // Update ARIA labels with brand name
@@ -727,15 +822,16 @@
       }
 
       // Show/hide contact button and panel based on showContact setting
+      // Contact button is visible by default (only hidden if explicitly set to false)
       if (this.contactToggle) {
-        if (this.config.showContact === false || this.config.showContact === undefined) {
+        if (this.config.showContact === false) {
           this.contactToggle.style.setProperty('display', 'none', 'important');
         } else {
           this.contactToggle.style.removeProperty('display');
         }
       }
       if (this.contactPanel) {
-        if (this.config.showContact === false || this.config.showContact === undefined) {
+        if (this.config.showContact === false) {
           this.contactPanel.style.setProperty('display', 'none', 'important');
         } else {
           this.contactPanel.style.removeProperty('display');
@@ -747,6 +843,16 @@
         this.container.classList.add('kova-widget--no-animations');
       } else {
         this.container.classList.remove('kova-widget--no-animations');
+      }
+
+      // Show/hide powered-by footer based on plan (only show for free plan)
+      const poweredBy = this.container.querySelector('#kova-widget-powered-by');
+      if (poweredBy) {
+        if (this.config.plan && this.config.plan !== 'free') {
+          poweredBy.style.display = 'none';
+        } else {
+          poweredBy.style.display = '';
+        }
       }
 
       // Update promo badge
@@ -864,12 +970,12 @@
           --kova-everyday: #cec8ae;
           --kova-fresh: #90a284;
           --kova-delicate: #c3ab79;
-          --kova-forever: #a59457;
+          --kova-forever: #6b5afc;
           --kova-hydra: #A8C4C4;
           --kova-deep: #D4B82C;
-          --kova-rich: #B8943C;
+          --kova-rich: #5a4ad4;
           --kova-radiant: #A68A3C;
-          --kova-perfect: #a59457;
+          --kova-perfect: #6b5afc;
           --kova-sage: #F8F9F8;
           --kova-dark: #212120;
           --kova-terracotta: #cf795e;
@@ -899,8 +1005,8 @@
           --kova-blur: backdrop-filter: blur(16px);
           
           /* Transitions */
-          --kova-transition: cubic-bezier(0.4, 0, 0.2, 1);
-          --kova-duration: 400ms;
+          --kova-transition: cubic-bezier(0.32, 0.72, 0, 1);
+          --kova-duration: 300ms;
         }
 
         .kova-widget {
@@ -946,16 +1052,16 @@
         /* Ultra-Modern Promotional Message */
         .kova-widget__promotional-message {
           position: absolute !important;
-          bottom: 24px !important;
-          right: 96px !important;
+          bottom: 12px !important;
+          right: 76px !important;
           background: var(--kova-white) !important;
           backdrop-filter: blur(20px) !important;
           -webkit-backdrop-filter: blur(20px) !important;
           border: 1px solid var(--kova-secondary) !important;
-          border-radius: 8px !important;
-          padding: 20px 24px !important;
-          max-width: 380px !important;
-          width: 380px !important;
+          border-radius: 12px !important;
+          padding: 12px 16px !important;
+          max-width: 260px !important;
+          width: auto !important;
           box-shadow: var(--kova-shadow-medium) !important;
           cursor: pointer !important;
           transition: all var(--kova-duration) var(--kova-transition) !important;
@@ -1004,10 +1110,10 @@
           transform: translateY(16px) scale(0.95) !important;
         }
 
-        /* Ultra-Luxury Chat Button */
+        /* Chat Button */
         .kova-widget__button {
-          width: 72px !important;
-          height: 72px !important;
+          width: 60px !important;
+          height: 60px !important;
           border-radius: 50% !important;
           background: var(--kova-perfect) !important;
           border: none !important;
@@ -1022,7 +1128,7 @@
         }
 
         .kova-widget__button:hover {
-          transform: translateY(-6px) scale(1.08) !important;
+          transform: translateY(-3px) scale(1.05) !important;
           box-shadow: var(--kova-shadow-strong) !important;
           background: var(--kova-rich) !important;
         }
@@ -1161,9 +1267,9 @@
         /* Ultra-Modern Chat Window */
         .kova-widget__chat {
           position: absolute !important;
-          bottom: 88px !important;
+          bottom: 76px !important;
           left: 0 !important;
-          width: 50vw !important;
+          width: 440px !important;
           height: 620px !important;
           background: rgba(248, 249, 248, 0.95) !important;
           backdrop-filter: blur(20px) !important;
@@ -1174,7 +1280,7 @@
           display: none !important;
           flex-direction: column !important;
           overflow: hidden !important;
-          transform: translateY(32px) scale(0.9) !important;
+          transform: translateY(16px) scale(0.98) !important;
           opacity: 0 !important;
           visibility: hidden !important;
           transition: all var(--kova-duration) var(--kova-transition) !important;
@@ -1188,7 +1294,7 @@
         .kova-widget--top-right .kova-widget__chat,
         .kova-widget--top-left .kova-widget__chat {
           bottom: auto !important;
-          top: 88px !important;
+          top: 76px !important;
         }
 
         .kova-widget--open .kova-widget__chat {
@@ -1617,8 +1723,8 @@
 
         .kova-product-card {
           background: var(--kova-white) !important;
-          border-radius: 10px !important;
-          border: 1px solid rgba(212, 196, 184, 0.3) !important;
+          border-radius: 12px !important;
+          border: 1px solid rgba(0, 0, 0, 0.08) !important;
           overflow: hidden !important;
           box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06) !important;
           transition: all 0.2s ease !important;
@@ -1628,7 +1734,7 @@
           display: flex !important;
           flex-direction: row !important;
           height: auto !important;
-          min-height: 80px !important;
+          min-height: 90px !important;
         }
 
         .kova-product-card:hover {
@@ -1657,8 +1763,8 @@
 
         .kova-product-card__media {
           position: relative !important;
-          width: 76px !important;
-          height: 80px !important;
+          width: 88px !important;
+          height: 90px !important;
           flex-shrink: 0 !important;
           overflow: hidden !important;
           background: #f5f5f5 !important;
@@ -1990,54 +2096,94 @@
           box-shadow: 0 6px 20px rgba(165, 148, 87, 0.4) !important;
         }
 
-        /* Floating Action Buttons */
-        .kova-widget__floating-actions {
-          position: absolute !important;
-          top: 12px !important;
-          left: 12px !important;
-          right: 12px !important;
+        /* Header Bar */
+        .kova-widget__header {
           display: flex !important;
           align-items: center !important;
           justify-content: space-between !important;
+          padding: 12px 16px !important;
+          background: var(--kova-white) !important;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
           z-index: 20 !important;
-          pointer-events: none !important;
+          flex-shrink: 0 !important;
         }
 
-        .kova-widget__floating-actions > * {
-          pointer-events: auto !important;
-        }
-
-        .kova-widget__floating-actions-left {
+        .kova-widget__header-left {
           display: flex !important;
           align-items: center !important;
-          gap: 8px !important;
-          pointer-events: none !important;
+          gap: 10px !important;
         }
 
-        .kova-widget__floating-actions-left > * {
-          pointer-events: auto !important;
+        .kova-widget__header-avatar {
+          width: 36px !important;
+          height: 36px !important;
+          border-radius: 50% !important;
+          background: linear-gradient(135deg, var(--kova-perfect) 0%, var(--kova-rich) 100%) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          flex-shrink: 0 !important;
+        }
+
+        .kova-widget__header-avatar img {
+          width: 100% !important;
+          height: 100% !important;
+          border-radius: 50% !important;
+          object-fit: cover !important;
+        }
+
+        .kova-widget__header-info {
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 1px !important;
+        }
+
+        .kova-widget__header-name {
+          font-size: 14px !important;
+          font-weight: var(--kova-font-weight-semibold) !important;
+          color: var(--kova-black) !important;
+          line-height: 1.2 !important;
+        }
+
+        .kova-widget__header-status {
+          display: flex !important;
+          align-items: center !important;
+          gap: 4px !important;
+          font-size: 11px !important;
+          color: #6b7280 !important;
+          font-weight: var(--kova-font-weight-regular) !important;
+        }
+
+        .kova-widget__header-status-dot {
+          width: 6px !important;
+          height: 6px !important;
+          border-radius: 50% !important;
+          background: #22c55e !important;
+          flex-shrink: 0 !important;
+        }
+
+        .kova-widget__header-actions {
+          display: flex !important;
+          align-items: center !important;
+          gap: 4px !important;
         }
 
         .kova-widget__close {
-          background: rgba(255, 255, 255, 0.95) !important;
-          backdrop-filter: blur(10px) !important;
-          -webkit-backdrop-filter: blur(10px) !important;
-          border: 1px solid rgba(0, 0, 0, 0.06) !important;
-          color: var(--kova-black) !important;
+          background: transparent !important;
+          border: none !important;
+          color: #9ca3af !important;
           cursor: pointer !important;
-          padding: 10px !important;
-          border-radius: 12px !important;
+          padding: 6px !important;
+          border-radius: 8px !important;
           transition: all 0.2s cubic-bezier(0.32, 0.72, 0, 1) !important;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
         }
 
         .kova-widget__close:hover {
-          background: var(--kova-white) !important;
-          transform: scale(1.05) !important;
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+          background: rgba(0, 0, 0, 0.05) !important;
+          color: var(--kova-black) !important;
         }
 
         .kova-widget__close:active {
@@ -2050,25 +2196,22 @@
         }
 
         .kova-widget__back-btn {
-          position: absolute !important;
-          top: 12px !important;
-          left: 12px !important;
-          background: rgba(255, 255, 255, 0.95) !important;
-          backdrop-filter: blur(10px) !important;
-          -webkit-backdrop-filter: blur(10px) !important;
-          border: 1px solid rgba(0, 0, 0, 0.06) !important;
+          width: 36px !important;
+          height: 36px !important;
+          background: transparent !important;
+          border: none !important;
           color: var(--kova-black) !important;
           cursor: pointer !important;
-          padding: 10px !important;
-          border-radius: 12px !important;
+          padding: 0 !important;
+          border-radius: 50% !important;
           transition: all 0.2s cubic-bezier(0.32, 0.72, 0, 1) !important;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
-          z-index: 25 !important;
+          align-items: center !important;
+          justify-content: center !important;
+          flex-shrink: 0 !important;
         }
 
         .kova-widget__back-btn:hover {
-          background: var(--kova-white) !important;
-          transform: scale(1.05) !important;
+          background: rgba(0, 0, 0, 0.05) !important;
         }
 
         .kova-widget__back-btn svg {
@@ -2076,10 +2219,10 @@
           height: 18px !important;
         }
 
-        /* Luxury Messages Area */
+        /* Messages Area */
         .kova-widget__messages {
           flex: 1 !important;
-          padding: 56px 24px 24px 24px !important;
+          padding: 16px !important;
           overflow-y: auto !important;
           background: transparent !important;
           scrollbar-width: thin !important;
@@ -2090,24 +2233,19 @@
         /* Cart Toggle Button */
         .kova-widget__cart-toggle-btn {
           position: relative !important;
-          background: rgba(255, 255, 255, 0.95) !important;
-          backdrop-filter: blur(10px) !important;
-          -webkit-backdrop-filter: blur(10px) !important;
-          border: 1px solid rgba(0, 0, 0, 0.06) !important;
-          border-radius: 12px !important;
-          padding: 10px !important;
+          background: transparent !important;
+          border: none !important;
+          border-radius: 8px !important;
+          padding: 6px !important;
           cursor: pointer !important;
           transition: all 0.2s cubic-bezier(0.32, 0.72, 0, 1) !important;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
         }
 
         .kova-widget__cart-toggle-btn:hover {
-          background: var(--kova-white) !important;
-          transform: scale(1.05) !important;
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+          background: rgba(0, 0, 0, 0.05) !important;
         }
 
         .kova-widget__cart-toggle-btn:active {
@@ -2118,13 +2256,13 @@
         .kova-cart-toggle-icon {
           width: 18px !important;
           height: 18px !important;
-          color: var(--kova-black) !important;
+          color: #9ca3af !important;
         }
 
         .kova-cart-toggle-icon {
-          width: 16px !important;
-          height: 16px !important;
-          color: var(--kova-perfect) !important;
+          width: 18px !important;
+          height: 18px !important;
+          color: #9ca3af !important;
         }
 
         .kova-cart-toggle-count {
@@ -2150,26 +2288,30 @@
         }
 
         /* Contact Toggle Button */
-        .kova-widget__contact-toggle-btn {
-          position: relative !important;
-          background: rgba(255, 255, 255, 0.95) !important;
-          backdrop-filter: blur(10px) !important;
-          -webkit-backdrop-filter: blur(10px) !important;
-          border: 1px solid rgba(0, 0, 0, 0.06) !important;
-          border-radius: 12px !important;
-          padding: 10px !important;
-          cursor: pointer !important;
-          transition: all 0.2s cubic-bezier(0.32, 0.72, 0, 1) !important;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+        .kova-widget__header-center {
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
         }
 
+        .kova-widget__contact-toggle-btn {
+          position: relative !important;
+          background: var(--kova-perfect) !important;
+          border: none !important;
+          border-radius: 50% !important;
+          width: 36px !important;
+          height: 36px !important;
+          padding: 0 !important;
+          cursor: pointer !important;
+          transition: transform 0.2s cubic-bezier(0.32, 0.72, 0, 1) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          z-index: 1 !important;
+        }
+
         .kova-widget__contact-toggle-btn:hover {
-          background: var(--kova-white) !important;
-          transform: scale(1.05) !important;
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+          transform: scale(1.1) !important;
         }
 
         .kova-widget__contact-toggle-btn:active {
@@ -2177,9 +2319,42 @@
         }
 
         .kova-widget__contact-toggle-btn svg {
-          width: 16px !important;
-          height: 16px !important;
-          color: var(--kova-perfect) !important;
+          width: 18px !important;
+          height: 18px !important;
+          color: #fff !important;
+          position: relative !important;
+          z-index: 2 !important;
+        }
+
+        .kova-widget__contact-pulse {
+          position: absolute !important;
+          top: 50% !important;
+          left: 50% !important;
+          transform: translate(-50%, -50%) !important;
+          width: 36px !important;
+          height: 36px !important;
+          border-radius: 50% !important;
+          background: var(--kova-perfect) !important;
+          opacity: 0 !important;
+          animation: kova-pulse-wave 2.5s cubic-bezier(0, 0, 0.2, 1) infinite !important;
+          pointer-events: none !important;
+        }
+
+        .kova-widget__contact-pulse--delayed {
+          animation-delay: 0.8s !important;
+        }
+
+        @keyframes kova-pulse-wave {
+          0% {
+            width: 36px;
+            height: 36px;
+            opacity: 0.4;
+          }
+          100% {
+            width: 72px;
+            height: 72px;
+            opacity: 0;
+          }
         }
 
         .kova-widget__messages::-webkit-scrollbar {
@@ -2197,35 +2372,36 @@
 
         .kova-widget__welcome {
           text-align: center !important;
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: center !important;
+          justify-content: center !important;
+          min-height: 100% !important;
         }
 
         .kova-widget__welcome-header {
           display: flex !important;
+          flex-direction: column !important;
           align-items: center !important;
           justify-content: center !important;
-          margin-bottom: 24px !important;
+          margin-bottom: 16px !important;
         }
 
         .kova-widget__welcome-avatar {
-          width: 56px !important;
-          height: 56px !important;
-          background: var(--kova-hydra) !important;
-          border-radius: 12px !important;
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
+          display: none !important;
         }
 
-        .kova-welcome-icon {
-          width: 28px !important;
-          height: 28px !important;
-          color: var(--kova-white) !important;
+        .kova-widget__welcome-avatar img {
+          width: 100% !important;
+          height: 100% !important;
+          border-radius: 50% !important;
+          object-fit: cover !important;
         }
 
         .kova-widget__welcome-title {
-          font-size: 20px !important;
+          font-size: 16px !important;
           font-weight: var(--kova-font-weight-semibold) !important;
-          color: var(--kova-perfect) !important;
+          color: var(--kova-black) !important;
           margin: 0 !important;
           letter-spacing: -0.02em !important;
           line-height: 1.4 !important;
@@ -2234,9 +2410,9 @@
         .kova-widget__welcome-subtitle {
           display: block !important;
           color: var(--kova-secondary) !important;
-          font-size: 16px !important;
+          font-size: 13px !important;
           font-weight: var(--kova-font-weight-regular) !important;
-          margin-top: 8px !important;
+          margin-top: 4px !important;
         }
 
         .kova-widget__welcome-message {
@@ -2251,18 +2427,17 @@
         .kova-widget__welcome-features {
           display: flex !important;
           flex-direction: column !important;
-          gap: 20px !important;
+          gap: 8px !important;
           text-align: left !important;
         }
 
         .kova-widget__feature {
           display: flex !important;
           align-items: center !important;
-          gap: 12px !important;
-          padding: 16px !important;
+          padding: 12px 14px !important;
           background: var(--kova-white) !important;
           border-radius: 12px !important;
-          border: 1px solid rgba(165, 148, 87, 0.15) !important;
+          border: 1px solid rgba(0, 0, 0, 0.08) !important;
           transition: all 0.2s var(--kova-transition) !important;
           cursor: pointer !important;
         }
@@ -2270,21 +2445,8 @@
         .kova-widget__feature:hover {
           background: var(--kova-sage) !important;
           border-color: var(--kova-perfect) !important;
-          transform: translateY(-2px) !important;
-          box-shadow: 0 4px 12px rgba(165, 148, 87, 0.12) !important;
-        }
-
-        .kova-feature-icon {
-          width: 20px !important;
-          height: 20px !important;
-          min-width: 20px !important;
-          min-height: 20px !important;
-          color: var(--kova-perfect) !important;
-          flex-shrink: 0 !important;
-          display: block !important;
-          stroke: currentColor !important;
-          fill: none !important;
-          overflow: visible !important;
+          transform: translateY(-1px) !important;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
         }
 
         .kova-widget__feature span {
@@ -2305,28 +2467,40 @@
         .kova-widget__input-container {
           display: flex !important;
           gap: 12px !important;
-          margin-bottom: 12px !important;
-          padding: 0 20px !important;
+          margin-bottom: 0 !important;
+          padding: 8px 16px !important;
           width: 100% !important;
+          box-sizing: border-box !important;
         }
 
         .kova-widget__input-wrapper {
           flex: 1 !important;
           display: flex !important;
+          align-items: center !important;
           width: 100% !important;
+          background: var(--kova-white) !important;
+          border: 1px solid rgba(0, 0, 0, 0.1) !important;
+          border-radius: 24px !important;
+          padding-right: 4px !important;
+          transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+        }
+
+        .kova-widget__input-wrapper:focus-within {
+          border-color: var(--kova-perfect) !important;
+          box-shadow: 0 0 0 3px rgba(165, 148, 87, 0.1) !important;
         }
 
         .kova-widget__input {
           flex: 1 !important;
           width: 100% !important;
           min-width: 0 !important;
-          padding: 10px 14px !important;
-          border: 1px solid rgba(212, 196, 184, 0.3) !important;
-          border-radius: 28px !important;
+          padding: 10px 8px 10px 16px !important;
+          border: none !important;
+          border-radius: 24px !important;
           font-family: var(--kova-font) !important;
-          font-size: 13px !important;
+          font-size: 14px !important;
           font-weight: var(--kova-font-weight-regular) !important;
-          background: var(--kova-white) !important;
+          background: transparent !important;
           color: var(--kova-black) !important;
           outline: none !important;
           transition: none !important;
@@ -2334,44 +2508,283 @@
         }
 
         .kova-widget__input:focus {
-          border-color: var(--kova-perfect) !important;
-          box-shadow: 0 0 0 3px rgba(165, 148, 87, 0.1) !important;
-          transform: translateY(-1px) !important;
+          border: none !important;
+          box-shadow: none !important;
+          transform: none !important;
         }
 
         .kova-widget__input::placeholder {
-          color: var(--kova-delicate) !important;
+          color: #9ca3af !important;
         }
 
         .kova-widget__send {
-          width: 44px !important;
-          height: 44px !important;
+          width: 36px !important;
+          min-width: 36px !important;
+          height: 36px !important;
           background: var(--kova-perfect) !important;
           color: var(--kova-white) !important;
           border: none !important;
-          border-radius: 12px !important;
+          border-radius: 50% !important;
           cursor: pointer !important;
-          transition: none !important;
+          transition: background 0.2s ease !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
+          flex-shrink: 0 !important;
         }
 
-        .kova-widget__send:hover {
-          transform: translateY(-2px) scale(1.05) !important;
-          box-shadow: var(--kova-shadow-medium) !important;
+        .kova-widget__send:hover:not(:disabled) {
           background: var(--kova-rich) !important;
         }
 
         .kova-widget__send:disabled {
-          opacity: 0.6 !important;
+          opacity: 0.4 !important;
           cursor: not-allowed !important;
-          transform: none !important;
         }
 
         .kova-widget__send svg {
+          width: 18px !important;
+          height: 18px !important;
+        }
+
+        /* Attach Float Container */
+        .kova-widget__attach-float {
+          position: relative !important;
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: flex-end !important;
+          padding: 0 20px 4px 0 !important;
+          flex-shrink: 0 !important;
+        }
+
+        .kova-widget__attach-btn {
+          width: 36px !important;
+          min-width: 36px !important;
+          height: 36px !important;
+          background: var(--kova-white) !important;
+          color: #9ca3af !important;
+          border: 1px solid rgba(0, 0, 0, 0.1) !important;
+          border-radius: 50% !important;
+          cursor: pointer !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          padding: 0 !important;
+          transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease !important;
+          flex-shrink: 0 !important;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+        }
+
+        .kova-widget__attach-btn:hover {
+          background: rgba(0, 0, 0, 0.03) !important;
+          color: #6b7280 !important;
+          border-color: rgba(0, 0, 0, 0.2) !important;
+        }
+
+        .kova-widget__attach-btn--open {
+          transform: rotate(45deg) !important;
+          color: #6b7280 !important;
+        }
+
+        .kova-widget__attach-btn svg {
+          width: 18px !important;
+          height: 18px !important;
+        }
+
+        .kova-widget__attach-menu {
+          position: absolute !important;
+          display: none;
+          flex-direction: column !important;
+          background: #fff !important;
+          border-radius: 12px !important;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+          min-width: 160px !important;
+          overflow: hidden !important;
+          z-index: 9999 !important;
+        }
+
+        .kova-widget__attach-option {
+          display: flex !important;
+          align-items: center !important;
+          gap: 10px !important;
+          padding: 10px 14px !important;
+          width: 100% !important;
+          background: transparent !important;
+          border: none !important;
+          cursor: pointer !important;
+          font-family: var(--kova-font) !important;
+          font-size: 13px !important;
+          color: var(--kova-black) !important;
+          transition: background 0.15s ease !important;
+          box-sizing: border-box !important;
+        }
+
+        .kova-widget__attach-option:hover {
+          background: rgba(0, 0, 0, 0.04) !important;
+        }
+
+        .kova-widget__attach-option svg {
           width: 20px !important;
+          min-width: 20px !important;
           height: 20px !important;
+          color: #6b7280 !important;
+        }
+
+        /* Recording Bar */
+        .kova-widget__recording-bar {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: space-between !important;
+          width: 100% !important;
+          padding: 8px 12px !important;
+          box-sizing: border-box !important;
+          background: #fff !important;
+          border-radius: 24px !important;
+          border: 1px solid #ef4444 !important;
+        }
+
+        .kova-widget__recording-left {
+          display: flex !important;
+          align-items: center !important;
+          gap: 8px !important;
+        }
+
+        .kova-widget__recording-dot {
+          width: 10px !important;
+          height: 10px !important;
+          border-radius: 50% !important;
+          background: #ef4444 !important;
+          animation: kova-pulse-recording 1.2s ease-in-out infinite !important;
+          flex-shrink: 0 !important;
+        }
+
+        .kova-widget__recording-label {
+          font-size: 13px !important;
+          color: #ef4444 !important;
+          font-weight: 500 !important;
+          font-family: var(--kova-font) !important;
+        }
+
+        .kova-widget__recording-timer {
+          font-size: 13px !important;
+          color: #6b7280 !important;
+          font-variant-numeric: tabular-nums !important;
+          font-family: var(--kova-font) !important;
+        }
+
+        .kova-widget__recording-stop {
+          width: 36px !important;
+          height: 36px !important;
+          border-radius: 50% !important;
+          background: #ef4444 !important;
+          color: #fff !important;
+          border: none !important;
+          cursor: pointer !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          flex-shrink: 0 !important;
+          transition: background 0.15s ease !important;
+        }
+
+        .kova-widget__recording-stop:hover {
+          background: #dc2626 !important;
+        }
+
+        .kova-widget__recording-stop svg {
+          width: 16px !important;
+          height: 16px !important;
+        }
+
+        @keyframes kova-pulse-recording {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.3; }
+        }
+
+        /* Voice Bubble */
+        .kova-widget__voice-bubble {
+          display: flex !important;
+          align-items: center !important;
+          gap: 8px !important;
+          color: inherit !important;
+        }
+
+        .kova-widget__voice-bubble svg {
+          flex-shrink: 0 !important;
+          opacity: 0.7 !important;
+        }
+
+        .kova-widget__voice-text {
+          font-size: 13px !important;
+          font-family: var(--kova-font) !important;
+        }
+
+        .kova-widget__voice-play {
+          width: 32px !important;
+          height: 32px !important;
+          border-radius: 50% !important;
+          background: var(--kova-perfect, #a59457) !important;
+          color: white !important;
+          border: none !important;
+          cursor: pointer !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          flex-shrink: 0 !important;
+          padding: 0 !important;
+        }
+        .kova-widget__voice-play:disabled {
+          opacity: 0.5 !important;
+          cursor: default !important;
+        }
+        .kova-widget__voice-play svg {
+          width: 14px !important;
+          height: 14px !important;
+          opacity: 1 !important;
+        }
+        .kova-widget__voice-info {
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 2px !important;
+        }
+        .kova-widget__voice-waveform {
+          width: 80px !important;
+          height: 20px !important;
+          background: repeating-linear-gradient(90deg, currentColor 0 2px, transparent 2px 5px) !important;
+          opacity: 0.3 !important;
+          border-radius: 4px !important;
+        }
+        .kova-widget__voice-audio {
+          display: none !important;
+        }
+
+        /* Image in chat message */
+        .kova-widget__message-image {
+          max-width: 200px !important;
+          max-height: 200px !important;
+          border-radius: 12px !important;
+          object-fit: cover !important;
+          display: block !important;
+        }
+
+        /* Powered By Footer */
+        .kova-widget__powered-by {
+          text-align: center !important;
+          font-size: 10px !important;
+          color: #9ca3af !important;
+          padding: 4px 0 8px !important;
+          font-family: var(--kova-font) !important;
+        }
+
+        .kova-widget__powered-by a {
+          color: #9ca3af !important;
+          text-decoration: none !important;
+          font-weight: 500 !important;
+        }
+
+        .kova-widget__powered-by a:hover {
+          color: var(--kova-perfect) !important;
+          text-decoration: underline !important;
         }
 
         /* Reset Button */
@@ -2409,28 +2822,59 @@
           opacity: 0.7 !important;
         }
 
+        /* Message Row with Avatar */
+        .kova-widget__message-row {
+          display: flex !important;
+          align-items: flex-end !important;
+          gap: 8px !important;
+          margin-bottom: 4px !important;
+        }
+
+        .kova-widget__msg-avatar {
+          width: 28px !important;
+          height: 28px !important;
+          border-radius: 50% !important;
+          flex-shrink: 0 !important;
+          font-size: 14px !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          background: linear-gradient(135deg, var(--kova-perfect) 0%, var(--kova-rich) 100%) !important;
+        }
+
+        .kova-widget__msg-avatar img {
+          width: 100% !important;
+          height: 100% !important;
+          border-radius: 50% !important;
+          object-fit: cover !important;
+        }
+
+        .kova-widget__message-row .kova-widget__message {
+          margin: 0 !important;
+        }
+
         /* Message Styles */
         .kova-widget__message {
-          margin: 12px 0 !important;
-          padding: 12px 16px !important;
-          border-radius: 8px !important;
-          font-size: 13px !important;
+          margin: 4px 0 !important;
+          padding: 10px 14px !important;
+          border-radius: 18px !important;
+          font-size: 14px !important;
           line-height: 1.4 !important;
-          max-width: 85% !important;
+          max-width: 80% !important;
         }
 
         .kova-widget__message--user {
           background: var(--kova-perfect) !important;
           color: var(--kova-white) !important;
           margin-left: auto !important;
-          border-bottom-right-radius: 6px !important;
+          border-bottom-right-radius: 4px !important;
         }
 
         .kova-widget__message--assistant {
           background: rgba(255, 255, 255, 0.9) !important;
           color: var(--kova-black) !important;
-          border: 1px solid rgba(212, 196, 184, 0.2) !important;
-          border-bottom-left-radius: 6px !important;
+          border: 1px solid rgba(0, 0, 0, 0.08) !important;
+          border-bottom-left-radius: 4px !important;
         }
 
         .kova-widget__message .list-item {
@@ -2456,22 +2900,18 @@
         .kova-typing-indicator {
           display: flex !important;
           align-items: center !important;
-          gap: 8px !important;
-          color: var(--kova-forever) !important;
-          font-size: 13px !important;
-          font-style: italic !important;
         }
 
         .kova-typing-dots {
           display: flex !important;
-          gap: 4px !important;
+          gap: 5px !important;
           align-items: center !important;
         }
 
         .kova-dot {
-          width: 6px !important;
-          height: 6px !important;
-          background: var(--kova-forever) !important;
+          width: 7px !important;
+          height: 7px !important;
+          background: #9ca3af !important;
           border-radius: 50% !important;
           animation: kova-typing-bounce 1.4s infinite ease-in-out both !important;
         }
@@ -2491,12 +2931,6 @@
         }
 
         /* Responsive Design */
-        @media (max-width: 1200px) {
-          .kova-widget__chat {
-            width: 60vw !important;
-          }
-        }
-
         @media (min-width: 481px) and (max-width: 768px) {
           /* Tablet responsive enhancements */
           .kova-widget__chat {
@@ -2527,21 +2961,16 @@
           
           /* Chat interface tablet */
           .kova-widget__header {
-            padding: 24px 28px !important;
+            padding: 12px 16px !important;
           }
-          
-          .kova-widget__title {
-            font-size: 19px !important;
-          }
-          
+
           .kova-widget__messages {
-            padding: 20px 24px !important;
-            gap: 18px !important;
+            padding: 16px !important;
           }
-          
+
           .kova-widget__message {
             max-width: 85% !important;
-            padding: 14px 18px !important;
+            padding: 12px 16px !important;
             font-size: 15px !important;
           }
           
@@ -2559,23 +2988,12 @@
           }
           
           .kova-widget__feature {
-            padding: 16px 18px !important;
-            border-radius: 16px !important;
+            padding: 12px 14px !important;
+            border-radius: 12px !important;
           }
-          
-          /* Input area tablet */
-          .kova-widget__input-area {
-            padding: 24px 28px !important;
-          }
-          
+
           .kova-widget__input {
-            padding: 14px 18px !important;
             font-size: 15px !important;
-          }
-          
-          .kova-widget__send {
-            width: 48px !important;
-            height: 48px !important;
           }
           
           /* Contact panel as bottom drawer on tablet */
@@ -2720,16 +3138,9 @@
             right: auto !important;
           }
 
-          /* Floating actions in chat */
-          .kova-widget__floating-actions {
-            top: 12px !important;
-            left: 12px !important;
-            right: 12px !important;
-          }
-
           /* Messages */
           .kova-widget__messages {
-            padding: 70px 12px 12px 12px !important;
+            padding: 12px !important;
           }
 
           /* Input */
@@ -4186,12 +4597,12 @@
       dynamicStyle.id = 'kova-dynamic-styles';
 
       // Get config values with fallbacks - check both primaryColor and forever
-      const primaryColor = this.config.primaryColor || this.config.forever || '#a59457';
+      const primaryColor = this.config.primaryColor || this.config.forever || '#6b5afc';
       const secondaryColor = this.config.secondaryColor || this.config.dark || '#212120';
       const accentColor = this.config.accentColor || this.config.terracotta || '#cf795e';
       console.log('🎨 Applying dynamic styles with colors:', { primaryColor, secondaryColor, accentColor });
-      const buttonSize = this.config.buttonSize || 72;
-      const chatWidth = this.config.chatWidth || 420;
+      const buttonSize = this.config.buttonSize || 60;
+      const chatWidth = this.config.chatWidth || 440;
       const chatHeight = this.config.chatHeight || 600;
       const buttonStyle = this.config.buttonStyle || 'circle';
       const showPulse = this.config.showPulse !== false;
@@ -4242,6 +4653,17 @@
           background: ${surfaceBg} !important;
         }
 
+        /* Avatar dynamic colors */
+        .kova-widget__header-avatar {
+          background: linear-gradient(135deg, ${primaryColor} 0%, ${this.adjustColor(primaryColor, -20)} 100%) !important;
+        }
+        .kova-widget__welcome-avatar {
+          background: linear-gradient(135deg, ${primaryColor} 0%, ${this.adjustColor(primaryColor, -20)} 100%) !important;
+        }
+        .kova-widget__msg-avatar {
+          background: linear-gradient(135deg, ${primaryColor} 0%, ${this.adjustColor(primaryColor, -20)} 100%) !important;
+        }
+
         /* Cart panel dynamic positioning */
         .kova-widget--bottom-right .kova-cart-panel {
           right: calc(${chatWidth}px + 52px) !important;
@@ -4256,7 +4678,7 @@
         }
 
         /* Input focus and send button */
-        .kova-widget__input:focus {
+        .kova-widget__input-wrapper:focus-within {
           border-color: ${primaryColor} !important;
           box-shadow: 0 0 0 3px ${primaryColor}22 !important;
         }
@@ -4361,6 +4783,20 @@
         .kova-widget__feature span {
           color: ${textPrimary} !important;
         }
+        .kova-widget__header {
+          background: ${surfaceColor} !important;
+          border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+        }
+        .kova-widget__header-name {
+          color: ${textPrimary} !important;
+        }
+        .kova-widget__header-status {
+          color: rgba(255, 255, 255, 0.5) !important;
+        }
+        .kova-widget__close:hover,
+        .kova-widget__cart-toggle-btn:hover {
+          background: rgba(255, 255, 255, 0.1) !important;
+        }
         ` : ''}
 
         /* Mobile responsiveness - centered panel on small screens */
@@ -4418,6 +4854,37 @@
 
       document.head.appendChild(dynamicStyle);
       console.log('🎨 Dynamic styles applied:', { primaryColor, secondaryColor, accentColor, buttonSize, chatWidth, chatHeight, buttonStyle, theme });
+    }
+
+    /**
+     * Get initials from brand name for avatar display
+     * "Kova" → "Ko", "My Store" → "MS", "A" → "A"
+     */
+    getInitials(name) {
+      if (!name) return 'K';
+      const words = name.trim().split(/\s+/);
+      if (words.length >= 2) {
+        return (words[0][0] + words[1][0]).toUpperCase();
+      }
+      return name.substring(0, 2).charAt(0).toUpperCase() + (name.substring(1, 2) || '');
+    }
+
+    /**
+     * Get avatar HTML content — initials by default, emoji if configured, image if avatarUrl set
+     */
+    getAvatarContent(size) {
+      if (this.config.avatarUrl) {
+        return `<img src="${this.config.avatarUrl}" alt="${this.config.brandName || 'Kova'}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />`;
+      }
+      if (this.config.avatar) {
+        // Emoji avatar
+        const fontSize = size === 'large' ? '24px' : size === 'header' ? '18px' : '14px';
+        return `<span style="font-size:${fontSize};line-height:1;">${this.config.avatar}</span>`;
+      }
+      // Default: initials
+      const initials = this.getInitials(this.config.brandName);
+      const fontSize = size === 'large' ? '18px' : size === 'header' ? '14px' : '11px';
+      return `<span style="font-size:${fontSize};font-weight:600;color:#fff;line-height:1;letter-spacing:0.02em;">${initials}</span>`;
     }
 
     /**
@@ -4528,6 +4995,13 @@
         console.log('✅ Back button event listener added');
       }
 
+      // Enable/disable send button based on input content
+      if (this.input && this.sendButton) {
+        this.input.addEventListener('input', () => {
+          this.sendButton.disabled = !this.input.value.trim() || this.isSending;
+        });
+      }
+
       // Send message on Enter key
       if (this.input) {
         this.input.addEventListener('keypress', (e) => {
@@ -4544,6 +5018,66 @@
           e.preventDefault();
           if (!this.isSending) {
             this.sendMessage();
+          }
+        });
+      }
+
+      // Attach button - toggle menu (DOM-based guard prevents double-binding on multi-instance init)
+      if (this.attachBtn && this.attachMenu && !this.attachBtn.dataset.bound) {
+        this.attachBtn.dataset.bound = 'true';
+
+        this.attachBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const menu = this.container.querySelector('#kova-widget-attach-menu');
+          const btn = this.container.querySelector('#kova-widget-attach-btn');
+          if (!menu || !btn) return;
+          const isOpen = menu.style.display === 'flex';
+          if (isOpen) {
+            menu.style.display = 'none';
+            btn.classList.remove('kova-widget__attach-btn--open');
+          } else {
+            const layout = this.container.querySelector('#kova-widget-layout');
+            const btnRect = btn.getBoundingClientRect();
+            const layoutRect = layout.getBoundingClientRect();
+            menu.style.display = 'flex';
+            menu.style.flexDirection = 'column';
+            menu.style.right = (layoutRect.right - btnRect.right) + 'px';
+            menu.style.bottom = (layoutRect.bottom - btnRect.top + 8) + 'px';
+            btn.classList.add('kova-widget__attach-btn--open');
+          }
+        });
+
+        // Attach option clicks
+        const attachOptions = this.attachMenu.querySelectorAll('.kova-widget__attach-option');
+        attachOptions.forEach(option => {
+          option.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const action = option.getAttribute('data-action');
+            console.log('📎 Attach action:', action);
+            this.closeAttachMenu();
+
+            if (action === 'image') {
+              this.fileInputGallery.value = '';
+              this.fileInputGallery.click();
+            } else if (action === 'camera') {
+              this.fileInputCamera.value = '';
+              this.fileInputCamera.click();
+            } else if (action === 'audio') {
+              this.startAudioRecording();
+            }
+          });
+        });
+
+        // Close menu on outside click
+        document.addEventListener('click', (e) => {
+          const menu = this.container.querySelector('#kova-widget-attach-menu');
+          const btn = this.container.querySelector('#kova-widget-attach-btn');
+          if (!menu || menu.style.display !== 'flex') return;
+          if (!btn.contains(e.target) && !menu.contains(e.target)) {
+            menu.style.display = 'none';
+            if (btn) btn.classList.remove('kova-widget__attach-btn--open');
           }
         });
       }
@@ -4575,6 +5109,18 @@
 
           const message = card.getAttribute('data-message');
           if (message && this.input && !this.isSending) {
+            // Fade out welcome screen
+            const welcome = this.messagesContainer.querySelector('.kova-widget__welcome');
+            if (welcome) {
+              welcome.style.transition = 'opacity 0.3s ease, max-height 0.3s ease';
+              welcome.style.opacity = '0';
+              welcome.style.overflow = 'hidden';
+              setTimeout(() => {
+                welcome.style.maxHeight = '0';
+                welcome.style.display = 'none';
+              }, 300);
+            }
+
             this.input.value = message;
             this.sendMessage();
           }
@@ -4965,6 +5511,464 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       console.log('✅ Event listeners successfully added and flagged');
     }
 
+    closeAttachMenu() {
+      if (this.attachMenu) {
+        this.attachMenu.style.display = 'none';
+      }
+      if (this.attachBtn) {
+        this.attachBtn.classList.remove('kova-widget__attach-btn--open');
+      }
+    }
+
+    // =====================================================
+    // Image handling
+    // =====================================================
+
+    handleImageSelected(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      // Validate type
+      if (!file.type.startsWith('image/')) {
+        this.addMessage('Por favor selecciona un archivo de imagen válido.', 'assistant');
+        return;
+      }
+
+      // Reject files > 10MB before compression
+      if (file.size > 10 * 1024 * 1024) {
+        this.addMessage('La imagen es muy grande (máx. 10MB). Por favor selecciona una más pequeña.', 'assistant');
+        return;
+      }
+
+      this.compressImage(file, 800, 0.7).then(dataUrl => {
+        // Show image in chat
+        this.addImageMessage(dataUrl, 'user');
+
+        // Activate conversation UI
+        this.isConversationActive = true;
+        if (this.backButton) this.backButton.style.display = 'flex';
+        const headerAvatar = this.container.querySelector('#kova-widget-header-avatar');
+        if (headerAvatar) headerAvatar.style.setProperty('display', 'none', 'important');
+
+        // Remove welcome
+        const welcome = this.messagesContainer?.querySelector('.kova-widget__welcome');
+        if (welcome) welcome.style.display = 'none';
+
+        // Send with attachment
+        const base64Data = dataUrl.split(',')[1]; // strip data:image/jpeg;base64,
+        const text = this.input?.value?.trim() || '';
+        if (this.input) this.input.value = '';
+
+        this.sendMessageWithAttachment(text, { type: 'image', data: base64Data, mimeType: 'image/jpeg' });
+      }).catch(err => {
+        console.error('Image compression error:', err);
+        this.addMessage('Error al procesar la imagen. Intenta de nuevo.', 'assistant');
+      });
+    }
+
+    compressImage(file, maxDim = 800, quality = 0.7) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let { width, height } = img;
+            if (width > maxDim || height > maxDim) {
+              if (width > height) {
+                height = Math.round((height * maxDim) / width);
+                width = maxDim;
+              } else {
+                width = Math.round((width * maxDim) / height);
+                height = maxDim;
+              }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          };
+          img.onerror = reject;
+          img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    addImageMessage(dataUrl, sender) {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `kova-widget__message kova-widget__message--${sender}`;
+
+      const img = document.createElement('img');
+      img.src = dataUrl;
+      img.className = 'kova-widget__message-image';
+      img.alt = 'Imagen enviada';
+      messageDiv.appendChild(img);
+
+      if (this.messagesContainer) {
+        this.messagesContainer.appendChild(messageDiv);
+        this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+      }
+    }
+
+    // =====================================================
+    // Audio recording
+    // =====================================================
+
+    async startAudioRecording() {
+      if (this.isRecording) return;
+
+      // Check browser support
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        this.addMessage('Tu navegador no soporta grabación de audio.', 'assistant');
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+        // Detect supported mime type
+        let mimeType = 'audio/webm';
+        if (typeof MediaRecorder.isTypeSupported === 'function') {
+          if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+            mimeType = 'audio/webm;codecs=opus';
+          } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+            mimeType = 'audio/mp4';
+          } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+            mimeType = 'audio/webm';
+          }
+        }
+
+        this.audioChunks = [];
+        this.mediaRecorder = new MediaRecorder(stream, { mimeType });
+
+        this.mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) this.audioChunks.push(e.data);
+        };
+
+        this.mediaRecorder.onstop = () => {
+          // Stop all tracks
+          stream.getTracks().forEach(t => t.stop());
+          this.handleAudioRecordingComplete();
+        };
+
+        this.mediaRecorder.start();
+        this.isRecording = true;
+        this.recordingStartTime = Date.now();
+        this.showRecordingUI();
+
+        // Auto-stop after 60 seconds
+        this._autoStopTimeout = setTimeout(() => {
+          if (this.isRecording) this.stopAudioRecording();
+        }, 60000);
+
+      } catch (err) {
+        console.error('Microphone error:', err);
+        if (err.name === 'NotAllowedError') {
+          this.addMessage('Habilita el permiso de micrófono en tu navegador para enviar audio.', 'assistant');
+        } else if (err.name === 'NotFoundError') {
+          this.addMessage('No se encontró micrófono en tu dispositivo.', 'assistant');
+        } else {
+          this.addMessage('Error al acceder al micrófono. Intenta de nuevo.', 'assistant');
+        }
+      }
+    }
+
+    showRecordingUI() {
+      const inputContainer = this.container.querySelector('.kova-widget__input-container');
+      if (!inputContainer) return;
+
+      // Save original HTML to restore later
+      this._savedInputHTML = inputContainer.innerHTML;
+
+      inputContainer.innerHTML = `
+        <div class="kova-widget__recording-bar">
+          <div class="kova-widget__recording-left">
+            <span class="kova-widget__recording-dot"></span>
+            <span class="kova-widget__recording-label">Grabando...</span>
+            <span class="kova-widget__recording-timer" id="kova-recording-timer">0:00</span>
+          </div>
+          <button class="kova-widget__recording-stop" id="kova-recording-stop" type="button" aria-label="Detener grabación">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+          </button>
+        </div>
+      `;
+
+      // Bind stop button
+      const stopBtn = inputContainer.querySelector('#kova-recording-stop');
+      if (stopBtn) {
+        stopBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          this.stopAudioRecording();
+        });
+      }
+
+      // Start timer
+      const timerEl = inputContainer.querySelector('#kova-recording-timer');
+      this.recordingTimer = setInterval(() => {
+        if (!this.recordingStartTime || !timerEl) return;
+        const elapsed = Math.floor((Date.now() - this.recordingStartTime) / 1000);
+        const mins = Math.floor(elapsed / 60);
+        const secs = elapsed % 60;
+        timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+      }, 1000);
+    }
+
+    stopAudioRecording() {
+      if (!this.isRecording || !this.mediaRecorder) return;
+      this.isRecording = false;
+      clearTimeout(this._autoStopTimeout);
+      clearInterval(this.recordingTimer);
+      this.mediaRecorder.stop();
+    }
+
+    handleAudioRecordingComplete() {
+      const blob = new Blob(this.audioChunks, { type: this.mediaRecorder?.mimeType || 'audio/webm' });
+      const mimeType = this.mediaRecorder?.mimeType || 'audio/webm';
+
+      // Restore input UI
+      this.restoreInputUI();
+
+      // Validate duration (rough check via size — < ~5KB means < 0.5s)
+      if (blob.size < 5000) {
+        this.addMessage('Grabación muy corta. Mantén presionado para grabar.', 'assistant');
+        return;
+      }
+
+      // Validate size (max 5MB)
+      if (blob.size > 5 * 1024 * 1024) {
+        this.addMessage('Audio muy largo (máx. 5MB). Intenta con un mensaje más corto.', 'assistant');
+        return;
+      }
+
+      // Activate conversation UI
+      this.isConversationActive = true;
+      if (this.backButton) this.backButton.style.display = 'flex';
+      const headerAvatar = this.container.querySelector('#kova-widget-header-avatar');
+      if (headerAvatar) headerAvatar.style.setProperty('display', 'none', 'important');
+      const welcome = this.messagesContainer?.querySelector('.kova-widget__welcome');
+      if (welcome) welcome.style.display = 'none';
+
+      // Show voice bubble
+      const voiceBubble = this.addVoiceMessage('user');
+
+      // Convert to base64 and send
+      this.blobToBase64(blob).then(dataUrl => {
+        const base64Data = dataUrl.split(',')[1];
+        this.sendMessageWithAttachment('', { type: 'audio', data: base64Data, mimeType: mimeType.split(';')[0] }, voiceBubble);
+      }).catch(err => {
+        console.error('Audio encoding error:', err);
+        this.addMessage('Error al procesar el audio. Intenta de nuevo.', 'assistant');
+      });
+    }
+
+    restoreInputUI() {
+      const inputContainer = this.container.querySelector('.kova-widget__input-container');
+      if (!inputContainer || !this._savedInputHTML) return;
+      inputContainer.innerHTML = this._savedInputHTML;
+
+      // Re-bind element references
+      this.input = this.container.querySelector('#kova-widget-input');
+      this.sendButton = this.container.querySelector('#kova-widget-send');
+
+      // Re-bind input event listeners
+      if (this.input) {
+        this.input.addEventListener('input', () => {
+          if (this.sendButton) {
+            this.sendButton.disabled = !this.input.value.trim();
+          }
+        });
+        this.input.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            if (!this.isSending) this.sendMessage();
+          }
+        });
+      }
+      if (this.sendButton) {
+        this.sendButton.addEventListener('click', (e) => {
+          e.preventDefault();
+          if (!this.isSending) this.sendMessage();
+        });
+      }
+    }
+
+    blobToBase64(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    addVoiceMessage(sender) {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `kova-widget__message kova-widget__message--${sender}`;
+
+      messageDiv.innerHTML = `
+        <div class="kova-widget__voice-bubble">
+          <button class="kova-widget__voice-play" type="button" aria-label="Reproducir" disabled>
+            <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+              <polygon points="6,3 20,12 6,21"/>
+            </svg>
+          </button>
+          <div class="kova-widget__voice-info">
+            <div class="kova-widget__voice-waveform"></div>
+            <span class="kova-widget__voice-text">Mensaje de voz</span>
+          </div>
+        </div>
+        <audio class="kova-widget__voice-audio" preload="none"></audio>
+      `;
+
+      // Wire up play/pause toggle
+      const playBtn = messageDiv.querySelector('.kova-widget__voice-play');
+      const audioEl = messageDiv.querySelector('.kova-widget__voice-audio');
+      if (playBtn && audioEl) {
+        playBtn.addEventListener('click', () => {
+          if (audioEl.paused) {
+            audioEl.play();
+            playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+          } else {
+            audioEl.pause();
+            playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><polygon points="6,3 20,12 6,21"/></svg>';
+          }
+        });
+        audioEl.addEventListener('ended', () => {
+          playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><polygon points="6,3 20,12 6,21"/></svg>';
+        });
+      }
+
+      if (this.messagesContainer) {
+        this.messagesContainer.appendChild(messageDiv);
+        this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+      }
+
+      return messageDiv;
+    }
+
+    // =====================================================
+    // Send message with attachment
+    // =====================================================
+
+    async sendMessageWithAttachment(text, attachment, voiceBubbleEl) {
+      if (this.isSending) return;
+      this.isSending = true;
+
+      // Add typing indicator
+      const typingIndicator = this.addTypingIndicator();
+
+      if (this.sendButton) this.sendButton.disabled = true;
+
+      try {
+        const apiUrl = this.config.chatEndpoint;
+        if (!apiUrl) {
+          this.removeTypingIndicator(typingIndicator);
+          this.addMessage('Error: Chat no configurado. Contacta al administrador.', 'assistant');
+          return;
+        }
+
+        // Pre-check tenant
+        if (this.config.apiEndpoint && this.config.shopDomain) {
+          try {
+            const checkUrl = `${this.config.apiEndpoint}/api/simple-chat/check?shop=${encodeURIComponent(this.config.shopDomain)}`;
+            const checkRes = await fetch(checkUrl, { mode: 'cors', credentials: 'omit' });
+            if (checkRes.status === 429) {
+              const checkData = await checkRes.json();
+              const contactEmail = checkData.contactEmail;
+              const contactMsg = contactEmail ? ' Contáctanos a ' + contactEmail + ' para más información.' : '';
+              this.removeTypingIndicator(typingIndicator);
+              this.addMessage('Lo siento, nuestro sistema está temporalmente detenido.' + contactMsg, 'assistant');
+              return;
+            }
+          } catch (checkErr) {
+            console.warn('⚠️ Pre-check failed, proceeding:', checkErr);
+          }
+        }
+
+        const payload = {
+          message: text || '',
+          shop: this.config.shopDomain,
+          session_id: this.sessionId,
+          conversationId: this.conversationId || null,
+          context: this.config.context || {},
+          attachment: attachment
+        };
+
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+          mode: 'cors',
+          credentials: 'omit',
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        this.removeTypingIndicator(typingIndicator);
+
+        if (response.ok && data.success && data.data) {
+          // Update transcription on voice bubble
+          if (voiceBubbleEl && data.data.transcription) {
+            const textEl = voiceBubbleEl.querySelector('.kova-widget__voice-text');
+            if (textEl) textEl.textContent = data.data.transcription;
+          }
+
+          // Set audio source for playback when URL is available
+          if (voiceBubbleEl && data.data.audioUrl) {
+            const audioEl = voiceBubbleEl.querySelector('.kova-widget__voice-audio');
+            if (audioEl) audioEl.src = data.data.audioUrl;
+            const playBtn = voiceBubbleEl.querySelector('.kova-widget__voice-play');
+            if (playBtn) playBtn.disabled = false;
+          }
+
+          if (data.data.conversationId) {
+            this.conversationId = data.data.conversationId;
+            this.storeConversationId(this.conversationId);
+          }
+
+          let assistantMessage = data.data.response;
+          let hasProducts = false;
+          let products = [];
+
+          // Parse products from text
+          const parseResult = this.parseProductsFromText(assistantMessage);
+          if (parseResult.products.length > 0) {
+            hasProducts = true;
+            products = parseResult.products;
+            assistantMessage = parseResult.cleanText || assistantMessage;
+          }
+
+          if (assistantMessage) {
+            this.addMessage(assistantMessage, 'assistant');
+          }
+
+          if (hasProducts && products.length > 0) {
+            this.addProductRecommendations(products);
+          }
+
+          // Persist messages
+          const persistText = attachment?.type === 'audio'
+            ? (data.data.transcription || '[Audio]')
+            : (text || '[Imagen]');
+          this.persistMessages(persistText, assistantMessage);
+        } else {
+          const errMsg = data?.error || data?.data?.response || 'Error al procesar. Intenta de nuevo.';
+          this.addMessage(errMsg, 'assistant');
+        }
+      } catch (error) {
+        console.error('Attachment send error:', error);
+        this.removeTypingIndicator(typingIndicator);
+        this.addMessage('Error de conexión. Por favor intenta de nuevo.', 'assistant');
+      } finally {
+        this.isSending = false;
+        if (this.sendButton) {
+          this.sendButton.disabled = !this.input || !this.input.value.trim();
+        }
+      }
+    }
+
     toggle() {
       console.log('✨ Toggling luxury widget. Current state:', this.isOpen);
       if (this.isOpen) {
@@ -5024,6 +6028,18 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
       // Clear input
       this.input.value = '';
+
+      // Show back button, hide avatar
+      this.isConversationActive = true;
+      console.log('🔄 Toggling header: backButton=', !!this.backButton);
+      if (this.backButton) {
+        this.backButton.style.display = 'flex';
+      }
+      const headerAvatar = this.container.querySelector('#kova-widget-header-avatar');
+      console.log('🔄 Header avatar found:', !!headerAvatar);
+      if (headerAvatar) {
+        headerAvatar.style.setProperty('display', 'none', 'important');
+      }
 
       // Add user message to UI
       this.addMessage(text, 'user');
@@ -5237,11 +6253,11 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
           this.addMessage('Lo siento, hubo un error de conexión. Por favor intenta de nuevo.', 'assistant');
         }
       } finally {
-        // Re-enable send button and reset sending flag
-        if (this.sendButton) {
-          this.sendButton.disabled = false;
-        }
+        // Reset sending flag and update send button based on input content
         this.isSending = false;
+        if (this.sendButton) {
+          this.sendButton.disabled = !this.input || !this.input.value.trim();
+        }
       }
     }
 
@@ -5321,10 +6337,19 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       }
 
       if (sender === 'assistant') {
+        // Wrap assistant messages in a row with avatar
+        const row = document.createElement('div');
+        row.className = 'kova-widget__message-row';
+        const avatarDiv = document.createElement('div');
+        avatarDiv.className = 'kova-widget__msg-avatar';
+        avatarDiv.innerHTML = this.getAvatarContent('small');
+        row.appendChild(avatarDiv);
+        row.appendChild(messageDiv);
+
         // Typing animation for assistant messages
         messageDiv.innerHTML = '';
         if (this.messagesContainer) {
-          this.messagesContainer.appendChild(messageDiv);
+          this.messagesContainer.appendChild(row);
           this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
         }
         this._animateTyping(messageDiv, formattedText);
@@ -5403,7 +6428,6 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       typingDiv.className = 'kova-widget__message kova-widget__message--assistant kova-widget__typing';
       typingDiv.innerHTML = `
         <div class="kova-typing-indicator">
-          <span>Escribiendo</span>
           <div class="kova-typing-dots">
             <div class="kova-dot"></div>
             <div class="kova-dot"></div>
@@ -5412,8 +6436,17 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
         </div>
       `;
 
+      // Wrap in message-row with avatar
+      const row = document.createElement('div');
+      row.className = 'kova-widget__message-row kova-widget__typing-row';
+      const avatarDiv = document.createElement('div');
+      avatarDiv.className = 'kova-widget__msg-avatar';
+      avatarDiv.innerHTML = this.getAvatarContent('small');
+      row.appendChild(avatarDiv);
+      row.appendChild(typingDiv);
+
       if (this.messagesContainer) {
-        this.messagesContainer.appendChild(typingDiv);
+        this.messagesContainer.appendChild(row);
         this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
       }
 
@@ -5422,7 +6455,13 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
 
     removeTypingIndicator(typingElement) {
       if (typingElement && typingElement.parentNode) {
-        typingElement.parentNode.removeChild(typingElement);
+        // If parent is a message-row, remove the whole row
+        const parent = typingElement.parentNode;
+        if (parent.classList && parent.classList.contains('kova-widget__message-row')) {
+          parent.parentNode.removeChild(parent);
+        } else {
+          parent.removeChild(typingElement);
+        }
       }
     }
 
@@ -5844,14 +6883,18 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
     resetConversation() {
       // Clear all messages except welcome
       if (this.messagesContainer) {
-        // Remove all messages
-        const messages = this.messagesContainer.querySelectorAll('.kova-widget__message:not(.kova-widget__welcome)');
+        // Remove all messages and message rows
+        const messages = this.messagesContainer.querySelectorAll('.kova-widget__message:not(.kova-widget__welcome), .kova-widget__message-row');
         messages.forEach(message => message.remove());
 
-        // Show welcome message again
+        // Show welcome message again (restore from fade-out)
         const welcome = this.messagesContainer.querySelector('.kova-widget__welcome');
         if (welcome) {
-          welcome.style.display = 'block';
+          welcome.style.display = '';
+          welcome.style.opacity = '';
+          welcome.style.maxHeight = '';
+          welcome.style.overflow = '';
+          welcome.style.transition = '';
         }
 
         // Scroll to top
@@ -5861,6 +6904,16 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
       // Clear input
       if (this.input) {
         this.input.value = '';
+      }
+
+      // Hide back button, restore avatar
+      this.isConversationActive = false;
+      if (this.backButton) {
+        this.backButton.style.display = 'none';
+      }
+      const headerAvatar = this.container.querySelector('#kova-widget-header-avatar');
+      if (headerAvatar) {
+        headerAvatar.style.setProperty('display', 'flex', 'important');
       }
 
       // Reset conversation state completely

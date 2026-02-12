@@ -7,9 +7,79 @@ import { tenantService } from '@/services/tenant.service';
 import { createTenantRateLimiter } from '@/middleware/tenant.middleware';
 import { SimpleConversionTracker } from '@/services/simple-conversion-tracker.service';
 import { knowledgeService } from '@/services/knowledge.service';
-import { getCommerceProvider } from '@/platforms/interfaces/commerce.interface';
+import { getCommerceProvider, registerCommerceProvider, StoreCredentials } from '@/platforms/interfaces/commerce.interface';
 // Side-effect imports to register commerce providers
 import '@/platforms/woocommerce';
+
+// Register Shopify commerce provider adapter (uses REST Admin API directly)
+registerCommerceProvider('shopify', (credentials: StoreCredentials) => {
+  const accessToken = credentials.access_token || '';
+  const apiVersion = '2024-01';
+
+  async function shopifyRest(shop: string, endpoint: string) {
+    const url = `https://${shop}/admin/api/${apiVersion}/${endpoint}`;
+    const res = await fetch(url, {
+      headers: { 'X-Shopify-Access-Token': accessToken, 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) throw new Error(`Shopify API ${res.status}: ${res.statusText}`);
+    return res.json();
+  }
+
+  function normalizeProduct(p: any) {
+    return {
+      id: p.id,
+      external_id: p.id,
+      title: p.title,
+      description: (p.body_html || '').replace(/<[^>]*>/g, '').substring(0, 300),
+      handle: p.handle,
+      vendor: p.vendor,
+      product_type: p.product_type,
+      tags: typeof p.tags === 'string' ? p.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : p.tags || [],
+      images: (p.images || []).map((img: any) => ({ src: img.src })),
+      variants: (p.variants || []).map((v: any) => ({
+        id: v.id,
+        external_id: v.id,
+        title: v.title,
+        price: Number(v.price) || 0,
+        available: v.inventory_quantity > 0,
+        sku: v.sku,
+      })),
+      price_range: { min: Number(p.variants?.[0]?.price) || 0 },
+    };
+  }
+
+  return {
+    searchProducts: async (shop: string, filters: any) => {
+      const query = filters.query || '';
+      const limit = Math.min(filters.limit || 5, 10);
+      const data = await shopifyRest(shop, `products.json?limit=${limit}&status=active&title=${encodeURIComponent(query)}`);
+      const products = (data.products || []).map(normalizeProduct);
+      // If title search returned nothing, try broader search
+      if (products.length === 0 && query) {
+        const allData = await shopifyRest(shop, `products.json?limit=50&status=active`);
+        const queryLower = query.toLowerCase();
+        const filtered = (allData.products || []).filter((p: any) => {
+          const text = `${p.title} ${p.body_html || ''} ${p.tags || ''} ${p.product_type || ''}`.toLowerCase();
+          return queryLower.split(/\s+/).some((word: string) => word.length > 2 && text.includes(word));
+        });
+        return filtered.slice(0, limit).map(normalizeProduct);
+      }
+      return products;
+    },
+    getProduct: async (shop: string, productId: string) => {
+      try {
+        const data = await shopifyRest(shop, `products/${productId}.json`);
+        return data.product ? normalizeProduct(data.product) : null;
+      } catch { return null; }
+    },
+    getProductRecommendations: async (shop: string, options: any) => {
+      const limit = Math.min(options.limit || 5, 10);
+      const intent = options.intent || 'popular';
+      const data = await shopifyRest(shop, `products.json?limit=${limit}&status=active`);
+      return (data.products || []).map(normalizeProduct);
+    },
+  } as any;
+});
 
 const router = Router();
 const simpleConversionTracker = new SimpleConversionTracker();
@@ -186,6 +256,31 @@ const conversationStore: Record<
   string,
   Array<{ role: string; content: string }>
 > = {};
+
+/**
+ * Transcribe audio using OpenAI Whisper API
+ */
+async function transcribeAudio(base64Data: string, mimeType: string): Promise<string> {
+  const buffer = Buffer.from(base64Data, 'base64');
+  const extMap: Record<string, string> = {
+    'audio/webm': 'webm',
+    'audio/mp4': 'mp4',
+    'audio/mpeg': 'mp3',
+    'audio/ogg': 'ogg',
+    'audio/wav': 'wav',
+    'audio/webm;codecs=opus': 'webm',
+  };
+  const ext = extMap[mimeType] || 'webm';
+  // Use OpenAI's toFile helper for buffer-to-file conversion
+  const { toFile: openaiToFile } = await import('openai/uploads');
+  const file = await openaiToFile(buffer, `audio.${ext}`, { type: mimeType });
+  const result = await (openai as any).audio.transcriptions.create({
+    model: 'whisper-1',
+    file,
+    language: 'es',
+  });
+  return result.text;
+}
 
 /**
  * Persist a chat message to the database for conversation history
@@ -572,13 +667,29 @@ router.post(
   trackUsageAfterResponse,
   async (req: Request, res: Response) => {
     try {
-      const { message, shop: rawShop, conversationId } = req.body;
+      const { message, shop: rawShop, conversationId, attachment } = req.body;
 
-      if (!message || typeof message !== 'string') {
+      // Validate: need either a text message or an attachment
+      if ((!message || typeof message !== 'string') && !attachment) {
         return res.status(400).json({
           success: false,
-          error: 'Message is required',
+          error: 'Message or attachment is required',
         });
+      }
+
+      // Validate attachment if present
+      if (attachment) {
+        if (!attachment.type || !['image', 'audio'].includes(attachment.type)) {
+          return res.status(400).json({ success: false, error: 'Invalid attachment type. Must be "image" or "audio".' });
+        }
+        if (!attachment.data || typeof attachment.data !== 'string') {
+          return res.status(400).json({ success: false, error: 'Attachment data is required.' });
+        }
+        // Size limits: ~2.7MB base64 for images (~2MB raw), ~6.7MB base64 for audio (~5MB raw)
+        const maxBase64 = attachment.type === 'image' ? 2_800_000 : 6_800_000;
+        if (attachment.data.length > maxBase64) {
+          return res.status(400).json({ success: false, error: `Attachment too large (max ${attachment.type === 'image' ? '2MB' : '5MB'}).` });
+        }
       }
 
       // Normalize shop domain to ensure consistency with webhooks
@@ -593,7 +704,7 @@ router.post(
         shop: shop || 'unknown',
         rawShop: rawShop || 'unknown',
         conversationId: currentConversationId,
-        messageLength: message.length,
+        messageLength: message?.length || 0,
         hasApiKey: !!apiKey,
         hasHistory: !!conversationStore[currentConversationId],
       });
@@ -655,10 +766,56 @@ router.post(
         conversationStore[currentConversationId] = [];
       }
 
-      // Add current user message to conversation history
+      // Process attachment (audio transcription / image prep)
+      let userTextForHistory = message || '';
+      let transcription: string | undefined;
+      let imageBase64: string | undefined;
+      let audioUrl: string | undefined;
+      let imageUrl: string | undefined;
+
+      if (attachment?.type === 'audio') {
+        try {
+          transcription = await transcribeAudio(attachment.data, attachment.mimeType || 'audio/webm');
+          userTextForHistory = transcription;
+          logger.info('Audio transcribed successfully', { length: transcription.length });
+        } catch (err: any) {
+          logger.error('Whisper transcription failed:', err);
+          return res.status(500).json({
+            success: false,
+            error: 'Error al transcribir el audio. Por favor intenta de nuevo.',
+            data: { response: 'No se pudo transcribir el audio. Por favor intenta de nuevo.', conversationId: currentConversationId },
+          });
+        }
+
+        // Upload audio to Supabase Storage (non-blocking on failure)
+        try {
+          const audioBuffer = Buffer.from(attachment.data, 'base64');
+          const audioMime = attachment.mimeType || 'audio/webm';
+          audioUrl = await supabaseService.uploadChatFile(
+            'chat-audio', shop || 'unknown', currentConversationId, audioBuffer, audioMime
+          );
+        } catch (uploadErr) {
+          logger.warn('Audio upload to Storage failed, continuing without URL:', uploadErr);
+        }
+      } else if (attachment?.type === 'image') {
+        imageBase64 = attachment.data;
+        userTextForHistory = message ? `[Imagen enviada] ${message}` : '[Imagen enviada]';
+
+        // Upload image to Supabase Storage (non-blocking on failure)
+        try {
+          const imageBuffer = Buffer.from(attachment.data, 'base64');
+          imageUrl = await supabaseService.uploadChatFile(
+            'chat-images', shop || 'unknown', currentConversationId, imageBuffer, 'image/jpeg'
+          );
+        } catch (uploadErr) {
+          logger.warn('Image upload to Storage failed, continuing without URL:', uploadErr);
+        }
+      }
+
+      // Add current user message to conversation history (text-only for context)
       conversationStore[currentConversationId].push({
         role: 'user',
-        content: message,
+        content: userTextForHistory,
       });
 
       // Persist user message to database (non-blocking)
@@ -667,7 +824,7 @@ router.post(
           currentConversationId,
           shop,
           'client',
-          message
+          userTextForHistory
         ).catch(() => {});
       }
 
@@ -678,13 +835,32 @@ router.post(
       }
 
       // Prepare messages for OpenAI (system prompt + conversation history)
-      const messages = [
+      // History goes as text; only the LAST message gets multimodal content if image
+      const historyMessages = conversationStore[currentConversationId];
+      const messages: any[] = [
         {
           role: 'system',
           content: systemPrompt,
         },
-        ...conversationStore[currentConversationId],
       ];
+
+      // Add all history except the last message
+      for (let i = 0; i < historyMessages.length - 1; i++) {
+        messages.push(historyMessages[i]);
+      }
+
+      // Last message: multimodal if image, otherwise text
+      if (imageBase64) {
+        messages.push({
+          role: 'user',
+          content: [
+            { type: 'text', text: message || 'Describe esta imagen y ayúdame a encontrar productos similares.' },
+            { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${imageBase64}`, detail: 'low' } },
+          ],
+        });
+      } else {
+        messages.push(historyMessages[historyMessages.length - 1]);
+      }
 
       // Define tools for product search + knowledge base
       const tools = [
@@ -994,6 +1170,9 @@ router.post(
         data: {
           response: widgetResponse,
           conversationId: currentConversationId,
+          ...(transcription && { transcription }),
+          ...(audioUrl && { audioUrl }),
+          ...(imageUrl && { imageUrl }),
         },
       });
     } catch (error: any) {

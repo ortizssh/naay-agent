@@ -537,4 +537,45 @@ export class SupabaseService {
 
     return data;
   }
+
+  /**
+   * Upload a chat file (audio/image) to Supabase Storage and return its public URL.
+   * Path: {shopDomain}/{sessionId}/{timestamp}.{ext}
+   */
+  async uploadChatFile(
+    bucket: string,
+    shopDomain: string,
+    sessionId: string,
+    buffer: Buffer,
+    mimeType: string
+  ): Promise<string> {
+    const extMap: Record<string, string> = {
+      'audio/webm': 'webm',
+      'audio/mp4': 'mp4',
+      'audio/mpeg': 'mp3',
+      'audio/ogg': 'ogg',
+      'audio/wav': 'wav',
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/webp': 'webp',
+      'image/gif': 'gif',
+    };
+    const ext = extMap[mimeType] || 'bin';
+    const filePath = `${shopDomain}/${sessionId}/${Date.now()}.${ext}`;
+
+    const { error } = await this.serviceClient.storage
+      .from(bucket)
+      .upload(filePath, buffer, { contentType: mimeType, upsert: false });
+
+    if (error) {
+      logger.error('Error uploading chat file:', { bucket, filePath, error });
+      throw new Error(`Failed to upload chat file: ${error.message}`);
+    }
+
+    const { data } = this.serviceClient.storage
+      .from(bucket)
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+  }
 }

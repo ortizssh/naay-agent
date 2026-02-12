@@ -132,7 +132,7 @@ router.get(
       const defaultConfig = {
         enabled: false,
         position: 'bottom-right',
-        primaryColor: '#a59457',
+        primaryColor: '#6b5afc',
         secondaryColor: '#212120',
         accentColor: '#cf795e',
         greeting: '',
@@ -144,12 +144,12 @@ router.get(
         rotatingMessagesInterval: 5,
         subtitle: 'Asistente de compras con IA',
         placeholder: 'Escribe tu mensaje...',
-        avatar: '🌿',
+        avatar: '',
         brandName: 'Kova',
-        buttonSize: 72,
+        buttonSize: 60,
         buttonStyle: 'circle',
         showPulse: true,
-        chatWidth: 420,
+        chatWidth: 440,
         chatHeight: 600,
         showPromoMessage: true,
         showCart: true,
@@ -259,7 +259,8 @@ router.get(
             suggested_question_3_message,
             chat_mode,
             chatbot_endpoint,
-            platform
+            platform,
+            plan
           `
           )
           .eq('shop_domain', shopVariant)
@@ -379,6 +380,7 @@ router.get(
             suggestedQuestion3Message:
               clientStore.suggested_question_3_message ||
               defaultConfig.suggestedQuestion3Message,
+            plan: clientStore.plan || 'free',
           },
         });
       }
@@ -514,8 +516,8 @@ router.post(
             Authorization: `Bearer ${RETELL_API_KEY}`,
           },
           body: JSON.stringify({
-            from_number: clientStore.retell_from_number || '',
-            to_number: phone,
+            from_number: (clientStore.retell_from_number || '').trim(),
+            to_number: phone.trim(),
             override_agent_id: clientStore.retell_agent_id,
             retell_llm_dynamic_variables: {
               name,
