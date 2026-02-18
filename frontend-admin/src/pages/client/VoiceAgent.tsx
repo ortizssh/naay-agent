@@ -50,7 +50,7 @@ function VoiceAgent() {
 
   // Form state
   const [form, setForm] = useState({
-    voiceId: '',
+    voiceId: 'custom_voice_68e03fc0f0b966ec686aa8d758',
     language: 'en-US',
     voiceSpeed: 1.0,
     voiceTemperature: 1.0,
@@ -289,26 +289,50 @@ function VoiceAgent() {
   }
 
   return (
-    <div className="page-content">
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>Voice Agent</h1>
-        {config?.voiceAgentEnabled && (
-          <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? 'Saving...' : 'Save Changes'}
-          </button>
-        )}
-      </div>
+    <>
+      <header className="page-header">
+        <div className="page-header-content">
+          <div>
+            <h1 className="page-title">Voice Agent</h1>
+            <p className="page-subtitle">Configure your AI-powered phone agent</p>
+          </div>
+          {config?.voiceAgentEnabled && (
+            <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+              {saving ? (
+                <>
+                  <div className="loading-spinner" style={{ width: '18px', height: '18px', borderWidth: '2px' }}></div>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                    <polyline points="17 21 17 13 7 13 7 21" />
+                    <polyline points="7 3 7 8 15 8" />
+                  </svg>
+                  Save Changes
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      </header>
 
-      {error && (
-        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px', color: '#dc2626' }}>
-          {error}
-        </div>
-      )}
-      {success && (
-        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px', color: '#16a34a' }}>
-          {success}
-        </div>
-      )}
+      <div className="page-content">
+        {error && (
+          <div className="alert alert-error" style={{ marginBottom: '16px' }}>
+            <div className="alert-content">
+              <div className="alert-message">{error}</div>
+            </div>
+          </div>
+        )}
+        {success && (
+          <div className="alert alert-success" style={{ marginBottom: '16px' }}>
+            <div className="alert-content">
+              <div className="alert-message">{success}</div>
+            </div>
+          </div>
+        )}
 
       {/* Enable/Disable Card */}
       <div className="card" style={{ marginBottom: '24px' }}>
@@ -387,18 +411,33 @@ function VoiceAgent() {
         <>
           {/* Voice Configuration */}
           <div className="card" style={{ marginBottom: '24px' }}>
-            <div className="card-header">
-              <h3 className="card-title">Voice Configuration</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--color-primary-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                  <line x1="12" y1="19" x2="12" y2="23" />
+                  <line x1="8" y1="23" x2="16" y2="23" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="card-title">Voice Configuration</h3>
+                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: 0 }}>Configure the voice, language and behavior of your agent</p>
+              </div>
             </div>
-            <div className="card-body">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                {/* Voice selector */}
-                <div className="form-group">
-                  <label className="form-label">Voice</label>
+
+            <div style={{ borderTop: '1px solid var(--color-border)', margin: '16px 0', padding: 0 }} />
+
+            {/* Voice + Language row */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '8px' }}>
+              <div className="form-group">
+                <label className="form-label">Voice</label>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'start' }}>
                   <select
-                    className="form-control"
+                    className="form-input"
                     value={form.voiceId}
                     onChange={e => setForm(f => ({ ...f, voiceId: e.target.value }))}
+                    style={{ flex: 1 }}
                   >
                     <option value="">Select voice...</option>
                     {voices.map(v => (
@@ -413,8 +452,27 @@ function VoiceAgent() {
                       return (
                         <button
                           onClick={() => playVoicePreview(selectedVoice.voice_id, selectedVoice.preview_audio_url)}
-                          style={{ marginTop: '8px', background: 'none', border: '1px solid #ddd', borderRadius: '6px', padding: '4px 12px', cursor: 'pointer', fontSize: '13px' }}
+                          style={{
+                            background: playingVoiceId === selectedVoice.voice_id ? 'var(--color-primary-soft)' : 'var(--color-bg)',
+                            border: '1px solid var(--color-border)',
+                            borderRadius: '10px',
+                            padding: '0.75rem',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontSize: '13px',
+                            color: 'var(--color-primary)',
+                            fontWeight: 500,
+                            whiteSpace: 'nowrap',
+                            height: '44px',
+                          }}
                         >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill={playingVoiceId === selectedVoice.voice_id ? 'var(--color-primary)' : 'none'} stroke="var(--color-primary)" strokeWidth="2">
+                            {playingVoiceId === selectedVoice.voice_id
+                              ? <rect x="6" y="4" width="12" height="16" rx="1" />
+                              : <polygon points="5 3 19 12 5 21 5 3" />}
+                          </svg>
                           {playingVoiceId === selectedVoice.voice_id ? 'Stop' : 'Preview'}
                         </button>
                       );
@@ -422,159 +480,273 @@ function VoiceAgent() {
                     return null;
                   })()}
                 </div>
-
-                {/* Language */}
-                <div className="form-group">
-                  <label className="form-label">Language</label>
-                  <select
-                    className="form-control"
-                    value={form.language}
-                    onChange={e => setForm(f => ({ ...f, language: e.target.value }))}
-                  >
-                    {LANGUAGE_OPTIONS.map(l => (
-                      <option key={l.value} value={l.value}>{l.label}</option>
-                    ))}
-                  </select>
-                </div>
+                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>The voice your agent will use during calls</span>
               </div>
 
-              {/* Sliders */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                <div className="form-group">
-                  <label className="form-label">Voice Speed ({form.voiceSpeed.toFixed(1)})</label>
-                  <input type="range" min="0.5" max="2" step="0.1" value={form.voiceSpeed}
-                    onChange={e => setForm(f => ({ ...f, voiceSpeed: parseFloat(e.target.value) }))}
-                    style={{ width: '100%' }} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Voice Temperature ({form.voiceTemperature.toFixed(1)})</label>
-                  <input type="range" min="0" max="2" step="0.1" value={form.voiceTemperature}
-                    onChange={e => setForm(f => ({ ...f, voiceTemperature: parseFloat(e.target.value) }))}
-                    style={{ width: '100%' }} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Responsiveness ({form.responsiveness.toFixed(1)})</label>
-                  <input type="range" min="0" max="1" step="0.1" value={form.responsiveness}
-                    onChange={e => setForm(f => ({ ...f, responsiveness: parseFloat(e.target.value) }))}
-                    style={{ width: '100%' }} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Interruption Sensitivity ({form.interruptionSensitivity.toFixed(1)})</label>
-                  <input type="range" min="0" max="1" step="0.1" value={form.interruptionSensitivity}
-                    onChange={e => setForm(f => ({ ...f, interruptionSensitivity: parseFloat(e.target.value) }))}
-                    style={{ width: '100%' }} />
-                </div>
+              <div className="form-group">
+                <label className="form-label">Language</label>
+                <select
+                  className="form-input"
+                  value={form.language}
+                  onChange={e => setForm(f => ({ ...f, language: e.target.value }))}
+                >
+                  {LANGUAGE_OPTIONS.map(l => (
+                    <option key={l.value} value={l.value}>{l.label}</option>
+                  ))}
+                </select>
+                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Primary language for speech recognition</span>
               </div>
+            </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div className="form-group">
-                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <input type="checkbox" checked={form.enableBackchannel}
-                      onChange={e => setForm(f => ({ ...f, enableBackchannel: e.target.checked }))} />
-                    Enable Backchannel
+            {/* Sliders grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '8px' }}>
+              {[
+                { label: 'Voice Speed', key: 'voiceSpeed' as const, min: 0.5, max: 2, step: 0.1, hint: 'How fast the agent speaks' },
+                { label: 'Voice Temperature', key: 'voiceTemperature' as const, min: 0, max: 2, step: 0.1, hint: 'Higher = more expressive and varied' },
+                { label: 'Responsiveness', key: 'responsiveness' as const, min: 0, max: 1, step: 0.1, hint: 'How quickly the agent responds' },
+                { label: 'Interruption Sensitivity', key: 'interruptionSensitivity' as const, min: 0, max: 1, step: 0.1, hint: 'How easily the caller can interrupt' },
+              ].map(slider => (
+                <div className="form-group" key={slider.key} style={{ marginBottom: '0.5rem' }}>
+                  <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>{slider.label}</span>
+                    <span style={{
+                      background: 'var(--color-primary-soft)',
+                      color: 'var(--color-primary)',
+                      padding: '2px 10px',
+                      borderRadius: '20px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      minWidth: '40px',
+                      textAlign: 'center',
+                    }}>
+                      {(form[slider.key] as number).toFixed(1)}
+                    </span>
                   </label>
-                  <small style={{ color: '#64748b' }}>Agent says "uh-huh", "I see", etc. while listening</small>
+                  <input
+                    type="range" min={slider.min} max={slider.max} step={slider.step}
+                    value={form[slider.key]}
+                    onChange={e => setForm(f => ({ ...f, [slider.key]: parseFloat(e.target.value) }))}
+                    style={{
+                      width: '100%', height: '6px', borderRadius: '3px',
+                      appearance: 'none', WebkitAppearance: 'none',
+                      background: `linear-gradient(to right, var(--color-primary) 0%, var(--color-primary) ${((form[slider.key] as number) - slider.min) / (slider.max - slider.min) * 100}%, var(--color-border) ${((form[slider.key] as number) - slider.min) / (slider.max - slider.min) * 100}%, var(--color-border) 100%)`,
+                      cursor: 'pointer',
+                      outline: 'none',
+                    }}
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{slider.hint}</span>
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Ambient Sound</label>
-                  <select className="form-control" value={form.ambientSound}
-                    onChange={e => setForm(f => ({ ...f, ambientSound: e.target.value }))}>
-                    {AMBIENT_SOUND_OPTIONS.map(o => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
+              ))}
+            </div>
+
+            {/* Backchannel + Ambient Sound */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Backchannel</label>
+                <div
+                  onClick={() => setForm(f => ({ ...f, enableBackchannel: !f.enableBackchannel }))}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '12px',
+                    padding: '12px 16px', borderRadius: '10px', cursor: 'pointer',
+                    border: `1px solid ${form.enableBackchannel ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                    background: form.enableBackchannel ? 'var(--color-primary-soft)' : 'var(--color-bg)',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <div style={{
+                    width: '36px', height: '20px', borderRadius: '10px', position: 'relative',
+                    background: form.enableBackchannel ? 'var(--color-primary)' : '#cbd5e1',
+                    transition: 'background 0.2s ease', flexShrink: 0,
+                  }}>
+                    <div style={{
+                      width: '16px', height: '16px', borderRadius: '50%', background: '#fff',
+                      position: 'absolute', top: '2px',
+                      left: form.enableBackchannel ? '18px' : '2px',
+                      transition: 'left 0.2s ease',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                    }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text)' }}>
+                      {form.enableBackchannel ? 'Enabled' : 'Disabled'}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                      Agent says "uh-huh", "I see", etc. while listening
+                    </div>
+                  </div>
                 </div>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Ambient Sound</label>
+                <select className="form-input" value={form.ambientSound}
+                  onChange={e => setForm(f => ({ ...f, ambientSound: e.target.value }))}>
+                  {AMBIENT_SOUND_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Background noise to make the agent sound more natural</span>
               </div>
             </div>
           </div>
 
           {/* Prompt & Model */}
           <div className="card" style={{ marginBottom: '24px' }}>
-            <div className="card-header">
-              <h3 className="card-title">Prompt & Model</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(245, 158, 11, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2">
+                  <path d="M12 2a4 4 0 0 0-4 4v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2h-2V6a4 4 0 0 0-4-4z" />
+                  <circle cx="12" cy="15" r="2" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="card-title">Prompt & Model</h3>
+                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: 0 }}>Define the personality, instructions and AI model for your agent</p>
+              </div>
             </div>
-            <div className="card-body">
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label className="form-label">System Prompt</label>
-                <textarea
-                  className="form-control"
-                  rows={6}
-                  value={form.prompt}
-                  onChange={e => setForm(f => ({ ...f, prompt: e.target.value }))}
-                  placeholder="Enter the system prompt for the voice agent..."
-                  style={{ resize: 'vertical' }}
-                />
-              </div>
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label className="form-label">Begin Message</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={form.beginMessage}
-                  onChange={e => setForm(f => ({ ...f, beginMessage: e.target.value }))}
-                  placeholder="First thing the agent says (leave empty for dynamic)"
-                />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                <div className="form-group">
-                  <label className="form-label">Model</label>
-                  <select className="form-control" value={form.model}
-                    onChange={e => setForm(f => ({ ...f, model: e.target.value }))}>
-                    {MODEL_OPTIONS.map(m => (
-                      <option key={m.value} value={m.value}>{m.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Model Temperature ({form.modelTemperature.toFixed(1)})</label>
-                  <input type="range" min="0" max="1" step="0.1" value={form.modelTemperature}
-                    onChange={e => setForm(f => ({ ...f, modelTemperature: parseFloat(e.target.value) }))}
-                    style={{ width: '100%' }} />
-                </div>
-              </div>
+
+            <div style={{ borderTop: '1px solid var(--color-border)', margin: '16px 0', padding: 0 }} />
+
+            <div className="form-group">
+              <label className="form-label">System Prompt</label>
+              <textarea
+                className="form-input"
+                rows={6}
+                value={form.prompt}
+                onChange={e => setForm(f => ({ ...f, prompt: e.target.value }))}
+                placeholder="You are a helpful customer service agent for our store. You help customers with product inquiries, orders, and general questions..."
+                style={{ resize: 'vertical', lineHeight: '1.6' }}
+              />
+              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>The main instructions that define your agent's behavior and personality</span>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Begin Message</label>
+              <input
+                type="text"
+                className="form-input"
+                value={form.beginMessage}
+                onChange={e => setForm(f => ({ ...f, beginMessage: e.target.value }))}
+                placeholder="Hello! Thank you for calling. How can I help you today?"
+              />
+              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>First thing the agent says when answering. Leave empty for a dynamic greeting.</span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
               <div className="form-group">
-                <label className="form-label">Boosted Keywords</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={keywordsInput}
-                  onChange={e => setKeywordsInput(e.target.value)}
-                  placeholder="Comma-separated: product name, brand, etc."
-                />
-                <small style={{ color: '#64748b' }}>Words the speech recognition should prioritize</small>
+                <label className="form-label">Model</label>
+                <select className="form-input" value={form.model}
+                  onChange={e => setForm(f => ({ ...f, model: e.target.value }))}>
+                  {MODEL_OPTIONS.map(m => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>AI model powering the agent's responses</span>
               </div>
+
+              <div className="form-group" style={{ marginBottom: '0.5rem' }}>
+                <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Model Temperature</span>
+                  <span style={{
+                    background: 'rgba(245, 158, 11, 0.1)',
+                    color: '#f59e0b',
+                    padding: '2px 10px',
+                    borderRadius: '20px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    minWidth: '40px',
+                    textAlign: 'center',
+                  }}>
+                    {form.modelTemperature.toFixed(1)}
+                  </span>
+                </label>
+                <input
+                  type="range" min="0" max="1" step="0.1"
+                  value={form.modelTemperature}
+                  onChange={e => setForm(f => ({ ...f, modelTemperature: parseFloat(e.target.value) }))}
+                  style={{
+                    width: '100%', height: '6px', borderRadius: '3px',
+                    appearance: 'none', WebkitAppearance: 'none',
+                    background: `linear-gradient(to right, #f59e0b 0%, #f59e0b ${form.modelTemperature * 100}%, var(--color-border) ${form.modelTemperature * 100}%, var(--color-border) 100%)`,
+                    cursor: 'pointer',
+                    outline: 'none',
+                  }}
+                />
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Lower = more predictable, higher = more creative</span>
+              </div>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">Boosted Keywords</label>
+              <input
+                type="text"
+                className="form-input"
+                value={keywordsInput}
+                onChange={e => setKeywordsInput(e.target.value)}
+                placeholder="product name, brand, technical term, etc."
+              />
+              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Comma-separated words the speech recognition should prioritize</span>
             </div>
           </div>
 
           {/* Call Limits */}
           <div className="card" style={{ marginBottom: '24px' }}>
-            <div className="card-header">
-              <h3 className="card-title">Call Limits</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--color-error-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="card-title">Call Limits</h3>
+                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: 0 }}>Set duration and silence thresholds for automatic call termination</p>
+              </div>
             </div>
-            <div className="card-body">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div className="form-group">
-                  <label className="form-label">Max Call Duration (minutes)</label>
+
+            <div style={{ borderTop: '1px solid var(--color-border)', margin: '16px 0', padding: 0 }} />
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Max Call Duration</label>
+                <div style={{ position: 'relative' }}>
                   <input
                     type="number"
-                    className="form-control"
+                    className="form-input"
                     value={Math.round(form.maxCallDurationMs / 60000)}
                     onChange={e => setForm(f => ({ ...f, maxCallDurationMs: parseInt(e.target.value || '30') * 60000 }))}
                     min={1}
                     max={120}
+                    style={{ paddingRight: '70px' }}
                   />
+                  <span style={{
+                    position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
+                    fontSize: '0.8rem', color: 'var(--color-text-muted)', pointerEvents: 'none',
+                  }}>minutes</span>
                 </div>
-                <div className="form-group">
-                  <label className="form-label">End Call After Silence (seconds)</label>
+                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Call will automatically end after this duration</span>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">End Call After Silence</label>
+                <div style={{ position: 'relative' }}>
                   <input
                     type="number"
-                    className="form-control"
+                    className="form-input"
                     value={Math.round(form.endCallAfterSilenceMs / 1000)}
                     onChange={e => setForm(f => ({ ...f, endCallAfterSilenceMs: parseInt(e.target.value || '30') * 1000 }))}
                     min={5}
                     max={120}
+                    style={{ paddingRight: '70px' }}
                   />
+                  <span style={{
+                    position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
+                    fontSize: '0.8rem', color: 'var(--color-text-muted)', pointerEvents: 'none',
+                  }}>seconds</span>
                 </div>
+                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Hang up if no one speaks for this long</span>
               </div>
             </div>
           </div>
@@ -704,7 +876,8 @@ function VoiceAgent() {
           </div>
         </>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 
