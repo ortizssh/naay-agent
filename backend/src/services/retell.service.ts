@@ -301,7 +301,8 @@ export class RetellService {
       // Step 2: Create Agent
       const agent = await this.createAgent({
         llmId,
-        voiceId: agentConfig.voiceId || 'custom_voice_68e03fc0f0b966ec686aa8d758',
+        voiceId:
+          agentConfig.voiceId || 'custom_voice_68e03fc0f0b966ec686aa8d758',
         name: agentConfig.agentName || `Kova - ${shopDomain}`,
         language: agentConfig.language,
         voiceSpeed: agentConfig.voiceSpeed,
