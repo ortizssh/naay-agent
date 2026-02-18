@@ -51,7 +51,8 @@ function VoiceAgent() {
   const [testCallResult, setTestCallResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [showTestCallModal, setShowTestCallModal] = useState(false);
   const [testCallNumber, setTestCallNumber] = useState('');
-  const [testCallDynVars, setTestCallDynVars] = useState<{ key: string; value: string }[]>([]);
+  const [testCallName, setTestCallName] = useState('');
+  const [testCallEmail, setTestCallEmail] = useState('');
 
   // Form state
   const [form, setForm] = useState({
@@ -199,14 +200,13 @@ function VoiceAgent() {
     setTestCalling(true);
     setTestCallResult(null);
     try {
-      // Build dynamic variables from non-empty entries
-      const dynVars: Record<string, string> = {};
-      testCallDynVars.forEach(v => {
-        if (v.key.trim() && v.value.trim()) dynVars[v.key.trim()] = v.value.trim();
-      });
-      const hasDynVars = Object.keys(dynVars).length > 0;
+      const dynVars: Record<string, string> = {
+        phone: testCallNumber.trim(),
+      };
+      if (testCallName.trim()) dynVars.name = testCallName.trim();
+      if (testCallEmail.trim()) dynVars.email = testCallEmail.trim();
 
-      const res = await clientApi.makeTestCall(testCallNumber.trim(), hasDynVars ? dynVars : undefined);
+      const res = await clientApi.makeTestCall(testCallNumber.trim(), dynVars);
       if (res.success) {
         setTestCallResult({ type: 'success', message: `Call initiated! You should receive a call shortly.` });
         setShowTestCallModal(false);
@@ -524,56 +524,34 @@ function VoiceAgent() {
                     placeholder="+1234567890"
                     onKeyDown={e => { if (e.key === 'Enter' && !testCalling && testCallNumber.trim()) handleTestCall(); }}
                   />
-                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>International format (E.164)</span>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>International format (E.164). This number will receive the call.</span>
                 </div>
 
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <label className="form-label" style={{ margin: 0 }}>Dynamic Variables</label>
-                    <button
-                      type="button"
-                      onClick={() => setTestCallDynVars(v => [...v, { key: '', value: '' }])}
-                      style={{ fontSize: '13px', color: 'var(--color-primary)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
-                    >
-                      + Add Variable
-                    </button>
+                <div style={{ borderTop: '1px solid var(--color-border)', margin: '16px 0', padding: 0 }} />
+                <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 12px' }}>
+                  These variables are passed to your agent's prompt as {'{{name}}'}, {'{{email}}'}, {'{{phone}}'}.
+                </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label">Name</label>
+                    <input
+                      className="form-input"
+                      value={testCallName}
+                      onChange={e => setTestCallName(e.target.value)}
+                      placeholder="John Doe"
+                    />
                   </div>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '8px' }}>
-                    Pass variables to your agent's prompt (e.g. customer_name, order_id)
-                  </span>
-                  {testCallDynVars.map((v, i) => (
-                    <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
-                      <input
-                        className="form-input"
-                        placeholder="key"
-                        value={v.key}
-                        onChange={e => {
-                          const updated = [...testCallDynVars];
-                          updated[i] = { ...updated[i], key: e.target.value };
-                          setTestCallDynVars(updated);
-                        }}
-                        style={{ flex: 1 }}
-                      />
-                      <input
-                        className="form-input"
-                        placeholder="value"
-                        value={v.value}
-                        onChange={e => {
-                          const updated = [...testCallDynVars];
-                          updated[i] = { ...updated[i], value: e.target.value };
-                          setTestCallDynVars(updated);
-                        }}
-                        style={{ flex: 1 }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setTestCallDynVars(v => v.filter((_, idx) => idx !== i))}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '18px', padding: '4px', lineHeight: 1 }}
-                      >
-                        &times;
-                      </button>
-                    </div>
-                  ))}
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label">Email</label>
+                    <input
+                      type="email"
+                      className="form-input"
+                      value={testCallEmail}
+                      onChange={e => setTestCallEmail(e.target.value)}
+                      placeholder="john@example.com"
+                    />
+                  </div>
                 </div>
 
                 {testCallResult && (
