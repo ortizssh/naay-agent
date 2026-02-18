@@ -87,12 +87,15 @@ export class RetellService {
   /**
    * Update a Retell LLM
    */
-  async updateLlm(llmId: string, params: {
-    prompt?: string;
-    model?: string;
-    beginMessage?: string;
-    temperature?: number;
-  }) {
+  async updateLlm(
+    llmId: string,
+    params: {
+      prompt?: string;
+      model?: string;
+      beginMessage?: string;
+      temperature?: number;
+    }
+  ) {
     const retell = getRetell();
 
     const llm = await retell.llm.update(llmId, {
@@ -143,13 +146,13 @@ export class RetellService {
       },
       voice_id: params.voiceId,
       agent_name: params.name || undefined,
-      language: params.language as any || 'en-US',
+      language: (params.language as any) || 'en-US',
       voice_speed: params.voiceSpeed ?? undefined,
       voice_temperature: params.voiceTemperature ?? undefined,
       responsiveness: params.responsiveness ?? undefined,
       interruption_sensitivity: params.interruptionSensitivity ?? undefined,
       enable_backchannel: params.enableBackchannel ?? undefined,
-      ambient_sound: params.ambientSound as any ?? undefined,
+      ambient_sound: (params.ambientSound as any) ?? undefined,
       max_call_duration_ms: params.maxCallDurationMs ?? undefined,
       end_call_after_silence_ms: params.endCallAfterSilenceMs ?? undefined,
       boosted_keywords: params.boostedKeywords ?? undefined,
@@ -163,21 +166,24 @@ export class RetellService {
   /**
    * Update a Retell Agent
    */
-  async updateAgent(agentId: string, params: {
-    voiceId?: string;
-    name?: string;
-    language?: string;
-    voiceSpeed?: number;
-    voiceTemperature?: number;
-    responsiveness?: number;
-    interruptionSensitivity?: number;
-    enableBackchannel?: boolean;
-    ambientSound?: string | null;
-    maxCallDurationMs?: number;
-    endCallAfterSilenceMs?: number;
-    boostedKeywords?: string[];
-    webhookUrl?: string;
-  }) {
+  async updateAgent(
+    agentId: string,
+    params: {
+      voiceId?: string;
+      name?: string;
+      language?: string;
+      voiceSpeed?: number;
+      voiceTemperature?: number;
+      responsiveness?: number;
+      interruptionSensitivity?: number;
+      enableBackchannel?: boolean;
+      ambientSound?: string | null;
+      maxCallDurationMs?: number;
+      endCallAfterSilenceMs?: number;
+      boostedKeywords?: string[];
+      webhookUrl?: string;
+    }
+  ) {
     const retell = getRetell();
 
     const agent = await retell.agent.update(agentId, {
@@ -189,7 +195,7 @@ export class RetellService {
       responsiveness: params.responsiveness ?? undefined,
       interruption_sensitivity: params.interruptionSensitivity ?? undefined,
       enable_backchannel: params.enableBackchannel ?? undefined,
-      ambient_sound: params.ambientSound as any ?? undefined,
+      ambient_sound: (params.ambientSound as any) ?? undefined,
       max_call_duration_ms: params.maxCallDurationMs ?? undefined,
       end_call_after_silence_ms: params.endCallAfterSilenceMs ?? undefined,
       boosted_keywords: params.boostedKeywords ?? undefined,
@@ -318,21 +324,44 @@ export class RetellService {
       // Step 4: Bind phone to agent
       await this.bindPhoneToAgent(phoneNumber, agentId);
 
-      logger.info('Voice agent provisioned', { shopDomain, llmId, agentId, phoneNumber });
+      logger.info('Voice agent provisioned', {
+        shopDomain,
+        llmId,
+        agentId,
+        phoneNumber,
+      });
 
       return { llmId, agentId, phoneNumber };
     } catch (error) {
-      logger.error('Provisioning failed, rolling back', { shopDomain, llmId, agentId, phoneNumber, error });
+      logger.error('Provisioning failed, rolling back', {
+        shopDomain,
+        llmId,
+        agentId,
+        phoneNumber,
+        error,
+      });
 
       // Best-effort cleanup
       if (phoneNumber) {
-        try { await this.releasePhoneNumber(phoneNumber); } catch (e) { logger.error('Rollback: failed to release phone', { phoneNumber, e }); }
+        try {
+          await this.releasePhoneNumber(phoneNumber);
+        } catch (e) {
+          logger.error('Rollback: failed to release phone', { phoneNumber, e });
+        }
       }
       if (agentId) {
-        try { await this.deleteAgent(agentId); } catch (e) { logger.error('Rollback: failed to delete agent', { agentId, e }); }
+        try {
+          await this.deleteAgent(agentId);
+        } catch (e) {
+          logger.error('Rollback: failed to delete agent', { agentId, e });
+        }
       }
       if (llmId) {
-        try { await this.deleteLlm(llmId); } catch (e) { logger.error('Rollback: failed to delete LLM', { llmId, e }); }
+        try {
+          await this.deleteLlm(llmId);
+        } catch (e) {
+          logger.error('Rollback: failed to delete LLM', { llmId, e });
+        }
       }
 
       throw error;
@@ -351,22 +380,37 @@ export class RetellService {
     const errors: string[] = [];
 
     if (ids.phoneNumber) {
-      try { await this.releasePhoneNumber(ids.phoneNumber); } catch (e) {
-        logger.error('Deprovision: failed to release phone', { phone: ids.phoneNumber, e });
+      try {
+        await this.releasePhoneNumber(ids.phoneNumber);
+      } catch (e) {
+        logger.error('Deprovision: failed to release phone', {
+          phone: ids.phoneNumber,
+          e,
+        });
         errors.push(`Failed to release phone: ${ids.phoneNumber}`);
       }
     }
 
     if (ids.agentId) {
-      try { await this.deleteAgent(ids.agentId); } catch (e) {
-        logger.error('Deprovision: failed to delete agent', { agentId: ids.agentId, e });
+      try {
+        await this.deleteAgent(ids.agentId);
+      } catch (e) {
+        logger.error('Deprovision: failed to delete agent', {
+          agentId: ids.agentId,
+          e,
+        });
         errors.push(`Failed to delete agent: ${ids.agentId}`);
       }
     }
 
     if (ids.llmId) {
-      try { await this.deleteLlm(ids.llmId); } catch (e) {
-        logger.error('Deprovision: failed to delete LLM', { llmId: ids.llmId, e });
+      try {
+        await this.deleteLlm(ids.llmId);
+      } catch (e) {
+        logger.error('Deprovision: failed to delete LLM', {
+          llmId: ids.llmId,
+          e,
+        });
         errors.push(`Failed to delete LLM: ${ids.llmId}`);
       }
     }
@@ -395,7 +439,10 @@ export class RetellService {
   /**
    * List calls for an agent
    */
-  async listCalls(agentId: string, options?: { limit?: number; paginationKey?: string }) {
+  async listCalls(
+    agentId: string,
+    options?: { limit?: number; paginationKey?: string }
+  ) {
     const retell = getRetell();
 
     const calls = await retell.call.list({

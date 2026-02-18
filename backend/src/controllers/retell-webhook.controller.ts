@@ -48,52 +48,71 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     if (!shopDomain) {
-      logger.warn('Retell webhook: could not resolve shop_domain for agent', { agentId });
+      logger.warn('Retell webhook: could not resolve shop_domain for agent', {
+        agentId,
+      });
       return res.status(200).json({ received: true });
     }
 
-    logger.info('Retell webhook received', { eventType, callId: callData.call_id, shopDomain });
+    logger.info('Retell webhook received', {
+      eventType,
+      callId: callData.call_id,
+      shopDomain,
+    });
 
     switch (eventType) {
       case 'call_started': {
         await (supabaseService as any).serviceClient
           .from('voice_call_logs')
-          .upsert({
-            retell_call_id: callData.call_id,
-            shop_domain: shopDomain,
-            agent_id: agentId,
-            from_number: callData.from_number || null,
-            to_number: callData.to_number || null,
-            direction: callData.direction || 'inbound',
-            status: 'started',
-            started_at: callData.start_timestamp ? new Date(callData.start_timestamp).toISOString() : new Date().toISOString(),
-            raw_event: event,
-          }, { onConflict: 'retell_call_id' });
+          .upsert(
+            {
+              retell_call_id: callData.call_id,
+              shop_domain: shopDomain,
+              agent_id: agentId,
+              from_number: callData.from_number || null,
+              to_number: callData.to_number || null,
+              direction: callData.direction || 'inbound',
+              status: 'started',
+              started_at: callData.start_timestamp
+                ? new Date(callData.start_timestamp).toISOString()
+                : new Date().toISOString(),
+              raw_event: event,
+            },
+            { onConflict: 'retell_call_id' }
+          );
         break;
       }
 
       case 'call_ended': {
-        const duration = callData.end_timestamp && callData.start_timestamp
-          ? callData.end_timestamp - callData.start_timestamp
-          : null;
+        const duration =
+          callData.end_timestamp && callData.start_timestamp
+            ? callData.end_timestamp - callData.start_timestamp
+            : null;
 
         await (supabaseService as any).serviceClient
           .from('voice_call_logs')
-          .upsert({
-            retell_call_id: callData.call_id,
-            shop_domain: shopDomain,
-            agent_id: agentId,
-            from_number: callData.from_number || null,
-            to_number: callData.to_number || null,
-            direction: callData.direction || 'inbound',
-            status: 'ended',
-            started_at: callData.start_timestamp ? new Date(callData.start_timestamp).toISOString() : undefined,
-            ended_at: callData.end_timestamp ? new Date(callData.end_timestamp).toISOString() : new Date().toISOString(),
-            duration_ms: duration,
-            disconnection_reason: callData.disconnection_reason || null,
-            transcript: callData.transcript || null,
-            raw_event: event,
-          }, { onConflict: 'retell_call_id' });
+          .upsert(
+            {
+              retell_call_id: callData.call_id,
+              shop_domain: shopDomain,
+              agent_id: agentId,
+              from_number: callData.from_number || null,
+              to_number: callData.to_number || null,
+              direction: callData.direction || 'inbound',
+              status: 'ended',
+              started_at: callData.start_timestamp
+                ? new Date(callData.start_timestamp).toISOString()
+                : undefined,
+              ended_at: callData.end_timestamp
+                ? new Date(callData.end_timestamp).toISOString()
+                : new Date().toISOString(),
+              duration_ms: duration,
+              disconnection_reason: callData.disconnection_reason || null,
+              transcript: callData.transcript || null,
+              raw_event: event,
+            },
+            { onConflict: 'retell_call_id' }
+          );
         break;
       }
 
@@ -104,8 +123,10 @@ router.post('/', async (req: Request, res: Response) => {
 
         if (callData.call_analysis) {
           updateData.call_summary = callData.call_analysis.call_summary || null;
-          updateData.user_sentiment = callData.call_analysis.user_sentiment || null;
-          updateData.call_successful = callData.call_analysis.call_successful ?? null;
+          updateData.user_sentiment =
+            callData.call_analysis.user_sentiment || null;
+          updateData.call_successful =
+            callData.call_analysis.call_successful ?? null;
         }
 
         await (supabaseService as any).serviceClient

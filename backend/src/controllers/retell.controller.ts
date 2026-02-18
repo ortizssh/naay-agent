@@ -95,11 +95,13 @@ router.get(
           voiceSpeed: store.voice_agent_voice_speed ?? 1.0,
           voiceTemperature: store.voice_agent_voice_temperature ?? 1.0,
           responsiveness: store.voice_agent_responsiveness ?? 0.7,
-          interruptionSensitivity: store.voice_agent_interruption_sensitivity ?? 0.5,
+          interruptionSensitivity:
+            store.voice_agent_interruption_sensitivity ?? 0.5,
           enableBackchannel: store.voice_agent_enable_backchannel ?? true,
           ambientSound: store.voice_agent_ambient_sound || null,
           maxCallDurationMs: store.voice_agent_max_call_duration_ms ?? 1800000,
-          endCallAfterSilenceMs: store.voice_agent_end_call_after_silence_ms ?? 30000,
+          endCallAfterSilenceMs:
+            store.voice_agent_end_call_after_silence_ms ?? 30000,
           boostedKeywords: store.voice_agent_boosted_keywords || [],
           // Prompt config
           prompt: store.voice_agent_prompt || '',
@@ -131,29 +133,53 @@ router.put(
       }
 
       const {
-        voiceId, language, voiceSpeed, voiceTemperature,
-        responsiveness, interruptionSensitivity, enableBackchannel,
-        ambientSound, maxCallDurationMs, endCallAfterSilenceMs,
-        boostedKeywords, prompt, beginMessage, model, modelTemperature,
+        voiceId,
+        language,
+        voiceSpeed,
+        voiceTemperature,
+        responsiveness,
+        interruptionSensitivity,
+        enableBackchannel,
+        ambientSound,
+        maxCallDurationMs,
+        endCallAfterSilenceMs,
+        boostedKeywords,
+        prompt,
+        beginMessage,
+        model,
+        modelTemperature,
       } = req.body;
 
       // Build DB update object
-      const dbUpdate: Record<string, any> = { updated_at: new Date().toISOString() };
+      const dbUpdate: Record<string, any> = {
+        updated_at: new Date().toISOString(),
+      };
       if (voiceId !== undefined) dbUpdate.voice_agent_voice_id = voiceId;
       if (language !== undefined) dbUpdate.voice_agent_language = language;
-      if (voiceSpeed !== undefined) dbUpdate.voice_agent_voice_speed = voiceSpeed;
-      if (voiceTemperature !== undefined) dbUpdate.voice_agent_voice_temperature = voiceTemperature;
-      if (responsiveness !== undefined) dbUpdate.voice_agent_responsiveness = responsiveness;
-      if (interruptionSensitivity !== undefined) dbUpdate.voice_agent_interruption_sensitivity = interruptionSensitivity;
-      if (enableBackchannel !== undefined) dbUpdate.voice_agent_enable_backchannel = enableBackchannel;
-      if (ambientSound !== undefined) dbUpdate.voice_agent_ambient_sound = ambientSound;
-      if (maxCallDurationMs !== undefined) dbUpdate.voice_agent_max_call_duration_ms = maxCallDurationMs;
-      if (endCallAfterSilenceMs !== undefined) dbUpdate.voice_agent_end_call_after_silence_ms = endCallAfterSilenceMs;
-      if (boostedKeywords !== undefined) dbUpdate.voice_agent_boosted_keywords = boostedKeywords;
+      if (voiceSpeed !== undefined)
+        dbUpdate.voice_agent_voice_speed = voiceSpeed;
+      if (voiceTemperature !== undefined)
+        dbUpdate.voice_agent_voice_temperature = voiceTemperature;
+      if (responsiveness !== undefined)
+        dbUpdate.voice_agent_responsiveness = responsiveness;
+      if (interruptionSensitivity !== undefined)
+        dbUpdate.voice_agent_interruption_sensitivity = interruptionSensitivity;
+      if (enableBackchannel !== undefined)
+        dbUpdate.voice_agent_enable_backchannel = enableBackchannel;
+      if (ambientSound !== undefined)
+        dbUpdate.voice_agent_ambient_sound = ambientSound;
+      if (maxCallDurationMs !== undefined)
+        dbUpdate.voice_agent_max_call_duration_ms = maxCallDurationMs;
+      if (endCallAfterSilenceMs !== undefined)
+        dbUpdate.voice_agent_end_call_after_silence_ms = endCallAfterSilenceMs;
+      if (boostedKeywords !== undefined)
+        dbUpdate.voice_agent_boosted_keywords = boostedKeywords;
       if (prompt !== undefined) dbUpdate.voice_agent_prompt = prompt;
-      if (beginMessage !== undefined) dbUpdate.voice_agent_begin_message = beginMessage;
+      if (beginMessage !== undefined)
+        dbUpdate.voice_agent_begin_message = beginMessage;
       if (model !== undefined) dbUpdate.voice_agent_model = model;
-      if (modelTemperature !== undefined) dbUpdate.voice_agent_model_temperature = modelTemperature;
+      if (modelTemperature !== undefined)
+        dbUpdate.voice_agent_model_temperature = modelTemperature;
 
       // Update DB
       await (supabaseService as any).serviceClient
@@ -179,7 +205,10 @@ router.put(
             boostedKeywords,
           });
         } catch (e) {
-          logger.error('Failed to update Retell agent, DB updated anyway', { agentId: store.retell_agent_id, e });
+          logger.error('Failed to update Retell agent, DB updated anyway', {
+            agentId: store.retell_agent_id,
+            e,
+          });
         }
       }
 
@@ -193,7 +222,10 @@ router.put(
             temperature: modelTemperature,
           });
         } catch (e) {
-          logger.error('Failed to update Retell LLM, DB updated anyway', { llmId: store.retell_llm_id, e });
+          logger.error('Failed to update Retell LLM, DB updated anyway', {
+            llmId: store.retell_llm_id,
+            e,
+          });
         }
       }
 
@@ -220,7 +252,10 @@ router.post(
       const plan = store.plan || 'free';
       const limits = await planService.getPlanLimits(plan);
       if (!limits.features?.voice_agents) {
-        throw new AppError('Tu plan no incluye Voice Agents. Actualiza a Professional o Enterprise.', 403);
+        throw new AppError(
+          'Tu plan no incluye Voice Agents. Actualiza a Professional o Enterprise.',
+          403
+        );
       }
 
       // Check if already enabled
@@ -233,24 +268,30 @@ router.post(
       const webhookUrl = appUrl ? `${appUrl}/api/retell/webhooks` : undefined;
 
       // Provision
-      const result = await retellService.provisionVoiceAgent(store.shop_domain, {
-        prompt: store.voice_agent_prompt || undefined,
-        beginMessage: store.voice_agent_begin_message || undefined,
-        model: store.voice_agent_model || 'gpt-4.1-mini',
-        modelTemperature: store.voice_agent_model_temperature ?? undefined,
-        voiceId: store.voice_agent_voice_id || undefined,
-        language: store.voice_agent_language || 'en-US',
-        voiceSpeed: store.voice_agent_voice_speed ?? undefined,
-        voiceTemperature: store.voice_agent_voice_temperature ?? undefined,
-        responsiveness: store.voice_agent_responsiveness ?? undefined,
-        interruptionSensitivity: store.voice_agent_interruption_sensitivity ?? undefined,
-        enableBackchannel: store.voice_agent_enable_backchannel ?? undefined,
-        ambientSound: store.voice_agent_ambient_sound || undefined,
-        maxCallDurationMs: store.voice_agent_max_call_duration_ms ?? undefined,
-        endCallAfterSilenceMs: store.voice_agent_end_call_after_silence_ms ?? undefined,
-        boostedKeywords: store.voice_agent_boosted_keywords || undefined,
-        webhookUrl,
-      });
+      const result = await retellService.provisionVoiceAgent(
+        store.shop_domain,
+        {
+          prompt: store.voice_agent_prompt || undefined,
+          beginMessage: store.voice_agent_begin_message || undefined,
+          model: store.voice_agent_model || 'gpt-4.1-mini',
+          modelTemperature: store.voice_agent_model_temperature ?? undefined,
+          voiceId: store.voice_agent_voice_id || undefined,
+          language: store.voice_agent_language || 'en-US',
+          voiceSpeed: store.voice_agent_voice_speed ?? undefined,
+          voiceTemperature: store.voice_agent_voice_temperature ?? undefined,
+          responsiveness: store.voice_agent_responsiveness ?? undefined,
+          interruptionSensitivity:
+            store.voice_agent_interruption_sensitivity ?? undefined,
+          enableBackchannel: store.voice_agent_enable_backchannel ?? undefined,
+          ambientSound: store.voice_agent_ambient_sound || undefined,
+          maxCallDurationMs:
+            store.voice_agent_max_call_duration_ms ?? undefined,
+          endCallAfterSilenceMs:
+            store.voice_agent_end_call_after_silence_ms ?? undefined,
+          boostedKeywords: store.voice_agent_boosted_keywords || undefined,
+          webhookUrl,
+        }
+      );
 
       // Update DB
       await (supabaseService as any).serviceClient
@@ -265,7 +306,10 @@ router.post(
         })
         .eq('id', store.id);
 
-      logger.info('Voice agent enabled', { shopDomain: store.shop_domain, ...result });
+      logger.info('Voice agent enabled', {
+        shopDomain: store.shop_domain,
+        ...result,
+      });
 
       res.json({
         success: true,
@@ -299,7 +343,8 @@ router.post(
 
       // Deprovision
       await retellService.deprovisionVoiceAgent({
-        phoneNumber: store.retell_phone_number || store.retell_from_number || undefined,
+        phoneNumber:
+          store.retell_phone_number || store.retell_from_number || undefined,
         agentId: store.retell_agent_id || undefined,
         llmId: store.retell_llm_id || undefined,
       });
@@ -359,7 +404,11 @@ router.get(
       const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
       const offset = (page - 1) * limit;
 
-      const { data: calls, error, count } = await (supabaseService as any).serviceClient
+      const {
+        data: calls,
+        error,
+        count,
+      } = await (supabaseService as any).serviceClient
         .from('voice_call_logs')
         .select('*', { count: 'exact' })
         .eq('shop_domain', store.shop_domain)
