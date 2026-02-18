@@ -472,8 +472,23 @@ router.post(
           status: call.call_status,
         },
       });
-    } catch (error) {
-      logger.error('Error initiating test call:', error);
+    } catch (error: any) {
+      logger.error('Error initiating test call:', {
+        message: error?.message,
+        status: error?.status,
+        error: error?.error,
+        stack: error?.stack,
+      });
+
+      // Return Retell SDK error details instead of generic 500
+      if (error?.status && error?.error) {
+        return res.status(error.status).json({
+          success: false,
+          error: error.message || 'Retell API error',
+          details: error.error,
+        });
+      }
+
       next(error);
     }
   }

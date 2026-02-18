@@ -1722,8 +1722,21 @@ router.post(
         success: true,
         data: { callId: call.call_id, status: call.call_status },
       });
-    } catch (error) {
-      logger.error('WooCommerce embedded voice test call error:', error);
+    } catch (error: any) {
+      logger.error('WooCommerce embedded voice test call error:', {
+        message: error?.message,
+        status: error?.status,
+        error: error?.error,
+      });
+
+      if (error?.status && error?.error) {
+        return res.status(error.status).json({
+          success: false,
+          error: error.message || 'Retell API error',
+          details: error.error,
+        });
+      }
+
       next(error);
     }
   }
