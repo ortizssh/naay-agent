@@ -1703,9 +1703,13 @@ router.post(
         }
       }
 
+      const { dynamicVariables } = req.body;
+
       const call = await retellService.createPhoneCall({
         fromNumber,
         toNumber: cleaned.startsWith('+') ? cleaned : `+${cleaned}`,
+        overrideAgentId: store.retell_agent_id,
+        dynamicVariables: dynamicVariables || undefined,
         metadata: { type: 'test_call', shop_domain: normalizedUrl },
       });
 

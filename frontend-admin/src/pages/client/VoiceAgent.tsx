@@ -47,9 +47,11 @@ function VoiceAgent() {
   const [keywordsInput, setKeywordsInput] = useState('');
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null);
-  const [testCallNumber, setTestCallNumber] = useState('');
   const [testCalling, setTestCalling] = useState(false);
   const [testCallResult, setTestCallResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [showTestCallModal, setShowTestCallModal] = useState(false);
+  const [testCallNumber, setTestCallNumber] = useState('');
+  const [testCallDynVars, setTestCallDynVars] = useState<{ key: string; value: string }[]>([]);
 
   // Form state
   const [form, setForm] = useState({
@@ -197,9 +199,17 @@ function VoiceAgent() {
     setTestCalling(true);
     setTestCallResult(null);
     try {
-      const res = await clientApi.makeTestCall(testCallNumber.trim());
+      // Build dynamic variables from non-empty entries
+      const dynVars: Record<string, string> = {};
+      testCallDynVars.forEach(v => {
+        if (v.key.trim() && v.value.trim()) dynVars[v.key.trim()] = v.value.trim();
+      });
+      const hasDynVars = Object.keys(dynVars).length > 0;
+
+      const res = await clientApi.makeTestCall(testCallNumber.trim(), hasDynVars ? dynVars : undefined);
       if (res.success) {
         setTestCallResult({ type: 'success', message: `Call initiated! You should receive a call shortly.` });
+        setShowTestCallModal(false);
         setTimeout(() => setTestCallResult(null), 8000);
       }
     } catch (e: any) {
@@ -354,66 +364,106 @@ function VoiceAgent() {
           </div>
         )}
 
-      {/* Enable/Disable Card */}
-      <div className="card" style={{ marginBottom: '24px' }}>
-        <div className="card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h3 className="card-title">Voice Agent Status</h3>
-          {config?.voiceAgentEnabled && config?.voiceCallsLimit !== undefined && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '13px', color: '#64748b' }}>Monthly calls</span>
-              {config.voiceCallsLimit !== -1 && config.voiceCallsLimit > 0 ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '100px', height: '6px', borderRadius: '3px', background: '#e2e8f0', overflow: 'hidden' }}>
-                    <div style={{
-                      height: '100%',
-                      borderRadius: '3px',
-                      width: `${Math.min(100, (config.voiceCallsUsed / config.voiceCallsLimit) * 100)}%`,
-                      background: config.voiceCallsUsed >= config.voiceCallsLimit ? '#ef4444' : 'var(--color-primary)',
-                      transition: 'width 0.3s ease',
-                    }} />
+      {/* Status + Test Call row */}
+      <div style={{ display: 'grid', gridTemplateColumns: config?.voiceAgentEnabled ? '1fr 1fr' : '1fr', gap: '24px', marginBottom: '24px' }}>
+        {/* Voice Agent Status Card */}
+        <div className="card">
+          <div className="card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <h3 className="card-title">Voice Agent Status</h3>
+            {config?.voiceAgentEnabled && config?.voiceCallsLimit !== undefined && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '13px', color: '#64748b' }}>Monthly calls</span>
+                {config.voiceCallsLimit !== -1 && config.voiceCallsLimit > 0 ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '80px', height: '6px', borderRadius: '3px', background: '#e2e8f0', overflow: 'hidden' }}>
+                      <div style={{
+                        height: '100%',
+                        borderRadius: '3px',
+                        width: `${Math.min(100, (config.voiceCallsUsed / config.voiceCallsLimit) * 100)}%`,
+                        background: config.voiceCallsUsed >= config.voiceCallsLimit ? '#ef4444' : 'var(--color-primary)',
+                        transition: 'width 0.3s ease',
+                      }} />
+                    </div>
+                    <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155', whiteSpace: 'nowrap' }}>
+                      {config.voiceCallsUsed} / {config.voiceCallsLimit}
+                    </span>
                   </div>
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155', whiteSpace: 'nowrap' }}>
-                    {config.voiceCallsUsed} / {config.voiceCallsLimit}
+                ) : (
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>
+                    {config.voiceCallsUsed} / {config.voiceCallsLimit === -1 ? 'Unlimited' : config.voiceCallsLimit}
                   </span>
-                </div>
-              ) : (
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>
-                  {config.voiceCallsUsed} / {config.voiceCallsLimit === -1 ? 'Unlimited' : config.voiceCallsLimit}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-        <div className="card-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
-          <div>
-            <p style={{ margin: 0, fontWeight: 500 }}>
-              {config?.voiceAgentEnabled ? 'Voice Agent is active' : 'Voice Agent is inactive'}
-            </p>
-            {config?.voiceAgentEnabled && config?.retellPhoneNumber && (
-              <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '14px' }}>
-                Phone number: <strong>{config.retellPhoneNumber}</strong>
-              </p>
+                )}
+              </div>
             )}
           </div>
-          {config?.voiceAgentEnabled ? (
-            <button
-              className="btn"
-              style={{ background: '#fee2e2', color: '#dc2626', border: 'none', padding: '8px 20px' }}
-              onClick={() => setShowDisableConfirm(true)}
-              disabled={disabling}
-            >
-              {disabling ? 'Disabling...' : 'Disable'}
-            </button>
-          ) : (
+          <div className="card-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+            <div>
+              <p style={{ margin: 0, fontWeight: 500 }}>
+                {config?.voiceAgentEnabled ? 'Voice Agent is active' : 'Voice Agent is inactive'}
+              </p>
+              {config?.voiceAgentEnabled && config?.retellPhoneNumber && (
+                <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '14px' }}>
+                  Phone number: <strong>{config.retellPhoneNumber}</strong>
+                </p>
+              )}
+            </div>
+            {config?.voiceAgentEnabled ? (
+              <button
+                className="btn"
+                style={{ background: '#fee2e2', color: '#dc2626', border: 'none', padding: '8px 20px' }}
+                onClick={() => setShowDisableConfirm(true)}
+                disabled={disabling}
+              >
+                {disabling ? 'Disabling...' : 'Disable'}
+              </button>
+            ) : (
+              <button
+                className="btn btn-primary"
+                onClick={() => setShowEnableConfirm(true)}
+                disabled={enabling}
+              >
+                {enabling ? 'Enabling...' : 'Enable Voice Agent'}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Test Call Card (side by side when enabled) */}
+        {config?.voiceAgentEnabled && (
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--color-success-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" strokeWidth="2">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="card-title" style={{ margin: 0 }}>Test Call</h3>
+                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: 0 }}>Hear how your agent sounds</p>
+              </div>
+            </div>
             <button
               className="btn btn-primary"
-              onClick={() => setShowEnableConfirm(true)}
-              disabled={enabling}
+              onClick={() => { setTestCallResult(null); setShowTestCallModal(true); }}
+              disabled={testCalling}
+              style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%' }}
             >
-              {enabling ? 'Enabling...' : 'Enable Voice Agent'}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+              </svg>
+              Make Test Call
             </button>
-          )}
-        </div>
+            {testCallResult && (
+              <div style={{
+                marginTop: '12px', padding: '10px 14px', borderRadius: '8px', fontSize: '0.85rem',
+                background: testCallResult.type === 'success' ? 'var(--color-success-soft)' : 'var(--color-error-soft)',
+                color: testCallResult.type === 'success' ? 'var(--color-success)' : 'var(--color-error)',
+              }}>
+                {testCallResult.message}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Enable confirmation dialog */}
@@ -454,39 +504,95 @@ function VoiceAgent() {
 
       {config?.voiceAgentEnabled && (
         <>
-          {/* Test Call */}
-          <div className="card" style={{ marginBottom: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--color-success-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" strokeWidth="2">
-                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="card-title">Test Call</h3>
-                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: 0 }}>Make a test call to hear how your agent sounds</p>
-              </div>
-            </div>
 
-            <div style={{ borderTop: '1px solid var(--color-border)', margin: '16px 0', padding: 0 }} />
+          {/* Test Call Modal */}
+          {showTestCallModal && (
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+              <div style={{ background: '#fff', borderRadius: '16px', padding: '32px', maxWidth: '520px', width: '90%', maxHeight: '80vh', overflowY: 'auto' }}>
+                <h3 style={{ margin: '0 0 4px' }}>Test Call</h3>
+                <p style={{ color: '#64748b', margin: '0 0 20px', fontSize: '14px' }}>
+                  The agent will call you from {config?.retellPhoneNumber}.
+                </p>
 
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'start' }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', gap: '10px' }}>
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label className="form-label">Phone Number *</label>
                   <input
                     type="tel"
                     className="form-input"
                     value={testCallNumber}
                     onChange={e => setTestCallNumber(e.target.value)}
-                    placeholder="+1 (555) 123-4567"
-                    style={{ flex: 1 }}
-                    onKeyDown={e => { if (e.key === 'Enter' && !testCalling) handleTestCall(); }}
+                    placeholder="+1234567890"
+                    onKeyDown={e => { if (e.key === 'Enter' && !testCalling && testCallNumber.trim()) handleTestCall(); }}
                   />
+                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>International format (E.164)</span>
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <label className="form-label" style={{ margin: 0 }}>Dynamic Variables</label>
+                    <button
+                      type="button"
+                      onClick={() => setTestCallDynVars(v => [...v, { key: '', value: '' }])}
+                      style={{ fontSize: '13px', color: 'var(--color-primary)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+                    >
+                      + Add Variable
+                    </button>
+                  </div>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '8px' }}>
+                    Pass variables to your agent's prompt (e.g. customer_name, order_id)
+                  </span>
+                  {testCallDynVars.map((v, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
+                      <input
+                        className="form-input"
+                        placeholder="key"
+                        value={v.key}
+                        onChange={e => {
+                          const updated = [...testCallDynVars];
+                          updated[i] = { ...updated[i], key: e.target.value };
+                          setTestCallDynVars(updated);
+                        }}
+                        style={{ flex: 1 }}
+                      />
+                      <input
+                        className="form-input"
+                        placeholder="value"
+                        value={v.value}
+                        onChange={e => {
+                          const updated = [...testCallDynVars];
+                          updated[i] = { ...updated[i], value: e.target.value };
+                          setTestCallDynVars(updated);
+                        }}
+                        style={{ flex: 1 }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setTestCallDynVars(v => v.filter((_, idx) => idx !== i))}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '18px', padding: '4px', lineHeight: 1 }}
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {testCallResult && (
+                  <div style={{
+                    marginBottom: '16px', padding: '10px 14px', borderRadius: '8px', fontSize: '0.85rem',
+                    background: testCallResult.type === 'success' ? 'var(--color-success-soft)' : 'var(--color-error-soft)',
+                    color: testCallResult.type === 'success' ? 'var(--color-success)' : 'var(--color-error)',
+                  }}>
+                    {testCallResult.message}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                  <button className="btn" onClick={() => setShowTestCallModal(false)} style={{ background: '#f1f5f9', border: 'none' }}>Cancel</button>
                   <button
                     className="btn btn-primary"
                     onClick={handleTestCall}
                     disabled={testCalling || !testCallNumber.trim()}
-                    style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '8px' }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
                   >
                     {testCalling ? (
                       <>
@@ -498,26 +604,14 @@ function VoiceAgent() {
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                         </svg>
-                        Test Call
+                        Call Now
                       </>
                     )}
                   </button>
                 </div>
-                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '6px' }}>
-                  Enter your phone number in international format. The agent will call you using the number {config?.retellPhoneNumber}.
-                </span>
-                {testCallResult && (
-                  <div style={{
-                    marginTop: '10px', padding: '10px 14px', borderRadius: '8px', fontSize: '0.85rem',
-                    background: testCallResult.type === 'success' ? 'var(--color-success-soft)' : 'var(--color-error-soft)',
-                    color: testCallResult.type === 'success' ? 'var(--color-success)' : 'var(--color-error)',
-                  }}>
-                    {testCallResult.message}
-                  </div>
-                )}
               </div>
             </div>
-          </div>
+          )}
 
           {/* Voice Configuration */}
           <div className="card" style={{ marginBottom: '24px' }}>
