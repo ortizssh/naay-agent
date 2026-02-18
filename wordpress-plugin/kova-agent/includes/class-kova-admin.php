@@ -2912,6 +2912,7 @@ class Kova_Admin {
                                         <div id="kova-voice-agent-id" style="font-family: monospace; font-size: 0.85rem; color: #64748b;">-</div>
                                     </div>
                                 </div>
+                                <div id="kova-voice-usage" style="display: none;"></div>
                                 <button type="button" class="kova-btn" id="kova-voice-disable-btn" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5;"><?php _e('Disable Voice Agent', 'kova-agent'); ?></button>
                                 <span id="kova-voice-disable-status" class="kova-inline-status"></span>
                             </div>

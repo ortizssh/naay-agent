@@ -63,6 +63,7 @@ export class PlanService {
     if (plan) {
       return {
         monthly_messages: plan.monthly_messages,
+        monthly_voice_calls: plan.monthly_voice_calls ?? 0,
         products: plan.products_limit,
         features: plan.features,
       };
@@ -88,6 +89,7 @@ export class PlanService {
       currency: row.currency || 'USD',
       billing_period: row.billing_period || 'monthly',
       monthly_messages: row.monthly_messages,
+      monthly_voice_calls: row.monthly_voice_calls ?? 0,
       products_limit: row.products_limit,
       features: row.features || {},
       badge_color: row.badge_color || 'neutral',
@@ -153,6 +155,7 @@ export class PlanService {
         currency: 'USD',
         billing_period: 'monthly',
         monthly_messages: limits.monthly_messages,
+        monthly_voice_calls: limits.monthly_voice_calls,
         products_limit: limits.products,
         features: limits.features,
         badge_color: meta.badge_color,

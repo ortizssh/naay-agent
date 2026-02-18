@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { SupabaseService } from '@/services/supabase.service';
 import { retellService } from '@/services/retell.service';
+import { tenantService } from '@/services/tenant.service';
 import { logger } from '@/utils/logger';
 
 const router = Router();
@@ -113,6 +114,9 @@ router.post('/', async (req: Request, res: Response) => {
             },
             { onConflict: 'retell_call_id' }
           );
+
+        // Invalidate voice call count cache so limits are recalculated
+        await tenantService.invalidateVoiceCallCountCache(shopDomain);
         break;
       }
 

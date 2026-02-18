@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { SupabaseService } from '@/services/supabase.service';
 import { retellService } from '@/services/retell.service';
 import { planService } from '@/services/plan.service';
+import { tenantService } from '@/services/tenant.service';
 import { logger } from '@/utils/logger';
 import { AppError } from '@/types';
 import { config } from '@/utils/config';
@@ -79,6 +80,10 @@ router.get(
       const limits = await planService.getPlanLimits(plan);
       const planAllowsVoiceAgent = limits.features?.voice_agents === true;
 
+      // Voice call usage
+      const voiceCallsUsed = await tenantService.getMonthlyVoiceCallCount(store.shop_domain);
+      const voiceCallsLimit = limits.monthly_voice_calls;
+
       res.json({
         success: true,
         data: {
@@ -89,6 +94,9 @@ router.get(
           retellLlmId: store.retell_llm_id || null,
           retellPhoneNumber: store.retell_phone_number || null,
           retellFromNumber: store.retell_from_number || null,
+          // Voice call usage
+          voiceCallsUsed,
+          voiceCallsLimit,
           // Voice config
           voiceId: store.voice_agent_voice_id || null,
           language: store.voice_agent_language || 'en-US',
@@ -422,6 +430,19 @@ router.post(
           'Invalid phone number format. Use international format: +1234567890',
           400
         );
+      }
+
+      // Check monthly voice call limit
+      const plan = store.plan || 'free';
+      const limits = await planService.getPlanLimits(plan);
+      if (limits.monthly_voice_calls !== -1) {
+        const callCount = await tenantService.getMonthlyVoiceCallCount(store.shop_domain);
+        if (callCount >= limits.monthly_voice_calls) {
+          throw new AppError(
+            'Monthly voice call limit reached. Please upgrade your plan.',
+            403
+          );
+        }
       }
 
       const call = await retellService.createPhoneCall({

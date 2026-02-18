@@ -706,6 +706,8 @@ export interface VoiceAgentConfig {
   retellLlmId: string | null;
   retellPhoneNumber: string | null;
   retellFromNumber: string | null;
+  voiceCallsUsed: number;
+  voiceCallsLimit: number;
   voiceId: string | null;
   language: string;
   voiceSpeed: number;

@@ -688,10 +688,14 @@ export interface TenantUsageInfo {
   messages_remaining: number;
   usage_percentage: number;
   is_over_limit: boolean;
+  voice_calls_used: number;
+  voice_calls_limit: number;
+  voice_calls_remaining: number;
 }
 
 export interface TenantPlanLimits {
   monthly_messages: number;
+  monthly_voice_calls: number;
   products: number;
   features: TenantFeatures;
 }
@@ -705,6 +709,7 @@ export interface Plan {
   currency: string;
   billing_period: string;
   monthly_messages: number;
+  monthly_voice_calls: number;
   products_limit: number;
   features: TenantFeatures;
   badge_color: string;
@@ -717,6 +722,7 @@ export interface Plan {
 export const TENANT_PLAN_LIMITS: Record<TenantPlan, TenantPlanLimits> = {
   free: {
     monthly_messages: 100,
+    monthly_voice_calls: 0,
     products: 50,
     features: {
       semantic_search: true,
@@ -730,6 +736,7 @@ export const TENANT_PLAN_LIMITS: Record<TenantPlan, TenantPlanLimits> = {
   },
   starter: {
     monthly_messages: 1000,
+    monthly_voice_calls: 0,
     products: 500,
     features: {
       semantic_search: true,
@@ -743,6 +750,7 @@ export const TENANT_PLAN_LIMITS: Record<TenantPlan, TenantPlanLimits> = {
   },
   professional: {
     monthly_messages: 10000,
+    monthly_voice_calls: 100,
     products: 5000,
     features: {
       semantic_search: true,
@@ -756,6 +764,7 @@ export const TENANT_PLAN_LIMITS: Record<TenantPlan, TenantPlanLimits> = {
   },
   enterprise: {
     monthly_messages: -1, // Unlimited
+    monthly_voice_calls: -1, // Unlimited
     products: -1, // Unlimited
     features: {
       semantic_search: true,

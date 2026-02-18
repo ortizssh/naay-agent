@@ -1350,6 +1350,29 @@
             $('#kova-voice-phone').text(d.retellPhoneNumber || '-');
             $('#kova-voice-agent-id').text(d.retellAgentId || '-');
 
+            // Voice call usage
+            if (d.voiceCallsLimit !== undefined) {
+                var used = d.voiceCallsUsed || 0;
+                var limit = d.voiceCallsLimit;
+                var isUnlimited = limit === -1;
+                var usageText = used + ' / ' + (isUnlimited ? 'Unlimited' : limit);
+                var pct = isUnlimited ? 0 : Math.min(100, Math.round((used / limit) * 100));
+                var barColor = (!isUnlimited && used >= limit) ? '#ef4444' : '#6b5afc';
+
+                var usageHtml = '<div style="margin-top:10px">' +
+                    '<div style="display:flex;justify-content:space-between;margin-bottom:4px">' +
+                    '<span style="font-size:13px;color:#64748b">Monthly calls</span>' +
+                    '<span style="font-size:13px;font-weight:600;color:#334155">' + usageText + '</span></div>';
+                if (!isUnlimited) {
+                    usageHtml += '<div style="height:6px;border-radius:3px;background:#e2e8f0;overflow:hidden">' +
+                        '<div style="height:100%;border-radius:3px;width:' + pct + '%;background:' + barColor + ';transition:width .3s"></div></div>';
+                }
+                usageHtml += '</div>';
+                $('#kova-voice-usage').html(usageHtml).show();
+            } else {
+                $('#kova-voice-usage').hide();
+            }
+
             // Show config cards
             $('#kova-voice-test-card, #kova-voice-config-card, #kova-voice-prompt-card, #kova-voice-limits-card, #kova-voice-save-area, #kova-voice-history-card').show();
 

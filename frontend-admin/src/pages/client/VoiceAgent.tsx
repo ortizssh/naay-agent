@@ -360,7 +360,7 @@ function VoiceAgent() {
           <h3 className="card-title">Voice Agent Status</h3>
         </div>
         <div className="card-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
-          <div>
+          <div style={{ flex: 1 }}>
             <p style={{ margin: 0, fontWeight: 500 }}>
               {config?.voiceAgentEnabled ? 'Voice Agent is active' : 'Voice Agent is inactive'}
             </p>
@@ -368,6 +368,27 @@ function VoiceAgent() {
               <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '14px' }}>
                 Phone number: <strong>{config.retellPhoneNumber}</strong>
               </p>
+            )}
+            {config?.voiceAgentEnabled && config?.voiceCallsLimit !== undefined && (
+              <div style={{ marginTop: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '13px', color: '#64748b' }}>Monthly calls</span>
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>
+                    {config.voiceCallsUsed} / {config.voiceCallsLimit === -1 ? 'Unlimited' : config.voiceCallsLimit}
+                  </span>
+                </div>
+                {config.voiceCallsLimit !== -1 && (
+                  <div style={{ height: '6px', borderRadius: '3px', background: '#e2e8f0', overflow: 'hidden' }}>
+                    <div style={{
+                      height: '100%',
+                      borderRadius: '3px',
+                      width: `${Math.min(100, (config.voiceCallsUsed / config.voiceCallsLimit) * 100)}%`,
+                      background: config.voiceCallsUsed >= config.voiceCallsLimit ? '#ef4444' : 'var(--color-primary)',
+                      transition: 'width 0.3s ease',
+                    }} />
+                  </div>
+                )}
+              </div>
             )}
           </div>
           {config?.voiceAgentEnabled ? (

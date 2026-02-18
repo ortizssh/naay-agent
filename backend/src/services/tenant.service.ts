@@ -208,6 +208,46 @@ export class TenantService {
   }
 
   /**
+   * Get monthly completed voice call count from voice_call_logs table
+   * Counts calls with status='ended' for the current month
+   */
+  async getMonthlyVoiceCallCount(shopDomain: string): Promise<number> {
+    try {
+      const cacheKey = `tenant:monthly_voice_calls:${shopDomain}`;
+      const cached = await cacheService.get<number>(cacheKey);
+      if (cached !== null && cached !== undefined) return cached;
+
+      const now = new Date();
+      const monthStart = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        1
+      ).toISOString();
+
+      const { count, error } = await (supabaseService as any).serviceClient
+        .from('voice_call_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('shop_domain', shopDomain)
+        .eq('status', 'ended')
+        .gte('started_at', monthStart);
+
+      const result = error ? 0 : count || 0;
+      await cacheService.set(cacheKey, result, { ttl: 60 });
+      return result;
+    } catch (error) {
+      logger.error('Error in getMonthlyVoiceCallCount:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Invalidate monthly voice call count cache (call after each completed call)
+   */
+  async invalidateVoiceCallCountCache(shopDomain: string): Promise<void> {
+    await cacheService.del(`tenant:monthly_voice_calls:${shopDomain}`);
+  }
+
+  /**
    * Get usage info for a tenant
    */
   async getUsageInfo(shopDomain: string): Promise<TenantUsageInfo | null> {
@@ -220,12 +260,19 @@ export class TenantService {
       const used = await this.getMonthlyMessageCount(shopDomain);
       const isUnlimited = limit === -1;
 
+      const voiceLimit = planLimits.monthly_voice_calls;
+      const voiceUsed = await this.getMonthlyVoiceCallCount(shopDomain);
+      const voiceUnlimited = voiceLimit === -1;
+
       return {
         messages_used: used,
         messages_limit: limit,
         messages_remaining: isUnlimited ? -1 : Math.max(0, limit - used),
         usage_percentage: isUnlimited ? 0 : Math.round((used / limit) * 100),
         is_over_limit: !isUnlimited && used >= limit,
+        voice_calls_used: voiceUsed,
+        voice_calls_limit: voiceLimit,
+        voice_calls_remaining: voiceUnlimited ? -1 : Math.max(0, voiceLimit - voiceUsed),
       };
     } catch (error) {
       logger.error('Error in getUsageInfo:', error);
