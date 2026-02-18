@@ -81,7 +81,9 @@ router.get(
       const planAllowsVoiceAgent = limits.features?.voice_agents === true;
 
       // Voice call usage
-      const voiceCallsUsed = await tenantService.getMonthlyVoiceCallCount(store.shop_domain);
+      const voiceCallsUsed = await tenantService.getMonthlyVoiceCallCount(
+        store.shop_domain
+      );
       const voiceCallsLimit = limits.monthly_voice_calls;
 
       res.json({
@@ -436,7 +438,9 @@ router.post(
       const plan = store.plan || 'free';
       const limits = await planService.getPlanLimits(plan);
       if (limits.monthly_voice_calls !== -1) {
-        const callCount = await tenantService.getMonthlyVoiceCallCount(store.shop_domain);
+        const callCount = await tenantService.getMonthlyVoiceCallCount(
+          store.shop_domain
+        );
         if (callCount >= limits.monthly_voice_calls) {
           throw new AppError(
             'Monthly voice call limit reached. Please upgrade your plan.',

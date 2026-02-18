@@ -1292,7 +1292,8 @@ router.get(
       const planAllowsVoiceAgent = limits.features?.voice_agents === true;
 
       // Voice call usage
-      const voiceCallsUsed = await tenantService.getMonthlyVoiceCallCount(normalizedUrl);
+      const voiceCallsUsed =
+        await tenantService.getMonthlyVoiceCallCount(normalizedUrl);
       const voiceCallsLimit = limits.monthly_voice_calls;
 
       return res.json({
@@ -1691,11 +1692,14 @@ router.post(
       const plan = store.plan || 'free';
       const limits = await planService.getPlanLimits(plan);
       if (limits.monthly_voice_calls !== -1) {
-        const callCount = await tenantService.getMonthlyVoiceCallCount(normalizedUrl);
+        const callCount =
+          await tenantService.getMonthlyVoiceCallCount(normalizedUrl);
         if (callCount >= limits.monthly_voice_calls) {
-          return res
-            .status(403)
-            .json({ success: false, error: 'Monthly voice call limit reached. Please upgrade your plan.' });
+          return res.status(403).json({
+            success: false,
+            error:
+              'Monthly voice call limit reached. Please upgrade your plan.',
+          });
         }
       }
 

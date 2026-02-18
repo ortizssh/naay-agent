@@ -272,7 +272,9 @@ export class TenantService {
         is_over_limit: !isUnlimited && used >= limit,
         voice_calls_used: voiceUsed,
         voice_calls_limit: voiceLimit,
-        voice_calls_remaining: voiceUnlimited ? -1 : Math.max(0, voiceLimit - voiceUsed),
+        voice_calls_remaining: voiceUnlimited
+          ? -1
+          : Math.max(0, voiceLimit - voiceUsed),
       };
     } catch (error) {
       logger.error('Error in getUsageInfo:', error);
