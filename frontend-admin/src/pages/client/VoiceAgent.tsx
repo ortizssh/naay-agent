@@ -47,6 +47,9 @@ function VoiceAgent() {
   const [keywordsInput, setKeywordsInput] = useState('');
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null);
+  const [testCallNumber, setTestCallNumber] = useState('');
+  const [testCalling, setTestCalling] = useState(false);
+  const [testCallResult, setTestCallResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Form state
   const [form, setForm] = useState({
@@ -186,6 +189,23 @@ function VoiceAgent() {
       setError(e.message || 'Error disabling voice agent');
     } finally {
       setDisabling(false);
+    }
+  };
+
+  const handleTestCall = async () => {
+    if (!testCallNumber.trim()) return;
+    setTestCalling(true);
+    setTestCallResult(null);
+    try {
+      const res = await clientApi.makeTestCall(testCallNumber.trim());
+      if (res.success) {
+        setTestCallResult({ type: 'success', message: `Call initiated! You should receive a call shortly.` });
+        setTimeout(() => setTestCallResult(null), 8000);
+      }
+    } catch (e: any) {
+      setTestCallResult({ type: 'error', message: e.message || 'Failed to initiate test call' });
+    } finally {
+      setTestCalling(false);
     }
   };
 
@@ -409,6 +429,71 @@ function VoiceAgent() {
 
       {config?.voiceAgentEnabled && (
         <>
+          {/* Test Call */}
+          <div className="card" style={{ marginBottom: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--color-success-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" strokeWidth="2">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="card-title">Test Call</h3>
+                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: 0 }}>Make a test call to hear how your agent sounds</p>
+              </div>
+            </div>
+
+            <div style={{ borderTop: '1px solid var(--color-border)', margin: '16px 0', padding: 0 }} />
+
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'start' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <input
+                    type="tel"
+                    className="form-input"
+                    value={testCallNumber}
+                    onChange={e => setTestCallNumber(e.target.value)}
+                    placeholder="+1 (555) 123-4567"
+                    style={{ flex: 1 }}
+                    onKeyDown={e => { if (e.key === 'Enter' && !testCalling) handleTestCall(); }}
+                  />
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleTestCall}
+                    disabled={testCalling || !testCallNumber.trim()}
+                    style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    {testCalling ? (
+                      <>
+                        <div className="loading-spinner" style={{ width: '16px', height: '16px', borderWidth: '2px' }}></div>
+                        Calling...
+                      </>
+                    ) : (
+                      <>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                        </svg>
+                        Test Call
+                      </>
+                    )}
+                  </button>
+                </div>
+                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '6px' }}>
+                  Enter your phone number in international format. The agent will call you using the number {config?.retellPhoneNumber}.
+                </span>
+                {testCallResult && (
+                  <div style={{
+                    marginTop: '10px', padding: '10px 14px', borderRadius: '8px', fontSize: '0.85rem',
+                    background: testCallResult.type === 'success' ? 'var(--color-success-soft)' : 'var(--color-error-soft)',
+                    color: testCallResult.type === 'success' ? 'var(--color-success)' : 'var(--color-error)',
+                  }}>
+                    {testCallResult.message}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Voice Configuration */}
           <div className="card" style={{ marginBottom: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>

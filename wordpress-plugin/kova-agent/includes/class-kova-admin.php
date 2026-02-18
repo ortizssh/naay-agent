@@ -42,6 +42,13 @@ class Kova_Admin {
         add_action('wp_ajax_kova_upload_knowledge', array($this, 'ajax_upload_knowledge'));
         add_action('wp_ajax_kova_delete_knowledge', array($this, 'ajax_delete_knowledge'));
         add_action('wp_ajax_kova_get_knowledge_status', array($this, 'ajax_get_knowledge_status'));
+        add_action('wp_ajax_kova_get_voice_config', array($this, 'ajax_get_voice_config'));
+        add_action('wp_ajax_kova_save_voice_config', array($this, 'ajax_save_voice_config'));
+        add_action('wp_ajax_kova_enable_voice', array($this, 'ajax_enable_voice'));
+        add_action('wp_ajax_kova_disable_voice', array($this, 'ajax_disable_voice'));
+        add_action('wp_ajax_kova_get_voices', array($this, 'ajax_get_voices'));
+        add_action('wp_ajax_kova_voice_test_call', array($this, 'ajax_voice_test_call'));
+        add_action('wp_ajax_kova_get_voice_calls', array($this, 'ajax_get_voice_calls'));
     }
 
     /**
@@ -345,6 +352,7 @@ class Kova_Admin {
             'products' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>',
             'ai' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2a4 4 0 014 4v1a1 1 0 001 1h1a4 4 0 010 8h-1a1 1 0 00-1 1v1a4 4 0 01-8 0v-1a1 1 0 00-1-1H6a4 4 0 010-8h1a1 1 0 001-1V6a4 4 0 014-4z"/><circle cx="12" cy="12" r="2"/></svg>',
             'knowledge' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>',
+            'voice' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>',
         );
 
         return isset($icons[$icon]) ? $icons[$icon] : '';
@@ -416,6 +424,11 @@ class Kova_Admin {
                                 <?php echo $this->render_icon('knowledge'); ?>
                                 <?php _e('Knowledge Base', 'kova-agent'); ?>
                             </a>
+                            <a href="<?php echo admin_url('admin.php?page=kova-agent&tab=voice'); ?>"
+                               class="kova-nav-item <?php echo $current_tab === 'voice' ? 'active' : ''; ?>">
+                                <?php echo $this->render_icon('voice'); ?>
+                                <?php _e('Voice Agent', 'kova-agent'); ?>
+                            </a>
                             <a href="<?php echo admin_url('admin.php?page=kova-agent&tab=settings'); ?>"
                                class="kova-nav-item <?php echo $current_tab === 'settings' ? 'active' : ''; ?>">
                                 <?php echo $this->render_icon('settings'); ?>
@@ -464,6 +477,9 @@ class Kova_Admin {
                             break;
                         case 'knowledge':
                             $this->render_knowledge_tab();
+                            break;
+                        case 'voice':
+                            $this->render_voice_tab();
                             break;
                         case 'settings':
                             $this->render_settings_tab();
@@ -2832,6 +2848,510 @@ class Kova_Admin {
             wp_send_json_success($body['data']);
         } else {
             wp_send_json_error(array('message' => $body['error'] ?? __('Failed to get document status.', 'kova-agent')));
+        }
+    }
+
+    /**
+     * Render Voice Agent Tab
+     */
+    private function render_voice_tab() {
+        ?>
+        <div class="kova-page-header">
+            <div>
+                <h1 class="kova-page-title"><?php _e('Voice Agent', 'kova-agent'); ?></h1>
+                <p class="kova-page-desc"><?php _e('Configure your AI-powered phone agent for automated calls.', 'kova-agent'); ?></p>
+            </div>
+        </div>
+
+        <div id="kova-voice-container">
+            <div class="kova-loading" id="kova-voice-loading">
+                <div class="kova-spinner"></div>
+                <p><?php _e('Loading voice agent configuration...', 'kova-agent'); ?></p>
+            </div>
+
+            <div id="kova-voice-content" style="display: none;">
+                <!-- Plan Gate -->
+                <div id="kova-voice-plan-gate" style="display: none;">
+                    <div class="kova-card" style="text-align: center; padding: 3rem 2rem;">
+                        <div style="margin-bottom: 1rem;">
+                            <?php echo $this->render_icon('voice'); ?>
+                        </div>
+                        <h2 style="margin: 0 0 0.5rem; font-size: 1.5rem; color: #1a1a2e;"><?php _e('Voice Agent', 'kova-agent'); ?></h2>
+                        <p style="color: #64748b; margin-bottom: 1.5rem; max-width: 480px; margin-left: auto; margin-right: auto;">
+                            <?php _e('Automate phone calls with an AI voice agent. Available on Professional and Enterprise plans.', 'kova-agent'); ?>
+                        </p>
+                        <a href="https://app.heykova.io" target="_blank" class="kova-btn kova-btn-primary"><?php _e('Upgrade Plan', 'kova-agent'); ?></a>
+                    </div>
+                </div>
+
+                <!-- Main Voice Content -->
+                <div id="kova-voice-main" style="display: none;">
+                    <!-- Status Card -->
+                    <div class="kova-card" style="margin-bottom: 1.5rem;">
+                        <h3 style="margin: 0 0 1rem; font-size: 1rem; font-weight: 600;"><?php _e('Status', 'kova-agent'); ?></h3>
+                        <div id="kova-voice-status-area">
+                            <!-- Disabled state -->
+                            <div id="kova-voice-disabled-state">
+                                <p style="color: #64748b; margin: 0 0 1rem;"><?php _e('Voice agent is not active. Enable it to provision a phone number and AI agent.', 'kova-agent'); ?></p>
+                                <button type="button" class="kova-btn kova-btn-primary" id="kova-voice-enable-btn"><?php _e('Enable Voice Agent', 'kova-agent'); ?></button>
+                                <span id="kova-voice-enable-status" class="kova-inline-status"></span>
+                            </div>
+                            <!-- Enabled state -->
+                            <div id="kova-voice-enabled-state" style="display: none;">
+                                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+                                    <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #22c55e;"></span>
+                                    <span style="font-weight: 600; color: #1a1a2e;"><?php _e('Voice Agent Active', 'kova-agent'); ?></span>
+                                </div>
+                                <div style="display: flex; gap: 2rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                                    <div>
+                                        <span style="color: #64748b; font-size: 0.85rem;"><?php _e('Phone Number', 'kova-agent'); ?></span>
+                                        <div id="kova-voice-phone" style="font-weight: 600; font-size: 1.1rem;">-</div>
+                                    </div>
+                                    <div>
+                                        <span style="color: #64748b; font-size: 0.85rem;"><?php _e('Agent ID', 'kova-agent'); ?></span>
+                                        <div id="kova-voice-agent-id" style="font-family: monospace; font-size: 0.85rem; color: #64748b;">-</div>
+                                    </div>
+                                </div>
+                                <button type="button" class="kova-btn" id="kova-voice-disable-btn" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5;"><?php _e('Disable Voice Agent', 'kova-agent'); ?></button>
+                                <span id="kova-voice-disable-status" class="kova-inline-status"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Test Call Card (only when enabled) -->
+                    <div class="kova-card" id="kova-voice-test-card" style="margin-bottom: 1.5rem; display: none;">
+                        <h3 style="margin: 0 0 1rem; font-size: 1rem; font-weight: 600;"><?php _e('Test Call', 'kova-agent'); ?></h3>
+                        <div style="display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap;">
+                            <div class="kova-form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
+                                <label class="kova-form-label"><?php _e('Phone Number', 'kova-agent'); ?></label>
+                                <input type="tel" class="kova-form-input" id="kova-voice-test-phone" placeholder="+1234567890">
+                            </div>
+                            <button type="button" class="kova-btn kova-btn-primary" id="kova-voice-test-btn"><?php _e('Make Test Call', 'kova-agent'); ?></button>
+                        </div>
+                        <span id="kova-voice-test-status" class="kova-inline-status" style="margin-top: 0.5rem; display: block;"></span>
+                    </div>
+
+                    <!-- Voice Configuration Card (only when enabled) -->
+                    <div class="kova-card" id="kova-voice-config-card" style="margin-bottom: 1.5rem; display: none;">
+                        <h3 style="margin: 0 0 1rem; font-size: 1rem; font-weight: 600;"><?php _e('Voice Configuration', 'kova-agent'); ?></h3>
+
+                        <div class="kova-form-group">
+                            <label class="kova-form-label"><?php _e('Voice', 'kova-agent'); ?></label>
+                            <select class="kova-form-input" id="kova-voice-select">
+                                <option value=""><?php _e('Loading voices...', 'kova-agent'); ?></option>
+                            </select>
+                        </div>
+
+                        <div class="kova-form-group">
+                            <label class="kova-form-label"><?php _e('Language', 'kova-agent'); ?></label>
+                            <select class="kova-form-input" id="kova-voice-language">
+                                <option value="en-US">English (US)</option>
+                                <option value="en-GB">English (UK)</option>
+                                <option value="es-ES">Spanish (Spain)</option>
+                                <option value="es-MX">Spanish (Mexico)</option>
+                                <option value="fr-FR">French</option>
+                                <option value="de-DE">German</option>
+                                <option value="pt-BR">Portuguese (Brazil)</option>
+                                <option value="it-IT">Italian</option>
+                                <option value="multi">Multilingual</option>
+                            </select>
+                        </div>
+
+                        <div class="kova-form-group">
+                            <label class="kova-form-label"><?php _e('Voice Speed', 'kova-agent'); ?>: <span id="kova-voice-speed-val">1.0</span></label>
+                            <input type="range" id="kova-voice-speed" min="0.5" max="2.0" step="0.1" value="1.0" style="width: 100%;">
+                        </div>
+
+                        <div class="kova-form-group">
+                            <label class="kova-form-label"><?php _e('Voice Temperature', 'kova-agent'); ?>: <span id="kova-voice-temp-val">1.0</span></label>
+                            <input type="range" id="kova-voice-temp" min="0.1" max="2.0" step="0.1" value="1.0" style="width: 100%;">
+                        </div>
+
+                        <div class="kova-form-group">
+                            <label class="kova-form-label"><?php _e('Responsiveness', 'kova-agent'); ?>: <span id="kova-voice-resp-val">0.7</span></label>
+                            <input type="range" id="kova-voice-responsiveness" min="0" max="1" step="0.1" value="0.7" style="width: 100%;">
+                        </div>
+
+                        <div class="kova-form-group">
+                            <label class="kova-form-label"><?php _e('Interruption Sensitivity', 'kova-agent'); ?>: <span id="kova-voice-interrupt-val">0.5</span></label>
+                            <input type="range" id="kova-voice-interruption" min="0" max="1" step="0.1" value="0.5" style="width: 100%;">
+                        </div>
+
+                        <div class="kova-form-group" style="display: flex; align-items: center; gap: 0.75rem;">
+                            <label class="kova-form-label" style="margin-bottom: 0;"><?php _e('Enable Backchannel', 'kova-agent'); ?></label>
+                            <input type="checkbox" id="kova-voice-backchannel" checked>
+                        </div>
+
+                        <div class="kova-form-group">
+                            <label class="kova-form-label"><?php _e('Ambient Sound', 'kova-agent'); ?></label>
+                            <select class="kova-form-input" id="kova-voice-ambient">
+                                <option value="">None</option>
+                                <option value="coffee-shop">Coffee Shop</option>
+                                <option value="convention-hall">Convention Hall</option>
+                                <option value="summer-outdoor">Summer Outdoor</option>
+                                <option value="mountain-outdoor">Mountain Outdoor</option>
+                                <option value="static-noise">Static Noise</option>
+                                <option value="call-center">Call Center</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Prompt & Model Card (only when enabled) -->
+                    <div class="kova-card" id="kova-voice-prompt-card" style="margin-bottom: 1.5rem; display: none;">
+                        <h3 style="margin: 0 0 1rem; font-size: 1rem; font-weight: 600;"><?php _e('Prompt & Model', 'kova-agent'); ?></h3>
+
+                        <div class="kova-form-group">
+                            <label class="kova-form-label"><?php _e('System Prompt', 'kova-agent'); ?></label>
+                            <textarea class="kova-form-input" id="kova-voice-prompt" rows="6" placeholder="<?php _e('Instructions for how the voice agent should behave...', 'kova-agent'); ?>"></textarea>
+                        </div>
+
+                        <div class="kova-form-group">
+                            <label class="kova-form-label"><?php _e('Begin Message', 'kova-agent'); ?></label>
+                            <input type="text" class="kova-form-input" id="kova-voice-begin-message" placeholder="<?php _e('First message the agent says when call starts...', 'kova-agent'); ?>">
+                        </div>
+
+                        <div class="kova-form-group">
+                            <label class="kova-form-label"><?php _e('AI Model', 'kova-agent'); ?></label>
+                            <select class="kova-form-input" id="kova-voice-model">
+                                <option value="gpt-4.1">GPT-4.1</option>
+                                <option value="gpt-4.1-mini" selected>GPT-4.1 Mini</option>
+                                <option value="claude-4.5-sonnet">Claude 4.5 Sonnet</option>
+                                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                            </select>
+                        </div>
+
+                        <div class="kova-form-group">
+                            <label class="kova-form-label"><?php _e('Model Temperature', 'kova-agent'); ?>: <span id="kova-voice-model-temp-val">0.7</span></label>
+                            <input type="range" id="kova-voice-model-temp" min="0" max="2" step="0.1" value="0.7" style="width: 100%;">
+                        </div>
+
+                        <div class="kova-form-group">
+                            <label class="kova-form-label"><?php _e('Boosted Keywords', 'kova-agent'); ?></label>
+                            <input type="text" class="kova-form-input" id="kova-voice-keywords" placeholder="<?php _e('keyword1, keyword2, keyword3...', 'kova-agent'); ?>">
+                            <p class="kova-form-help"><?php _e('Comma-separated keywords to boost in transcription', 'kova-agent'); ?></p>
+                        </div>
+                    </div>
+
+                    <!-- Call Limits Card (only when enabled) -->
+                    <div class="kova-card" id="kova-voice-limits-card" style="margin-bottom: 1.5rem; display: none;">
+                        <h3 style="margin: 0 0 1rem; font-size: 1rem; font-weight: 600;"><?php _e('Call Limits', 'kova-agent'); ?></h3>
+
+                        <div class="kova-form-group">
+                            <label class="kova-form-label"><?php _e('Max Call Duration (minutes)', 'kova-agent'); ?></label>
+                            <input type="number" class="kova-form-input" id="kova-voice-max-duration" min="1" max="120" value="30">
+                        </div>
+
+                        <div class="kova-form-group">
+                            <label class="kova-form-label"><?php _e('End Call After Silence (seconds)', 'kova-agent'); ?></label>
+                            <input type="number" class="kova-form-input" id="kova-voice-silence" min="5" max="120" value="30">
+                        </div>
+                    </div>
+
+                    <!-- Save Button (only when enabled) -->
+                    <div id="kova-voice-save-area" style="margin-bottom: 1.5rem; display: none;">
+                        <button type="button" class="kova-btn kova-btn-primary" id="kova-voice-save-btn"><?php _e('Save Configuration', 'kova-agent'); ?></button>
+                        <span id="kova-voice-save-status" class="kova-inline-status"></span>
+                    </div>
+
+                    <!-- Call History Card (only when enabled) -->
+                    <div class="kova-card" id="kova-voice-history-card" style="display: none;">
+                        <div class="kova-card-header">
+                            <h3 class="kova-card-title"><?php _e('Call History', 'kova-agent'); ?></h3>
+                        </div>
+                        <div class="kova-table-container">
+                            <table class="kova-table">
+                                <thead>
+                                    <tr>
+                                        <th><?php _e('Date', 'kova-agent'); ?></th>
+                                        <th><?php _e('From', 'kova-agent'); ?></th>
+                                        <th><?php _e('To', 'kova-agent'); ?></th>
+                                        <th style="text-align:center;"><?php _e('Direction', 'kova-agent'); ?></th>
+                                        <th style="text-align:center;"><?php _e('Duration', 'kova-agent'); ?></th>
+                                        <th style="text-align:center;"><?php _e('Status', 'kova-agent'); ?></th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="kova-voice-calls-tbody">
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="kova-voice-calls-empty" style="display: none; text-align: center; padding: 2rem;">
+                            <p style="color: #6b7280;"><?php _e('No calls yet.', 'kova-agent'); ?></p>
+                        </div>
+                        <div id="kova-voice-calls-pagination" style="display: none; padding: 1rem; text-align: center;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * AJAX: Get voice agent config
+     */
+    public function ajax_get_voice_config() {
+        check_ajax_referer('kova_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => __('Permission denied.', 'kova-agent')));
+        }
+
+        $settings = get_option('kova_agent_settings', array());
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
+
+        $url = $api_endpoint . '/api/woo/embedded/voice-config?' . http_build_query(array(
+            'siteUrl' => site_url(),
+        ));
+
+        $response = wp_remote_get($url, array('timeout' => 30));
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => $response->get_error_message()));
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+
+        if (!empty($body['success'])) {
+            wp_send_json_success($body['data']);
+        } else {
+            wp_send_json_error(array('message' => $body['error'] ?? __('Failed to load voice config.', 'kova-agent')));
+        }
+    }
+
+    /**
+     * AJAX: Save voice agent config
+     */
+    public function ajax_save_voice_config() {
+        check_ajax_referer('kova_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => __('Permission denied.', 'kova-agent')));
+        }
+
+        $settings = get_option('kova_agent_settings', array());
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
+
+        $config = array(
+            'voiceId' => sanitize_text_field($_POST['voiceId'] ?? ''),
+            'language' => sanitize_text_field($_POST['language'] ?? 'en-US'),
+            'voiceSpeed' => floatval($_POST['voiceSpeed'] ?? 1.0),
+            'voiceTemperature' => floatval($_POST['voiceTemperature'] ?? 1.0),
+            'responsiveness' => floatval($_POST['responsiveness'] ?? 0.7),
+            'interruptionSensitivity' => floatval($_POST['interruptionSensitivity'] ?? 0.5),
+            'enableBackchannel' => ($_POST['enableBackchannel'] ?? 'true') === 'true',
+            'ambientSound' => sanitize_text_field($_POST['ambientSound'] ?? ''),
+            'maxCallDurationMs' => intval($_POST['maxCallDurationMs'] ?? 1800000),
+            'endCallAfterSilenceMs' => intval($_POST['endCallAfterSilenceMs'] ?? 30000),
+            'prompt' => sanitize_textarea_field($_POST['prompt'] ?? ''),
+            'beginMessage' => sanitize_text_field($_POST['beginMessage'] ?? ''),
+            'model' => sanitize_text_field($_POST['model'] ?? 'gpt-4.1-mini'),
+            'modelTemperature' => floatval($_POST['modelTemperature'] ?? 0.7),
+        );
+
+        // Handle boostedKeywords as JSON array
+        $keywords_raw = $_POST['boostedKeywords'] ?? '[]';
+        $keywords = json_decode(stripslashes($keywords_raw), true);
+        if (!is_array($keywords)) {
+            $keywords = array();
+        }
+        $config['boostedKeywords'] = array_map('sanitize_text_field', $keywords);
+
+        $response = wp_remote_request($api_endpoint . '/api/woo/embedded/voice-config', array(
+            'method' => 'PUT',
+            'timeout' => 30,
+            'headers' => array('Content-Type' => 'application/json'),
+            'body' => wp_json_encode(array(
+                'siteUrl' => site_url(),
+                'config' => $config,
+            )),
+        ));
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => $response->get_error_message()));
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+
+        if (!empty($body['success'])) {
+            wp_send_json_success($body);
+        } else {
+            wp_send_json_error(array('message' => $body['error'] ?? __('Failed to save voice config.', 'kova-agent')));
+        }
+    }
+
+    /**
+     * AJAX: Enable voice agent
+     */
+    public function ajax_enable_voice() {
+        check_ajax_referer('kova_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => __('Permission denied.', 'kova-agent')));
+        }
+
+        $settings = get_option('kova_agent_settings', array());
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
+
+        $response = wp_remote_post($api_endpoint . '/api/woo/embedded/voice-enable', array(
+            'timeout' => 60,
+            'headers' => array('Content-Type' => 'application/json'),
+            'body' => wp_json_encode(array(
+                'siteUrl' => site_url(),
+            )),
+        ));
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => $response->get_error_message()));
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+
+        if (!empty($body['success'])) {
+            wp_send_json_success($body['data']);
+        } else {
+            wp_send_json_error(array('message' => $body['error'] ?? __('Failed to enable voice agent.', 'kova-agent')));
+        }
+    }
+
+    /**
+     * AJAX: Disable voice agent
+     */
+    public function ajax_disable_voice() {
+        check_ajax_referer('kova_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => __('Permission denied.', 'kova-agent')));
+        }
+
+        $settings = get_option('kova_agent_settings', array());
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
+
+        $response = wp_remote_post($api_endpoint . '/api/woo/embedded/voice-disable', array(
+            'timeout' => 30,
+            'headers' => array('Content-Type' => 'application/json'),
+            'body' => wp_json_encode(array(
+                'siteUrl' => site_url(),
+            )),
+        ));
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => $response->get_error_message()));
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+
+        if (!empty($body['success'])) {
+            wp_send_json_success($body);
+        } else {
+            wp_send_json_error(array('message' => $body['error'] ?? __('Failed to disable voice agent.', 'kova-agent')));
+        }
+    }
+
+    /**
+     * AJAX: Get available voices
+     */
+    public function ajax_get_voices() {
+        check_ajax_referer('kova_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => __('Permission denied.', 'kova-agent')));
+        }
+
+        $settings = get_option('kova_agent_settings', array());
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
+
+        $response = wp_remote_get($api_endpoint . '/api/woo/embedded/voice-voices', array('timeout' => 30));
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => $response->get_error_message()));
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+
+        if (!empty($body['success'])) {
+            wp_send_json_success($body['data']);
+        } else {
+            wp_send_json_error(array('message' => $body['error'] ?? __('Failed to load voices.', 'kova-agent')));
+        }
+    }
+
+    /**
+     * AJAX: Make test call
+     */
+    public function ajax_voice_test_call() {
+        check_ajax_referer('kova_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => __('Permission denied.', 'kova-agent')));
+        }
+
+        $settings = get_option('kova_agent_settings', array());
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
+
+        $to_number = sanitize_text_field($_POST['toNumber'] ?? '');
+        if (empty($to_number)) {
+            wp_send_json_error(array('message' => __('Phone number is required.', 'kova-agent')));
+        }
+
+        $response = wp_remote_post($api_endpoint . '/api/woo/embedded/voice-test-call', array(
+            'timeout' => 30,
+            'headers' => array('Content-Type' => 'application/json'),
+            'body' => wp_json_encode(array(
+                'siteUrl' => site_url(),
+                'toNumber' => $to_number,
+            )),
+        ));
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => $response->get_error_message()));
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+
+        if (!empty($body['success'])) {
+            wp_send_json_success($body['data']);
+        } else {
+            wp_send_json_error(array('message' => $body['error'] ?? __('Failed to make test call.', 'kova-agent')));
+        }
+    }
+
+    /**
+     * AJAX: Get voice call history
+     */
+    public function ajax_get_voice_calls() {
+        check_ajax_referer('kova_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => __('Permission denied.', 'kova-agent')));
+        }
+
+        $settings = get_option('kova_agent_settings', array());
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
+
+        $page = intval($_POST['page'] ?? 1);
+        $limit = intval($_POST['limit'] ?? 20);
+
+        $url = $api_endpoint . '/api/woo/embedded/voice-calls?' . http_build_query(array(
+            'siteUrl' => site_url(),
+            'page' => $page,
+            'limit' => $limit,
+        ));
+
+        $response = wp_remote_get($url, array('timeout' => 30));
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => $response->get_error_message()));
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+
+        if (!empty($body['success'])) {
+            wp_send_json_success(array(
+                'calls' => $body['data'] ?? array(),
+                'pagination' => $body['pagination'] ?? array(),
+            ));
+        } else {
+            wp_send_json_error(array('message' => $body['error'] ?? __('Failed to load call history.', 'kova-agent')));
         }
     }
 }

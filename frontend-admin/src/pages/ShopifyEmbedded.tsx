@@ -169,7 +169,48 @@ interface KnowledgeDocument {
   updated_at: string;
 }
 
-type TabType = 'dashboard' | 'analytics' | 'widget' | 'conversations' | 'ai' | 'knowledge';
+interface EmbeddedVoiceConfig {
+  planAllowsVoiceAgent: boolean;
+  plan: string;
+  voiceAgentEnabled: boolean;
+  retellAgentId: string | null;
+  retellLlmId: string | null;
+  retellPhoneNumber: string | null;
+  retellFromNumber: string | null;
+  voiceId: string | null;
+  language: string;
+  voiceSpeed: number;
+  voiceTemperature: number;
+  responsiveness: number;
+  interruptionSensitivity: number;
+  enableBackchannel: boolean;
+  ambientSound: string | null;
+  maxCallDurationMs: number;
+  endCallAfterSilenceMs: number;
+  boostedKeywords: string[];
+  prompt: string;
+  beginMessage: string;
+  model: string;
+  modelTemperature: number | null;
+}
+
+interface EmbeddedVoiceCallLog {
+  id: string;
+  retell_call_id: string;
+  from_number: string;
+  to_number: string;
+  direction: string;
+  status: string;
+  started_at: string | null;
+  ended_at: string | null;
+  duration_ms: number | null;
+  disconnection_reason: string | null;
+  transcript: string | null;
+  call_summary: string | null;
+  user_sentiment: string | null;
+}
+
+type TabType = 'dashboard' | 'analytics' | 'widget' | 'conversations' | 'ai' | 'knowledge' | 'voice';
 type DatePreset = 'today' | 'yesterday' | '3d' | '7d' | '14d' | '30d' | 'thisWeek' | 'thisMonth' | 'custom';
 
 // Helper functions for date calculations
@@ -452,6 +493,40 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
   const [docContent, setDocContent] = useState('');
   const [addMode, setAddMode] = useState<'text' | 'file'>('text');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Voice Agent state
+  const [voiceConfig, setVoiceConfig] = useState<EmbeddedVoiceConfig | null>(null);
+  const [voiceLoading, setVoiceLoading] = useState(false);
+  const [voiceSaving, setVoiceSaving] = useState(false);
+  const [voiceEnabling, setVoiceEnabling] = useState(false);
+  const [voiceDisabling, setVoiceDisabling] = useState(false);
+  const [voiceVoices, setVoiceVoices] = useState<any[]>([]);
+  const [voiceCalls, setVoiceCalls] = useState<EmbeddedVoiceCallLog[]>([]);
+  const [voiceCallsPagination, setVoiceCallsPagination] = useState({ page: 1, pages: 1, total: 0 });
+  const [voiceForm, setVoiceForm] = useState({
+    voiceId: 'custom_voice_68e03fc0f0b966ec686aa8d758',
+    language: 'en-US',
+    voiceSpeed: 1.0,
+    voiceTemperature: 1.0,
+    responsiveness: 0.7,
+    interruptionSensitivity: 0.5,
+    enableBackchannel: true,
+    ambientSound: '',
+    maxCallDurationMs: 1800000,
+    endCallAfterSilenceMs: 30000,
+    boostedKeywords: [] as string[],
+    prompt: '',
+    beginMessage: '',
+    model: 'gpt-4.1-mini',
+    modelTemperature: 0.7,
+  });
+  const [voiceKeywordsInput, setVoiceKeywordsInput] = useState('');
+  const [voiceTestNumber, setVoiceTestNumber] = useState('');
+  const [voiceTestCalling, setVoiceTestCalling] = useState(false);
+  const [voiceTestResult, setVoiceTestResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [voiceExpandedCall, setVoiceExpandedCall] = useState<string | null>(null);
+  const [showVoiceEnableConfirm, setShowVoiceEnableConfirm] = useState(false);
+  const [showVoiceDisableConfirm, setShowVoiceDisableConfirm] = useState(false);
 
   // Get API URL - for embedded Shopify context, we need the app URL, not the iframe origin
   const getApiUrl = useCallback(() => {
@@ -765,6 +840,177 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
       loadKnowledgeDocs();
     } catch (err) {
       console.error('Error deleting document:', err);
+    }
+  };
+
+  // Voice Agent load
+  useEffect(() => {
+    if (currentTab === 'voice') {
+      loadVoiceConfig();
+      loadVoiceVoices();
+    }
+  }, [currentTab, shop]);
+
+  useEffect(() => {
+    if (currentTab === 'voice' && voiceConfig?.voiceAgentEnabled) {
+      loadVoiceCalls(1);
+    }
+  }, [currentTab, voiceConfig?.voiceAgentEnabled]);
+
+  const loadVoiceConfig = async () => {
+    try {
+      setVoiceLoading(true);
+      const apiUrl = getApiUrl();
+      const res = await fetch(`${apiUrl}/api/shopify/embedded/voice-config?shop=${encodeURIComponent(shop)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.data) {
+          setVoiceConfig(data.data);
+          setVoiceForm({
+            voiceId: data.data.voiceId || 'custom_voice_68e03fc0f0b966ec686aa8d758',
+            language: data.data.language || 'en-US',
+            voiceSpeed: data.data.voiceSpeed ?? 1.0,
+            voiceTemperature: data.data.voiceTemperature ?? 1.0,
+            responsiveness: data.data.responsiveness ?? 0.7,
+            interruptionSensitivity: data.data.interruptionSensitivity ?? 0.5,
+            enableBackchannel: data.data.enableBackchannel ?? true,
+            ambientSound: data.data.ambientSound || '',
+            maxCallDurationMs: data.data.maxCallDurationMs ?? 1800000,
+            endCallAfterSilenceMs: data.data.endCallAfterSilenceMs ?? 30000,
+            boostedKeywords: data.data.boostedKeywords || [],
+            prompt: data.data.prompt || '',
+            beginMessage: data.data.beginMessage || '',
+            model: data.data.model || 'gpt-4.1-mini',
+            modelTemperature: data.data.modelTemperature ?? 0.7,
+          });
+          setVoiceKeywordsInput((data.data.boostedKeywords || []).join(', '));
+        }
+      }
+    } catch (err) {
+      console.error('Error loading voice config:', err);
+    } finally {
+      setVoiceLoading(false);
+    }
+  };
+
+  const loadVoiceVoices = async () => {
+    try {
+      const apiUrl = getApiUrl();
+      const res = await fetch(`${apiUrl}/api/shopify/embedded/voice-voices`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) setVoiceVoices(data.data || []);
+      }
+    } catch {
+      // Non-critical
+    }
+  };
+
+  const loadVoiceCalls = async (page = 1) => {
+    try {
+      const apiUrl = getApiUrl();
+      const res = await fetch(`${apiUrl}/api/shopify/embedded/voice-calls?shop=${encodeURIComponent(shop)}&page=${page}&limit=10`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setVoiceCalls(data.data || []);
+          setVoiceCallsPagination(data.pagination || { page: 1, pages: 1, total: 0 });
+        }
+      }
+    } catch {
+      // Non-critical
+    }
+  };
+
+  const saveVoiceConfig = async () => {
+    try {
+      setVoiceSaving(true);
+      setError(null);
+      const apiUrl = getApiUrl();
+      const keywords = voiceKeywordsInput.split(',').map(k => k.trim()).filter(Boolean);
+      const res = await fetch(`${apiUrl}/api/shopify/embedded/voice-config`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shop,
+          config: { ...voiceForm, boostedKeywords: keywords, ambientSound: voiceForm.ambientSound || null },
+        }),
+      });
+      if (!res.ok) throw new Error('Error saving');
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+      await loadVoiceConfig();
+    } catch (err: any) {
+      setError(err.message || 'Error saving voice config');
+    } finally {
+      setVoiceSaving(false);
+    }
+  };
+
+  const enableVoiceAgent = async () => {
+    setVoiceEnabling(true);
+    setShowVoiceEnableConfirm(false);
+    setError(null);
+    try {
+      const apiUrl = getApiUrl();
+      const res = await fetch(`${apiUrl}/api/shopify/embedded/voice-enable`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shop }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error enabling');
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 5000);
+      await loadVoiceConfig();
+    } catch (err: any) {
+      setError(err.message || 'Error enabling voice agent');
+    } finally {
+      setVoiceEnabling(false);
+    }
+  };
+
+  const disableVoiceAgent = async () => {
+    setVoiceDisabling(true);
+    setShowVoiceDisableConfirm(false);
+    setError(null);
+    try {
+      const apiUrl = getApiUrl();
+      const res = await fetch(`${apiUrl}/api/shopify/embedded/voice-disable`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shop }),
+      });
+      if (!res.ok) throw new Error('Error disabling');
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 5000);
+      await loadVoiceConfig();
+    } catch (err: any) {
+      setError(err.message || 'Error disabling voice agent');
+    } finally {
+      setVoiceDisabling(false);
+    }
+  };
+
+  const handleVoiceTestCall = async () => {
+    if (!voiceTestNumber.trim()) return;
+    setVoiceTestCalling(true);
+    setVoiceTestResult(null);
+    try {
+      const apiUrl = getApiUrl();
+      const res = await fetch(`${apiUrl}/api/shopify/embedded/voice-test-call`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shop, toNumber: voiceTestNumber.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to initiate call');
+      setVoiceTestResult({ type: 'success', message: 'Call initiated! You should receive a call shortly.' });
+      setTimeout(() => setVoiceTestResult(null), 8000);
+    } catch (e: any) {
+      setVoiceTestResult({ type: 'error', message: e.message || 'Failed to initiate test call' });
+    } finally {
+      setVoiceTestCalling(false);
     }
   };
 
@@ -1100,6 +1346,15 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
             <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
           </svg>
           Knowledge
+        </button>
+        <button
+          className={`embedded-tab ${currentTab === 'voice' ? 'active' : ''}`}
+          onClick={() => setCurrentTab('voice')}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+          </svg>
+          Voice
         </button>
       </nav>
 
@@ -3239,6 +3494,301 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                     </>
                   )}
                 </div>
+              </>
+            )}
+          </>
+        )}
+
+        {/* Voice Agent Tab */}
+        {currentTab === 'voice' && (
+          <>
+            {voiceLoading ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+                <div style={{ width: '30px', height: '30px', border: '3px solid var(--color-border)', borderTopColor: 'var(--color-primary)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+              </div>
+            ) : voiceConfig && !voiceConfig.planAllowsVoiceAgent ? (
+              <div className="card" style={{ textAlign: 'center', padding: '2rem' }}>
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="1.5" style={{ margin: '0 auto 1rem' }}>
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                </svg>
+                <h3 style={{ margin: '0 0 0.5rem' }}>Voice Agent</h3>
+                <p style={{ color: 'var(--color-text-muted)', marginBottom: '1rem' }}>Available on Professional and Enterprise plans.</p>
+                <button className="btn btn-primary" style={{ padding: '0.5rem 1.5rem' }}>Upgrade Plan</button>
+              </div>
+            ) : (
+              <>
+                {/* Status Card */}
+                <div className="card" style={{ marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <h3 className="card-title" style={{ marginBottom: '0.25rem' }}>
+                        {voiceConfig?.voiceAgentEnabled ? 'Voice Agent Active' : 'Voice Agent Inactive'}
+                      </h3>
+                      {voiceConfig?.voiceAgentEnabled && voiceConfig?.retellPhoneNumber && (
+                        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                          Phone: <strong>{voiceConfig.retellPhoneNumber}</strong>
+                        </p>
+                      )}
+                    </div>
+                    {voiceConfig?.voiceAgentEnabled ? (
+                      <button
+                        className="btn"
+                        style={{ background: 'var(--color-error-soft)', color: 'var(--color-error)', border: 'none', padding: '0.4rem 1rem', fontSize: '0.85rem' }}
+                        onClick={() => setShowVoiceDisableConfirm(true)}
+                        disabled={voiceDisabling}
+                      >
+                        {voiceDisabling ? 'Disabling...' : 'Disable'}
+                      </button>
+                    ) : (
+                      <button className="btn btn-primary" onClick={() => setShowVoiceEnableConfirm(true)} disabled={voiceEnabling} style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}>
+                        {voiceEnabling ? 'Enabling...' : 'Enable Voice Agent'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Enable Confirm */}
+                {showVoiceEnableConfirm && (
+                  <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+                    <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', maxWidth: '400px', width: '90%' }}>
+                      <h3 style={{ margin: '0 0 0.75rem' }}>Enable Voice Agent?</h3>
+                      <p style={{ color: 'var(--color-text-muted)', margin: '0 0 1.25rem', fontSize: '0.85rem' }}>This will create an AI voice agent and purchase a dedicated phone number.</p>
+                      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                        <button className="btn" onClick={() => setShowVoiceEnableConfirm(false)} style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>Cancel</button>
+                        <button className="btn btn-primary" onClick={enableVoiceAgent} disabled={voiceEnabling}>Confirm</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Disable Confirm */}
+                {showVoiceDisableConfirm && (
+                  <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+                    <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', maxWidth: '400px', width: '90%' }}>
+                      <h3 style={{ margin: '0 0 0.75rem', color: 'var(--color-error)' }}>Disable Voice Agent?</h3>
+                      <p style={{ color: 'var(--color-text-muted)', margin: '0 0 1.25rem', fontSize: '0.85rem' }}>This will release your phone number and delete the agent. Call history will be preserved.</p>
+                      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                        <button className="btn" onClick={() => setShowVoiceDisableConfirm(false)} style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>Cancel</button>
+                        <button className="btn" onClick={disableVoiceAgent} disabled={voiceDisabling} style={{ background: 'var(--color-error)', color: '#fff', border: 'none' }}>Confirm Disable</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {voiceConfig?.voiceAgentEnabled && (
+                  <>
+                    {/* Save button */}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+                      <button className="btn btn-primary" onClick={saveVoiceConfig} disabled={voiceSaving} style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}>
+                        {voiceSaving ? 'Saving...' : 'Save Changes'}
+                      </button>
+                    </div>
+
+                    {/* Test Call */}
+                    <div className="card" style={{ marginBottom: '1rem' }}>
+                      <h3 className="card-title" style={{ marginBottom: '0.75rem' }}>Test Call</h3>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <input
+                          type="tel"
+                          className="form-input"
+                          value={voiceTestNumber}
+                          onChange={e => setVoiceTestNumber(e.target.value)}
+                          placeholder="+1 (555) 123-4567"
+                          style={{ flex: 1, padding: '0.5rem 0.75rem', fontSize: '0.85rem' }}
+                          onKeyDown={e => { if (e.key === 'Enter' && !voiceTestCalling) handleVoiceTestCall(); }}
+                        />
+                        <button className="btn btn-primary" onClick={handleVoiceTestCall} disabled={voiceTestCalling || !voiceTestNumber.trim()} style={{ padding: '0.4rem 1rem', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                          {voiceTestCalling ? 'Calling...' : 'Test Call'}
+                        </button>
+                      </div>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: '0.5rem 0 0' }}>
+                        The agent will call you from {voiceConfig?.retellPhoneNumber}
+                      </p>
+                      {voiceTestResult && (
+                        <div style={{ marginTop: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem', background: voiceTestResult.type === 'success' ? 'var(--color-success-soft)' : 'var(--color-error-soft)', color: voiceTestResult.type === 'success' ? 'var(--color-success)' : 'var(--color-error)' }}>
+                          {voiceTestResult.message}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Voice Configuration */}
+                    <div className="card" style={{ marginBottom: '1rem' }}>
+                      <h3 className="card-title" style={{ marginBottom: '0.75rem' }}>Voice Configuration</h3>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label" style={{ fontSize: '0.8rem' }}>Voice</label>
+                          <select className="form-input" value={voiceForm.voiceId} onChange={e => setVoiceForm(f => ({ ...f, voiceId: e.target.value }))} style={{ fontSize: '0.85rem', padding: '0.5rem' }}>
+                            <option value="">Select voice...</option>
+                            {voiceVoices.map((v: any) => (
+                              <option key={v.voice_id} value={v.voice_id}>{v.voice_name} ({v.gender}) — {v.provider}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label" style={{ fontSize: '0.8rem' }}>Language</label>
+                          <select className="form-input" value={voiceForm.language} onChange={e => setVoiceForm(f => ({ ...f, language: e.target.value }))} style={{ fontSize: '0.85rem', padding: '0.5rem' }}>
+                            <option value="en-US">English (US)</option>
+                            <option value="en-GB">English (UK)</option>
+                            <option value="es-ES">Spanish (Spain)</option>
+                            <option value="es-MX">Spanish (Mexico)</option>
+                            <option value="fr-FR">French</option>
+                            <option value="de-DE">German</option>
+                            <option value="pt-BR">Portuguese (Brazil)</option>
+                            <option value="it-IT">Italian</option>
+                            <option value="multi">Multilingual</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                        {[
+                          { label: 'Voice Speed', key: 'voiceSpeed' as const, min: 0.5, max: 2, step: 0.1 },
+                          { label: 'Voice Temperature', key: 'voiceTemperature' as const, min: 0, max: 2, step: 0.1 },
+                          { label: 'Responsiveness', key: 'responsiveness' as const, min: 0, max: 1, step: 0.1 },
+                          { label: 'Interruption Sensitivity', key: 'interruptionSensitivity' as const, min: 0, max: 1, step: 0.1 },
+                        ].map(slider => (
+                          <div key={slider.key} style={{ marginBottom: 0 }}>
+                            <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                              <span>{slider.label}</span>
+                              <span style={{ color: 'var(--color-primary)', fontSize: '0.75rem' }}>{(voiceForm[slider.key] as number).toFixed(1)}</span>
+                            </label>
+                            <input type="range" min={slider.min} max={slider.max} step={slider.step} value={voiceForm[slider.key]} onChange={e => setVoiceForm(f => ({ ...f, [slider.key]: parseFloat(e.target.value) }))} style={{ width: '100%', height: '4px', appearance: 'none', WebkitAppearance: 'none', background: `linear-gradient(to right, var(--color-primary) ${((voiceForm[slider.key] as number) - slider.min) / (slider.max - slider.min) * 100}%, var(--color-border) ${((voiceForm[slider.key] as number) - slider.min) / (slider.max - slider.min) * 100}%)`, borderRadius: '2px', cursor: 'pointer', outline: 'none' }} />
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }} onClick={() => setVoiceForm(f => ({ ...f, enableBackchannel: !f.enableBackchannel }))}>
+                            <input type="checkbox" checked={voiceForm.enableBackchannel} readOnly />
+                            Backchannel
+                          </label>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Agent says "uh-huh", "I see", etc.</span>
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label" style={{ fontSize: '0.8rem' }}>Ambient Sound</label>
+                          <select className="form-input" value={voiceForm.ambientSound} onChange={e => setVoiceForm(f => ({ ...f, ambientSound: e.target.value }))} style={{ fontSize: '0.85rem', padding: '0.5rem' }}>
+                            <option value="">None</option>
+                            <option value="coffee-shop">Coffee Shop</option>
+                            <option value="convention-hall">Convention Hall</option>
+                            <option value="summer-outdoor">Summer Outdoor</option>
+                            <option value="mountain-outdoor">Mountain Outdoor</option>
+                            <option value="call-center">Call Center</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Prompt & Model */}
+                    <div className="card" style={{ marginBottom: '1rem' }}>
+                      <h3 className="card-title" style={{ marginBottom: '0.75rem' }}>Prompt & Model</h3>
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontSize: '0.8rem' }}>System Prompt</label>
+                        <textarea className="form-input" rows={4} value={voiceForm.prompt} onChange={e => setVoiceForm(f => ({ ...f, prompt: e.target.value }))} placeholder="Enter the system prompt..." style={{ resize: 'vertical', fontSize: '0.85rem' }} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontSize: '0.8rem' }}>Begin Message</label>
+                        <input type="text" className="form-input" value={voiceForm.beginMessage} onChange={e => setVoiceForm(f => ({ ...f, beginMessage: e.target.value }))} placeholder="Hello! How can I help you?" style={{ fontSize: '0.85rem' }} />
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label" style={{ fontSize: '0.8rem' }}>Model</label>
+                          <select className="form-input" value={voiceForm.model} onChange={e => setVoiceForm(f => ({ ...f, model: e.target.value }))} style={{ fontSize: '0.85rem', padding: '0.5rem' }}>
+                            <option value="gpt-4.1">GPT-4.1</option>
+                            <option value="gpt-4.1-mini">GPT-4.1 Mini</option>
+                            <option value="claude-4.5-sonnet">Claude 4.5 Sonnet</option>
+                            <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                            <span>Temperature</span>
+                            <span style={{ color: 'var(--color-warning)', fontSize: '0.75rem' }}>{voiceForm.modelTemperature.toFixed(1)}</span>
+                          </label>
+                          <input type="range" min="0" max="1" step="0.1" value={voiceForm.modelTemperature} onChange={e => setVoiceForm(f => ({ ...f, modelTemperature: parseFloat(e.target.value) }))} style={{ width: '100%', height: '4px', appearance: 'none', WebkitAppearance: 'none', background: `linear-gradient(to right, var(--color-warning) ${voiceForm.modelTemperature * 100}%, var(--color-border) ${voiceForm.modelTemperature * 100}%)`, borderRadius: '2px', cursor: 'pointer', outline: 'none' }} />
+                        </div>
+                      </div>
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label className="form-label" style={{ fontSize: '0.8rem' }}>Boosted Keywords</label>
+                        <input type="text" className="form-input" value={voiceKeywordsInput} onChange={e => setVoiceKeywordsInput(e.target.value)} placeholder="product name, brand, etc." style={{ fontSize: '0.85rem' }} />
+                        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Comma-separated</span>
+                      </div>
+                    </div>
+
+                    {/* Call Limits */}
+                    <div className="card" style={{ marginBottom: '1rem' }}>
+                      <h3 className="card-title" style={{ marginBottom: '0.75rem' }}>Call Limits</h3>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label" style={{ fontSize: '0.8rem' }}>Max Duration (min)</label>
+                          <input type="number" className="form-input" value={Math.round(voiceForm.maxCallDurationMs / 60000)} onChange={e => setVoiceForm(f => ({ ...f, maxCallDurationMs: parseInt(e.target.value || '30') * 60000 }))} min={1} max={120} style={{ fontSize: '0.85rem' }} />
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label" style={{ fontSize: '0.8rem' }}>Silence Timeout (sec)</label>
+                          <input type="number" className="form-input" value={Math.round(voiceForm.endCallAfterSilenceMs / 1000)} onChange={e => setVoiceForm(f => ({ ...f, endCallAfterSilenceMs: parseInt(e.target.value || '30') * 1000 }))} min={5} max={120} style={{ fontSize: '0.85rem' }} />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Call History */}
+                    <div className="card">
+                      <h3 className="card-title" style={{ marginBottom: '0.75rem' }}>Call History</h3>
+                      {voiceCalls.length === 0 ? (
+                        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', textAlign: 'center', padding: '1rem 0' }}>No calls yet</p>
+                      ) : (
+                        <div style={{ overflowX: 'auto' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                            <thead>
+                              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                                <th style={{ padding: '0.5rem', textAlign: 'left', fontWeight: 600, color: 'var(--color-text-muted)' }}>Date</th>
+                                <th style={{ padding: '0.5rem', textAlign: 'left', fontWeight: 600, color: 'var(--color-text-muted)' }}>Direction</th>
+                                <th style={{ padding: '0.5rem', textAlign: 'left', fontWeight: 600, color: 'var(--color-text-muted)' }}>Duration</th>
+                                <th style={{ padding: '0.5rem', textAlign: 'left', fontWeight: 600, color: 'var(--color-text-muted)' }}>Status</th>
+                                <th style={{ padding: '0.5rem' }}></th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {voiceCalls.map(call => (
+                                <tr key={call.id} style={{ borderBottom: '1px solid var(--color-border)', cursor: 'pointer' }} onClick={() => setVoiceExpandedCall(voiceExpandedCall === call.id ? null : call.id)}>
+                                  <td style={{ padding: '0.5rem' }}>{call.started_at ? new Date(call.started_at).toLocaleString() : '-'}</td>
+                                  <td style={{ padding: '0.5rem' }}>
+                                    <span style={{ padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600, background: call.direction === 'inbound' ? '#dbeafe' : '#f0fdf4', color: call.direction === 'inbound' ? '#2563eb' : '#16a34a' }}>{call.direction}</span>
+                                  </td>
+                                  <td style={{ padding: '0.5rem' }}>{call.duration_ms ? `${Math.floor(call.duration_ms / 60000)}:${String(Math.floor((call.duration_ms % 60000) / 1000)).padStart(2, '0')}` : '-'}</td>
+                                  <td style={{ padding: '0.5rem' }}>
+                                    <span style={{ padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600, background: call.status === 'ended' ? '#dcfce7' : call.status === 'error' ? '#fecaca' : '#fef9c3', color: call.status === 'ended' ? '#166534' : call.status === 'error' ? '#991b1b' : '#854d0e' }}>{call.status}</span>
+                                  </td>
+                                  <td style={{ padding: '0.5rem' }}>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" strokeWidth="2" style={{ transform: voiceExpandedCall === call.id ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                                      <polyline points="6 9 12 15 18 9" />
+                                    </svg>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                          {voiceCalls.map(call => voiceExpandedCall === call.id && (
+                            <div key={`${call.id}-detail`} style={{ padding: '0.75rem', background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)', fontSize: '0.8rem' }}>
+                              {call.call_summary && <p style={{ margin: '0 0 0.5rem' }}><strong>Summary:</strong> {call.call_summary}</p>}
+                              {call.transcript && (
+                                <div>
+                                  <strong>Transcript:</strong>
+                                  <pre style={{ margin: '0.25rem 0 0', whiteSpace: 'pre-wrap', fontSize: '0.75rem', color: 'var(--color-text-secondary)', background: '#fff', padding: '0.5rem', borderRadius: '6px', border: '1px solid var(--color-border)', maxHeight: '200px', overflow: 'auto' }}>{call.transcript}</pre>
+                                </div>
+                              )}
+                              {!call.call_summary && !call.transcript && <p style={{ margin: 0, color: 'var(--color-text-muted)' }}>No details available</p>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {voiceCallsPagination.pages > 1 && (
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', padding: '0.75rem 0 0' }}>
+                          <button className="btn" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', background: 'var(--color-bg)', border: '1px solid var(--color-border)' }} disabled={voiceCallsPagination.page <= 1} onClick={() => loadVoiceCalls(voiceCallsPagination.page - 1)}>Prev</button>
+                          <span style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{voiceCallsPagination.page}/{voiceCallsPagination.pages}</span>
+                          <button className="btn" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', background: 'var(--color-bg)', border: '1px solid var(--color-border)' }} disabled={voiceCallsPagination.page >= voiceCallsPagination.pages} onClick={() => loadVoiceCalls(voiceCallsPagination.page + 1)}>Next</button>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
               </>
             )}
           </>

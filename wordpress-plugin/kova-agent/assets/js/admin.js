@@ -863,6 +863,7 @@
         initWidgetTab();
         initAiTab();
         initKnowledgeTab();
+        initVoiceTab();
     });
 
     // ===========================================
@@ -1251,6 +1252,403 @@
         var div = document.createElement('div');
         div.appendChild(document.createTextNode(str || ''));
         return div.innerHTML;
+    }
+
+    // ===========================================
+    // Voice Agent Tab
+    // ===========================================
+
+    var voiceConfig = null;
+
+    function initVoiceTab() {
+        var $container = $('#kova-voice-container');
+        if (!$container.length) return;
+
+        loadVoiceConfig();
+        loadVoiceVoices();
+
+        // Slider value display
+        $('#kova-voice-speed').on('input', function() {
+            $('#kova-voice-speed-val').text(parseFloat(this.value).toFixed(1));
+        });
+        $('#kova-voice-temp').on('input', function() {
+            $('#kova-voice-temp-val').text(parseFloat(this.value).toFixed(1));
+        });
+        $('#kova-voice-responsiveness').on('input', function() {
+            $('#kova-voice-resp-val').text(parseFloat(this.value).toFixed(1));
+        });
+        $('#kova-voice-interruption').on('input', function() {
+            $('#kova-voice-interrupt-val').text(parseFloat(this.value).toFixed(1));
+        });
+        $('#kova-voice-model-temp').on('input', function() {
+            $('#kova-voice-model-temp-val').text(parseFloat(this.value).toFixed(1));
+        });
+
+        // Enable button
+        $('#kova-voice-enable-btn').on('click', function() {
+            if (!confirm('Enable voice agent? This will provision a phone number and AI agent.')) return;
+            enableVoiceAgent();
+        });
+
+        // Disable button
+        $('#kova-voice-disable-btn').on('click', function() {
+            if (!confirm('Disable voice agent? The phone number will be released.')) return;
+            disableVoiceAgent();
+        });
+
+        // Test call
+        $('#kova-voice-test-btn').on('click', function() {
+            makeVoiceTestCall();
+        });
+
+        // Save config
+        $('#kova-voice-save-btn').on('click', function() {
+            saveVoiceConfig();
+        });
+    }
+
+    function loadVoiceConfig() {
+        $('#kova-voice-loading').show();
+        $('#kova-voice-content').hide();
+
+        $.ajax({
+            url: kovaAdmin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'kova_get_voice_config',
+                nonce: kovaAdmin.nonce
+            },
+            success: function(response) {
+                if (response.success && response.data) {
+                    voiceConfig = response.data;
+                    renderVoiceState(response.data);
+                }
+                $('#kova-voice-loading').hide();
+                $('#kova-voice-content').show();
+            },
+            error: function() {
+                $('#kova-voice-loading').hide();
+                $('#kova-voice-content').show();
+            }
+        });
+    }
+
+    function renderVoiceState(d) {
+        // Plan gate
+        if (!d.planAllowsVoiceAgent) {
+            $('#kova-voice-plan-gate').show();
+            $('#kova-voice-main').hide();
+            return;
+        }
+
+        $('#kova-voice-plan-gate').hide();
+        $('#kova-voice-main').show();
+
+        if (d.voiceAgentEnabled) {
+            $('#kova-voice-disabled-state').hide();
+            $('#kova-voice-enabled-state').show();
+            $('#kova-voice-phone').text(d.retellPhoneNumber || '-');
+            $('#kova-voice-agent-id').text(d.retellAgentId || '-');
+
+            // Show config cards
+            $('#kova-voice-test-card, #kova-voice-config-card, #kova-voice-prompt-card, #kova-voice-limits-card, #kova-voice-save-area, #kova-voice-history-card').show();
+
+            // Populate form
+            $('#kova-voice-select').val(d.voiceId || '');
+            $('#kova-voice-language').val(d.language || 'en-US');
+            $('#kova-voice-speed').val(d.voiceSpeed ?? 1.0);
+            $('#kova-voice-speed-val').text(parseFloat(d.voiceSpeed ?? 1.0).toFixed(1));
+            $('#kova-voice-temp').val(d.voiceTemperature ?? 1.0);
+            $('#kova-voice-temp-val').text(parseFloat(d.voiceTemperature ?? 1.0).toFixed(1));
+            $('#kova-voice-responsiveness').val(d.responsiveness ?? 0.7);
+            $('#kova-voice-resp-val').text(parseFloat(d.responsiveness ?? 0.7).toFixed(1));
+            $('#kova-voice-interruption').val(d.interruptionSensitivity ?? 0.5);
+            $('#kova-voice-interrupt-val').text(parseFloat(d.interruptionSensitivity ?? 0.5).toFixed(1));
+            $('#kova-voice-backchannel').prop('checked', d.enableBackchannel !== false);
+            $('#kova-voice-ambient').val(d.ambientSound || '');
+            $('#kova-voice-prompt').val(d.prompt || '');
+            $('#kova-voice-begin-message').val(d.beginMessage || '');
+            $('#kova-voice-model').val(d.model || 'gpt-4.1-mini');
+            $('#kova-voice-model-temp').val(d.modelTemperature ?? 0.7);
+            $('#kova-voice-model-temp-val').text(parseFloat(d.modelTemperature ?? 0.7).toFixed(1));
+            $('#kova-voice-keywords').val((d.boostedKeywords || []).join(', '));
+            $('#kova-voice-max-duration').val(Math.round((d.maxCallDurationMs ?? 1800000) / 60000));
+            $('#kova-voice-silence').val(Math.round((d.endCallAfterSilenceMs ?? 30000) / 1000));
+
+            // Load call history
+            loadVoiceCallHistory(1);
+        } else {
+            $('#kova-voice-disabled-state').show();
+            $('#kova-voice-enabled-state').hide();
+            $('#kova-voice-test-card, #kova-voice-config-card, #kova-voice-prompt-card, #kova-voice-limits-card, #kova-voice-save-area, #kova-voice-history-card').hide();
+        }
+    }
+
+    function loadVoiceVoices() {
+        $.ajax({
+            url: kovaAdmin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'kova_get_voices',
+                nonce: kovaAdmin.nonce
+            },
+            success: function(response) {
+                if (response.success && response.data) {
+                    var $select = $('#kova-voice-select');
+                    $select.empty();
+                    $.each(response.data, function(i, voice) {
+                        var label = voice.voice_name || voice.voice_id;
+                        if (voice.provider) label += ' (' + voice.provider + ')';
+                        $select.append('<option value="' + escHtml(voice.voice_id) + '">' + escHtml(label) + '</option>');
+                    });
+                    // Re-set selected voice if config loaded
+                    if (voiceConfig && voiceConfig.voiceId) {
+                        $select.val(voiceConfig.voiceId);
+                    }
+                }
+            }
+        });
+    }
+
+    function saveVoiceConfig() {
+        var $btn = $('#kova-voice-save-btn');
+        var $status = $('#kova-voice-save-status');
+        $btn.prop('disabled', true).text('Saving...');
+
+        var keywords = $('#kova-voice-keywords').val().split(',').map(function(k) { return k.trim(); }).filter(Boolean);
+
+        $.ajax({
+            url: kovaAdmin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'kova_save_voice_config',
+                nonce: kovaAdmin.nonce,
+                voiceId: $('#kova-voice-select').val(),
+                language: $('#kova-voice-language').val(),
+                voiceSpeed: $('#kova-voice-speed').val(),
+                voiceTemperature: $('#kova-voice-temp').val(),
+                responsiveness: $('#kova-voice-responsiveness').val(),
+                interruptionSensitivity: $('#kova-voice-interruption').val(),
+                enableBackchannel: $('#kova-voice-backchannel').is(':checked') ? 'true' : 'false',
+                ambientSound: $('#kova-voice-ambient').val(),
+                maxCallDurationMs: parseInt($('#kova-voice-max-duration').val()) * 60000,
+                endCallAfterSilenceMs: parseInt($('#kova-voice-silence').val()) * 1000,
+                prompt: $('#kova-voice-prompt').val(),
+                beginMessage: $('#kova-voice-begin-message').val(),
+                model: $('#kova-voice-model').val(),
+                modelTemperature: $('#kova-voice-model-temp').val(),
+                boostedKeywords: JSON.stringify(keywords)
+            },
+            success: function(response) {
+                $btn.prop('disabled', false).text('Save Configuration');
+                if (response.success) {
+                    $status.text('Saved!').css('color', '#10b981').show();
+                    setTimeout(function() { $status.fadeOut(); }, 3000);
+                } else {
+                    $status.text('Error: ' + (response.data?.message || 'Unknown')).css('color', '#ef4444').show();
+                }
+            },
+            error: function() {
+                $btn.prop('disabled', false).text('Save Configuration');
+                $status.text('Connection error').css('color', '#ef4444').show();
+            }
+        });
+    }
+
+    function enableVoiceAgent() {
+        var $btn = $('#kova-voice-enable-btn');
+        var $status = $('#kova-voice-enable-status');
+        $btn.prop('disabled', true).text('Enabling...');
+        $status.text('Provisioning phone number and AI agent...').css('color', '#6b5afc').show();
+
+        $.ajax({
+            url: kovaAdmin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'kova_enable_voice',
+                nonce: kovaAdmin.nonce
+            },
+            success: function(response) {
+                $btn.prop('disabled', false).text('Enable Voice Agent');
+                if (response.success) {
+                    $status.text('Voice agent enabled!').css('color', '#10b981');
+                    setTimeout(function() { $status.fadeOut(); }, 3000);
+                    loadVoiceConfig();
+                } else {
+                    $status.text('Error: ' + (response.data?.message || 'Unknown')).css('color', '#ef4444');
+                }
+            },
+            error: function() {
+                $btn.prop('disabled', false).text('Enable Voice Agent');
+                $status.text('Connection error').css('color', '#ef4444').show();
+            }
+        });
+    }
+
+    function disableVoiceAgent() {
+        var $btn = $('#kova-voice-disable-btn');
+        var $status = $('#kova-voice-disable-status');
+        $btn.prop('disabled', true).text('Disabling...');
+
+        $.ajax({
+            url: kovaAdmin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'kova_disable_voice',
+                nonce: kovaAdmin.nonce
+            },
+            success: function(response) {
+                $btn.prop('disabled', false).text('Disable Voice Agent');
+                if (response.success) {
+                    $status.text('Voice agent disabled.').css('color', '#10b981');
+                    setTimeout(function() { $status.fadeOut(); }, 3000);
+                    loadVoiceConfig();
+                } else {
+                    $status.text('Error: ' + (response.data?.message || 'Unknown')).css('color', '#ef4444');
+                }
+            },
+            error: function() {
+                $btn.prop('disabled', false).text('Disable Voice Agent');
+                $status.text('Connection error').css('color', '#ef4444').show();
+            }
+        });
+    }
+
+    function makeVoiceTestCall() {
+        var phone = $('#kova-voice-test-phone').val().trim();
+        if (!phone) {
+            $('#kova-voice-test-status').text('Please enter a phone number.').css('color', '#ef4444').show();
+            return;
+        }
+
+        var $btn = $('#kova-voice-test-btn');
+        var $status = $('#kova-voice-test-status');
+        $btn.prop('disabled', true).text('Calling...');
+
+        $.ajax({
+            url: kovaAdmin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'kova_voice_test_call',
+                nonce: kovaAdmin.nonce,
+                toNumber: phone
+            },
+            success: function(response) {
+                $btn.prop('disabled', false).text('Make Test Call');
+                if (response.success) {
+                    $status.text('Call initiated! You should receive a call shortly.').css('color', '#10b981').show();
+                    setTimeout(function() { $status.fadeOut(); }, 8000);
+                } else {
+                    $status.text('Error: ' + (response.data?.message || 'Unknown')).css('color', '#ef4444').show();
+                }
+            },
+            error: function() {
+                $btn.prop('disabled', false).text('Make Test Call');
+                $status.text('Connection error').css('color', '#ef4444').show();
+            }
+        });
+    }
+
+    function loadVoiceCallHistory(page) {
+        $.ajax({
+            url: kovaAdmin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'kova_get_voice_calls',
+                nonce: kovaAdmin.nonce,
+                page: page || 1,
+                limit: 10
+            },
+            success: function(response) {
+                if (response.success && response.data) {
+                    renderCallHistoryTable(response.data.calls || [], response.data.pagination || {});
+                }
+            }
+        });
+    }
+
+    function renderCallHistoryTable(calls, pagination) {
+        var $tbody = $('#kova-voice-calls-tbody');
+        var $empty = $('#kova-voice-calls-empty');
+        var $pag = $('#kova-voice-calls-pagination');
+        $tbody.empty();
+
+        if (!calls.length) {
+            $empty.show();
+            $pag.hide();
+            return;
+        }
+
+        $empty.hide();
+
+        $.each(calls, function(i, call) {
+            var duration = '-';
+            if (call.duration_ms) {
+                var secs = Math.floor(call.duration_ms / 1000);
+                var mins = Math.floor(secs / 60);
+                var remSecs = secs % 60;
+                duration = mins + ':' + (remSecs < 10 ? '0' : '') + remSecs;
+            }
+
+            var date = call.started_at ? new Date(call.started_at).toLocaleString() : '-';
+            var statusColor = call.call_status === 'ended' ? '#10b981' : (call.call_status === 'error' ? '#ef4444' : '#f59e0b');
+
+            var row = '<tr class="kova-voice-call-row" data-index="' + i + '" style="cursor: pointer;">';
+            row += '<td>' + escHtml(date) + '</td>';
+            row += '<td>' + escHtml(call.from_number || '-') + '</td>';
+            row += '<td>' + escHtml(call.to_number || '-') + '</td>';
+            row += '<td style="text-align:center;">' + escHtml(call.direction || '-') + '</td>';
+            row += '<td style="text-align:center;">' + duration + '</td>';
+            row += '<td style="text-align:center;"><span style="padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;color:#fff;background:' + statusColor + ';">' + escHtml(call.call_status || '-') + '</span></td>';
+            row += '<td style="text-align:center;"><span class="kova-voice-expand-icon" style="font-size:0.8rem;color:#6b7280;">&#9660;</span></td>';
+            row += '</tr>';
+
+            // Expandable detail row
+            var detail = '<tr class="kova-voice-call-detail" data-index="' + i + '" style="display:none;">';
+            detail += '<td colspan="7" style="background:#f8fafc; padding:1rem;">';
+            if (call.transcript) {
+                detail += '<div style="margin-bottom:0.5rem;"><strong>Transcript:</strong></div>';
+                detail += '<div style="white-space:pre-wrap;font-size:0.85rem;color:#374151;max-height:300px;overflow-y:auto;">' + escHtml(call.transcript) + '</div>';
+            }
+            if (call.call_summary) {
+                detail += '<div style="margin-top:0.75rem;margin-bottom:0.25rem;"><strong>Summary:</strong></div>';
+                detail += '<div style="font-size:0.85rem;color:#374151;">' + escHtml(call.call_summary) + '</div>';
+            }
+            if (call.user_sentiment) {
+                var sentColor = call.user_sentiment === 'Positive' ? '#22c55e' : (call.user_sentiment === 'Negative' ? '#ef4444' : '#6b7280');
+                detail += '<div style="margin-top:0.5rem;"><strong>Sentiment:</strong> <span style="padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;color:#fff;background:' + sentColor + ';">' + escHtml(call.user_sentiment) + '</span></div>';
+            }
+            if (!call.transcript && !call.call_summary) {
+                detail += '<p style="color:#6b7280;">No details available.</p>';
+            }
+            detail += '</td></tr>';
+
+            $tbody.append(row + detail);
+        });
+
+        // Click to expand/collapse
+        $tbody.off('click', '.kova-voice-call-row').on('click', '.kova-voice-call-row', function() {
+            var idx = $(this).data('index');
+            var $detail = $tbody.find('.kova-voice-call-detail[data-index="' + idx + '"]');
+            $detail.toggle();
+            var $icon = $(this).find('.kova-voice-expand-icon');
+            $icon.html($detail.is(':visible') ? '&#9650;' : '&#9660;');
+        });
+
+        // Pagination
+        if (pagination.pages && pagination.pages > 1) {
+            var html = '';
+            for (var p = 1; p <= pagination.pages; p++) {
+                var activeStyle = p === pagination.page ? 'background:#6b5afc;color:#fff;' : 'background:#f1f5f9;color:#374151;';
+                html += '<button type="button" class="kova-voice-page-btn" data-page="' + p + '" style="' + activeStyle + 'border:none;padding:6px 12px;margin:0 2px;border-radius:6px;cursor:pointer;font-size:0.85rem;">' + p + '</button>';
+            }
+            $pag.html(html).show();
+            $pag.off('click', '.kova-voice-page-btn').on('click', '.kova-voice-page-btn', function() {
+                loadVoiceCallHistory(parseInt($(this).data('page')));
+            });
+        } else {
+            $pag.hide();
+        }
     }
 
 })(jQuery);

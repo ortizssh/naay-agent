@@ -10,6 +10,8 @@ import pdfParse from 'pdf-parse';
 import { SupabaseService } from '@/services/supabase.service';
 import { knowledgeService } from '@/services/knowledge.service';
 import { logger } from '@/utils/logger';
+import { retellService } from '@/services/retell.service';
+import { planService } from '@/services/plan.service';
 
 const router = Router();
 const supabaseService = new SupabaseService();
@@ -1248,6 +1250,398 @@ router.get(
     } catch (error) {
       logger.error('WooCommerce embedded knowledge status error:', error);
       return next(error);
+    }
+  }
+);
+
+// ==================== Voice Agent Endpoints ====================
+
+/**
+ * GET /api/woo/embedded/voice-config
+ */
+router.get(
+  '/voice-config',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const siteUrl = req.query.siteUrl as string;
+      if (!siteUrl) {
+        return res.status(400).json({ success: false, error: 'Site URL is required' });
+      }
+
+      const normalizedUrl = normalizeWooSiteUrl(siteUrl);
+
+      const { data: store, error } = await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .select('*')
+        .eq('shop_domain', normalizedUrl)
+        .single();
+
+      if (error || !store) {
+        return res.status(404).json({ success: false, error: 'Store not found' });
+      }
+
+      const plan = store.plan || 'free';
+      const limits = await planService.getPlanLimits(plan);
+      const planAllowsVoiceAgent = limits.features?.voice_agents === true;
+
+      return res.json({
+        success: true,
+        data: {
+          planAllowsVoiceAgent,
+          plan,
+          voiceAgentEnabled: store.voice_agent_enabled || false,
+          retellAgentId: store.retell_agent_id || null,
+          retellLlmId: store.retell_llm_id || null,
+          retellPhoneNumber: store.retell_phone_number || null,
+          retellFromNumber: store.retell_from_number || null,
+          voiceId: store.voice_agent_voice_id || null,
+          language: store.voice_agent_language || 'en-US',
+          voiceSpeed: store.voice_agent_voice_speed ?? 1.0,
+          voiceTemperature: store.voice_agent_voice_temperature ?? 1.0,
+          responsiveness: store.voice_agent_responsiveness ?? 0.7,
+          interruptionSensitivity: store.voice_agent_interruption_sensitivity ?? 0.5,
+          enableBackchannel: store.voice_agent_enable_backchannel ?? true,
+          ambientSound: store.voice_agent_ambient_sound || null,
+          maxCallDurationMs: store.voice_agent_max_call_duration_ms ?? 1800000,
+          endCallAfterSilenceMs: store.voice_agent_end_call_after_silence_ms ?? 30000,
+          boostedKeywords: store.voice_agent_boosted_keywords || [],
+          prompt: store.voice_agent_prompt || '',
+          beginMessage: store.voice_agent_begin_message || '',
+          model: store.voice_agent_model || 'gpt-4.1-mini',
+          modelTemperature: store.voice_agent_model_temperature ?? null,
+        },
+      });
+    } catch (error) {
+      logger.error('WooCommerce embedded voice config get error:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * PUT /api/woo/embedded/voice-config
+ */
+router.put(
+  '/voice-config',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { siteUrl, config } = req.body;
+      if (!siteUrl) {
+        return res.status(400).json({ success: false, error: 'Site URL is required' });
+      }
+
+      const normalizedUrl = normalizeWooSiteUrl(siteUrl);
+
+      const { data: store } = await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .select('*')
+        .eq('shop_domain', normalizedUrl)
+        .single();
+
+      if (!store) {
+        return res.status(404).json({ success: false, error: 'Store not found' });
+      }
+
+      if (!store.voice_agent_enabled) {
+        return res.status(400).json({ success: false, error: 'Voice agent is not enabled' });
+      }
+
+      const {
+        voiceId, language, voiceSpeed, voiceTemperature,
+        responsiveness, interruptionSensitivity, enableBackchannel,
+        ambientSound, maxCallDurationMs, endCallAfterSilenceMs,
+        boostedKeywords, prompt, beginMessage, model, modelTemperature,
+      } = config || {};
+
+      const dbUpdate: Record<string, any> = { updated_at: new Date().toISOString() };
+      if (voiceId !== undefined) dbUpdate.voice_agent_voice_id = voiceId;
+      if (language !== undefined) dbUpdate.voice_agent_language = language;
+      if (voiceSpeed !== undefined) dbUpdate.voice_agent_voice_speed = voiceSpeed;
+      if (voiceTemperature !== undefined) dbUpdate.voice_agent_voice_temperature = voiceTemperature;
+      if (responsiveness !== undefined) dbUpdate.voice_agent_responsiveness = responsiveness;
+      if (interruptionSensitivity !== undefined) dbUpdate.voice_agent_interruption_sensitivity = interruptionSensitivity;
+      if (enableBackchannel !== undefined) dbUpdate.voice_agent_enable_backchannel = enableBackchannel;
+      if (ambientSound !== undefined) dbUpdate.voice_agent_ambient_sound = ambientSound;
+      if (maxCallDurationMs !== undefined) dbUpdate.voice_agent_max_call_duration_ms = maxCallDurationMs;
+      if (endCallAfterSilenceMs !== undefined) dbUpdate.voice_agent_end_call_after_silence_ms = endCallAfterSilenceMs;
+      if (boostedKeywords !== undefined) dbUpdate.voice_agent_boosted_keywords = boostedKeywords;
+      if (prompt !== undefined) dbUpdate.voice_agent_prompt = prompt;
+      if (beginMessage !== undefined) dbUpdate.voice_agent_begin_message = beginMessage;
+      if (model !== undefined) dbUpdate.voice_agent_model = model;
+      if (modelTemperature !== undefined) dbUpdate.voice_agent_model_temperature = modelTemperature;
+
+      await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .update(dbUpdate)
+        .eq('shop_domain', normalizedUrl);
+
+      if (store.retell_agent_id) {
+        try {
+          await retellService.updateAgent(store.retell_agent_id, {
+            voiceId, language, voiceSpeed, voiceTemperature,
+            responsiveness, interruptionSensitivity, enableBackchannel,
+            ambientSound, maxCallDurationMs, endCallAfterSilenceMs, boostedKeywords,
+          });
+        } catch (e) {
+          logger.error('Failed to update Retell agent from WC embedded', { agentId: store.retell_agent_id, e });
+        }
+      }
+
+      if (store.retell_llm_id) {
+        try {
+          await retellService.updateLlm(store.retell_llm_id, {
+            prompt, model, beginMessage, temperature: modelTemperature,
+          });
+        } catch (e) {
+          logger.error('Failed to update Retell LLM from WC embedded', { llmId: store.retell_llm_id, e });
+        }
+      }
+
+      return res.json({ success: true, message: 'Voice agent configuration updated' });
+    } catch (error) {
+      logger.error('WooCommerce embedded voice config update error:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * POST /api/woo/embedded/voice-enable
+ */
+router.post(
+  '/voice-enable',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { siteUrl } = req.body;
+      if (!siteUrl) {
+        return res.status(400).json({ success: false, error: 'Site URL is required' });
+      }
+
+      const normalizedUrl = normalizeWooSiteUrl(siteUrl);
+
+      const { data: store } = await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .select('*')
+        .eq('shop_domain', normalizedUrl)
+        .single();
+
+      if (!store) {
+        return res.status(404).json({ success: false, error: 'Store not found' });
+      }
+
+      const plan = store.plan || 'free';
+      const limits = await planService.getPlanLimits(plan);
+      if (!limits.features?.voice_agents) {
+        return res.status(403).json({ success: false, error: 'Your plan does not include Voice Agents.' });
+      }
+
+      if (store.voice_agent_enabled && store.retell_agent_id) {
+        return res.status(400).json({ success: false, error: 'Voice agent is already enabled' });
+      }
+
+      const result = await retellService.provisionVoiceAgent(normalizedUrl, {
+        prompt: store.voice_agent_prompt || undefined,
+        beginMessage: store.voice_agent_begin_message || undefined,
+        model: store.voice_agent_model || 'gpt-4.1-mini',
+        modelTemperature: store.voice_agent_model_temperature ?? undefined,
+        voiceId: store.voice_agent_voice_id || undefined,
+        language: store.voice_agent_language || 'en-US',
+        voiceSpeed: store.voice_agent_voice_speed ?? undefined,
+        voiceTemperature: store.voice_agent_voice_temperature ?? undefined,
+        responsiveness: store.voice_agent_responsiveness ?? undefined,
+        interruptionSensitivity: store.voice_agent_interruption_sensitivity ?? undefined,
+        enableBackchannel: store.voice_agent_enable_backchannel ?? undefined,
+        ambientSound: store.voice_agent_ambient_sound || undefined,
+        maxCallDurationMs: store.voice_agent_max_call_duration_ms ?? undefined,
+        endCallAfterSilenceMs: store.voice_agent_end_call_after_silence_ms ?? undefined,
+        boostedKeywords: store.voice_agent_boosted_keywords || undefined,
+      });
+
+      await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .update({
+          voice_agent_enabled: true,
+          retell_llm_id: result.llmId,
+          retell_agent_id: result.agentId,
+          retell_phone_number: result.phoneNumber,
+          retell_from_number: result.phoneNumber,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('shop_domain', normalizedUrl);
+
+      logger.info('Voice agent enabled (WC embedded)', { shopDomain: normalizedUrl, ...result });
+
+      return res.json({
+        success: true,
+        data: { agentId: result.agentId, llmId: result.llmId, phoneNumber: result.phoneNumber },
+      });
+    } catch (error) {
+      logger.error('WooCommerce embedded voice enable error:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * POST /api/woo/embedded/voice-disable
+ */
+router.post(
+  '/voice-disable',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { siteUrl } = req.body;
+      if (!siteUrl) {
+        return res.status(400).json({ success: false, error: 'Site URL is required' });
+      }
+
+      const normalizedUrl = normalizeWooSiteUrl(siteUrl);
+
+      const { data: store } = await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .select('*')
+        .eq('shop_domain', normalizedUrl)
+        .single();
+
+      if (!store || !store.voice_agent_enabled) {
+        return res.status(400).json({ success: false, error: 'Voice agent is not enabled' });
+      }
+
+      await retellService.deprovisionVoiceAgent({
+        phoneNumber: store.retell_phone_number || store.retell_from_number || undefined,
+        agentId: store.retell_agent_id || undefined,
+        llmId: store.retell_llm_id || undefined,
+      });
+
+      await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .update({
+          voice_agent_enabled: false,
+          retell_llm_id: null,
+          retell_agent_id: null,
+          retell_phone_number: null,
+          retell_from_number: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('shop_domain', normalizedUrl);
+
+      logger.info('Voice agent disabled (WC embedded)', { shopDomain: normalizedUrl });
+
+      return res.json({ success: true, message: 'Voice agent disabled' });
+    } catch (error) {
+      logger.error('WooCommerce embedded voice disable error:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * GET /api/woo/embedded/voice-voices
+ */
+router.get(
+  '/voice-voices',
+  async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      const voices = await retellService.listVoices();
+      return res.json({ success: true, data: voices });
+    } catch (error) {
+      logger.error('WooCommerce embedded voice voices error:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * POST /api/woo/embedded/voice-test-call
+ */
+router.post(
+  '/voice-test-call',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { siteUrl, toNumber } = req.body;
+      if (!siteUrl) {
+        return res.status(400).json({ success: false, error: 'Site URL is required' });
+      }
+      if (!toNumber || typeof toNumber !== 'string') {
+        return res.status(400).json({ success: false, error: 'Phone number is required' });
+      }
+
+      const normalizedUrl = normalizeWooSiteUrl(siteUrl);
+
+      const { data: store } = await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .select('*')
+        .eq('shop_domain', normalizedUrl)
+        .single();
+
+      if (!store || !store.voice_agent_enabled || !store.retell_agent_id) {
+        return res.status(400).json({ success: false, error: 'Voice agent is not enabled' });
+      }
+
+      const fromNumber = store.retell_phone_number || store.retell_from_number;
+      if (!fromNumber) {
+        return res.status(400).json({ success: false, error: 'No phone number configured' });
+      }
+
+      const cleaned = toNumber.replace(/[\s\-()]/g, '');
+      if (!/^\+?\d{10,15}$/.test(cleaned)) {
+        return res.status(400).json({ success: false, error: 'Invalid phone number format' });
+      }
+
+      const call = await retellService.createPhoneCall({
+        fromNumber,
+        toNumber: cleaned.startsWith('+') ? cleaned : `+${cleaned}`,
+        metadata: { type: 'test_call', shop_domain: normalizedUrl },
+      });
+
+      logger.info('Test call initiated (WC embedded)', { shopDomain: normalizedUrl, callId: call.call_id });
+
+      return res.json({
+        success: true,
+        data: { callId: call.call_id, status: call.call_status },
+      });
+    } catch (error) {
+      logger.error('WooCommerce embedded voice test call error:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * GET /api/woo/embedded/voice-calls
+ */
+router.get(
+  '/voice-calls',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const siteUrl = req.query.siteUrl as string;
+      if (!siteUrl) {
+        return res.status(400).json({ success: false, error: 'Site URL is required' });
+      }
+
+      const normalizedUrl = normalizeWooSiteUrl(siteUrl);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
+      const offset = (page - 1) * limit;
+
+      const { data: calls, error, count } = await (supabaseService as any).serviceClient
+        .from('voice_call_logs')
+        .select('*', { count: 'exact' })
+        .eq('shop_domain', normalizedUrl)
+        .order('started_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (error) {
+        return res.status(500).json({ success: false, error: 'Error fetching call history' });
+      }
+
+      return res.json({
+        success: true,
+        data: calls || [],
+        pagination: { page, limit, total: count || 0, pages: Math.ceil((count || 0) / limit) },
+      });
+    } catch (error) {
+      logger.error('WooCommerce embedded voice calls error:', error);
+      next(error);
     }
   }
 );

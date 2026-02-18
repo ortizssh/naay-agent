@@ -391,6 +391,59 @@ router.get(
 );
 
 /**
+ * POST /api/retell/test-call
+ * Make a test outbound call to a given phone number
+ */
+router.post(
+  '/test-call',
+  requireClientAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const store = await getClientStore(req);
+
+      if (!store.voice_agent_enabled || !store.retell_agent_id) {
+        throw new AppError('Voice agent is not enabled', 400);
+      }
+
+      const fromNumber = store.retell_phone_number || store.retell_from_number;
+      if (!fromNumber) {
+        throw new AppError('No phone number configured', 400);
+      }
+
+      const { toNumber } = req.body;
+      if (!toNumber || typeof toNumber !== 'string') {
+        throw new AppError('Phone number is required', 400);
+      }
+
+      // Basic phone format validation
+      const cleaned = toNumber.replace(/[\s\-()]/g, '');
+      if (!/^\+?\d{10,15}$/.test(cleaned)) {
+        throw new AppError('Invalid phone number format. Use international format: +1234567890', 400);
+      }
+
+      const call = await retellService.createPhoneCall({
+        fromNumber,
+        toNumber: cleaned.startsWith('+') ? cleaned : `+${cleaned}`,
+        metadata: { type: 'test_call', shop_domain: store.shop_domain },
+      });
+
+      logger.info('Test call initiated', { shopDomain: store.shop_domain, callId: call.call_id, toNumber: cleaned });
+
+      res.json({
+        success: true,
+        data: {
+          callId: call.call_id,
+          status: call.call_status,
+        },
+      });
+    } catch (error) {
+      logger.error('Error initiating test call:', error);
+      next(error);
+    }
+  }
+);
+
+/**
  * GET /api/retell/calls
  * Get call history for the tenant (from voice_call_logs)
  */

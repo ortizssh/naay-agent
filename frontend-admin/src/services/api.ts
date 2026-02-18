@@ -618,6 +618,13 @@ class ClientApiClient {
   async getVoiceCallHistory(page: number = 1, limit: number = 20): Promise<{ success: boolean; data: VoiceCallLog[]; pagination: { page: number; limit: number; total: number; pages: number } }> {
     return this.request(`/api/retell/calls?page=${page}&limit=${limit}`) as any;
   }
+
+  async makeTestCall(toNumber: string): Promise<{ success: boolean; data: { callId: string; status: string } }> {
+    return this.request('/api/retell/test-call', {
+      method: 'POST',
+      body: JSON.stringify({ toNumber }),
+    });
+  }
 }
 
 // Knowledge Base Types
