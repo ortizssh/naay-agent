@@ -1265,19 +1265,25 @@ router.get(
     try {
       const siteUrl = req.query.siteUrl as string;
       if (!siteUrl) {
-        return res.status(400).json({ success: false, error: 'Site URL is required' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'Site URL is required' });
       }
 
       const normalizedUrl = normalizeWooSiteUrl(siteUrl);
 
-      const { data: store, error } = await (supabaseService as any).serviceClient
+      const { data: store, error } = await (
+        supabaseService as any
+      ).serviceClient
         .from('client_stores')
         .select('*')
         .eq('shop_domain', normalizedUrl)
         .single();
 
       if (error || !store) {
-        return res.status(404).json({ success: false, error: 'Store not found' });
+        return res
+          .status(404)
+          .json({ success: false, error: 'Store not found' });
       }
 
       const plan = store.plan || 'free';
@@ -1299,11 +1305,13 @@ router.get(
           voiceSpeed: store.voice_agent_voice_speed ?? 1.0,
           voiceTemperature: store.voice_agent_voice_temperature ?? 1.0,
           responsiveness: store.voice_agent_responsiveness ?? 0.7,
-          interruptionSensitivity: store.voice_agent_interruption_sensitivity ?? 0.5,
+          interruptionSensitivity:
+            store.voice_agent_interruption_sensitivity ?? 0.5,
           enableBackchannel: store.voice_agent_enable_backchannel ?? true,
           ambientSound: store.voice_agent_ambient_sound || null,
           maxCallDurationMs: store.voice_agent_max_call_duration_ms ?? 1800000,
-          endCallAfterSilenceMs: store.voice_agent_end_call_after_silence_ms ?? 30000,
+          endCallAfterSilenceMs:
+            store.voice_agent_end_call_after_silence_ms ?? 30000,
           boostedKeywords: store.voice_agent_boosted_keywords || [],
           prompt: store.voice_agent_prompt || '',
           beginMessage: store.voice_agent_begin_message || '',
@@ -1327,7 +1335,9 @@ router.put(
     try {
       const { siteUrl, config } = req.body;
       if (!siteUrl) {
-        return res.status(400).json({ success: false, error: 'Site URL is required' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'Site URL is required' });
       }
 
       const normalizedUrl = normalizeWooSiteUrl(siteUrl);
@@ -1339,36 +1349,64 @@ router.put(
         .single();
 
       if (!store) {
-        return res.status(404).json({ success: false, error: 'Store not found' });
+        return res
+          .status(404)
+          .json({ success: false, error: 'Store not found' });
       }
 
       if (!store.voice_agent_enabled) {
-        return res.status(400).json({ success: false, error: 'Voice agent is not enabled' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'Voice agent is not enabled' });
       }
 
       const {
-        voiceId, language, voiceSpeed, voiceTemperature,
-        responsiveness, interruptionSensitivity, enableBackchannel,
-        ambientSound, maxCallDurationMs, endCallAfterSilenceMs,
-        boostedKeywords, prompt, beginMessage, model, modelTemperature,
+        voiceId,
+        language,
+        voiceSpeed,
+        voiceTemperature,
+        responsiveness,
+        interruptionSensitivity,
+        enableBackchannel,
+        ambientSound,
+        maxCallDurationMs,
+        endCallAfterSilenceMs,
+        boostedKeywords,
+        prompt,
+        beginMessage,
+        model,
+        modelTemperature,
       } = config || {};
 
-      const dbUpdate: Record<string, any> = { updated_at: new Date().toISOString() };
+      const dbUpdate: Record<string, any> = {
+        updated_at: new Date().toISOString(),
+      };
       if (voiceId !== undefined) dbUpdate.voice_agent_voice_id = voiceId;
       if (language !== undefined) dbUpdate.voice_agent_language = language;
-      if (voiceSpeed !== undefined) dbUpdate.voice_agent_voice_speed = voiceSpeed;
-      if (voiceTemperature !== undefined) dbUpdate.voice_agent_voice_temperature = voiceTemperature;
-      if (responsiveness !== undefined) dbUpdate.voice_agent_responsiveness = responsiveness;
-      if (interruptionSensitivity !== undefined) dbUpdate.voice_agent_interruption_sensitivity = interruptionSensitivity;
-      if (enableBackchannel !== undefined) dbUpdate.voice_agent_enable_backchannel = enableBackchannel;
-      if (ambientSound !== undefined) dbUpdate.voice_agent_ambient_sound = ambientSound;
-      if (maxCallDurationMs !== undefined) dbUpdate.voice_agent_max_call_duration_ms = maxCallDurationMs;
-      if (endCallAfterSilenceMs !== undefined) dbUpdate.voice_agent_end_call_after_silence_ms = endCallAfterSilenceMs;
-      if (boostedKeywords !== undefined) dbUpdate.voice_agent_boosted_keywords = boostedKeywords;
+      if (voiceSpeed !== undefined)
+        dbUpdate.voice_agent_voice_speed = voiceSpeed;
+      if (voiceTemperature !== undefined)
+        dbUpdate.voice_agent_voice_temperature = voiceTemperature;
+      if (responsiveness !== undefined)
+        dbUpdate.voice_agent_responsiveness = responsiveness;
+      if (interruptionSensitivity !== undefined)
+        dbUpdate.voice_agent_interruption_sensitivity = interruptionSensitivity;
+      if (enableBackchannel !== undefined)
+        dbUpdate.voice_agent_enable_backchannel = enableBackchannel;
+      if (ambientSound !== undefined)
+        dbUpdate.voice_agent_ambient_sound = ambientSound;
+      if (maxCallDurationMs !== undefined)
+        dbUpdate.voice_agent_max_call_duration_ms = maxCallDurationMs;
+      if (endCallAfterSilenceMs !== undefined)
+        dbUpdate.voice_agent_end_call_after_silence_ms = endCallAfterSilenceMs;
+      if (boostedKeywords !== undefined)
+        dbUpdate.voice_agent_boosted_keywords = boostedKeywords;
       if (prompt !== undefined) dbUpdate.voice_agent_prompt = prompt;
-      if (beginMessage !== undefined) dbUpdate.voice_agent_begin_message = beginMessage;
+      if (beginMessage !== undefined)
+        dbUpdate.voice_agent_begin_message = beginMessage;
       if (model !== undefined) dbUpdate.voice_agent_model = model;
-      if (modelTemperature !== undefined) dbUpdate.voice_agent_model_temperature = modelTemperature;
+      if (modelTemperature !== undefined)
+        dbUpdate.voice_agent_model_temperature = modelTemperature;
 
       await (supabaseService as any).serviceClient
         .from('client_stores')
@@ -1378,26 +1416,46 @@ router.put(
       if (store.retell_agent_id) {
         try {
           await retellService.updateAgent(store.retell_agent_id, {
-            voiceId, language, voiceSpeed, voiceTemperature,
-            responsiveness, interruptionSensitivity, enableBackchannel,
-            ambientSound, maxCallDurationMs, endCallAfterSilenceMs, boostedKeywords,
+            voiceId,
+            language,
+            voiceSpeed,
+            voiceTemperature,
+            responsiveness,
+            interruptionSensitivity,
+            enableBackchannel,
+            ambientSound,
+            maxCallDurationMs,
+            endCallAfterSilenceMs,
+            boostedKeywords,
           });
         } catch (e) {
-          logger.error('Failed to update Retell agent from WC embedded', { agentId: store.retell_agent_id, e });
+          logger.error('Failed to update Retell agent from WC embedded', {
+            agentId: store.retell_agent_id,
+            e,
+          });
         }
       }
 
       if (store.retell_llm_id) {
         try {
           await retellService.updateLlm(store.retell_llm_id, {
-            prompt, model, beginMessage, temperature: modelTemperature,
+            prompt,
+            model,
+            beginMessage,
+            temperature: modelTemperature,
           });
         } catch (e) {
-          logger.error('Failed to update Retell LLM from WC embedded', { llmId: store.retell_llm_id, e });
+          logger.error('Failed to update Retell LLM from WC embedded', {
+            llmId: store.retell_llm_id,
+            e,
+          });
         }
       }
 
-      return res.json({ success: true, message: 'Voice agent configuration updated' });
+      return res.json({
+        success: true,
+        message: 'Voice agent configuration updated',
+      });
     } catch (error) {
       logger.error('WooCommerce embedded voice config update error:', error);
       next(error);
@@ -1414,7 +1472,9 @@ router.post(
     try {
       const { siteUrl } = req.body;
       if (!siteUrl) {
-        return res.status(400).json({ success: false, error: 'Site URL is required' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'Site URL is required' });
       }
 
       const normalizedUrl = normalizeWooSiteUrl(siteUrl);
@@ -1426,17 +1486,24 @@ router.post(
         .single();
 
       if (!store) {
-        return res.status(404).json({ success: false, error: 'Store not found' });
+        return res
+          .status(404)
+          .json({ success: false, error: 'Store not found' });
       }
 
       const plan = store.plan || 'free';
       const limits = await planService.getPlanLimits(plan);
       if (!limits.features?.voice_agents) {
-        return res.status(403).json({ success: false, error: 'Your plan does not include Voice Agents.' });
+        return res.status(403).json({
+          success: false,
+          error: 'Your plan does not include Voice Agents.',
+        });
       }
 
       if (store.voice_agent_enabled && store.retell_agent_id) {
-        return res.status(400).json({ success: false, error: 'Voice agent is already enabled' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'Voice agent is already enabled' });
       }
 
       const result = await retellService.provisionVoiceAgent(normalizedUrl, {
@@ -1449,11 +1516,13 @@ router.post(
         voiceSpeed: store.voice_agent_voice_speed ?? undefined,
         voiceTemperature: store.voice_agent_voice_temperature ?? undefined,
         responsiveness: store.voice_agent_responsiveness ?? undefined,
-        interruptionSensitivity: store.voice_agent_interruption_sensitivity ?? undefined,
+        interruptionSensitivity:
+          store.voice_agent_interruption_sensitivity ?? undefined,
         enableBackchannel: store.voice_agent_enable_backchannel ?? undefined,
         ambientSound: store.voice_agent_ambient_sound || undefined,
         maxCallDurationMs: store.voice_agent_max_call_duration_ms ?? undefined,
-        endCallAfterSilenceMs: store.voice_agent_end_call_after_silence_ms ?? undefined,
+        endCallAfterSilenceMs:
+          store.voice_agent_end_call_after_silence_ms ?? undefined,
         boostedKeywords: store.voice_agent_boosted_keywords || undefined,
       });
 
@@ -1469,11 +1538,18 @@ router.post(
         })
         .eq('shop_domain', normalizedUrl);
 
-      logger.info('Voice agent enabled (WC embedded)', { shopDomain: normalizedUrl, ...result });
+      logger.info('Voice agent enabled (WC embedded)', {
+        shopDomain: normalizedUrl,
+        ...result,
+      });
 
       return res.json({
         success: true,
-        data: { agentId: result.agentId, llmId: result.llmId, phoneNumber: result.phoneNumber },
+        data: {
+          agentId: result.agentId,
+          llmId: result.llmId,
+          phoneNumber: result.phoneNumber,
+        },
       });
     } catch (error) {
       logger.error('WooCommerce embedded voice enable error:', error);
@@ -1491,7 +1567,9 @@ router.post(
     try {
       const { siteUrl } = req.body;
       if (!siteUrl) {
-        return res.status(400).json({ success: false, error: 'Site URL is required' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'Site URL is required' });
       }
 
       const normalizedUrl = normalizeWooSiteUrl(siteUrl);
@@ -1503,11 +1581,14 @@ router.post(
         .single();
 
       if (!store || !store.voice_agent_enabled) {
-        return res.status(400).json({ success: false, error: 'Voice agent is not enabled' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'Voice agent is not enabled' });
       }
 
       await retellService.deprovisionVoiceAgent({
-        phoneNumber: store.retell_phone_number || store.retell_from_number || undefined,
+        phoneNumber:
+          store.retell_phone_number || store.retell_from_number || undefined,
         agentId: store.retell_agent_id || undefined,
         llmId: store.retell_llm_id || undefined,
       });
@@ -1524,7 +1605,9 @@ router.post(
         })
         .eq('shop_domain', normalizedUrl);
 
-      logger.info('Voice agent disabled (WC embedded)', { shopDomain: normalizedUrl });
+      logger.info('Voice agent disabled (WC embedded)', {
+        shopDomain: normalizedUrl,
+      });
 
       return res.json({ success: true, message: 'Voice agent disabled' });
     } catch (error) {
@@ -1559,10 +1642,14 @@ router.post(
     try {
       const { siteUrl, toNumber } = req.body;
       if (!siteUrl) {
-        return res.status(400).json({ success: false, error: 'Site URL is required' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'Site URL is required' });
       }
       if (!toNumber || typeof toNumber !== 'string') {
-        return res.status(400).json({ success: false, error: 'Phone number is required' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'Phone number is required' });
       }
 
       const normalizedUrl = normalizeWooSiteUrl(siteUrl);
@@ -1574,17 +1661,23 @@ router.post(
         .single();
 
       if (!store || !store.voice_agent_enabled || !store.retell_agent_id) {
-        return res.status(400).json({ success: false, error: 'Voice agent is not enabled' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'Voice agent is not enabled' });
       }
 
       const fromNumber = store.retell_phone_number || store.retell_from_number;
       if (!fromNumber) {
-        return res.status(400).json({ success: false, error: 'No phone number configured' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'No phone number configured' });
       }
 
       const cleaned = toNumber.replace(/[\s\-()]/g, '');
       if (!/^\+?\d{10,15}$/.test(cleaned)) {
-        return res.status(400).json({ success: false, error: 'Invalid phone number format' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'Invalid phone number format' });
       }
 
       const call = await retellService.createPhoneCall({
@@ -1593,7 +1686,10 @@ router.post(
         metadata: { type: 'test_call', shop_domain: normalizedUrl },
       });
 
-      logger.info('Test call initiated (WC embedded)', { shopDomain: normalizedUrl, callId: call.call_id });
+      logger.info('Test call initiated (WC embedded)', {
+        shopDomain: normalizedUrl,
+        callId: call.call_id,
+      });
 
       return res.json({
         success: true,
@@ -1615,7 +1711,9 @@ router.get(
     try {
       const siteUrl = req.query.siteUrl as string;
       if (!siteUrl) {
-        return res.status(400).json({ success: false, error: 'Site URL is required' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'Site URL is required' });
       }
 
       const normalizedUrl = normalizeWooSiteUrl(siteUrl);
@@ -1623,7 +1721,11 @@ router.get(
       const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
       const offset = (page - 1) * limit;
 
-      const { data: calls, error, count } = await (supabaseService as any).serviceClient
+      const {
+        data: calls,
+        error,
+        count,
+      } = await (supabaseService as any).serviceClient
         .from('voice_call_logs')
         .select('*', { count: 'exact' })
         .eq('shop_domain', normalizedUrl)
@@ -1631,13 +1733,20 @@ router.get(
         .range(offset, offset + limit - 1);
 
       if (error) {
-        return res.status(500).json({ success: false, error: 'Error fetching call history' });
+        return res
+          .status(500)
+          .json({ success: false, error: 'Error fetching call history' });
       }
 
       return res.json({
         success: true,
         data: calls || [],
-        pagination: { page, limit, total: count || 0, pages: Math.ceil((count || 0) / limit) },
+        pagination: {
+          page,
+          limit,
+          total: count || 0,
+          pages: Math.ceil((count || 0) / limit),
+        },
       });
     } catch (error) {
       logger.error('WooCommerce embedded voice calls error:', error);

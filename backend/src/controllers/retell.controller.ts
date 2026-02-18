@@ -418,7 +418,10 @@ router.post(
       // Basic phone format validation
       const cleaned = toNumber.replace(/[\s\-()]/g, '');
       if (!/^\+?\d{10,15}$/.test(cleaned)) {
-        throw new AppError('Invalid phone number format. Use international format: +1234567890', 400);
+        throw new AppError(
+          'Invalid phone number format. Use international format: +1234567890',
+          400
+        );
       }
 
       const call = await retellService.createPhoneCall({
@@ -427,7 +430,11 @@ router.post(
         metadata: { type: 'test_call', shop_domain: store.shop_domain },
       });
 
-      logger.info('Test call initiated', { shopDomain: store.shop_domain, callId: call.call_id, toNumber: cleaned });
+      logger.info('Test call initiated', {
+        shopDomain: store.shop_domain,
+        callId: call.call_id,
+        toNumber: cleaned,
+      });
 
       res.json({
         success: true,
