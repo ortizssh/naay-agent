@@ -19,6 +19,7 @@ import Analytics from './pages/client/Analytics';
 import KnowledgeBase from './pages/client/KnowledgeBase';
 import Subscription from './pages/client/Subscription';
 import AiConfigPage from './pages/client/AiConfigPage';
+import VoiceAgent from './pages/client/VoiceAgent';
 
 // Onboarding
 import OnboardingWizard from './pages/onboarding/OnboardingWizard';
@@ -30,7 +31,7 @@ import ClientSidebar from './components/layout/ClientSidebar';
 import ShopifyEmbedded from './pages/ShopifyEmbedded';
 
 type AdminPageType = 'dashboard' | 'tenants' | 'settings';
-type ClientPageType = 'dashboard' | 'store' | 'widget' | 'analytics' | 'ai-config' | 'knowledge' | 'subscription';
+type ClientPageType = 'dashboard' | 'store' | 'widget' | 'analytics' | 'ai-config' | 'knowledge' | 'voice-agent' | 'subscription';
 type PageType = 'login' | 'register' | 'dashboard';
 
 interface User {
@@ -270,6 +271,8 @@ function App() {
           return <AiConfigPage />;
         case 'knowledge':
           return <KnowledgeBase />;
+        case 'voice-agent':
+          return <VoiceAgent />;
         case 'subscription':
           return <Subscription />;
         default:

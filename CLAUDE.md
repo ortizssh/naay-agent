@@ -12,6 +12,8 @@ NEVER proactively create documentation files (*.md) or README files. Only create
 
 Naay Agent is a multi-platform AI commerce assistant. It integrates with **Shopify** and **WooCommerce** stores, providing semantic product search, cart management, and conversational commerce through an embeddable chat widget. The backend normalizes both platforms behind a unified commerce provider interface.
 
+**Requirements**: Node.js 18+, npm, Supabase project, OpenAI API key. Shopify Partner account for Shopify integration.
+
 ## Development Commands
 
 ### Primary Commands (run from project root)
@@ -133,17 +135,18 @@ Key difference: Shopify identifies stores by `*.myshopify.com` domain; WooCommer
 
 ### Frontend Admin (`frontend-admin/`)
 - **React 18.2 + Vite** — Dev server on port 3001, proxies `/api` to localhost:3000
-- **Page routing** — Public pages (Landing, Login, Register), Admin pages (Dashboard, Tenants, Settings), Client pages (MyStore, WidgetConfig, Analytics), Onboarding wizard
+- **Page routing** — Public pages (Landing, Login, Register), Admin pages (Dashboard, Tenants, Settings), Client pages (ClientDashboard, MyStore, WidgetConfig, Analytics, KnowledgeBase, AiConfig, Subscription), Onboarding wizard
 - **User-type routing** — Admin vs Client determines available page set
 - **Embedded contexts** — `ShopifyEmbedded` component for Shopify Admin iframe; WooCommerce embedded views via `woo-embedded.controller.ts`
+- **No frontend tests** — `npm run test:admin` is a no-op (`echo 'No tests configured'`)
 
 ### Database (Supabase + pgvector)
-**Core Tables**: `shops`, `products`, `product_variants`, `product_embeddings`, `conversations`, `chat_messages`, `webhook_events`, `shopify_sessions`, `app_settings`, `client_stores`, `plans`
+**Core Tables**: `shops`, `products`, `product_variants`, `product_embeddings`, `conversations`, `chat_messages`, `webhook_events`, `shopify_sessions`, `app_settings`, `client_stores`, `plans`, `knowledge_documents`, `knowledge_chunks`
 
 - pgvector extension for semantic similarity search
 - Row-level security for multi-tenant isolation
 - Direct Supabase client calls (not abstracted through repositories)
-- 20 migrations in `database/migrations/`
+- 18 migrations in `database/migrations/` (001–018, some non-sequential)
 - Semantic search function: `database/functions/search_products_semantic.sql`
 - **Supabase Storage buckets**: `chat-audio` (audio/webm, mp4, ogg, wav — 5MB limit), `chat-images` (jpeg, png, webp, gif — 2MB limit). Files uploaded via `supabaseService.uploadChatFile()`, public read access.
 - **`client_stores`** is the primary table for per-tenant widget configuration (colors, messages, features). `stores` table holds platform credentials.
@@ -202,6 +205,22 @@ PORT=3000
 - Coverage thresholds: 70% branches, 80% functions/lines/statements
 - Test setup: `backend/src/test/setup.ts`
 - Uses `tsconfig.test.json` for test compilation
+
+## Knowledge Base
+
+- **Service**: `knowledge.service.ts` — Uploads, chunks text (500 tokens, 50-token overlap), generates embeddings for RAG retrieval
+- **Controller**: `knowledge.controller.ts` (`/api/knowledge/*`) — File upload (PDF/TXT/MD, 10MB limit via multer memory storage), CRUD for documents
+- **Frontend**: `KnowledgeBase.tsx` client page
+- **Tables**: `knowledge_documents`, `knowledge_chunks` (migration 016)
+- **Cache**: `KNOWLEDGE_CACHE_TTL = 300` (5 min)
+
+## Conversion Analytics
+
+Multiple controllers/services handle conversion tracking at different levels:
+- **`simple-conversion-analytics.controller.ts`** — Primary conversion analytics endpoints
+- **`real-conversion-analyzer.controller.ts`** — Analyzes real conversions from order data
+- **`historical-conversion-migrator.controller.ts`** — Backfills historical conversion data
+- **Services**: `simple-conversion-tracker.service.ts`, `enhanced-conversion-analytics.service.ts`, `historical-conversion-analytics.service.ts`, `chat-conversions.service.ts`, `conversion-sync-scheduler.service.ts`
 
 ## Stripe Billing
 

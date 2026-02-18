@@ -268,6 +268,9 @@ export interface AppConfig {
     secretKey: string;
     webhookSecret: string;
   };
+  retell: {
+    apiKey: string;
+  };
 }
 
 // Enhanced Error Types and Codes for Shopify App
@@ -644,6 +647,7 @@ export interface TenantFeatures {
   custom_branding: boolean;
   priority_support: boolean;
   api_access: boolean;
+  voice_agents: boolean;
 }
 
 export interface TenantSettings {
@@ -721,6 +725,7 @@ export const TENANT_PLAN_LIMITS: Record<TenantPlan, TenantPlanLimits> = {
       custom_branding: false,
       priority_support: false,
       api_access: false,
+      voice_agents: false,
     },
   },
   starter: {
@@ -733,6 +738,7 @@ export const TENANT_PLAN_LIMITS: Record<TenantPlan, TenantPlanLimits> = {
       custom_branding: false,
       priority_support: false,
       api_access: false,
+      voice_agents: false,
     },
   },
   professional: {
@@ -745,6 +751,7 @@ export const TENANT_PLAN_LIMITS: Record<TenantPlan, TenantPlanLimits> = {
       custom_branding: true,
       priority_support: true,
       api_access: false,
+      voice_agents: true,
     },
   },
   enterprise: {
@@ -757,6 +764,7 @@ export const TENANT_PLAN_LIMITS: Record<TenantPlan, TenantPlanLimits> = {
       custom_branding: true,
       priority_support: true,
       api_access: true,
+      voice_agents: true,
     },
   },
 };

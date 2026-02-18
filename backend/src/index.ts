@@ -38,6 +38,8 @@ import knowledgeRoutes from '@/controllers/knowledge.controller';
 import shopifyEmbeddedRoutes from '@/controllers/shopify-embedded.controller';
 import billingRoutes from '@/controllers/billing.controller';
 import stripeWebhookRoutes from '@/controllers/stripe-webhook.controller';
+import retellRoutes from '@/controllers/retell.controller';
+import retellWebhookRoutes from '@/controllers/retell-webhook.controller';
 import { getConversionSyncScheduler } from '@/services/conversion-sync-scheduler.service';
 
 // WooCommerce platform imports
@@ -202,6 +204,45 @@ async function startServer() {
 
     // Billing API CORS middleware (same as client)
     app.use('/api/billing', (req, res, next) => {
+      const origin = req.get('Origin');
+
+      const allowedOrigins = [
+        /^https?:\/\/localhost(:\d+)?$/,
+        /^https:\/\/naay-agent.*\.azurewebsites\.net$/,
+        /^https:\/\/kova-agent.*\.azurewebsites\.net$/,
+      ];
+
+      let allowOrigin = !origin;
+      if (origin) {
+        allowOrigin = allowedOrigins.some(pattern => pattern.test(origin));
+      }
+
+      if (allowOrigin || !origin) {
+        res.setHeader('Access-Control-Allow-Origin', origin || '*');
+        if (origin) {
+          res.setHeader('Vary', 'Origin');
+        }
+      }
+
+      res.setHeader(
+        'Access-Control-Allow-Methods',
+        'GET, POST, PUT, DELETE, OPTIONS'
+      );
+      res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization, X-Requested-With'
+      );
+      res.setHeader('Access-Control-Max-Age', '86400');
+
+      if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+      }
+
+      next();
+    });
+
+    // Retell API CORS middleware (same as client)
+    app.use('/api/retell', (req, res, next) => {
       const origin = req.get('Origin');
 
       const allowedOrigins = [
@@ -468,6 +509,23 @@ async function startServer() {
     app.use('/api/webhooks', express.raw({ type: 'application/json' }));
     // Stripe webhooks need raw body for signature verification
     app.use('/api/stripe/webhooks', express.raw({ type: 'application/json' }));
+    // Retell webhooks need raw body for signature verification
+    app.use('/api/retell/webhooks', (req, res, next) => {
+      let data = '';
+      req.setEncoding('utf8');
+      req.on('data', chunk => {
+        data += chunk;
+      });
+      req.on('end', () => {
+        (req as any).rawBody = data;
+        try {
+          req.body = JSON.parse(data);
+        } catch {
+          req.body = {};
+        }
+        next();
+      });
+    });
     // WooCommerce webhooks need raw body for signature verification
     app.use('/api/woo/webhooks', (req, res, next) => {
       let data = '';
@@ -806,6 +864,8 @@ async function startServer() {
     app.use('/api/client/knowledge', knowledgeRoutes);
     app.use('/api/billing', billingRoutes);
     app.use('/api/stripe/webhooks', stripeWebhookRoutes);
+    app.use('/api/retell', retellRoutes);
+    app.use('/api/retell/webhooks', retellWebhookRoutes);
     app.use('/api/shopify/embedded', shopifyEmbeddedRoutes);
     app.use('/api/admin-bypass', adminBypassRoutes);
 

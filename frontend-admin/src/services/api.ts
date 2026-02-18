@@ -590,6 +590,34 @@ class ClientApiClient {
       body: JSON.stringify(data),
     });
   }
+
+  // Voice Agent
+  async getVoiceAgentConfig(): Promise<{ success: boolean; data: VoiceAgentConfig }> {
+    return this.request('/api/retell/config');
+  }
+
+  async updateVoiceAgentConfig(data: Partial<VoiceAgentConfigUpdate>): Promise<{ success: boolean; data: any }> {
+    return this.request('/api/retell/config', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async enableVoiceAgent(): Promise<{ success: boolean; data: { agentId: string; llmId: string; phoneNumber: string } }> {
+    return this.request('/api/retell/enable', { method: 'POST' });
+  }
+
+  async disableVoiceAgent(): Promise<{ success: boolean; data: any }> {
+    return this.request('/api/retell/disable', { method: 'POST' });
+  }
+
+  async getVoices(): Promise<{ success: boolean; data: RetellVoice[] }> {
+    return this.request('/api/retell/voices');
+  }
+
+  async getVoiceCallHistory(page: number = 1, limit: number = 20): Promise<{ success: boolean; data: VoiceCallLog[]; pagination: { page: number; limit: number; total: number; pages: number } }> {
+    return this.request(`/api/retell/calls?page=${page}&limit=${limit}`) as any;
+  }
 }
 
 // Knowledge Base Types
@@ -660,6 +688,79 @@ export interface ConversionDashboardData {
     previousPeriod: { conversions: number; revenue: number; rate: number };
     change: { conversions: number; revenue: number; rate: number };
   };
+}
+
+// Voice Agent Types
+export interface VoiceAgentConfig {
+  planAllowsVoiceAgent: boolean;
+  plan: string;
+  voiceAgentEnabled: boolean;
+  retellAgentId: string | null;
+  retellLlmId: string | null;
+  retellPhoneNumber: string | null;
+  retellFromNumber: string | null;
+  voiceId: string | null;
+  language: string;
+  voiceSpeed: number;
+  voiceTemperature: number;
+  responsiveness: number;
+  interruptionSensitivity: number;
+  enableBackchannel: boolean;
+  ambientSound: string | null;
+  maxCallDurationMs: number;
+  endCallAfterSilenceMs: number;
+  boostedKeywords: string[];
+  prompt: string;
+  beginMessage: string;
+  model: string;
+  modelTemperature: number | null;
+}
+
+export interface VoiceAgentConfigUpdate {
+  voiceId: string;
+  language: string;
+  voiceSpeed: number;
+  voiceTemperature: number;
+  responsiveness: number;
+  interruptionSensitivity: number;
+  enableBackchannel: boolean;
+  ambientSound: string | null;
+  maxCallDurationMs: number;
+  endCallAfterSilenceMs: number;
+  boostedKeywords: string[];
+  prompt: string;
+  beginMessage: string;
+  model: string;
+  modelTemperature: number | null;
+}
+
+export interface RetellVoice {
+  voice_id: string;
+  voice_name: string;
+  gender: 'male' | 'female';
+  provider: string;
+  accent?: string;
+  age?: string;
+  preview_audio_url?: string;
+}
+
+export interface VoiceCallLog {
+  id: string;
+  shop_domain: string;
+  retell_call_id: string;
+  agent_id: string;
+  from_number: string;
+  to_number: string;
+  direction: 'inbound' | 'outbound';
+  status: 'started' | 'ended' | 'error';
+  started_at: string;
+  ended_at: string | null;
+  duration_ms: number | null;
+  disconnection_reason: string | null;
+  transcript: string | null;
+  call_summary: string | null;
+  user_sentiment: string | null;
+  call_successful: boolean | null;
 }
 
 export const clientApi = new ClientApiClient();

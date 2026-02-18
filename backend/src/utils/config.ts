@@ -49,6 +49,9 @@ export const config: AppConfig = {
     secretKey: process.env.STRIPE_SECRET_KEY || '',
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
   },
+  retell: {
+    apiKey: process.env.RETELL_API_KEY || '',
+  },
 };
 
 export function validateConfig(): void {

@@ -1,11 +1,10 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { SupabaseService } from '@/services/supabase.service';
+import { retellService } from '@/services/retell.service';
 import { logger } from '@/utils/logger';
 import { AppError } from '@/types';
 import { validateAuth } from '@/middleware/shopify-auth.middleware';
 import { config as appConfig } from '@/utils/config';
-
-const RETELL_API_KEY = process.env.RETELL_API_KEY || '';
 
 const router = Router();
 const supabaseService = new SupabaseService();
@@ -449,7 +448,7 @@ router.post(
         throw new AppError('Name, phone, and email are required', 400);
       }
 
-      if (!RETELL_API_KEY) {
+      if (!appConfig.retell.apiKey) {
         logger.error('Retell API key not configured');
         throw new AppError('Contact service not configured', 503);
       }
@@ -507,48 +506,23 @@ router.post(
         fromNumber: clientStore.retell_from_number,
       });
 
-      const retellResponse = await fetch(
-        'https://api.retellai.com/v2/create-phone-call',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${RETELL_API_KEY}`,
-          },
-          body: JSON.stringify({
-            from_number: (clientStore.retell_from_number || '').trim(),
-            to_number: phone.trim(),
-            override_agent_id: clientStore.retell_agent_id,
-            retell_llm_dynamic_variables: {
-              name,
-              email,
-              phone,
-              session_id: sessionId || '',
-            },
-          }),
-        }
-      );
-
-      if (!retellResponse.ok) {
-        const errorData = await retellResponse.text();
-        logger.error('Retell AI API error', {
-          status: retellResponse.status,
-          body: errorData,
-        });
-        return res.status(502).json({
-          success: false,
-          error: 'Failed to initiate call',
-          retellError: errorData,
-        });
-      }
-
-      const callData = await retellResponse.json();
+      const callData = await retellService.createPhoneCall({
+        fromNumber: clientStore.retell_from_number || '',
+        toNumber: phone,
+        overrideAgentId: clientStore.retell_agent_id,
+        dynamicVariables: {
+          name,
+          email,
+          phone,
+          session_id: sessionId || '',
+        },
+      });
 
       res.json({
         success: true,
         data: {
           message: 'Call initiated successfully',
-          callId: (callData as any).call_id,
+          callId: callData.call_id,
         },
       });
     } catch (error) {
