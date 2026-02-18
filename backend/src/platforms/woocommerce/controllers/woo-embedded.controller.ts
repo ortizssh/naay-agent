@@ -1688,10 +1688,10 @@ router.post(
           .json({ success: false, error: 'Invalid phone number format' });
       }
 
-      // Check monthly voice call limit
+      // Check monthly voice call limit (>0 = enforced, -1 = unlimited, 0 = not configured)
       const plan = store.plan || 'free';
       const limits = await planService.getPlanLimits(plan);
-      if (limits.monthly_voice_calls !== -1) {
+      if (limits.monthly_voice_calls > 0) {
         const callCount =
           await tenantService.getMonthlyVoiceCallCount(normalizedUrl);
         if (callCount >= limits.monthly_voice_calls) {

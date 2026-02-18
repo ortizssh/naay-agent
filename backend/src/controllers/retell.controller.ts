@@ -434,10 +434,10 @@ router.post(
         );
       }
 
-      // Check monthly voice call limit
+      // Check monthly voice call limit (>0 = enforced, -1 = unlimited, 0 = not configured)
       const plan = store.plan || 'free';
       const limits = await planService.getPlanLimits(plan);
-      if (limits.monthly_voice_calls !== -1) {
+      if (limits.monthly_voice_calls > 0) {
         const callCount = await tenantService.getMonthlyVoiceCallCount(
           store.shop_domain
         );

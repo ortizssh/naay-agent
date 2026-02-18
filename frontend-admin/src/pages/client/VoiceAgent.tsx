@@ -356,29 +356,14 @@ function VoiceAgent() {
 
       {/* Enable/Disable Card */}
       <div className="card" style={{ marginBottom: '24px' }}>
-        <div className="card-header">
+        <div className="card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h3 className="card-title">Voice Agent Status</h3>
-        </div>
-        <div className="card-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
-          <div style={{ flex: 1 }}>
-            <p style={{ margin: 0, fontWeight: 500 }}>
-              {config?.voiceAgentEnabled ? 'Voice Agent is active' : 'Voice Agent is inactive'}
-            </p>
-            {config?.voiceAgentEnabled && config?.retellPhoneNumber && (
-              <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '14px' }}>
-                Phone number: <strong>{config.retellPhoneNumber}</strong>
-              </p>
-            )}
-            {config?.voiceAgentEnabled && config?.voiceCallsLimit !== undefined && (
-              <div style={{ marginTop: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <span style={{ fontSize: '13px', color: '#64748b' }}>Monthly calls</span>
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>
-                    {config.voiceCallsUsed} / {config.voiceCallsLimit === -1 ? 'Unlimited' : config.voiceCallsLimit}
-                  </span>
-                </div>
-                {config.voiceCallsLimit !== -1 && (
-                  <div style={{ height: '6px', borderRadius: '3px', background: '#e2e8f0', overflow: 'hidden' }}>
+          {config?.voiceAgentEnabled && config?.voiceCallsLimit !== undefined && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '13px', color: '#64748b' }}>Monthly calls</span>
+              {config.voiceCallsLimit !== -1 && config.voiceCallsLimit > 0 ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '100px', height: '6px', borderRadius: '3px', background: '#e2e8f0', overflow: 'hidden' }}>
                     <div style={{
                       height: '100%',
                       borderRadius: '3px',
@@ -387,8 +372,27 @@ function VoiceAgent() {
                       transition: 'width 0.3s ease',
                     }} />
                   </div>
-                )}
-              </div>
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155', whiteSpace: 'nowrap' }}>
+                    {config.voiceCallsUsed} / {config.voiceCallsLimit}
+                  </span>
+                </div>
+              ) : (
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>
+                  {config.voiceCallsUsed} / {config.voiceCallsLimit === -1 ? 'Unlimited' : config.voiceCallsLimit}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="card-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+          <div>
+            <p style={{ margin: 0, fontWeight: 500 }}>
+              {config?.voiceAgentEnabled ? 'Voice Agent is active' : 'Voice Agent is inactive'}
+            </p>
+            {config?.voiceAgentEnabled && config?.retellPhoneNumber && (
+              <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '14px' }}>
+                Phone number: <strong>{config.retellPhoneNumber}</strong>
+              </p>
             )}
           </div>
           {config?.voiceAgentEnabled ? (
