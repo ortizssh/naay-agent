@@ -2381,87 +2381,102 @@ class Kova_Admin {
     private function render_ai_tab() {
         ?>
         <div class="kova-page-header">
-            <div>
-                <h1 class="kova-page-title"><?php _e('AI Agent Configuration', 'kova-agent'); ?></h1>
-                <p class="kova-page-desc"><?php _e('Configure how your AI assistant behaves and responds to customers.', 'kova-agent'); ?></p>
+            <div class="kova-page-header-content">
+                <div>
+                    <h1 class="kova-page-title"><?php _e('AI Agent', 'kova-agent'); ?></h1>
+                    <p class="kova-page-subtitle"><?php _e('Configure how your AI assistant behaves and responds to customers.', 'kova-agent'); ?></p>
+                </div>
             </div>
         </div>
 
-        <div id="kova-ai-container">
-            <div class="kova-loading" id="kova-ai-loading">
-                <div class="kova-spinner"></div>
-                <p><?php _e('Loading AI configuration...', 'kova-agent'); ?></p>
-            </div>
-
-            <div id="kova-ai-content" style="display: none;">
-                <!-- Chat Mode Toggle -->
-                <div class="kova-card" style="margin-bottom: 1.5rem;">
-                    <h3 style="margin: 0 0 0.75rem; font-size: 1rem; font-weight: 600;"><?php _e('Chat Mode', 'kova-agent'); ?></h3>
-                    <div class="kova-ai-mode-toggle">
-                        <button type="button" class="kova-mode-btn active" data-mode="internal"><?php _e('Internal AI (Kova)', 'kova-agent'); ?></button>
-                        <button type="button" class="kova-mode-btn" data-mode="external"><?php _e('External Endpoint', 'kova-agent'); ?></button>
-                    </div>
+        <div class="kova-page-content">
+            <div id="kova-ai-container">
+                <div class="kova-loading" id="kova-ai-loading">
+                    <div class="kova-loading-spinner"></div>
+                    <p class="kova-loading-text"><?php _e('Loading AI configuration...', 'kova-agent'); ?></p>
                 </div>
 
-                <!-- Internal Mode Config -->
-                <div class="kova-card" id="kova-ai-internal">
-                    <div class="kova-form-group">
-                        <label class="kova-form-label"><?php _e('Agent Name', 'kova-agent'); ?></label>
-                        <input type="text" class="kova-form-input" id="kova-ai-agent-name" placeholder="Kova">
-                    </div>
-
-                    <div class="kova-form-group">
-                        <label class="kova-form-label"><?php _e('Brand Description', 'kova-agent'); ?></label>
-                        <textarea class="kova-form-input" id="kova-ai-brand-desc" rows="3" placeholder="<?php _e('Describe your brand, products and communication style...', 'kova-agent'); ?>"></textarea>
-                    </div>
-
-                    <div class="kova-form-group">
-                        <label class="kova-form-label"><?php _e('Agent Tone', 'kova-agent'); ?></label>
-                        <div class="kova-tone-selector">
-                            <button type="button" class="kova-tone-btn active" data-tone="friendly"><?php _e('Friendly', 'kova-agent'); ?></button>
-                            <button type="button" class="kova-tone-btn" data-tone="professional"><?php _e('Professional', 'kova-agent'); ?></button>
-                            <button type="button" class="kova-tone-btn" data-tone="casual"><?php _e('Casual', 'kova-agent'); ?></button>
-                            <button type="button" class="kova-tone-btn" data-tone="enthusiastic"><?php _e('Enthusiastic', 'kova-agent'); ?></button>
+                <div id="kova-ai-content" style="display: none;">
+                    <!-- Chat Mode Toggle -->
+                    <div class="kova-card">
+                        <div class="kova-card-header">
+                            <h3 class="kova-card-title"><?php _e('Chat Mode', 'kova-agent'); ?></h3>
+                        </div>
+                        <div class="kova-ai-mode-toggle">
+                            <button type="button" class="kova-mode-btn active" data-mode="internal"><?php _e('Internal AI (Kova)', 'kova-agent'); ?></button>
+                            <button type="button" class="kova-mode-btn" data-mode="external"><?php _e('External Endpoint', 'kova-agent'); ?></button>
                         </div>
                     </div>
 
-                    <div class="kova-form-group">
-                        <label class="kova-form-label"><?php _e('Language', 'kova-agent'); ?></label>
-                        <div class="kova-language-selector">
-                            <button type="button" class="kova-lang-btn active" data-lang="es"><?php _e('Spanish', 'kova-agent'); ?></button>
-                            <button type="button" class="kova-lang-btn" data-lang="en"><?php _e('English', 'kova-agent'); ?></button>
-                            <button type="button" class="kova-lang-btn" data-lang="pt"><?php _e('Portuguese', 'kova-agent'); ?></button>
+                    <!-- Internal Mode Config -->
+                    <div class="kova-card" id="kova-ai-internal">
+                        <div class="kova-card-header">
+                            <h3 class="kova-card-title"><?php _e('Agent Configuration', 'kova-agent'); ?></h3>
+                        </div>
+
+                        <div class="kova-form-row">
+                            <div class="kova-form-group-half">
+                                <label class="kova-form-label"><?php _e('Agent Name', 'kova-agent'); ?></label>
+                                <input type="text" class="kova-form-input" id="kova-ai-agent-name" placeholder="Kova" style="max-width: 100%;">
+                            </div>
+                            <div class="kova-form-group-half">
+                                <label class="kova-form-label"><?php _e('AI Model', 'kova-agent'); ?></label>
+                                <select class="kova-form-input" id="kova-ai-model" style="max-width: 100%;">
+                                    <option value="gpt-4.1-mini">GPT-4.1 Mini (Fast)</option>
+                                    <option value="gpt-4.1">GPT-4.1 (Advanced)</option>
+                                    <option value="gpt-4o">GPT-4o</option>
+                                    <option value="gpt-4o-mini">GPT-4o Mini</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="kova-form-group">
+                            <label class="kova-form-label"><?php _e('Brand Description', 'kova-agent'); ?></label>
+                            <textarea class="kova-form-textarea" id="kova-ai-brand-desc" rows="3" placeholder="<?php _e('Describe your brand, products and communication style...', 'kova-agent'); ?>" style="max-width: 100%;"></textarea>
+                        </div>
+
+                        <div class="kova-form-row">
+                            <div class="kova-form-group-half">
+                                <label class="kova-form-label"><?php _e('Agent Tone', 'kova-agent'); ?></label>
+                                <div class="kova-tone-selector">
+                                    <button type="button" class="kova-tone-btn active" data-tone="friendly"><?php _e('Friendly', 'kova-agent'); ?></button>
+                                    <button type="button" class="kova-tone-btn" data-tone="professional"><?php _e('Professional', 'kova-agent'); ?></button>
+                                    <button type="button" class="kova-tone-btn" data-tone="casual"><?php _e('Casual', 'kova-agent'); ?></button>
+                                    <button type="button" class="kova-tone-btn" data-tone="enthusiastic"><?php _e('Enthusiastic', 'kova-agent'); ?></button>
+                                </div>
+                            </div>
+                            <div class="kova-form-group-half">
+                                <label class="kova-form-label"><?php _e('Language', 'kova-agent'); ?></label>
+                                <div class="kova-language-selector">
+                                    <button type="button" class="kova-lang-btn active" data-lang="es"><?php _e('Spanish', 'kova-agent'); ?></button>
+                                    <button type="button" class="kova-lang-btn" data-lang="en"><?php _e('English', 'kova-agent'); ?></button>
+                                    <button type="button" class="kova-lang-btn" data-lang="pt"><?php _e('Portuguese', 'kova-agent'); ?></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="kova-form-group">
+                            <label class="kova-form-label"><?php _e('Additional Instructions', 'kova-agent'); ?></label>
+                            <textarea class="kova-form-textarea" id="kova-ai-instructions" rows="4" placeholder="<?php _e('Specific instructions for agent behavior...', 'kova-agent'); ?>" style="max-width: 100%;"></textarea>
                         </div>
                     </div>
 
-                    <div class="kova-form-group">
-                        <label class="kova-form-label"><?php _e('Additional Instructions', 'kova-agent'); ?></label>
-                        <textarea class="kova-form-input" id="kova-ai-instructions" rows="4" placeholder="<?php _e('Specific instructions for agent behavior...', 'kova-agent'); ?>"></textarea>
+                    <!-- External Mode Config -->
+                    <div class="kova-card" id="kova-ai-external" style="display: none;">
+                        <div class="kova-card-header">
+                            <h3 class="kova-card-title"><?php _e('External Endpoint', 'kova-agent'); ?></h3>
+                        </div>
+                        <div class="kova-form-group">
+                            <label class="kova-form-label"><?php _e('Endpoint URL', 'kova-agent'); ?></label>
+                            <input type="url" class="kova-form-input" id="kova-ai-endpoint" placeholder="https://your-endpoint.com/webhook/chat" style="max-width: 100%;">
+                            <p class="kova-form-help"><?php _e('URL that will receive chat messages via POST', 'kova-agent'); ?></p>
+                        </div>
                     </div>
 
-                    <div class="kova-form-group">
-                        <label class="kova-form-label"><?php _e('AI Model', 'kova-agent'); ?></label>
-                        <select class="kova-form-input" id="kova-ai-model">
-                            <option value="gpt-4.1-mini">GPT-4.1 Mini (Fast)</option>
-                            <option value="gpt-4.1">GPT-4.1 (Advanced)</option>
-                            <option value="gpt-4o">GPT-4o</option>
-                            <option value="gpt-4o-mini">GPT-4o Mini</option>
-                        </select>
+                    <div class="kova-actions-bar" style="border-top: none; padding-top: 0;">
+                        <button type="button" class="kova-btn kova-btn-primary" id="kova-save-ai-config"><?php _e('Save Configuration', 'kova-agent'); ?></button>
+                        <span id="kova-ai-status" class="kova-inline-status"></span>
                     </div>
-                </div>
-
-                <!-- External Mode Config -->
-                <div class="kova-card" id="kova-ai-external" style="display: none;">
-                    <div class="kova-form-group">
-                        <label class="kova-form-label"><?php _e('Endpoint URL', 'kova-agent'); ?></label>
-                        <input type="url" class="kova-form-input" id="kova-ai-endpoint" placeholder="https://your-endpoint.com/webhook/chat">
-                        <p class="kova-form-help"><?php _e('URL that will receive chat messages via POST', 'kova-agent'); ?></p>
-                    </div>
-                </div>
-
-                <div style="margin-top: 1.5rem;">
-                    <button type="button" class="kova-btn kova-btn-primary" id="kova-save-ai-config"><?php _e('Save Configuration', 'kova-agent'); ?></button>
-                    <span id="kova-ai-status" class="kova-inline-status"></span>
                 </div>
             </div>
         </div>
@@ -2474,80 +2489,87 @@ class Kova_Admin {
     private function render_knowledge_tab() {
         ?>
         <div class="kova-page-header">
-            <div>
-                <h1 class="kova-page-title"><?php _e('Knowledge Base', 'kova-agent'); ?></h1>
-                <p class="kova-page-desc"><?php _e('Add documents so your AI agent has more context about your business.', 'kova-agent'); ?></p>
+            <div class="kova-page-header-content">
+                <div>
+                    <h1 class="kova-page-title"><?php _e('Knowledge Base', 'kova-agent'); ?></h1>
+                    <p class="kova-page-subtitle"><?php _e('Add documents so your AI agent has more context about your business.', 'kova-agent'); ?></p>
+                </div>
             </div>
         </div>
 
-        <div id="kova-knowledge-container">
-            <div class="kova-loading" id="kova-knowledge-loading">
-                <div class="kova-spinner"></div>
-                <p><?php _e('Loading documents...', 'kova-agent'); ?></p>
-            </div>
-
-            <div id="kova-knowledge-content" style="display: none;">
-                <!-- Documents Table -->
-                <div class="kova-card" style="margin-bottom: 1.5rem;">
-                    <div class="kova-card-header">
-                        <h3 class="kova-card-title"><?php _e('Documents', 'kova-agent'); ?> (<span id="kova-knowledge-count">0</span>)</h3>
-                    </div>
-                    <div class="kova-table-container">
-                        <table class="kova-table kova-knowledge-table">
-                            <thead>
-                                <tr>
-                                    <th><?php _e('Title', 'kova-agent'); ?></th>
-                                    <th style="text-align:center;"><?php _e('Type', 'kova-agent'); ?></th>
-                                    <th style="text-align:center;"><?php _e('Chunks', 'kova-agent'); ?></th>
-                                    <th style="text-align:center;"><?php _e('Status', 'kova-agent'); ?></th>
-                                    <th style="text-align:center;"><?php _e('Date', 'kova-agent'); ?></th>
-                                    <th style="text-align:center;"></th>
-                                </tr>
-                            </thead>
-                            <tbody id="kova-knowledge-tbody">
-                            </tbody>
-                        </table>
-                    </div>
-                    <div id="kova-knowledge-empty" style="display: none; text-align: center; padding: 2rem;">
-                        <p style="color: #6b7280;"><?php _e('No documents yet. Add documents below to give your AI agent more context.', 'kova-agent'); ?></p>
-                    </div>
+        <div class="kova-page-content">
+            <div id="kova-knowledge-container">
+                <div class="kova-loading" id="kova-knowledge-loading">
+                    <div class="kova-loading-spinner"></div>
+                    <p class="kova-loading-text"><?php _e('Loading documents...', 'kova-agent'); ?></p>
                 </div>
 
-                <!-- Add Document Section -->
-                <div class="kova-card">
-                    <div class="kova-card-header">
-                        <h3 class="kova-card-title"><?php _e('Add Document', 'kova-agent'); ?></h3>
-                    </div>
-
-                    <div class="kova-add-doc-toggle" style="margin-bottom: 1rem;">
-                        <button type="button" class="kova-doc-mode-btn active" data-mode="text"><?php _e('Text', 'kova-agent'); ?></button>
-                        <button type="button" class="kova-doc-mode-btn" data-mode="file"><?php _e('File', 'kova-agent'); ?></button>
-                    </div>
-
-                    <div class="kova-form-group">
-                        <label class="kova-form-label"><?php _e('Title', 'kova-agent'); ?></label>
-                        <input type="text" class="kova-form-input" id="kova-doc-title" placeholder="<?php _e('Document name...', 'kova-agent'); ?>">
-                    </div>
-
-                    <!-- Text Mode -->
-                    <div id="kova-doc-text-mode">
-                        <div class="kova-form-group">
-                            <label class="kova-form-label"><?php _e('Content', 'kova-agent'); ?></label>
-                            <textarea class="kova-form-input" id="kova-doc-content" rows="6" placeholder="<?php _e('Paste the content you want your agent to know...', 'kova-agent'); ?>"></textarea>
+                <div id="kova-knowledge-content" style="display: none;">
+                    <!-- Documents Table -->
+                    <div class="kova-card">
+                        <div class="kova-card-header">
+                            <h3 class="kova-card-title"><?php _e('Documents', 'kova-agent'); ?> (<span id="kova-knowledge-count">0</span>)</h3>
                         </div>
-                        <button type="button" class="kova-btn kova-btn-primary" id="kova-create-doc"><?php _e('Create Document', 'kova-agent'); ?></button>
-                    </div>
-
-                    <!-- File Mode -->
-                    <div id="kova-doc-file-mode" style="display: none;">
-                        <div class="kova-form-group">
-                            <label class="kova-form-label"><?php _e('File (PDF, TXT, MD - max 10MB)', 'kova-agent'); ?></label>
-                            <input type="file" class="kova-file-input" id="kova-doc-file" accept=".pdf,.txt,.md">
+                        <div class="kova-table-container" style="border: none; border-radius: 0; margin-bottom: 0;">
+                            <table class="kova-table kova-knowledge-table">
+                                <thead>
+                                    <tr>
+                                        <th><?php _e('Title', 'kova-agent'); ?></th>
+                                        <th style="text-align:center;"><?php _e('Type', 'kova-agent'); ?></th>
+                                        <th style="text-align:center;"><?php _e('Chunks', 'kova-agent'); ?></th>
+                                        <th style="text-align:center;"><?php _e('Status', 'kova-agent'); ?></th>
+                                        <th style="text-align:center;"><?php _e('Date', 'kova-agent'); ?></th>
+                                        <th style="text-align:center;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="kova-knowledge-tbody">
+                                </tbody>
+                            </table>
                         </div>
-                        <button type="button" class="kova-btn kova-btn-primary" id="kova-upload-doc"><?php _e('Upload File', 'kova-agent'); ?></button>
+                        <div id="kova-knowledge-empty" style="display: none;">
+                            <div class="kova-empty-state">
+                                <div class="kova-empty-state-icon"><?php echo $this->render_icon('knowledge'); ?></div>
+                                <h3 class="kova-empty-state-title"><?php _e('No documents yet', 'kova-agent'); ?></h3>
+                                <p class="kova-empty-state-description"><?php _e('Add documents below to give your AI agent more context about your business.', 'kova-agent'); ?></p>
+                            </div>
+                        </div>
                     </div>
 
-                    <span id="kova-knowledge-status" class="kova-inline-status"></span>
+                    <!-- Add Document Section -->
+                    <div class="kova-card">
+                        <div class="kova-card-header">
+                            <h3 class="kova-card-title"><?php _e('Add Document', 'kova-agent'); ?></h3>
+                            <div class="kova-add-doc-toggle">
+                                <button type="button" class="kova-doc-mode-btn active" data-mode="text"><?php _e('Text', 'kova-agent'); ?></button>
+                                <button type="button" class="kova-doc-mode-btn" data-mode="file"><?php _e('File', 'kova-agent'); ?></button>
+                            </div>
+                        </div>
+
+                        <div class="kova-form-group">
+                            <label class="kova-form-label"><?php _e('Title', 'kova-agent'); ?></label>
+                            <input type="text" class="kova-form-input" id="kova-doc-title" placeholder="<?php _e('Document name...', 'kova-agent'); ?>" style="max-width: 100%;">
+                        </div>
+
+                        <!-- Text Mode -->
+                        <div id="kova-doc-text-mode">
+                            <div class="kova-form-group">
+                                <label class="kova-form-label"><?php _e('Content', 'kova-agent'); ?></label>
+                                <textarea class="kova-form-textarea" id="kova-doc-content" rows="6" placeholder="<?php _e('Paste the content you want your agent to know...', 'kova-agent'); ?>" style="max-width: 100%;"></textarea>
+                            </div>
+                            <button type="button" class="kova-btn kova-btn-primary" id="kova-create-doc"><?php _e('Create Document', 'kova-agent'); ?></button>
+                        </div>
+
+                        <!-- File Mode -->
+                        <div id="kova-doc-file-mode" style="display: none;">
+                            <div class="kova-form-group">
+                                <label class="kova-form-label"><?php _e('File (PDF, TXT, MD - max 10MB)', 'kova-agent'); ?></label>
+                                <input type="file" class="kova-file-input" id="kova-doc-file" accept=".pdf,.txt,.md">
+                            </div>
+                            <button type="button" class="kova-btn kova-btn-primary" id="kova-upload-doc"><?php _e('Upload File', 'kova-agent'); ?></button>
+                        </div>
+
+                        <span id="kova-knowledge-status" class="kova-inline-status"></span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2857,229 +2879,257 @@ class Kova_Admin {
     private function render_voice_tab() {
         ?>
         <div class="kova-page-header">
-            <div>
-                <h1 class="kova-page-title"><?php _e('Voice Agent', 'kova-agent'); ?></h1>
-                <p class="kova-page-desc"><?php _e('Configure your AI-powered phone agent for automated calls.', 'kova-agent'); ?></p>
+            <div class="kova-page-header-content">
+                <div>
+                    <h1 class="kova-page-title"><?php _e('Voice Agent', 'kova-agent'); ?></h1>
+                    <p class="kova-page-subtitle"><?php _e('Configure your AI-powered phone agent for automated calls.', 'kova-agent'); ?></p>
+                </div>
             </div>
         </div>
 
-        <div id="kova-voice-container">
-            <div class="kova-loading" id="kova-voice-loading">
-                <div class="kova-spinner"></div>
-                <p><?php _e('Loading voice agent configuration...', 'kova-agent'); ?></p>
-            </div>
-
-            <div id="kova-voice-content" style="display: none;">
-                <!-- Plan Gate -->
-                <div id="kova-voice-plan-gate" style="display: none;">
-                    <div class="kova-card" style="text-align: center; padding: 3rem 2rem;">
-                        <div style="margin-bottom: 1rem;">
-                            <?php echo $this->render_icon('voice'); ?>
-                        </div>
-                        <h2 style="margin: 0 0 0.5rem; font-size: 1.5rem; color: #1a1a2e;"><?php _e('Voice Agent', 'kova-agent'); ?></h2>
-                        <p style="color: #64748b; margin-bottom: 1.5rem; max-width: 480px; margin-left: auto; margin-right: auto;">
-                            <?php _e('Automate phone calls with an AI voice agent. Available on Professional and Enterprise plans.', 'kova-agent'); ?>
-                        </p>
-                        <a href="https://app.heykova.io" target="_blank" class="kova-btn kova-btn-primary"><?php _e('Upgrade Plan', 'kova-agent'); ?></a>
-                    </div>
+        <div class="kova-page-content">
+            <div id="kova-voice-container">
+                <div class="kova-loading" id="kova-voice-loading">
+                    <div class="kova-loading-spinner"></div>
+                    <p class="kova-loading-text"><?php _e('Loading voice agent configuration...', 'kova-agent'); ?></p>
                 </div>
 
-                <!-- Main Voice Content -->
-                <div id="kova-voice-main" style="display: none;">
-                    <!-- Status Card -->
-                    <div class="kova-card" style="margin-bottom: 1.5rem;">
-                        <h3 style="margin: 0 0 1rem; font-size: 1rem; font-weight: 600;"><?php _e('Status', 'kova-agent'); ?></h3>
-                        <div id="kova-voice-status-area">
-                            <!-- Disabled state -->
-                            <div id="kova-voice-disabled-state">
-                                <p style="color: #64748b; margin: 0 0 1rem;"><?php _e('Voice agent is not active. Enable it to provision a phone number and AI agent.', 'kova-agent'); ?></p>
-                                <button type="button" class="kova-btn kova-btn-primary" id="kova-voice-enable-btn"><?php _e('Enable Voice Agent', 'kova-agent'); ?></button>
-                                <span id="kova-voice-enable-status" class="kova-inline-status"></span>
+                <div id="kova-voice-content" style="display: none;">
+                    <!-- Plan Gate -->
+                    <div id="kova-voice-plan-gate" style="display: none;">
+                        <div class="kova-card" style="text-align: center; padding: 3rem 2rem;">
+                            <div class="kova-empty-state-icon" style="margin-bottom: 1rem;">
+                                <?php echo $this->render_icon('voice'); ?>
                             </div>
-                            <!-- Enabled state -->
-                            <div id="kova-voice-enabled-state" style="display: none;">
-                                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
-                                    <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #22c55e;"></span>
-                                    <span style="font-weight: 600; color: #1a1a2e;"><?php _e('Voice Agent Active', 'kova-agent'); ?></span>
+                            <h2 style="margin: 0 0 0.5rem; font-size: 1.5rem; font-weight: 700; color: var(--kova-color-text);"><?php _e('Voice Agent', 'kova-agent'); ?></h2>
+                            <p style="color: var(--kova-color-text-secondary); margin-bottom: 1.5rem; max-width: 480px; margin-left: auto; margin-right: auto;">
+                                <?php _e('Automate phone calls with an AI voice agent. Available on Professional and Enterprise plans.', 'kova-agent'); ?>
+                            </p>
+                            <a href="https://app.heykova.io" target="_blank" class="kova-btn kova-btn-primary"><?php _e('Upgrade Plan', 'kova-agent'); ?></a>
+                        </div>
+                    </div>
+
+                    <!-- Main Voice Content -->
+                    <div id="kova-voice-main" style="display: none;">
+                        <!-- Status & Test Call Row -->
+                        <div class="kova-voice-top-grid">
+                            <!-- Status Card -->
+                            <div class="kova-card">
+                                <div class="kova-card-header">
+                                    <h3 class="kova-card-title"><?php _e('Status', 'kova-agent'); ?></h3>
                                 </div>
-                                <div style="display: flex; gap: 2rem; flex-wrap: wrap; margin-bottom: 1rem;">
-                                    <div>
-                                        <span style="color: #64748b; font-size: 0.85rem;"><?php _e('Phone Number', 'kova-agent'); ?></span>
-                                        <div id="kova-voice-phone" style="font-weight: 600; font-size: 1.1rem;">-</div>
+                                <div id="kova-voice-status-area">
+                                    <!-- Disabled state -->
+                                    <div id="kova-voice-disabled-state">
+                                        <p style="color: var(--kova-color-text-secondary); margin: 0 0 1rem;"><?php _e('Voice agent is not active. Enable it to provision a phone number and AI agent.', 'kova-agent'); ?></p>
+                                        <button type="button" class="kova-btn kova-btn-primary" id="kova-voice-enable-btn"><?php _e('Enable Voice Agent', 'kova-agent'); ?></button>
+                                        <span id="kova-voice-enable-status" class="kova-inline-status"></span>
                                     </div>
-                                    <div>
-                                        <span style="color: #64748b; font-size: 0.85rem;"><?php _e('Agent ID', 'kova-agent'); ?></span>
-                                        <div id="kova-voice-agent-id" style="font-family: monospace; font-size: 0.85rem; color: #64748b;">-</div>
+                                    <!-- Enabled state -->
+                                    <div id="kova-voice-enabled-state" style="display: none;">
+                                        <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1rem;">
+                                            <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--kova-color-success);"></span>
+                                            <span class="kova-badge kova-badge-success"><?php _e('Active', 'kova-agent'); ?></span>
+                                        </div>
+                                        <div class="kova-info-item">
+                                            <span class="kova-info-label"><?php _e('Phone Number', 'kova-agent'); ?></span>
+                                            <span class="kova-info-value" id="kova-voice-phone">-</span>
+                                        </div>
+                                        <div class="kova-info-item">
+                                            <span class="kova-info-label"><?php _e('Agent ID', 'kova-agent'); ?></span>
+                                            <span id="kova-voice-agent-id" style="font-family: monospace; font-size: 0.8rem; color: var(--kova-color-text-muted);">-</span>
+                                        </div>
+                                        <div id="kova-voice-usage"></div>
+                                        <div style="margin-top: 1rem;">
+                                            <button type="button" class="kova-btn kova-btn-danger" id="kova-voice-disable-btn"><?php _e('Disable Voice Agent', 'kova-agent'); ?></button>
+                                            <span id="kova-voice-disable-status" class="kova-inline-status"></span>
+                                        </div>
                                     </div>
                                 </div>
-                                <div id="kova-voice-usage" style="display: none;"></div>
-                                <button type="button" class="kova-btn" id="kova-voice-disable-btn" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5;"><?php _e('Disable Voice Agent', 'kova-agent'); ?></button>
-                                <span id="kova-voice-disable-status" class="kova-inline-status"></span>
+                            </div>
+
+                            <!-- Test Call Card (only when enabled) -->
+                            <div class="kova-card" id="kova-voice-test-card" style="display: none;">
+                                <div class="kova-card-header">
+                                    <h3 class="kova-card-title"><?php _e('Test Call', 'kova-agent'); ?></h3>
+                                </div>
+                                <div class="kova-form-group">
+                                    <label class="kova-form-label"><?php _e('Phone Number', 'kova-agent'); ?></label>
+                                    <input type="tel" class="kova-form-input" id="kova-voice-test-phone" placeholder="+1234567890" style="max-width: 100%;">
+                                </div>
+                                <button type="button" class="kova-btn kova-btn-primary" id="kova-voice-test-btn"><?php _e('Make Test Call', 'kova-agent'); ?></button>
+                                <span id="kova-voice-test-status" class="kova-inline-status" style="margin-top: 0.5rem; display: block;"></span>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Test Call Card (only when enabled) -->
-                    <div class="kova-card" id="kova-voice-test-card" style="margin-bottom: 1.5rem; display: none;">
-                        <h3 style="margin: 0 0 1rem; font-size: 1rem; font-weight: 600;"><?php _e('Test Call', 'kova-agent'); ?></h3>
-                        <div style="display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap;">
-                            <div class="kova-form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
-                                <label class="kova-form-label"><?php _e('Phone Number', 'kova-agent'); ?></label>
-                                <input type="tel" class="kova-form-input" id="kova-voice-test-phone" placeholder="+1234567890">
+                        <!-- Voice Configuration Card (only when enabled) -->
+                        <div class="kova-card" id="kova-voice-config-card" style="display: none;">
+                            <div class="kova-card-header">
+                                <h3 class="kova-card-title"><?php _e('Voice Configuration', 'kova-agent'); ?></h3>
                             </div>
-                            <button type="button" class="kova-btn kova-btn-primary" id="kova-voice-test-btn"><?php _e('Make Test Call', 'kova-agent'); ?></button>
-                        </div>
-                        <span id="kova-voice-test-status" class="kova-inline-status" style="margin-top: 0.5rem; display: block;"></span>
-                    </div>
 
-                    <!-- Voice Configuration Card (only when enabled) -->
-                    <div class="kova-card" id="kova-voice-config-card" style="margin-bottom: 1.5rem; display: none;">
-                        <h3 style="margin: 0 0 1rem; font-size: 1rem; font-weight: 600;"><?php _e('Voice Configuration', 'kova-agent'); ?></h3>
+                            <div class="kova-form-row">
+                                <div class="kova-form-group-half">
+                                    <label class="kova-form-label"><?php _e('Voice', 'kova-agent'); ?></label>
+                                    <select class="kova-form-input" id="kova-voice-select" style="max-width: 100%;">
+                                        <option value=""><?php _e('Loading voices...', 'kova-agent'); ?></option>
+                                    </select>
+                                </div>
+                                <div class="kova-form-group-half">
+                                    <label class="kova-form-label"><?php _e('Language', 'kova-agent'); ?></label>
+                                    <select class="kova-form-input" id="kova-voice-language" style="max-width: 100%;">
+                                        <option value="en-US">English (US)</option>
+                                        <option value="en-GB">English (UK)</option>
+                                        <option value="es-ES">Spanish (Spain)</option>
+                                        <option value="es-MX">Spanish (Mexico)</option>
+                                        <option value="fr-FR">French</option>
+                                        <option value="de-DE">German</option>
+                                        <option value="pt-BR">Portuguese (Brazil)</option>
+                                        <option value="it-IT">Italian</option>
+                                        <option value="multi">Multilingual</option>
+                                    </select>
+                                </div>
+                            </div>
 
-                        <div class="kova-form-group">
-                            <label class="kova-form-label"><?php _e('Voice', 'kova-agent'); ?></label>
-                            <select class="kova-form-input" id="kova-voice-select">
-                                <option value=""><?php _e('Loading voices...', 'kova-agent'); ?></option>
-                            </select>
-                        </div>
+                            <div class="kova-form-row">
+                                <div class="kova-form-group-half">
+                                    <label class="kova-form-label"><?php _e('Voice Speed', 'kova-agent'); ?>: <span id="kova-voice-speed-val">1.0</span></label>
+                                    <input type="range" class="kova-range-input" id="kova-voice-speed" min="0.5" max="2.0" step="0.1" value="1.0">
+                                </div>
+                                <div class="kova-form-group-half">
+                                    <label class="kova-form-label"><?php _e('Voice Temperature', 'kova-agent'); ?>: <span id="kova-voice-temp-val">1.0</span></label>
+                                    <input type="range" class="kova-range-input" id="kova-voice-temp" min="0.1" max="2.0" step="0.1" value="1.0">
+                                </div>
+                            </div>
 
-                        <div class="kova-form-group">
-                            <label class="kova-form-label"><?php _e('Language', 'kova-agent'); ?></label>
-                            <select class="kova-form-input" id="kova-voice-language">
-                                <option value="en-US">English (US)</option>
-                                <option value="en-GB">English (UK)</option>
-                                <option value="es-ES">Spanish (Spain)</option>
-                                <option value="es-MX">Spanish (Mexico)</option>
-                                <option value="fr-FR">French</option>
-                                <option value="de-DE">German</option>
-                                <option value="pt-BR">Portuguese (Brazil)</option>
-                                <option value="it-IT">Italian</option>
-                                <option value="multi">Multilingual</option>
-                            </select>
-                        </div>
+                            <div class="kova-form-row">
+                                <div class="kova-form-group-half">
+                                    <label class="kova-form-label"><?php _e('Responsiveness', 'kova-agent'); ?>: <span id="kova-voice-resp-val">0.7</span></label>
+                                    <input type="range" class="kova-range-input" id="kova-voice-responsiveness" min="0" max="1" step="0.1" value="0.7">
+                                </div>
+                                <div class="kova-form-group-half">
+                                    <label class="kova-form-label"><?php _e('Interruption Sensitivity', 'kova-agent'); ?>: <span id="kova-voice-interrupt-val">0.5</span></label>
+                                    <input type="range" class="kova-range-input" id="kova-voice-interruption" min="0" max="1" step="0.1" value="0.5">
+                                </div>
+                            </div>
 
-                        <div class="kova-form-group">
-                            <label class="kova-form-label"><?php _e('Voice Speed', 'kova-agent'); ?>: <span id="kova-voice-speed-val">1.0</span></label>
-                            <input type="range" id="kova-voice-speed" min="0.5" max="2.0" step="0.1" value="1.0" style="width: 100%;">
-                        </div>
-
-                        <div class="kova-form-group">
-                            <label class="kova-form-label"><?php _e('Voice Temperature', 'kova-agent'); ?>: <span id="kova-voice-temp-val">1.0</span></label>
-                            <input type="range" id="kova-voice-temp" min="0.1" max="2.0" step="0.1" value="1.0" style="width: 100%;">
-                        </div>
-
-                        <div class="kova-form-group">
-                            <label class="kova-form-label"><?php _e('Responsiveness', 'kova-agent'); ?>: <span id="kova-voice-resp-val">0.7</span></label>
-                            <input type="range" id="kova-voice-responsiveness" min="0" max="1" step="0.1" value="0.7" style="width: 100%;">
-                        </div>
-
-                        <div class="kova-form-group">
-                            <label class="kova-form-label"><?php _e('Interruption Sensitivity', 'kova-agent'); ?>: <span id="kova-voice-interrupt-val">0.5</span></label>
-                            <input type="range" id="kova-voice-interruption" min="0" max="1" step="0.1" value="0.5" style="width: 100%;">
-                        </div>
-
-                        <div class="kova-form-group" style="display: flex; align-items: center; gap: 0.75rem;">
-                            <label class="kova-form-label" style="margin-bottom: 0;"><?php _e('Enable Backchannel', 'kova-agent'); ?></label>
-                            <input type="checkbox" id="kova-voice-backchannel" checked>
-                        </div>
-
-                        <div class="kova-form-group">
-                            <label class="kova-form-label"><?php _e('Ambient Sound', 'kova-agent'); ?></label>
-                            <select class="kova-form-input" id="kova-voice-ambient">
-                                <option value="">None</option>
-                                <option value="coffee-shop">Coffee Shop</option>
-                                <option value="convention-hall">Convention Hall</option>
-                                <option value="summer-outdoor">Summer Outdoor</option>
-                                <option value="mountain-outdoor">Mountain Outdoor</option>
-                                <option value="static-noise">Static Noise</option>
-                                <option value="call-center">Call Center</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Prompt & Model Card (only when enabled) -->
-                    <div class="kova-card" id="kova-voice-prompt-card" style="margin-bottom: 1.5rem; display: none;">
-                        <h3 style="margin: 0 0 1rem; font-size: 1rem; font-weight: 600;"><?php _e('Prompt & Model', 'kova-agent'); ?></h3>
-
-                        <div class="kova-form-group">
-                            <label class="kova-form-label"><?php _e('System Prompt', 'kova-agent'); ?></label>
-                            <textarea class="kova-form-input" id="kova-voice-prompt" rows="6" placeholder="<?php _e('Instructions for how the voice agent should behave...', 'kova-agent'); ?>"></textarea>
+                            <div class="kova-form-row">
+                                <div class="kova-form-group-half" style="display: flex; align-items: center; gap: 0.75rem;">
+                                    <label class="kova-toggle">
+                                        <input type="checkbox" id="kova-voice-backchannel" checked>
+                                        <span class="kova-toggle-slider"></span>
+                                    </label>
+                                    <label class="kova-form-label" style="margin-bottom: 0;" for="kova-voice-backchannel"><?php _e('Enable Backchannel', 'kova-agent'); ?></label>
+                                </div>
+                                <div class="kova-form-group-half">
+                                    <label class="kova-form-label"><?php _e('Ambient Sound', 'kova-agent'); ?></label>
+                                    <select class="kova-form-input" id="kova-voice-ambient" style="max-width: 100%;">
+                                        <option value="">None</option>
+                                        <option value="coffee-shop">Coffee Shop</option>
+                                        <option value="convention-hall">Convention Hall</option>
+                                        <option value="summer-outdoor">Summer Outdoor</option>
+                                        <option value="mountain-outdoor">Mountain Outdoor</option>
+                                        <option value="static-noise">Static Noise</option>
+                                        <option value="call-center">Call Center</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="kova-form-group">
-                            <label class="kova-form-label"><?php _e('Begin Message', 'kova-agent'); ?></label>
-                            <input type="text" class="kova-form-input" id="kova-voice-begin-message" placeholder="<?php _e('First message the agent says when call starts...', 'kova-agent'); ?>">
+                        <!-- Prompt & Model Card (only when enabled) -->
+                        <div class="kova-card" id="kova-voice-prompt-card" style="display: none;">
+                            <div class="kova-card-header">
+                                <h3 class="kova-card-title"><?php _e('Prompt & Model', 'kova-agent'); ?></h3>
+                            </div>
+
+                            <div class="kova-form-group">
+                                <label class="kova-form-label"><?php _e('System Prompt', 'kova-agent'); ?></label>
+                                <textarea class="kova-form-textarea" id="kova-voice-prompt" rows="6" placeholder="<?php _e('Instructions for how the voice agent should behave...', 'kova-agent'); ?>" style="max-width: 100%;"></textarea>
+                            </div>
+
+                            <div class="kova-form-group">
+                                <label class="kova-form-label"><?php _e('Begin Message', 'kova-agent'); ?></label>
+                                <input type="text" class="kova-form-input" id="kova-voice-begin-message" placeholder="<?php _e('First message the agent says when call starts...', 'kova-agent'); ?>" style="max-width: 100%;">
+                            </div>
+
+                            <div class="kova-form-row">
+                                <div class="kova-form-group-half">
+                                    <label class="kova-form-label"><?php _e('AI Model', 'kova-agent'); ?></label>
+                                    <select class="kova-form-input" id="kova-voice-model" style="max-width: 100%;">
+                                        <option value="gpt-4.1">GPT-4.1</option>
+                                        <option value="gpt-4.1-mini" selected>GPT-4.1 Mini</option>
+                                        <option value="claude-4.5-sonnet">Claude 4.5 Sonnet</option>
+                                        <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                                    </select>
+                                </div>
+                                <div class="kova-form-group-half">
+                                    <label class="kova-form-label"><?php _e('Model Temperature', 'kova-agent'); ?>: <span id="kova-voice-model-temp-val">0.7</span></label>
+                                    <input type="range" class="kova-range-input" id="kova-voice-model-temp" min="0" max="2" step="0.1" value="0.7">
+                                </div>
+                            </div>
+
+                            <div class="kova-form-group">
+                                <label class="kova-form-label"><?php _e('Boosted Keywords', 'kova-agent'); ?></label>
+                                <input type="text" class="kova-form-input" id="kova-voice-keywords" placeholder="<?php _e('keyword1, keyword2, keyword3...', 'kova-agent'); ?>" style="max-width: 100%;">
+                                <p class="kova-form-help"><?php _e('Comma-separated keywords to boost in transcription', 'kova-agent'); ?></p>
+                            </div>
                         </div>
 
-                        <div class="kova-form-group">
-                            <label class="kova-form-label"><?php _e('AI Model', 'kova-agent'); ?></label>
-                            <select class="kova-form-input" id="kova-voice-model">
-                                <option value="gpt-4.1">GPT-4.1</option>
-                                <option value="gpt-4.1-mini" selected>GPT-4.1 Mini</option>
-                                <option value="claude-4.5-sonnet">Claude 4.5 Sonnet</option>
-                                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
-                            </select>
+                        <!-- Call Limits Card (only when enabled) -->
+                        <div class="kova-card" id="kova-voice-limits-card" style="display: none;">
+                            <div class="kova-card-header">
+                                <h3 class="kova-card-title"><?php _e('Call Limits', 'kova-agent'); ?></h3>
+                            </div>
+
+                            <div class="kova-form-row">
+                                <div class="kova-form-group-half">
+                                    <label class="kova-form-label"><?php _e('Max Call Duration (minutes)', 'kova-agent'); ?></label>
+                                    <input type="number" class="kova-form-input" id="kova-voice-max-duration" min="1" max="120" value="30" style="max-width: 100%;">
+                                </div>
+                                <div class="kova-form-group-half">
+                                    <label class="kova-form-label"><?php _e('End Call After Silence (seconds)', 'kova-agent'); ?></label>
+                                    <input type="number" class="kova-form-input" id="kova-voice-silence" min="5" max="120" value="30" style="max-width: 100%;">
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="kova-form-group">
-                            <label class="kova-form-label"><?php _e('Model Temperature', 'kova-agent'); ?>: <span id="kova-voice-model-temp-val">0.7</span></label>
-                            <input type="range" id="kova-voice-model-temp" min="0" max="2" step="0.1" value="0.7" style="width: 100%;">
+                        <!-- Save Button (only when enabled) -->
+                        <div id="kova-voice-save-area" style="display: none;">
+                            <div class="kova-actions-bar" style="border-top: none; padding-top: 0;">
+                                <button type="button" class="kova-btn kova-btn-primary" id="kova-voice-save-btn"><?php _e('Save Configuration', 'kova-agent'); ?></button>
+                                <span id="kova-voice-save-status" class="kova-inline-status"></span>
+                            </div>
                         </div>
 
-                        <div class="kova-form-group">
-                            <label class="kova-form-label"><?php _e('Boosted Keywords', 'kova-agent'); ?></label>
-                            <input type="text" class="kova-form-input" id="kova-voice-keywords" placeholder="<?php _e('keyword1, keyword2, keyword3...', 'kova-agent'); ?>">
-                            <p class="kova-form-help"><?php _e('Comma-separated keywords to boost in transcription', 'kova-agent'); ?></p>
+                        <!-- Call History Card (only when enabled) -->
+                        <div class="kova-card" id="kova-voice-history-card" style="display: none;">
+                            <div class="kova-card-header">
+                                <h3 class="kova-card-title"><?php _e('Call History', 'kova-agent'); ?></h3>
+                            </div>
+                            <div class="kova-table-container" style="border: none; border-radius: 0; margin-bottom: 0;">
+                                <table class="kova-table">
+                                    <thead>
+                                        <tr>
+                                            <th><?php _e('Date', 'kova-agent'); ?></th>
+                                            <th><?php _e('From', 'kova-agent'); ?></th>
+                                            <th><?php _e('To', 'kova-agent'); ?></th>
+                                            <th style="text-align:center;"><?php _e('Direction', 'kova-agent'); ?></th>
+                                            <th style="text-align:center;"><?php _e('Duration', 'kova-agent'); ?></th>
+                                            <th style="text-align:center;"><?php _e('Status', 'kova-agent'); ?></th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="kova-voice-calls-tbody">
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div id="kova-voice-calls-empty" style="display: none;">
+                                <div class="kova-empty-state" style="padding: 2rem;">
+                                    <p class="kova-empty-state-description" style="margin-bottom: 0;"><?php _e('No calls yet. Make a test call to get started.', 'kova-agent'); ?></p>
+                                </div>
+                            </div>
+                            <div id="kova-voice-calls-pagination" style="display: none; padding: 1rem; text-align: center;"></div>
                         </div>
-                    </div>
-
-                    <!-- Call Limits Card (only when enabled) -->
-                    <div class="kova-card" id="kova-voice-limits-card" style="margin-bottom: 1.5rem; display: none;">
-                        <h3 style="margin: 0 0 1rem; font-size: 1rem; font-weight: 600;"><?php _e('Call Limits', 'kova-agent'); ?></h3>
-
-                        <div class="kova-form-group">
-                            <label class="kova-form-label"><?php _e('Max Call Duration (minutes)', 'kova-agent'); ?></label>
-                            <input type="number" class="kova-form-input" id="kova-voice-max-duration" min="1" max="120" value="30">
-                        </div>
-
-                        <div class="kova-form-group">
-                            <label class="kova-form-label"><?php _e('End Call After Silence (seconds)', 'kova-agent'); ?></label>
-                            <input type="number" class="kova-form-input" id="kova-voice-silence" min="5" max="120" value="30">
-                        </div>
-                    </div>
-
-                    <!-- Save Button (only when enabled) -->
-                    <div id="kova-voice-save-area" style="margin-bottom: 1.5rem; display: none;">
-                        <button type="button" class="kova-btn kova-btn-primary" id="kova-voice-save-btn"><?php _e('Save Configuration', 'kova-agent'); ?></button>
-                        <span id="kova-voice-save-status" class="kova-inline-status"></span>
-                    </div>
-
-                    <!-- Call History Card (only when enabled) -->
-                    <div class="kova-card" id="kova-voice-history-card" style="display: none;">
-                        <div class="kova-card-header">
-                            <h3 class="kova-card-title"><?php _e('Call History', 'kova-agent'); ?></h3>
-                        </div>
-                        <div class="kova-table-container">
-                            <table class="kova-table">
-                                <thead>
-                                    <tr>
-                                        <th><?php _e('Date', 'kova-agent'); ?></th>
-                                        <th><?php _e('From', 'kova-agent'); ?></th>
-                                        <th><?php _e('To', 'kova-agent'); ?></th>
-                                        <th style="text-align:center;"><?php _e('Direction', 'kova-agent'); ?></th>
-                                        <th style="text-align:center;"><?php _e('Duration', 'kova-agent'); ?></th>
-                                        <th style="text-align:center;"><?php _e('Status', 'kova-agent'); ?></th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="kova-voice-calls-tbody">
-                                </tbody>
-                            </table>
-                        </div>
-                        <div id="kova-voice-calls-empty" style="display: none; text-align: center; padding: 2rem;">
-                            <p style="color: #6b7280;"><?php _e('No calls yet.', 'kova-agent'); ?></p>
-                        </div>
-                        <div id="kova-voice-calls-pagination" style="display: none; padding: 1rem; text-align: center;"></div>
                     </div>
                 </div>
             </div>

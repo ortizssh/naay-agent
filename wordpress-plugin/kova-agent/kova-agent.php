@@ -3,7 +3,7 @@
  * Plugin Name: Kova Agent - AI Shopping Assistant
  * Plugin URI: https://kova.ai
  * Description: AI-powered shopping assistant for WooCommerce stores. Provides intelligent product search, recommendations, and cart management through a chat widget.
- * Version: 1.1.0
+ * Version: 1.2.0
  * Author: Kova AI
  * Author URI: https://kova.ai
  * License: GPL v2 or later
@@ -22,7 +22,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('KOVA_AGENT_VERSION', '1.1.0');
+define('KOVA_AGENT_VERSION', '1.2.0');
 define('KOVA_AGENT_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('KOVA_AGENT_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('KOVA_AGENT_PLUGIN_BASENAME', plugin_basename(__FILE__));

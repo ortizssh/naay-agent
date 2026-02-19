@@ -1577,3 +1577,79 @@
   width: 100%;
   font-size: 0.9rem;
 }
+
+/* ========================================
+   Voice Agent Tab Styles
+   ======================================== */
+
+.kova-voice-top-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+@media (max-width: 960px) {
+  .kova-voice-top-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ========================================
+   Range Input (Slider) Styles
+   ======================================== */
+
+.kova-range-input {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: var(--kova-color-border);
+  border-radius: 3px;
+  outline: none;
+  margin-top: 0.5rem;
+}
+
+.kova-range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--kova-color-primary);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.kova-range-input::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 2px 8px rgba(109, 92, 255, 0.3);
+}
+
+.kova-range-input::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--kova-color-primary);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+
+.kova-range-input::-moz-range-track {
+  height: 6px;
+  background: var(--kova-color-border);
+  border-radius: 3px;
+}
+
+/* Spinner alias for old class name */
+.kova-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--kova-color-border);
+  border-top-color: var(--kova-color-primary);
+  border-radius: 50%;
+  animation: kova-spin 0.8s linear infinite;
+}
