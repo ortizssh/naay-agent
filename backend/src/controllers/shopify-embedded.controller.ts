@@ -1481,9 +1481,8 @@ router.get(
       const limits = await planService.getPlanLimits(plan);
       const planAllowsVoiceAgent = limits.features?.voice_agents === true;
 
-      const voiceCallsUsed = await tenantService.getMonthlyVoiceCallCount(
-        normalizedShop
-      );
+      const voiceCallsUsed =
+        await tenantService.getMonthlyVoiceCallCount(normalizedShop);
       const voiceCallsLimit = limits.monthly_voice_calls;
 
       return res.json({
