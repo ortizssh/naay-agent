@@ -177,6 +177,8 @@ interface EmbeddedVoiceConfig {
   retellLlmId: string | null;
   retellPhoneNumber: string | null;
   retellFromNumber: string | null;
+  voiceCallsUsed: number;
+  voiceCallsLimit: number;
   voiceId: string | null;
   language: string;
   voiceSpeed: number;
@@ -522,8 +524,11 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
   });
   const [voiceKeywordsInput, setVoiceKeywordsInput] = useState('');
   const [voiceTestNumber, setVoiceTestNumber] = useState('');
+  const [voiceTestName, setVoiceTestName] = useState('');
+  const [voiceTestEmail, setVoiceTestEmail] = useState('');
   const [voiceTestCalling, setVoiceTestCalling] = useState(false);
   const [voiceTestResult, setVoiceTestResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [showVoiceTestModal, setShowVoiceTestModal] = useState(false);
   const [voiceExpandedCall, setVoiceExpandedCall] = useState<string | null>(null);
   const [showVoiceEnableConfirm, setShowVoiceEnableConfirm] = useState(false);
   const [showVoiceDisableConfirm, setShowVoiceDisableConfirm] = useState(false);
@@ -997,15 +1002,20 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
     setVoiceTestCalling(true);
     setVoiceTestResult(null);
     try {
+      const dynVars: Record<string, string> = { phone: voiceTestNumber.trim() };
+      if (voiceTestName.trim()) dynVars.name = voiceTestName.trim();
+      if (voiceTestEmail.trim()) dynVars.email = voiceTestEmail.trim();
+
       const apiUrl = getApiUrl();
       const res = await fetch(`${apiUrl}/api/shopify/embedded/voice-test-call`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shop, toNumber: voiceTestNumber.trim() }),
+        body: JSON.stringify({ shop, toNumber: voiceTestNumber.trim(), dynamicVariables: dynVars }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to initiate call');
       setVoiceTestResult({ type: 'success', message: 'Call initiated! You should receive a call shortly.' });
+      setShowVoiceTestModal(false);
       setTimeout(() => setVoiceTestResult(null), 8000);
     } catch (e: any) {
       setVoiceTestResult({ type: 'error', message: e.message || 'Failed to initiate test call' });
@@ -3519,11 +3529,20 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
               <>
                 {/* Status Card */}
                 <div className="card" style={{ marginBottom: '1rem' }}>
+                  <h3 className="card-title" style={{ marginBottom: '0.75rem' }}>Voice Agent Status</h3>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
-                      <h3 className="card-title" style={{ marginBottom: '0.25rem' }}>
-                        {voiceConfig?.voiceAgentEnabled ? 'Voice Agent Active' : 'Voice Agent Inactive'}
-                      </h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '5px',
+                          padding: '2px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: 600,
+                          background: voiceConfig?.voiceAgentEnabled ? '#f0fdf4' : '#f1f5f9',
+                          color: voiceConfig?.voiceAgentEnabled ? '#16a34a' : '#64748b',
+                        }}>
+                          <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: voiceConfig?.voiceAgentEnabled ? '#16a34a' : '#94a3b8' }} />
+                          {voiceConfig?.voiceAgentEnabled ? 'Enabled' : 'Disabled'}
+                        </span>
+                      </div>
                       {voiceConfig?.voiceAgentEnabled && voiceConfig?.retellPhoneNumber && (
                         <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
                           Phone: <strong>{voiceConfig.retellPhoneNumber}</strong>
@@ -3532,10 +3551,9 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                     </div>
                     {voiceConfig?.voiceAgentEnabled ? (
                       <button
-                        className="btn"
-                        style={{ background: 'var(--color-error-soft)', color: 'var(--color-error)', border: 'none', padding: '0.4rem 1rem', fontSize: '0.85rem' }}
                         onClick={() => setShowVoiceDisableConfirm(true)}
                         disabled={voiceDisabling}
+                        style={{ background: 'none', border: 'none', padding: '4px 8px', fontSize: '11px', color: '#94a3b8', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: '2px' }}
                       >
                         {voiceDisabling ? 'Disabling...' : 'Disable'}
                       </button>
@@ -3545,6 +3563,26 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                       </button>
                     )}
                   </div>
+                  {voiceConfig?.voiceAgentEnabled && voiceConfig?.voiceCallsLimit !== undefined && (
+                    <div style={{ borderTop: '1px solid var(--color-border)', marginTop: '0.75rem', paddingTop: '0.75rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '12px', color: '#64748b' }}>Monthly calls</span>
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>
+                          {voiceConfig.voiceCallsUsed} / {voiceConfig.voiceCallsLimit === -1 ? 'Unlimited' : voiceConfig.voiceCallsLimit}
+                        </span>
+                      </div>
+                      {voiceConfig.voiceCallsLimit !== -1 && voiceConfig.voiceCallsLimit > 0 && (
+                        <div style={{ width: '100%', height: '5px', borderRadius: '3px', background: '#e2e8f0', overflow: 'hidden' }}>
+                          <div style={{
+                            height: '100%', borderRadius: '3px',
+                            width: `${Math.min(100, (voiceConfig.voiceCallsUsed / voiceConfig.voiceCallsLimit) * 100)}%`,
+                            background: voiceConfig.voiceCallsUsed >= voiceConfig.voiceCallsLimit ? '#ef4444' : 'var(--color-primary)',
+                            transition: 'width 0.3s ease',
+                          }} />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Enable Confirm */}
@@ -3586,30 +3624,65 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
 
                     {/* Test Call */}
                     <div className="card" style={{ marginBottom: '1rem' }}>
-                      <h3 className="card-title" style={{ marginBottom: '0.75rem' }}>Test Call</h3>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <input
-                          type="tel"
-                          className="form-input"
-                          value={voiceTestNumber}
-                          onChange={e => setVoiceTestNumber(e.target.value)}
-                          placeholder="+1 (555) 123-4567"
-                          style={{ flex: 1, padding: '0.5rem 0.75rem', fontSize: '0.85rem' }}
-                          onKeyDown={e => { if (e.key === 'Enter' && !voiceTestCalling) handleVoiceTestCall(); }}
-                        />
-                        <button className="btn btn-primary" onClick={handleVoiceTestCall} disabled={voiceTestCalling || !voiceTestNumber.trim()} style={{ padding: '0.4rem 1rem', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
-                          {voiceTestCalling ? 'Calling...' : 'Test Call'}
-                        </button>
-                      </div>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: '0.5rem 0 0' }}>
-                        The agent will call you from {voiceConfig?.retellPhoneNumber}
-                      </p>
+                      <h3 className="card-title" style={{ marginBottom: '0.5rem' }}>Test Call</h3>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '0 0 0.75rem' }}>Hear how your agent sounds</p>
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => { setVoiceTestResult(null); setShowVoiceTestModal(true); }}
+                        disabled={voiceTestCalling}
+                        style={{ padding: '0.4rem 1rem', fontSize: '0.85rem', width: '100%' }}
+                      >
+                        {voiceTestCalling ? 'Calling...' : 'Make Test Call'}
+                      </button>
                       {voiceTestResult && (
                         <div style={{ marginTop: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem', background: voiceTestResult.type === 'success' ? 'var(--color-success-soft)' : 'var(--color-error-soft)', color: voiceTestResult.type === 'success' ? 'var(--color-success)' : 'var(--color-error)' }}>
                           {voiceTestResult.message}
                         </div>
                       )}
                     </div>
+
+                    {/* Test Call Modal */}
+                    {showVoiceTestModal && (
+                      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+                        <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', maxWidth: '440px', width: '90%' }}>
+                          <h3 style={{ margin: '0 0 0.25rem' }}>Test Call</h3>
+                          <p style={{ color: 'var(--color-text-muted)', margin: '0 0 1rem', fontSize: '0.8rem' }}>
+                            The agent will call you from {voiceConfig?.retellPhoneNumber}
+                          </p>
+                          <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+                            <label className="form-label" style={{ fontSize: '0.8rem' }}>Phone Number *</label>
+                            <input type="tel" className="form-input" value={voiceTestNumber} onChange={e => setVoiceTestNumber(e.target.value)} placeholder="+1234567890" style={{ fontSize: '0.85rem' }}
+                              onKeyDown={e => { if (e.key === 'Enter' && !voiceTestCalling && voiceTestNumber.trim()) handleVoiceTestCall(); }} />
+                            <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>International format (E.164)</span>
+                          </div>
+                          <div style={{ borderTop: '1px solid var(--color-border)', margin: '0.75rem 0', padding: 0 }} />
+                          <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem' }}>
+                            Variables passed to prompt as {'{{name}}'}, {'{{email}}'}, {'{{phone}}'}.
+                          </p>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                            <div className="form-group" style={{ marginBottom: 0 }}>
+                              <label className="form-label" style={{ fontSize: '0.8rem' }}>Name</label>
+                              <input className="form-input" value={voiceTestName} onChange={e => setVoiceTestName(e.target.value)} placeholder="John Doe" style={{ fontSize: '0.85rem' }} />
+                            </div>
+                            <div className="form-group" style={{ marginBottom: 0 }}>
+                              <label className="form-label" style={{ fontSize: '0.8rem' }}>Email</label>
+                              <input type="email" className="form-input" value={voiceTestEmail} onChange={e => setVoiceTestEmail(e.target.value)} placeholder="john@example.com" style={{ fontSize: '0.85rem' }} />
+                            </div>
+                          </div>
+                          {voiceTestResult && (
+                            <div style={{ marginBottom: '0.75rem', padding: '0.5rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem', background: voiceTestResult.type === 'success' ? 'var(--color-success-soft)' : 'var(--color-error-soft)', color: voiceTestResult.type === 'success' ? 'var(--color-success)' : 'var(--color-error)' }}>
+                              {voiceTestResult.message}
+                            </div>
+                          )}
+                          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                            <button className="btn" onClick={() => setShowVoiceTestModal(false)} style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', fontSize: '0.85rem' }}>Cancel</button>
+                            <button className="btn btn-primary" onClick={handleVoiceTestCall} disabled={voiceTestCalling || !voiceTestNumber.trim()} style={{ fontSize: '0.85rem' }}>
+                              {voiceTestCalling ? 'Calling...' : 'Call Now'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Voice Configuration */}
                     <div className="card" style={{ marginBottom: '1rem' }}>

@@ -6,6 +6,7 @@ import { knowledgeService } from '@/services/knowledge.service';
 import { logger } from '@/utils/logger';
 import { retellService } from '@/services/retell.service';
 import { planService } from '@/services/plan.service';
+import { tenantService } from '@/services/tenant.service';
 
 const router = Router();
 const supabaseService = new SupabaseService();
@@ -1480,6 +1481,11 @@ router.get(
       const limits = await planService.getPlanLimits(plan);
       const planAllowsVoiceAgent = limits.features?.voice_agents === true;
 
+      const voiceCallsUsed = await tenantService.getMonthlyVoiceCallCount(
+        normalizedShop
+      );
+      const voiceCallsLimit = limits.monthly_voice_calls;
+
       return res.json({
         success: true,
         data: {
@@ -1490,6 +1496,8 @@ router.get(
           retellLlmId: store.retell_llm_id || null,
           retellPhoneNumber: store.retell_phone_number || null,
           retellFromNumber: store.retell_from_number || null,
+          voiceCallsUsed,
+          voiceCallsLimit,
           voiceId: store.voice_agent_voice_id || null,
           language: store.voice_agent_language || 'en-US',
           voiceSpeed: store.voice_agent_voice_speed ?? 1.0,
@@ -1878,9 +1886,28 @@ router.post(
           .json({ success: false, error: 'Invalid phone number format' });
       }
 
+      // Check monthly voice call limit
+      const plan = store.plan || 'free';
+      const limits = await planService.getPlanLimits(plan);
+      if (limits.monthly_voice_calls > 0) {
+        const callCount =
+          await tenantService.getMonthlyVoiceCallCount(normalizedShop);
+        if (callCount >= limits.monthly_voice_calls) {
+          return res.status(403).json({
+            success: false,
+            error:
+              'Monthly voice call limit reached. Please upgrade your plan.',
+          });
+        }
+      }
+
+      const { dynamicVariables } = req.body;
+
       const call = await retellService.createPhoneCall({
         fromNumber,
         toNumber: cleaned.startsWith('+') ? cleaned : `+${cleaned}`,
+        overrideAgentId: store.retell_agent_id,
+        dynamicVariables: dynamicVariables || undefined,
         metadata: { type: 'test_call', shop_domain: normalizedShop },
       });
 
@@ -1893,8 +1920,21 @@ router.post(
         success: true,
         data: { callId: call.call_id, status: call.call_status },
       });
-    } catch (error) {
-      logger.error('Embedded voice test call error:', error);
+    } catch (error: any) {
+      logger.error('Embedded voice test call error:', {
+        message: error?.message,
+        status: error?.status,
+        error: error?.error,
+      });
+
+      if (error?.status && error?.error) {
+        return res.status(error.status).json({
+          success: false,
+          error: error.message || 'Retell API error',
+          details: error.error,
+        });
+      }
+
       next(error);
     }
   }

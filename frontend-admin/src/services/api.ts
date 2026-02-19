@@ -513,6 +513,9 @@ class ClientApiClient {
     is_over_limit: boolean;
     products_synced: number;
     products_limit: number;
+    voice_calls_used?: number;
+    voice_calls_limit?: number;
+    voice_calls_remaining?: number;
   } }> {
     return this.request('/api/billing/usage');
   }

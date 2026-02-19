@@ -14,6 +14,8 @@ interface UsageData {
   messages_used: number;
   messages_limit: number;
   usage_percentage: number;
+  voice_calls_used?: number;
+  voice_calls_limit?: number;
 }
 
 interface ClientDashboardProps {
@@ -158,7 +160,11 @@ function ClientDashboard({ onStartOnboarding, onPageChange }: ClientDashboardPro
             <div className="stat-label">Plan Actual</div>
           </div>
 
-          {usage && (
+        </div>
+
+        {/* Usage row */}
+        {usage && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '1.5rem' }}>
             <div className="stat-card">
               <div className="stat-icon" style={{ background: `${getUsageColor(usage.usage_percentage)}20`, color: getUsageColor(usage.usage_percentage) }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -186,8 +192,46 @@ function ClientDashboard({ onStartOnboarding, onPageChange }: ClientDashboardPro
                 }} />
               </div>
             </div>
-          )}
-        </div>
+
+            {(() => {
+              const vcUsed = usage.voice_calls_used ?? 0;
+              const vcLimit = usage.voice_calls_limit ?? 0;
+              const vcIsUnlimited = vcLimit === -1;
+              const vcPct = vcIsUnlimited ? 0 : vcLimit > 0 ? Math.min(100, Math.round((vcUsed / vcLimit) * 100)) : 0;
+              const vcColor = vcLimit === 0 ? '#94a3b8' : vcIsUnlimited ? 'var(--color-success)' : getUsageColor(vcPct);
+
+              return (
+                <div className="stat-card" style={{ cursor: onPageChange ? 'pointer' : undefined }} onClick={() => onPageChange?.('voice-agent')}>
+                  <div className="stat-icon" style={{ background: `${vcColor}20`, color: vcColor }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                    </svg>
+                  </div>
+                  <div className="stat-value">
+                    {vcUsed.toLocaleString()}{' / '}{vcIsUnlimited ? 'Ilim.' : vcLimit.toLocaleString()}
+                  </div>
+                  <div className="stat-label">Llamadas este mes</div>
+                  <div style={{
+                    width: '100%',
+                    height: '4px',
+                    background: 'var(--color-border)',
+                    borderRadius: '2px',
+                    overflow: 'hidden',
+                    marginTop: '0.5rem',
+                  }}>
+                    <div style={{
+                      width: vcIsUnlimited ? '5%' : vcLimit > 0 ? `${vcPct}%` : '0%',
+                      height: '100%',
+                      background: vcColor,
+                      borderRadius: '2px',
+                      transition: 'width 0.3s ease',
+                    }} />
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
 
         {/* Quick actions */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>

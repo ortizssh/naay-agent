@@ -368,62 +368,74 @@ function VoiceAgent() {
       <div style={{ display: 'grid', gridTemplateColumns: config?.voiceAgentEnabled ? '1fr 1fr' : '1fr', gap: '24px', marginBottom: '24px' }}>
         {/* Voice Agent Status Card */}
         <div className="card">
-          <div className="card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="card-header">
             <h3 className="card-title">Voice Agent Status</h3>
+          </div>
+          <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '6px',
+                    padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600,
+                    background: config?.voiceAgentEnabled ? '#f0fdf4' : '#f1f5f9',
+                    color: config?.voiceAgentEnabled ? '#16a34a' : '#64748b',
+                  }}>
+                    <span style={{
+                      width: '6px', height: '6px', borderRadius: '50%',
+                      background: config?.voiceAgentEnabled ? '#16a34a' : '#94a3b8',
+                    }} />
+                    {config?.voiceAgentEnabled ? 'Enabled' : 'Disabled'}
+                  </span>
+                </div>
+                {config?.voiceAgentEnabled && config?.retellPhoneNumber && (
+                  <p style={{ margin: 0, color: '#64748b', fontSize: '14px' }}>
+                    Phone number: <strong>{config.retellPhoneNumber}</strong>
+                  </p>
+                )}
+              </div>
+              {config?.voiceAgentEnabled ? (
+                <button
+                  onClick={() => setShowDisableConfirm(true)}
+                  disabled={disabling}
+                  style={{
+                    background: 'none', border: 'none', padding: '4px 8px',
+                    fontSize: '12px', color: '#94a3b8', cursor: 'pointer',
+                    textDecoration: 'underline', textUnderlineOffset: '2px',
+                  }}
+                >
+                  {disabling ? 'Disabling...' : 'Disable'}
+                </button>
+              ) : (
+                <button
+                  className="btn btn-primary"
+                  onClick={() => setShowEnableConfirm(true)}
+                  disabled={enabling}
+                >
+                  {enabling ? 'Enabling...' : 'Enable Voice Agent'}
+                </button>
+              )}
+            </div>
             {config?.voiceAgentEnabled && config?.voiceCallsLimit !== undefined && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '13px', color: '#64748b' }}>Monthly calls</span>
-                {config.voiceCallsLimit !== -1 && config.voiceCallsLimit > 0 ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '80px', height: '6px', borderRadius: '3px', background: '#e2e8f0', overflow: 'hidden' }}>
-                      <div style={{
-                        height: '100%',
-                        borderRadius: '3px',
-                        width: `${Math.min(100, (config.voiceCallsUsed / config.voiceCallsLimit) * 100)}%`,
-                        background: config.voiceCallsUsed >= config.voiceCallsLimit ? '#ef4444' : 'var(--color-primary)',
-                        transition: 'width 0.3s ease',
-                      }} />
-                    </div>
-                    <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155', whiteSpace: 'nowrap' }}>
-                      {config.voiceCallsUsed} / {config.voiceCallsLimit}
-                    </span>
-                  </div>
-                ) : (
+              <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '13px', color: '#64748b' }}>Monthly calls</span>
                   <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>
                     {config.voiceCallsUsed} / {config.voiceCallsLimit === -1 ? 'Unlimited' : config.voiceCallsLimit}
                   </span>
+                </div>
+                {config.voiceCallsLimit !== -1 && config.voiceCallsLimit > 0 && (
+                  <div style={{ width: '100%', height: '6px', borderRadius: '3px', background: '#e2e8f0', overflow: 'hidden' }}>
+                    <div style={{
+                      height: '100%',
+                      borderRadius: '3px',
+                      width: `${Math.min(100, (config.voiceCallsUsed / config.voiceCallsLimit) * 100)}%`,
+                      background: config.voiceCallsUsed >= config.voiceCallsLimit ? '#ef4444' : 'var(--color-primary)',
+                      transition: 'width 0.3s ease',
+                    }} />
+                  </div>
                 )}
               </div>
-            )}
-          </div>
-          <div className="card-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
-            <div>
-              <p style={{ margin: 0, fontWeight: 500 }}>
-                {config?.voiceAgentEnabled ? 'Voice Agent is active' : 'Voice Agent is inactive'}
-              </p>
-              {config?.voiceAgentEnabled && config?.retellPhoneNumber && (
-                <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '14px' }}>
-                  Phone number: <strong>{config.retellPhoneNumber}</strong>
-                </p>
-              )}
-            </div>
-            {config?.voiceAgentEnabled ? (
-              <button
-                className="btn"
-                style={{ background: '#fee2e2', color: '#dc2626', border: 'none', padding: '8px 20px' }}
-                onClick={() => setShowDisableConfirm(true)}
-                disabled={disabling}
-              >
-                {disabling ? 'Disabling...' : 'Disable'}
-              </button>
-            ) : (
-              <button
-                className="btn btn-primary"
-                onClick={() => setShowEnableConfirm(true)}
-                disabled={enabling}
-              >
-                {enabling ? 'Enabling...' : 'Enable Voice Agent'}
-              </button>
             )}
           </div>
         </div>
