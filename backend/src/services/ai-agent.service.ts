@@ -959,42 +959,37 @@ ${product.vendor ? `*By ${product.vendor}*\n` : ''}${product.description ? produ
     try {
       const now = new Date();
 
-      // Extract products from metadata
+      // Extract and deduplicate products from metadata (products + recommendations may overlap)
       const products = response.metadata?.products || [];
       const recommendations = response.metadata?.recommendations || [];
+      const seenIds = new Set<string>();
+      const uniqueProducts: Array<{ id: any; title?: string }> = [];
 
-      // Track products from search results
-      for (const product of products) {
+      for (const product of [...products, ...recommendations]) {
         if (product.id) {
-          await this.simpleConversionTracker.trackRecommendation({
-            sessionId,
-            shopDomain: shop,
-            productId: product.id.toString(),
-            productTitle: product.title || 'Unknown Product',
-            recommendedAt: now,
-            messageId,
-          });
+          const pid = product.id.toString();
+          if (!seenIds.has(pid)) {
+            seenIds.add(pid);
+            uniqueProducts.push(product);
+          }
         }
       }
 
-      // Track products from recommendations
-      for (const rec of recommendations) {
-        if (rec.id) {
-          await this.simpleConversionTracker.trackRecommendation({
-            sessionId,
-            shopDomain: shop,
-            productId: rec.id.toString(),
-            productTitle: rec.title || 'Unknown Product',
-            recommendedAt: now,
-            messageId,
-          });
-        }
+      for (const product of uniqueProducts) {
+        await this.simpleConversionTracker.trackRecommendation({
+          sessionId,
+          shopDomain: shop,
+          productId: product.id.toString(),
+          productTitle: product.title || 'Unknown Product',
+          recommendedAt: now,
+          messageId,
+        });
       }
 
       logger.info('Simple recommendations tracked', {
         sessionId,
         shop,
-        productsTracked: products.length + recommendations.length,
+        productsTracked: uniqueProducts.length,
       });
     } catch (error) {
       logger.error('Error tracking simple recommendations:', error);

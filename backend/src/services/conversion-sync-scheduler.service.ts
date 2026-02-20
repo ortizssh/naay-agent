@@ -2,9 +2,9 @@ import { logger } from '@/utils/logger';
 import { SupabaseService } from './supabase.service';
 import { SimpleConversionTracker } from './simple-conversion-tracker.service';
 
-const SYNC_INTERVAL_HOURS = 5;
+const SYNC_INTERVAL_HOURS = 1;
 const SYNC_INTERVAL_MS = SYNC_INTERVAL_HOURS * 60 * 60 * 1000;
-const HOURS_TO_PROCESS = 5; // Only process orders from last 5 hours
+const HOURS_TO_PROCESS = 1; // Only process orders from last hour
 
 export class ConversionSyncScheduler {
   private supabaseService: SupabaseService;
@@ -18,7 +18,7 @@ export class ConversionSyncScheduler {
   }
 
   /**
-   * Start the scheduler - runs immediately and then every 5 hours
+   * Start the scheduler - runs immediately and then every hour
    */
   start(): void {
     if (this.intervalId) {

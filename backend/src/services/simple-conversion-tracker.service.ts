@@ -50,18 +50,24 @@ export class SimpleConversionTracker {
     try {
       const { error } = await (this.supabaseService as any).serviceClient
         .from('simple_recommendations')
-        .insert({
-          session_id: event.sessionId,
-          shop_domain: event.shopDomain,
-          product_id: event.productId,
-          product_title: event.productTitle,
-          recommended_at: event.recommendedAt.toISOString(),
-          message_id: event.messageId,
-          expires_at: new Date(
-            event.recommendedAt.getTime() +
-              SimpleConversionTracker.ATTRIBUTION_WINDOW_MINUTES * 60 * 1000
-          ).toISOString(),
-        });
+        .upsert(
+          {
+            session_id: event.sessionId,
+            shop_domain: event.shopDomain,
+            product_id: event.productId,
+            product_title: event.productTitle,
+            recommended_at: event.recommendedAt.toISOString(),
+            message_id: event.messageId,
+            expires_at: new Date(
+              event.recommendedAt.getTime() +
+                SimpleConversionTracker.ATTRIBUTION_WINDOW_MINUTES * 60 * 1000
+            ).toISOString(),
+          },
+          {
+            onConflict: 'session_id,product_id,shop_domain',
+            ignoreDuplicates: false,
+          }
+        );
 
       if (error) {
         logger.error('Error tracking recommendation:', error);
@@ -626,12 +632,12 @@ export class SimpleConversionTracker {
         endDate.getTime() - daysBack * 24 * 60 * 60 * 1000
       );
 
-      // Get total recommendations
+      // Get unique recommendations count (distinct session+product combos)
       const { data: recommendations, error: recError } = await (
         this.supabaseService as any
       ).serviceClient
         .from('simple_recommendations')
-        .select('id')
+        .select('session_id, product_id')
         .eq('shop_domain', shopDomain)
         .gte('recommended_at', startDate.toISOString());
 
@@ -644,7 +650,13 @@ export class SimpleConversionTracker {
         .eq('shop_domain', shopDomain)
         .gte('purchased_at', startDate.toISOString());
 
-      const totalRecommendations = recommendations?.length || 0;
+      // Count unique session+product combos (not raw rows)
+      const uniqueRecSet = new Set(
+        (recommendations || []).map(
+          (r: any) => `${r.session_id}:${r.product_id}`
+        )
+      );
+      const totalRecommendations = uniqueRecSet.size;
       const totalConversions = conversions?.length || 0;
       const conversionRate =
         totalRecommendations > 0

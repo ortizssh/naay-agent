@@ -1041,14 +1041,19 @@ export class EnhancedConversionAnalyticsService {
 
     const { data: prevRecommendations } = await this.supabaseService.client
       .from('simple_recommendations')
-      .select('id')
+      .select('session_id, product_id')
       .eq('shop_domain', shopDomain)
       .gte('recommended_at', prevStartDate.toISOString())
       .lte('recommended_at', prevEndDate.toISOString())
       .limit(10000);
 
     const prevConvCount = prevConversions?.length || 0;
-    const prevRecCount = prevRecommendations?.length || 0;
+    const prevUniqueRecs = new Set(
+      (prevRecommendations || []).map(
+        (r: any) => `${r.session_id}:${r.product_id}`
+      )
+    );
+    const prevRecCount = prevUniqueRecs.size;
     const prevRevenue =
       prevConversions?.reduce(
         (sum, conv) => sum + parseFloat(conv.order_amount || '0'),
