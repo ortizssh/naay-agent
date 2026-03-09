@@ -747,29 +747,12 @@ export class SimpleConversionTracker {
   }
 
   /**
-   * Clean up expired recommendations (older than 10 minutes)
+   * Clean up expired recommendations
+   * Disabled: recommendations are preserved for analytics/dashboard.
+   * The expires_at field is still used for conversion attribution window filtering.
    */
   async cleanupExpiredRecommendations(shopDomain?: string): Promise<void> {
-    try {
-      const now = new Date();
-      let query = (this.supabaseService as any).serviceClient
-        .from('simple_recommendations')
-        .delete()
-        .lt('expires_at', now.toISOString());
-
-      if (shopDomain) {
-        query = query.eq('shop_domain', shopDomain);
-      }
-
-      const { error } = await query;
-
-      if (error) {
-        logger.error('Error cleaning up expired recommendations:', error);
-      } else {
-        logger.info('Expired recommendations cleaned up', { shopDomain });
-      }
-    } catch (error) {
-      logger.error('Error cleaning up expired recommendations:', error);
-    }
+    // No-op: keep all recommendations for analytics reporting
+    logger.debug('Skipping recommendation cleanup (preserved for analytics)', { shopDomain });
   }
 }
