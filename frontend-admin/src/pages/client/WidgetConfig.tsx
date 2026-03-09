@@ -28,14 +28,20 @@ interface WidgetConfigData {
   widget_brand_name: string;
 }
 
-function WidgetConfig() {
+interface WidgetConfigProps {
+  onStartOnboarding?: () => void;
+  onPageChange?: (page: string) => void;
+}
+
+function WidgetConfig({ onStartOnboarding, onPageChange }: WidgetConfigProps) {
+  const [noStore, setNoStore] = useState(false);
   const [config, setConfig] = useState<WidgetConfigData>({
     widget_position: 'bottom-right',
     widget_color: '#6d5cff',
     welcome_message: '',
     widget_enabled: true,
     widget_secondary_color: '#212120',
-    widget_accent_color: '#cf795e',
+    widget_accent_color: '#8b7afc',
     widget_button_size: 72,
     widget_button_style: 'circle',
     widget_show_pulse: true,
@@ -79,7 +85,12 @@ function WidgetConfig() {
       }
       setError(null);
     } catch (err: any) {
-      setError(err.message || 'Error al cargar configuración');
+      const msg = err.message || '';
+      if (msg.toLowerCase().includes('tienda') || msg.toLowerCase().includes('store') || msg.toLowerCase().includes('not found')) {
+        setNoStore(true);
+      } else {
+        setError(msg || 'Error al cargar configuración');
+      }
     } finally {
       setLoading(false);
     }
@@ -160,6 +171,44 @@ function WidgetConfig() {
           <div className="loading-container">
             <div className="loading-spinner"></div>
             <span className="loading-text">Cargando...</span>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (noStore) {
+    return (
+      <>
+        <header className="page-header">
+          <div className="page-header-content">
+            <div>
+              <h1 className="page-title">Configuración del Widget</h1>
+              <p className="page-subtitle">Personaliza tu asistente de chat</p>
+            </div>
+          </div>
+        </header>
+        <div className="page-content">
+          <div className="empty-state">
+            <div className="empty-state-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+            </div>
+            <h3 className="empty-state-title">Conecta tu tienda primero</h3>
+            <p className="empty-state-description">
+              Para configurar el widget necesitas tener una tienda conectada.
+            </p>
+            {onStartOnboarding && (
+              <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={onStartOnboarding}>
+                Conectar tienda
+              </button>
+            )}
+            {!onStartOnboarding && onPageChange && (
+              <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={() => onPageChange('store')}>
+                Ir a Mi Tienda
+              </button>
+            )}
           </div>
         </div>
       </>

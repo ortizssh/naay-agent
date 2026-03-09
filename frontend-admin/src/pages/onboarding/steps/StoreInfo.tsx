@@ -58,7 +58,7 @@ function StoreInfo({ onBack, onNext }: StoreInfoProps) {
     <>
       <h2 className="onboarding-title">Datos de tu tienda</h2>
       <p className="onboarding-subtitle">
-        Obtuvimos esta informacion de tu tienda automaticamente
+        Obtuvimos esta información de tu tienda automáticamente
       </p>
 
       {storeInfo && (
@@ -84,7 +84,7 @@ function StoreInfo({ onBack, onNext }: StoreInfoProps) {
             )}
             {storeInfo.shop_country && (
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--color-border)' }}>
-                <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>Pais</span>
+                <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>País</span>
                 <span style={{ fontWeight: '500' }}>{storeInfo.shop_country}</span>
               </div>
             )}
@@ -106,10 +106,10 @@ function StoreInfo({ onBack, onNext }: StoreInfoProps) {
             className="form-input"
             value={brandName}
             onChange={(e) => setBrandName(e.target.value)}
-            placeholder="Nombre que se mostrara en el widget"
+            placeholder="Nombre que se mostrará en el widget"
           />
           <div className="form-hint">
-            Este nombre aparecera como titulo del chat widget
+            Este nombre aparecerá como título del chat widget
           </div>
         </div>
 
@@ -133,7 +133,7 @@ function StoreInfo({ onBack, onNext }: StoreInfoProps) {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="15 18 9 12 15 6" />
           </svg>
-          Atras
+          Atrás
         </button>
         <button className="btn btn-primary" onClick={handleNext} disabled={saving}>
           {saving ? (

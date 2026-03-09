@@ -264,7 +264,7 @@ function App() {
         case 'store':
           return <MyStore onStartOnboarding={handleStartOnboarding} />;
         case 'widget':
-          return <WidgetConfig />;
+          return <WidgetConfig onStartOnboarding={handleStartOnboarding} onPageChange={(page) => setCurrentClientPage(page as ClientPageType)} />;
         case 'analytics':
           return <Analytics onPageChange={(page) => setCurrentClientPage(page as ClientPageType)} />;
         case 'ai-config':

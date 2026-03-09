@@ -23,12 +23,12 @@ function WidgetPreview({ color, welcomeMessage, position }: WidgetPreviewProps) 
           </div>
           <div>
             <div className="widget-preview-title">Asistente</div>
-            <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>En linea</div>
+            <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>En línea</div>
           </div>
         </div>
         <div className="widget-preview-body">
           <div className="widget-preview-message">
-            {welcomeMessage || 'Hola! Como puedo ayudarte?'}
+            {welcomeMessage || '¡Hola! ¿Cómo puedo ayudarte?'}
           </div>
         </div>
         <div style={{ padding: '0.75rem', borderTop: '1px solid var(--color-border)' }}>

@@ -22,7 +22,7 @@ function OnboardingWizard({ initialStep = 0, onComplete }: OnboardingWizardProps
   const [widgetConfig, setWidgetConfig] = useState({
     position: 'bottom-right',
     color: '#6d5cff',
-    welcomeMessage: 'Hola! Como puedo ayudarte?',
+    welcomeMessage: '¡Hola! ¿Cómo puedo ayudarte?',
     brandName: '',
     subtitle: 'Asistente de compras con IA',
   });
@@ -241,7 +241,7 @@ function OnboardingWizard({ initialStep = 0, onComplete }: OnboardingWizardProps
         <div className="onboarding-header-right">
           <span className="onboarding-step-text">Paso {getDisplayStep() + 1} de {displayTotalSteps}</span>
           <button onClick={handleSkip} className="btn-skip">
-            Saltar configuracion
+            Saltar configuración
           </button>
         </div>
       </header>

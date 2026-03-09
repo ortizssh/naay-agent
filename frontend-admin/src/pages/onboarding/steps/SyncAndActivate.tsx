@@ -99,7 +99,7 @@ function SyncAndActivate({ onBack, onComplete }: SyncAndActivateProps) {
       {/* Sync Progress */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <div className="card-header">
-          <h3 className="card-title">Sincronizacion de productos</h3>
+          <h3 className="card-title">Sincronización de productos</h3>
         </div>
 
         {syncStatus === 'syncing' && (
@@ -147,7 +147,7 @@ function SyncAndActivate({ onBack, onComplete }: SyncAndActivateProps) {
             </div>
             <div>
               <div style={{ fontWeight: '600', color: 'var(--color-success)' }}>
-                Sincronizacion completada
+                Sincronización completada
               </div>
               <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
                 {synced} productos sincronizados exitosamente
@@ -175,10 +175,10 @@ function SyncAndActivate({ onBack, onComplete }: SyncAndActivateProps) {
             </div>
             <div>
               <div style={{ fontWeight: '600', color: 'var(--color-error)' }}>
-                Error en la sincronizacion
+                Error en la sincronización
               </div>
               <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                Puedes continuar y sincronizar despues desde el dashboard
+                Puedes continuar y sincronizar después desde el dashboard
               </div>
             </div>
           </div>
@@ -190,10 +190,10 @@ function SyncAndActivate({ onBack, onComplete }: SyncAndActivateProps) {
         <>
           <div className="card" style={{ marginBottom: '1.5rem' }}>
             <div className="card-header">
-              <h3 className="card-title">Opcion 1: Extension de Shopify (Recomendado)</h3>
+              <h3 className="card-title">Opción 1: Extension de Shopify (Recomendado)</h3>
             </div>
             <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
-              La forma mas facil. Ve a tu panel de Shopify {'>'} Tema {'>'} Personalizar {'>'}
+              La forma más fácil. Ve a tu panel de Shopify {'>'} Tema {'>'} Personalizar {'>'}
               App embeds y activa "Kova AI Chat Widget".
             </p>
             {shopDomain && (
@@ -217,10 +217,10 @@ function SyncAndActivate({ onBack, onComplete }: SyncAndActivateProps) {
           {widgetCode && (
             <div className="card" style={{ marginBottom: '1.5rem' }}>
               <div className="card-header">
-                <h3 className="card-title">Opcion 2: Codigo Manual</h3>
+                <h3 className="card-title">Opción 2: Código Manual</h3>
               </div>
               <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
-                Copia y pega este codigo en tu tema, antes del cierre del tag {'</body>'}.
+                Copia y pega este código en tu tema, antes del cierre del tag {'</body>'}.
               </p>
               <CodeSnippet code={widgetCode} />
             </div>
@@ -233,7 +233,7 @@ function SyncAndActivate({ onBack, onComplete }: SyncAndActivateProps) {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="15 18 9 12 15 6" />
           </svg>
-          Atras
+          Atrás
         </button>
         <button
           className="btn btn-primary"

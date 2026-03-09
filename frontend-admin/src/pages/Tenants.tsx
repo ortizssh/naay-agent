@@ -91,9 +91,9 @@ function Tenants() {
         features: { ...(detail.tenant.features || {}) },
         chatbot_endpoint: detail.clientStore?.chatbot_endpoint || '',
         widget_enabled: detail.clientStore?.widget_enabled ?? true,
-        widget_color: detail.clientStore?.widget_color || '#a59457',
+        widget_color: detail.clientStore?.widget_color || '#6d5cff',
         widget_secondary_color: detail.clientStore?.widget_secondary_color || '#212120',
-        widget_accent_color: detail.clientStore?.widget_accent_color || '#cf795e',
+        widget_accent_color: detail.clientStore?.widget_accent_color || '#8b7afc',
         widget_position: detail.clientStore?.widget_position || 'bottom-right',
         widget_button_size: detail.clientStore?.widget_button_size || 72,
         widget_button_style: detail.clientStore?.widget_button_style || 'circle',
@@ -437,12 +437,12 @@ function Tenants() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
               {/* Billing Card — full width */}
               <div className="card" style={{ gridColumn: '1 / -1' }}>
-                <div className="card-header"><h3 className="card-title">Facturacion</h3></div>
+                <div className="card-header"><h3 className="card-title">Facturación</h3></div>
                 {tenant.stripe_customer_id ? (
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.5rem' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                       <div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>Estado Suscripcion</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>Estado Suscripción</div>
                         <div>{tenant.stripe_subscription_id
                           ? (() => {
                               const statusMap: Record<string, { label: string; cls: string }> = {
@@ -454,7 +454,7 @@ function Tenants() {
                               const s = statusMap[tenant.status] || { label: tenant.status, cls: 'badge-neutral' };
                               return <span className={`badge ${s.cls}`}>{s.label}</span>;
                             })()
-                          : <span className="badge badge-neutral">Sin suscripcion</span>
+                          : <span className="badge badge-neutral">Sin suscripción</span>
                         }</div>
                       </div>
                       <div>
@@ -473,7 +473,7 @@ function Tenants() {
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                       <div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>Email de Facturacion</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>Email de Facturación</div>
                         <div style={{ fontSize: '0.9rem' }}>{tenant.billing_email || tenant.shop_email || '-'}</div>
                       </div>
                       <div>
@@ -510,7 +510,7 @@ function Tenants() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.5rem 0' }}>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" strokeWidth="1.5"><rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>
                     <div>
-                      <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>Sin informacion de pago</div>
+                      <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>Sin información de pago</div>
                       <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Este cliente no tiene un metodo de pago configurado en Stripe</div>
                     </div>
                   </div>
@@ -518,7 +518,7 @@ function Tenants() {
               </div>
 
               <div className="card">
-                <div className="card-header"><h3 className="card-title">Informacion del Cliente</h3></div>
+                <div className="card-header"><h3 className="card-title">Información del Cliente</h3></div>
                 <div className="form-group">
                   <label className="form-label">Nombre de la Tienda</label>
                   <input type="text" className="form-input" value={detailForm.shop_name} onChange={e => updateDetailForm('shop_name', e.target.value)} />
@@ -621,7 +621,7 @@ function Tenants() {
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>
                   </div>
                   <div className="stat-value">{stats.uniqueSessions.toLocaleString()}</div>
-                  <div className="stat-label">Sesiones Unicas</div>
+                  <div className="stat-label">Sesiones Únicas</div>
                 </div>
                 <div className="stat-card">
                   <div className="stat-icon warning">
@@ -694,7 +694,7 @@ function Tenants() {
               </div>
 
               {!clientStore ? (
-                <div className="card"><p style={{ color: 'var(--color-text-muted)' }}>No hay configuracion de widget para este cliente. Se creara al guardar cambios.</p></div>
+                <div className="card"><p style={{ color: 'var(--color-text-muted)' }}>No hay configuración de widget para este cliente. Se creará al guardar cambios.</p></div>
               ) : (
                 <>
                   {/* Widget: Appearance */}
@@ -717,7 +717,7 @@ function Tenants() {
                         </div>
                       ))}
                       <div className="form-group">
-                        <label className="form-label">Posicion</label>
+                        <label className="form-label">Posición</label>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', maxWidth: 300 }}>
                           {['bottom-right', 'bottom-left', 'top-right', 'top-left'].map(pos => (
                             <button key={pos} className={`btn btn-sm ${detailForm.widget_position === pos ? 'btn-primary' : 'btn-secondary'}`} onClick={() => updateDetailForm('widget_position', pos)}>
@@ -727,7 +727,7 @@ function Tenants() {
                         </div>
                       </div>
                       <div className="form-group">
-                        <label className="form-label">Estilo del Boton</label>
+                        <label className="form-label">Estilo del Botón</label>
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                           {['circle', 'rounded', 'square'].map(s => (
                             <button key={s} className={`btn btn-sm ${detailForm.widget_button_style === s ? 'btn-primary' : 'btn-secondary'}`} onClick={() => updateDetailForm('widget_button_style', s)}>
@@ -737,7 +737,7 @@ function Tenants() {
                         </div>
                       </div>
                       <div className="form-group">
-                        <label className="form-label">Tamano del Boton: {detailForm.widget_button_size}px</label>
+                        <label className="form-label">Tamaño del Botón: {detailForm.widget_button_size}px</label>
                         <input type="range" min="48" max="96" value={detailForm.widget_button_size} onChange={e => updateDetailForm('widget_button_size', parseInt(e.target.value))} style={{ width: '100%' }} />
                       </div>
                       <div className="form-group">
@@ -814,10 +814,10 @@ function Tenants() {
                   {widgetSubTab === 'features' && (
                     <div className="card">
                       {[
-                        ['widget_show_pulse', 'Animacion Pulse', 'Muestra efecto pulse en el boton del chat'],
-                        ['widget_show_promo_message', 'Mensaje Promocional', 'Muestra un mensaje promocional junto al boton'],
+                        ['widget_show_pulse', 'Animación Pulse', 'Muestra efecto pulse en el botón del chat'],
+                        ['widget_show_promo_message', 'Mensaje Promocional', 'Muestra un mensaje promocional junto al botón'],
                         ['widget_show_cart', 'Carrito Integrado', 'Permite gestionar el carrito desde el chat'],
-                        ['widget_show_contact', 'Contacto Telefonico', 'Solicitar llamada desde el chat'],
+                        ['widget_show_contact', 'Contacto Telefónico', 'Solicitar llamada desde el chat'],
                         ['widget_enable_animations', 'Animaciones', 'Habilita animaciones en el widget'],
                         ['widget_enabled', 'Widget Activo', 'El widget esta visible en la tienda'],
                       ].map(([field, label, desc]) => (
@@ -852,7 +852,7 @@ function Tenants() {
                         <div key={n} style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: n < 3 ? '1px solid var(--color-border)' : 'none' }}>
                           <div style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem' }}>Pregunta {n}</div>
                           <div className="form-group">
-                            <label className="form-label">Texto del boton</label>
+                            <label className="form-label">Texto del botón</label>
                             <input type="text" className="form-input" value={detailForm[`suggested_question_${n}_text`]} onChange={e => updateDetailForm(`suggested_question_${n}_text`, e.target.value)} />
                           </div>
                           <div className="form-group">
@@ -910,7 +910,7 @@ function Tenants() {
                             </div>
                           </div>
                           <div className="form-group">
-                            <label className="form-label">Posicion</label>
+                            <label className="form-label">Posición</label>
                             <div style={{ display: 'flex', gap: '0.5rem' }}>
                               {['left', 'right', 'top'].map(p => (
                                 <button key={p} className={`btn btn-sm ${detailForm.promo_badge_position === p ? 'btn-primary' : 'btn-secondary'}`} onClick={() => updateDetailForm('promo_badge_position', p)}>
@@ -931,7 +931,7 @@ function Tenants() {
           {/* TAB: IA */}
           {activeDetailTab === 'ai' && (
             <div className="card">
-              <div className="card-header"><h3 className="card-title">Configuracion de IA</h3></div>
+              <div className="card-header"><h3 className="card-title">Configuración de IA</h3></div>
               <div className="form-group">
                 <label className="form-label">Modo de Chat</label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
@@ -963,7 +963,7 @@ function Tenants() {
                     <input type="text" className="form-input" placeholder="Ej: Kova" value={detailForm.agent_name} onChange={e => updateDetailForm('agent_name', e.target.value)} />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Descripcion de la Marca</label>
+                    <label className="form-label">Descripción de la Marca</label>
                     <textarea className="form-input" rows={3} placeholder="Describe la marca para darle contexto al agente..." value={detailForm.brand_description} onChange={e => updateDetailForm('brand_description', e.target.value)} />
                   </div>
                   <div className="form-group">
@@ -979,7 +979,7 @@ function Tenants() {
                   <div className="form-group">
                     <label className="form-label">Idioma del Agente</label>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      {[['es', 'Espanol'], ['en', 'English'], ['pt', 'Portugues']].map(([val, label]) => (
+                      {[['es', 'Español'], ['en', 'English'], ['pt', 'Portugués']].map(([val, label]) => (
                         <button key={val} className={`btn btn-sm ${detailForm.agent_language === val ? 'btn-primary' : 'btn-secondary'}`} onClick={() => updateDetailForm('agent_language', val)}>
                           {label}
                         </button>
@@ -1098,7 +1098,7 @@ function Tenants() {
                     <>
                       <div className="form-group">
                         <label className="form-label">Contenido</label>
-                        <textarea className="form-input" rows={8} placeholder="Pega o escribe el contenido aqui..." value={knowledgeContent} onChange={e => setKnowledgeContent(e.target.value)} />
+                        <textarea className="form-input" rows={8} placeholder="Pega o escribe el contenido aquí..." value={knowledgeContent} onChange={e => setKnowledgeContent(e.target.value)} />
                       </div>
                       <button className="btn btn-primary" disabled={knowledgeSubmitting || !knowledgeTitle.trim() || !knowledgeContent.trim()} onClick={handleCreateKnowledgeText}>
                         {knowledgeSubmitting ? 'Creando...' : 'Crear Documento'}
@@ -1124,7 +1124,7 @@ function Tenants() {
           {activeDetailTab === 'integration' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
               <div className="card">
-                <div className="card-header"><h3 className="card-title">Configuracion de Integracion</h3></div>
+                <div className="card-header"><h3 className="card-title">Configuración de Integración</h3></div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '1rem', background: 'var(--color-bg)', borderRadius: 10 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Plataforma</span>
@@ -1160,7 +1160,7 @@ function Tenants() {
                   ['cart_management', 'Gestion de Carrito', 'Agregar/modificar productos desde el chat'],
                   ['analytics', 'Analytics', 'Dashboard de analiticas y metricas'],
                   ['custom_branding', 'Branding Personalizado', 'Personalizar colores y marca del widget'],
-                  ['priority_support', 'Soporte Prioritario', 'Atencion preferencial al cliente'],
+                  ['priority_support', 'Soporte Prioritario', 'Atención preferencial al cliente'],
                   ['api_access', 'Acceso API', 'Acceso directo a la API del sistema'],
                 ].map(([key, label, desc]) => (
                   <div className="form-group" key={key}>

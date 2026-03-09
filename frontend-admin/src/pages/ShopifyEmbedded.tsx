@@ -402,7 +402,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
   const [store, setStore] = useState<StoreData | null>(null);
   const [widgetConfig, setWidgetConfig] = useState<WidgetConfig>({
     widget_position: 'bottom-right',
-    widget_color: '#a59457',
+    widget_color: '#6d5cff',
     welcome_message: '',
     welcome_message_2: '',
     subtitle_2: '',
@@ -412,7 +412,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
     rotating_messages_interval: 5,
     widget_enabled: true,
     widget_secondary_color: '#212120',
-    widget_accent_color: '#cf795e',
+    widget_accent_color: '#8b7afc',
     widget_button_size: 72,
     widget_button_style: 'circle',
     widget_show_pulse: true,
@@ -764,7 +764,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: any) {
-      setError(err.message || 'Error al guardar configuracion de IA');
+      setError(err.message || 'Error al guardar configuración de IA');
     } finally {
       setAiSaving(false);
     }
@@ -1175,7 +1175,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: any) {
-      setError(err.message || 'Error al guardar configuracion');
+      setError(err.message || 'Error al guardar configuración');
     } finally {
       setSaving(false);
     }
@@ -1381,7 +1381,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
         {success && (
           <div className="alert alert-success">
             <div className="alert-content">
-              <div className="alert-message">Configuracion guardada exitosamente</div>
+              <div className="alert-message">Configuración guardada exitosamente</div>
             </div>
           </div>
         )}
@@ -1423,10 +1423,10 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                 {([
                   { key: 'today', label: 'Hoy' },
                   { key: 'yesterday', label: 'Ayer' },
-                  { key: '3d', label: '3 dias' },
-                  { key: '7d', label: '7 dias' },
-                  { key: '14d', label: '14 dias' },
-                  { key: '30d', label: '30 dias' },
+                  { key: '3d', label: '3 días' },
+                  { key: '7d', label: '7 días' },
+                  { key: '14d', label: '14 días' },
+                  { key: '30d', label: '30 días' },
                   { key: 'thisWeek', label: 'Esta semana' },
                   { key: 'thisMonth', label: 'Este mes' },
                 ] as { key: DatePreset; label: string }[]).map(preset => (
@@ -1684,7 +1684,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                   <span className="info-value">{analytics.products}</span>
                 </div>
                 <div className="info-item">
-                  <span className="info-label">Ultima Sincronizacion</span>
+                  <span className="info-label">Última Sincronización</span>
                   <span className="info-value">{formatDate(analytics.lastSync)}</span>
                 </div>
                 <div className="info-item">
@@ -1751,7 +1751,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                       fontWeight: conversionDays === period ? '600' : '400',
                     }}
                   >
-                    {period} dias
+                    {period} días
                   </button>
                 ))}
               </div>
@@ -1868,7 +1868,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                 {/* Attribution Breakdown */}
                 <div className="card" style={{ marginTop: '1rem' }}>
                   <div className="card-header">
-                    <h3 className="card-title">Atribucion por Tiempo</h3>
+                    <h3 className="card-title">Atribución por Tiempo</h3>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
                     <div style={{ padding: '0.75rem', background: 'var(--color-bg)', borderRadius: '8px', borderLeft: '4px solid #10b981' }}>
@@ -2057,7 +2057,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                           </div>
                           <div style={{ flex: 1, overflow: 'hidden' }}>
                             <div style={{ fontSize: '0.8rem', fontWeight: '500' }}>
-                              {activity.type === 'conversion' ? 'Conversion' : 'Recomendacion'}
+                              {activity.type === 'conversion' ? 'Conversión' : 'Recomendación'}
                             </div>
                             <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {activity.productTitle}
@@ -2209,7 +2209,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Posicion</label>
+                    <label className="form-label">Posición</label>
                     <div className="position-grid">
                       {positions.map(pos => (
                         <button
@@ -2224,7 +2224,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Estilo del boton</label>
+                    <label className="form-label">Estilo del botón</label>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                       {buttonStyles.map(style => (
                         <button
@@ -2240,7 +2240,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Tamano del boton: {widgetConfig.widget_button_size}px</label>
+                    <label className="form-label">Tamaño del botón: {widgetConfig.widget_button_size}px</label>
                     <input
                       type="range"
                       min="56"
@@ -2413,7 +2413,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                       Preguntas sugeridas
                     </h4>
                     <p style={{ margin: '0 0 1rem', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                      Personaliza los botones de accion rapida que ven los usuarios al abrir el chat
+                      Personaliza los botones de acción rápida que ven los usuarios al abrir el chat
                     </p>
 
                     {/* Question 1 */}
@@ -2424,7 +2424,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                         className="form-input"
                         value={widgetConfig.suggested_question_1_text}
                         onChange={e => setWidgetConfig({ ...widgetConfig, suggested_question_1_text: e.target.value })}
-                        placeholder="Texto del boton"
+                        placeholder="Texto del botón"
                         style={{ marginBottom: '0.5rem' }}
                       />
                       <label className="form-label" style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Mensaje a enviar</label>
@@ -2445,7 +2445,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                         className="form-input"
                         value={widgetConfig.suggested_question_2_text}
                         onChange={e => setWidgetConfig({ ...widgetConfig, suggested_question_2_text: e.target.value })}
-                        placeholder="Texto del boton"
+                        placeholder="Texto del botón"
                         style={{ marginBottom: '0.5rem' }}
                       />
                       <label className="form-label" style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Mensaje a enviar</label>
@@ -2466,7 +2466,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                         className="form-input"
                         value={widgetConfig.suggested_question_3_text}
                         onChange={e => setWidgetConfig({ ...widgetConfig, suggested_question_3_text: e.target.value })}
-                        placeholder="Texto del boton"
+                        placeholder="Texto del botón"
                         style={{ marginBottom: '0.5rem' }}
                       />
                       <label className="form-label" style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Mensaje a enviar</label>
@@ -2485,10 +2485,10 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
               {widgetTab === 'features' && (
                 <>
                   {[
-                    { key: 'widget_show_pulse', label: 'Animacion de pulso', desc: 'Efecto para llamar la atencion' },
-                    { key: 'widget_show_promo_message', label: 'Mensaje promocional', desc: 'Junto al boton' },
+                    { key: 'widget_show_pulse', label: 'Animación de pulso', desc: 'Efecto para llamar la atención' },
+                    { key: 'widget_show_promo_message', label: 'Mensaje promocional', desc: 'Junto al botón' },
                     { key: 'widget_show_cart', label: 'Carrito integrado', desc: 'Agregar productos desde el chat' },
-                    { key: 'widget_show_contact', label: 'Contacto telefonico', desc: 'Solicitar llamada desde el chat' },
+                    { key: 'widget_show_contact', label: 'Contacto telefónico', desc: 'Solicitar llamada desde el chat' },
                     { key: 'widget_enable_animations', label: 'Animaciones', desc: 'Transiciones y efectos' },
                   ].map(item => (
                     <div className="form-group" key={item.key}>
@@ -2549,7 +2549,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                       <div>
                         <span style={{ fontWeight: '600', fontSize: '0.95rem' }}>Activar badge promocional</span>
                         <p style={{ margin: '0.15rem 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                          Muestra un circulo con descuento en el boton del widget
+                          Muestra un círculo con descuento en el botón del widget
                         </p>
                       </div>
                     </label>
@@ -2675,7 +2675,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                             maxLength={15}
                           />
                           <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                            Texto corto que se mostrara en el badge
+                            Texto corto que se mostrará en el badge
                           </p>
                         </div>
                       )}
@@ -2701,7 +2701,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                       {/* Description/Prompt - only for discount type */}
                       {widgetConfig.promo_badge_type === 'discount' && (
                         <div className="form-group">
-                          <label className="form-label">Descripcion / Prompt</label>
+                          <label className="form-label">Descripción / Prompt</label>
                           <textarea
                             className="form-input"
                             rows={2}
@@ -2710,7 +2710,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                             placeholder="Descuento especial para ti"
                           />
                           <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                            Texto que el agente usara al hablar de la promocion
+                            Texto que el agente usará al hablar de la promoción
                           </p>
                         </div>
                       )}
@@ -2758,7 +2758,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
 
                         {/* Badge Position */}
                         <div className="form-group">
-                          <label className="form-label">Posicion del badge</label>
+                          <label className="form-label">Posición del badge</label>
                           <div style={{ display: 'flex', gap: '0.5rem' }}>
                             {[
                               { value: 'left', label: 'Izquierda' },
@@ -2959,7 +2959,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                   {[
                     { label: 'Hoy', days: 0 },
                     { label: 'Ayer', days: 1 },
-                    { label: 'Hace 2 dias', days: 2 },
+                    { label: 'Hace 2 días', days: 2 },
                   ].map(({ label, days }) => {
                     const d = new Date();
                     d.setDate(d.getDate() - days);
@@ -3170,7 +3170,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
               <>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
                   <button className="btn btn-primary" onClick={saveAiConfig} disabled={aiSaving}>
-                    {aiSaving ? 'Guardando...' : 'Guardar Configuracion'}
+                    {aiSaving ? 'Guardando...' : 'Guardar Configuración'}
                   </button>
                 </div>
 
@@ -3210,7 +3210,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                     </div>
 
                     <div className="form-group">
-                      <label className="form-label">Descripcion de tu marca</label>
+                      <label className="form-label">Descripción de tu marca</label>
                       <textarea
                         className="form-input"
                         rows={3}
@@ -3245,9 +3245,9 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                       <label className="form-label">Idioma</label>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
                         {[
-                          { value: 'es', label: 'Espanol' },
+                          { value: 'es', label: 'Español' },
                           { value: 'en', label: 'English' },
-                          { value: 'pt', label: 'Portugues' },
+                          { value: 'pt', label: 'Portugués' },
                         ].map(lang => (
                           <button
                             key={lang.value}
@@ -3268,7 +3268,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                         rows={4}
                         value={aiConfig.agent_instructions || ''}
                         onChange={e => setAiConfig({ ...aiConfig, agent_instructions: e.target.value || null })}
-                        placeholder="Instrucciones especificas para el comportamiento del agente..."
+                        placeholder="Instrucciones específicas para el comportamiento del agente..."
                       />
                     </div>
 
@@ -3417,7 +3417,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                     </svg>
                     <h3 style={{ margin: '0 0 0.5rem', fontSize: '1rem', fontWeight: '600' }}>Sin documentos</h3>
                     <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-                      Agrega documentos para que tu agente de IA tenga mas contexto sobre tu negocio
+                      Agrega documentos para que tu agente de IA tenga más contexto sobre tu negocio
                     </p>
                   </div>
                 )}
@@ -3466,7 +3466,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                           rows={6}
                           value={docContent}
                           onChange={e => setDocContent(e.target.value)}
-                          placeholder="Pega aqui el contenido que quieres que tu agente conozca..."
+                          placeholder="Pega aquí el contenido que quieres que tu agente conozca..."
                         />
                       </div>
                       <button

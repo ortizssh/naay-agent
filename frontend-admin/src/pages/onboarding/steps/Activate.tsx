@@ -17,17 +17,17 @@ function Activate({ widgetCode, shopDomain, onBack, onComplete, isActivating }: 
         </svg>
       </div>
 
-      <h2 className="onboarding-title">Tu tienda esta lista!</h2>
+      <h2 className="onboarding-title">¡Tu tienda está lista!</h2>
       <p className="onboarding-subtitle">
-        Instala el widget en tu tienda y comienza a vender mas con AI
+        Instala el widget en tu tienda y comienza a vender más con AI
       </p>
 
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <div className="card-header">
-          <h3 className="card-title">Opcion 1: Extension de Shopify (Recomendado)</h3>
+          <h3 className="card-title">Opción 1: Extension de Shopify (Recomendado)</h3>
         </div>
         <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
-          La forma mas facil. Ve a tu panel de Shopify {'>'} Tema {'>'} Personalizar {'>'}
+          La forma más fácil. Ve a tu panel de Shopify {'>'} Tema {'>'} Personalizar {'>'}
           App embeds y activa "Kova AI Chat Widget".
         </p>
         <a
@@ -48,10 +48,10 @@ function Activate({ widgetCode, shopDomain, onBack, onComplete, isActivating }: 
 
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <div className="card-header">
-          <h3 className="card-title">Opcion 2: Codigo Manual</h3>
+          <h3 className="card-title">Opción 2: Código Manual</h3>
         </div>
         <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
-          Copia y pega este codigo en tu tema de Shopify, antes del cierre del tag {'</body>'}.
+          Copia y pega este código en tu tema de Shopify, antes del cierre del tag {'</body>'}.
         </p>
         <CodeSnippet code={widgetCode} />
       </div>
@@ -74,11 +74,11 @@ function Activate({ widgetCode, shopDomain, onBack, onComplete, isActivating }: 
           </div>
           <div>
             <div style={{ fontWeight: '600', marginBottom: '0.25rem', color: 'var(--color-success)' }}>
-              Trial de 14 dias gratis
+              Trial de 14 días gratis
             </div>
             <div style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
-              Tu periodo de prueba comienza ahora. Tendras acceso completo a todas las funciones.
-              No se requiere tarjeta de credito.
+              Tu periodo de prueba comienza ahora. Tendrás acceso completo a todas las funciones.
+              No se requiere tarjeta de crédito.
             </div>
           </div>
         </div>
@@ -89,7 +89,7 @@ function Activate({ widgetCode, shopDomain, onBack, onComplete, isActivating }: 
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="15 18 9 12 15 6" />
           </svg>
-          Atras
+          Atrás
         </button>
         <button
           className="btn btn-primary"

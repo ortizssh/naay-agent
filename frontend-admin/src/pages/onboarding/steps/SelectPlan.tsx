@@ -269,7 +269,7 @@ function SelectPlan({ onBack, onNext }: SelectPlanProps) {
           >
             <polyline points="15 18 9 12 15 6" />
           </svg>
-          Atras
+          Atrás
         </button>
       </div>
     </>

@@ -36,7 +36,7 @@ function Dashboard() {
       setStats(data);
       setError(null);
     } catch (err: any) {
-      setError(err.message || 'Error al cargar estadisticas');
+      setError(err.message || 'Error al cargar estadísticas');
     } finally {
       setLoading(false);
     }
@@ -56,7 +56,7 @@ function Dashboard() {
         <div className="page-content">
           <div className="loading-container">
             <div className="loading-spinner"></div>
-            <span className="loading-text">Cargando estadisticas...</span>
+            <span className="loading-text">Cargando estadísticas...</span>
           </div>
         </div>
       </>
@@ -129,7 +129,7 @@ function Dashboard() {
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
               </svg>
-              Con suscripcion
+              Con suscripción
             </div>
           </div>
 
@@ -146,7 +146,7 @@ function Dashboard() {
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
               </svg>
-              14 dias gratis
+              14 días gratis
             </div>
           </div>
 
@@ -172,7 +172,7 @@ function Dashboard() {
           {/* Quick Actions */}
           <div className="card">
             <div className="card-header">
-              <h3 className="card-title">Acciones Rapidas</h3>
+              <h3 className="card-title">Acciones Rápidas</h3>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <button className="btn btn-secondary" style={{ justifyContent: 'flex-start' }}>

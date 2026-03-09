@@ -5,7 +5,7 @@ interface CodeSnippetProps {
   title?: string;
 }
 
-function CodeSnippet({ code, title = 'Codigo de instalacion' }: CodeSnippetProps) {
+function CodeSnippet({ code, title = 'Código de instalación' }: CodeSnippetProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {

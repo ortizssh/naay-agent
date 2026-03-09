@@ -110,36 +110,57 @@ function ClientDashboard({ onStartOnboarding, onPageChange }: ClientDashboardPro
           </div>
         )}
 
-        {/* Setup prompt if not onboarded */}
-        {data && !data.onboardingCompleted && (
-          <div className="quick-setup-card">
-            <h3>Completa la configuración de tu tienda</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', margin: '1rem 0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem' }}>
-                <span style={{ color: 'var(--color-success)', fontSize: '1.1rem' }}>&#10003;</span>
-                <span>Crear cuenta</span>
+        {/* Setup checklist */}
+        {data && (() => {
+          const storeConnected = data.activeStores > 0;
+          const widgetCustomized = data.onboardingStep >= 5;
+          const firstConversation = !!(usage && usage.messages_used > 0);
+          const allDone = storeConnected && widgetCustomized && firstConversation;
+          if (allDone) return null;
+          return (
+            <div className="quick-setup-card">
+              <h3>Completa tu setup</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', margin: '1rem 0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem' }}>
+                  <span style={{ color: 'var(--color-success)', fontSize: '1.1rem' }}>{'\u2713'}</span>
+                  <span>Crear cuenta</span>
+                </div>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem', cursor: storeConnected ? undefined : 'pointer' }}
+                  onClick={() => !storeConnected && onStartOnboarding()}
+                >
+                  <span style={{ color: storeConnected ? 'var(--color-success)' : 'var(--color-text-muted)', fontSize: '1.1rem' }}>
+                    {storeConnected ? '\u2713' : '\u25A1'}
+                  </span>
+                  <span style={{ color: storeConnected ? 'var(--color-text)' : 'var(--color-text-muted)' }}>Conectar tienda</span>
+                </div>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem', cursor: widgetCustomized ? undefined : 'pointer' }}
+                  onClick={() => !widgetCustomized && onPageChange?.('widget')}
+                >
+                  <span style={{ color: widgetCustomized ? 'var(--color-success)' : 'var(--color-text-muted)', fontSize: '1.1rem' }}>
+                    {widgetCustomized ? '\u2713' : '\u25A1'}
+                  </span>
+                  <span style={{ color: widgetCustomized ? 'var(--color-text)' : 'var(--color-text-muted)' }}>Personalizar widget</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem' }}>
+                  <span style={{ color: firstConversation ? 'var(--color-success)' : 'var(--color-text-muted)', fontSize: '1.1rem' }}>
+                    {firstConversation ? '\u2713' : '\u25A1'}
+                  </span>
+                  <span style={{ color: firstConversation ? 'var(--color-text)' : 'var(--color-text-muted)' }}>Primera conversación</span>
+                </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem' }}>
-                <span style={{ color: data && data.activeStores > 0 ? 'var(--color-success)' : 'var(--color-text-muted)', fontSize: '1.1rem' }}>
-                  {data && data.activeStores > 0 ? '\u2713' : '\u25A1'}
-                </span>
-                <span style={{ color: data && data.activeStores > 0 ? 'var(--color-text)' : 'var(--color-text-muted)' }}>Conectar tienda</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem' }}>
-                <span style={{ color: usage && usage.messages_used > 0 ? 'var(--color-success)' : 'var(--color-text-muted)', fontSize: '1.1rem' }}>
-                  {usage && usage.messages_used > 0 ? '\u2713' : '\u25A1'}
-                </span>
-                <span style={{ color: usage && usage.messages_used > 0 ? 'var(--color-text)' : 'var(--color-text-muted)' }}>Primera conversación</span>
-              </div>
+              {!storeConnected && (
+                <button className="btn" onClick={onStartOnboarding}>
+                  Continuar configuración
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+              )}
             </div>
-            <button className="btn" onClick={onStartOnboarding}>
-              Continuar configuración
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </button>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Stats */}
         <div className="client-stats-grid">
@@ -189,10 +210,7 @@ function ClientDashboard({ onStartOnboarding, onPageChange }: ClientDashboardPro
                 </svg>
               </div>
               <div className="stat-value">
-                {usage.messages_limit === 0 && !usage.messages_used
-                  ? '—'
-                  : <>{usage.messages_used?.toLocaleString()}{' / '}{usage.messages_limit === -1 ? 'Ilim.' : usage.messages_limit?.toLocaleString()}</>
-                }
+                {usage.messages_used?.toLocaleString() || 0}{' / '}{usage.messages_limit === -1 ? 'Ilim.' : (usage.messages_limit || 100).toLocaleString()}
               </div>
               <div className="stat-label">Mensajes este mes</div>
               <div style={{
@@ -228,7 +246,10 @@ function ClientDashboard({ onStartOnboarding, onPageChange }: ClientDashboardPro
                     </svg>
                   </div>
                   <div className="stat-value">
-                    {vcUsed.toLocaleString()}{' / '}{vcIsUnlimited ? 'Ilim.' : vcLimit.toLocaleString()}
+                    {vcLimit === 0
+                      ? vcUsed.toLocaleString()
+                      : <>{vcUsed.toLocaleString()}{' / '}{vcIsUnlimited ? 'Ilim.' : vcLimit.toLocaleString()}</>
+                    }
                   </div>
                   <div className="stat-label">Llamadas este mes</div>
                   <div style={{

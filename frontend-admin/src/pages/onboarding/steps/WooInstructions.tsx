@@ -77,7 +77,7 @@ function WooInstructions({ onBack, onComplete }: WooInstructionsProps) {
           <div>
             <div style={{ fontWeight: '600', marginBottom: '0.5rem' }}>Sube el plugin a WordPress</div>
             <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', margin: 0 }}>
-              Ve a tu panel de WordPress {'>'} Plugins {'>'} Anadir nuevo {'>'} Subir plugin.
+              Ve a tu panel de WordPress {'>'} Plugins {'>'} Añadir nuevo {'>'} Subir plugin.
               Selecciona el archivo .zip descargado e instala.
             </p>
           </div>
@@ -100,7 +100,7 @@ function WooInstructions({ onBack, onComplete }: WooInstructionsProps) {
           <div>
             <div style={{ fontWeight: '600', marginBottom: '0.5rem' }}>Activa y configura</div>
             <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', margin: 0 }}>
-              Activa el plugin. Se abrira un asistente de configuracion que te guiara
+              Activa el plugin. Se abrirá un asistente de configuración que te guiará
               para conectar tu tienda, personalizar el widget y sincronizar tus productos.
             </p>
           </div>
@@ -112,7 +112,7 @@ function WooInstructions({ onBack, onComplete }: WooInstructionsProps) {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="15 18 9 12 15 6" />
           </svg>
-          Atras
+          Atrás
         </button>
         <button
           className="btn btn-primary"
@@ -126,7 +126,7 @@ function WooInstructions({ onBack, onComplete }: WooInstructionsProps) {
             </>
           ) : (
             <>
-              Ya instale el plugin
+              Ya instalé el plugin
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="9 18 15 12 9 6" />
               </svg>
