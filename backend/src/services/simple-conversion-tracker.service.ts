@@ -753,6 +753,8 @@ export class SimpleConversionTracker {
    */
   async cleanupExpiredRecommendations(shopDomain?: string): Promise<void> {
     // No-op: keep all recommendations for analytics reporting
-    logger.debug('Skipping recommendation cleanup (preserved for analytics)', { shopDomain });
+    logger.debug('Skipping recommendation cleanup (preserved for analytics)', {
+      shopDomain,
+    });
   }
 }
