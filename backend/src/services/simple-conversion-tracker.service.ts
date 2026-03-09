@@ -68,7 +68,9 @@ export class SimpleConversionTracker {
       if (error) {
         if (error.code === '23505') {
           // Duplicate — update existing record with fresh timestamps
-          const { error: updateError } = await (this.supabaseService as any).serviceClient
+          const { error: updateError } = await (
+            this.supabaseService as any
+          ).serviceClient
             .from('simple_recommendations')
             .update({
               product_title: row.product_title,
