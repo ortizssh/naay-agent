@@ -76,7 +76,7 @@ function ClientSidebar({ currentPage, onPageChange, user, onLogout }: ClientSide
               <path d="M12 2a4 4 0 0 0-4 4v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2h-2V6a4 4 0 0 0-4-4z" />
               <circle cx="12" cy="15" r="2" />
             </svg>
-            Configuracion IA
+            Configuración IA
           </button>
           <button
             className={`nav-item ${currentPage === 'knowledge' ? 'active' : ''}`}
@@ -105,7 +105,7 @@ function ClientSidebar({ currentPage, onPageChange, user, onLogout }: ClientSide
               <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
               <line x1="1" y1="10" x2="23" y2="10" />
             </svg>
-            Suscripcion
+            Suscripción
           </button>
         </div>
 
@@ -117,7 +117,7 @@ function ClientSidebar({ currentPage, onPageChange, user, onLogout }: ClientSide
               <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
-            Documentacion
+            Documentación
           </button>
           <button className="nav-item">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -142,7 +142,7 @@ function ClientSidebar({ currentPage, onPageChange, user, onLogout }: ClientSide
               {user?.email || 'user@example.com'}
             </div>
           </div>
-          <button className="logout-btn" onClick={onLogout} title="Cerrar sesion">
+          <button className="logout-btn" onClick={onLogout} title="Cerrar sesión">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
               <polyline points="16 17 21 12 16 7" />

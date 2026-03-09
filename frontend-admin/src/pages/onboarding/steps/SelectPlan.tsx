@@ -59,7 +59,7 @@ function SelectPlan({ onBack, onNext }: SelectPlanProps) {
       } else if (res.data?.free) {
         onNext();
       } else {
-        setError('Error al crear sesion de pago');
+        setError('Error al crear sesión de pago');
         setProcessing(false);
       }
     } catch (err: any) {

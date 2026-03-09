@@ -130,7 +130,7 @@ function KnowledgeBase() {
       <div className="page-header">
         <h1 className="page-title">Knowledge Base</h1>
         <p style={{ color: '#6b7280', marginTop: '0.25rem' }}>
-          Agrega documentos para que tu asistente IA pueda responder preguntas sobre tu marca, politicas, envios, etc.
+          Agrega documentos para que tu asistente IA pueda responder preguntas sobre tu marca, políticas, envíos, etc.
         </p>
       </div>
 
@@ -162,7 +162,7 @@ function KnowledgeBase() {
         <div className="card">
           {documents.length === 0 ? (
             <div style={{ padding: '3rem', textAlign: 'center', color: '#6b7280' }}>
-              <p style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>No hay documentos todavia</p>
+              <p style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>No hay documentos todavía</p>
               <p>Agrega tu primer documento para potenciar las respuestas de tu asistente.</p>
               <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={() => setActiveTab('add')}>
                 + Agregar documento
@@ -245,7 +245,7 @@ function KnowledgeBase() {
                   type="text"
                   value={title}
                   onChange={e => setTitle(e.target.value)}
-                  placeholder="Ej: Politica de devoluciones"
+                  placeholder="Ej: Política de devoluciones"
                   required
                 />
               </div>
@@ -255,7 +255,7 @@ function KnowledgeBase() {
                   className="form-input"
                   value={content}
                   onChange={e => setContent(e.target.value)}
-                  placeholder="Pega aqui el texto del documento..."
+                  placeholder="Pega aquí el texto del documento..."
                   rows={12}
                   required
                   style={{ resize: 'vertical', minHeight: '200px' }}
@@ -274,7 +274,7 @@ function KnowledgeBase() {
                   type="text"
                   value={title}
                   onChange={e => setTitle(e.target.value)}
-                  placeholder="Se usara el nombre del archivo si se deja vacio"
+                  placeholder="Se usará el nombre del archivo si se deja vacío"
                 />
               </div>
               <div className="form-group" style={{ marginBottom: '1rem' }}>

@@ -54,7 +54,7 @@ function Subscription() {
   };
 
   const handleCancel = async () => {
-    if (!window.confirm('¿Estas seguro de que deseas cancelar tu suscripcion? Podras seguir usando el servicio hasta el final del periodo de facturacion actual.')) {
+    if (!window.confirm('¿Estás seguro de que deseas cancelar tu suscripción? Podrás seguir usando el servicio hasta el final del periodo de facturación actual.')) {
       return;
     }
     try {
@@ -62,7 +62,7 @@ function Subscription() {
       await clientApi.cancelSubscription();
       await loadData();
     } catch (err: any) {
-      alert(err.message || 'Error al cancelar suscripcion');
+      alert(err.message || 'Error al cancelar suscripción');
     } finally {
       setActionLoading(false);
     }
@@ -74,7 +74,7 @@ function Subscription() {
       await clientApi.reactivateSubscription();
       await loadData();
     } catch (err: any) {
-      alert(err.message || 'Error al reactivar suscripcion');
+      alert(err.message || 'Error al reactivar suscripción');
     } finally {
       setActionLoading(false);
     }
@@ -88,7 +88,7 @@ function Subscription() {
         window.location.href = res.data.portalUrl;
       }
     } catch (err: any) {
-      alert(err.message || 'Error al abrir portal de facturacion');
+      alert(err.message || 'Error al abrir portal de facturación');
     } finally {
       setActionLoading(false);
     }
@@ -111,13 +111,13 @@ function Subscription() {
   };
 
   const getStatusBadge = () => {
-    if (!billing) return { label: 'Sin suscripcion', color: 'neutral' };
+    if (!billing) return { label: 'Sin suscripción', color: 'neutral' };
     if (billing.subscription?.cancelAtPeriodEnd) return { label: 'Cancelando', color: 'warning' };
     if (billing.status === 'trial') return { label: 'Trial', color: 'primary' };
     if (billing.subscription?.status === 'active') return { label: 'Activo', color: 'success' };
     if (billing.subscription?.status === 'trialing') return { label: 'Trial', color: 'primary' };
     if (billing.plan && billing.plan !== 'free') return { label: 'Activo', color: 'success' };
-    return { label: 'Sin suscripcion', color: 'neutral' };
+    return { label: 'Sin suscripción', color: 'neutral' };
   };
 
   const getCurrentPlan = (): Plan | undefined => {
@@ -156,8 +156,8 @@ function Subscription() {
         <header className="page-header">
           <div className="page-header-content">
             <div>
-              <h1 className="page-title">Suscripcion</h1>
-              <p className="page-subtitle">Gestiona tu plan y facturacion</p>
+              <h1 className="page-title">Suscripción</h1>
+              <p className="page-subtitle">Gestiona tu plan y facturación</p>
             </div>
           </div>
         </header>
@@ -179,8 +179,8 @@ function Subscription() {
       <header className="page-header">
         <div className="page-header-content">
           <div>
-            <h1 className="page-title">Suscripcion</h1>
-            <p className="page-subtitle">Gestiona tu plan y facturacion</p>
+            <h1 className="page-title">Suscripción</h1>
+            <p className="page-subtitle">Gestiona tu plan y facturación</p>
           </div>
         </div>
       </header>
@@ -189,7 +189,7 @@ function Subscription() {
         {/* Section 1: Plan & Billing Status */}
         <div className="card" style={{ marginBottom: '1.5rem' }}>
           <div className="card-header">
-            <h3 className="card-title">Plan y Facturacion</h3>
+            <h3 className="card-title">Plan y Facturación</h3>
             <span className={`badge badge-${statusBadge.color}`}>{statusBadge.label}</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -215,13 +215,13 @@ function Subscription() {
                 color: 'var(--color-warning)',
                 fontSize: '0.9rem',
               }}>
-                Tu suscripcion se cancelara el {formatDate(billing.subscription.currentPeriodEnd)}. Puedes reactivarla antes de esa fecha.
+                Tu suscripción se cancelará el {formatDate(billing.subscription.currentPeriodEnd)}. Puedes reactivarla antes de esa fecha.
               </div>
             )}
 
             {billing?.subscription?.currentPeriodEnd && !billing.subscription.cancelAtPeriodEnd && (
               <div style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
-                Proxima facturacion: {formatDate(billing.subscription.currentPeriodEnd)}
+                Próxima facturación: {formatDate(billing.subscription.currentPeriodEnd)}
               </div>
             )}
 
@@ -242,7 +242,7 @@ function Subscription() {
                     <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
                     <line x1="1" y1="10" x2="23" y2="10" />
                   </svg>
-                  {actionLoading ? 'Abriendo...' : 'Gestionar Facturacion'}
+                  {actionLoading ? 'Abriendo...' : 'Gestionar Facturación'}
                 </button>
               )}
 
@@ -253,7 +253,7 @@ function Subscription() {
                   disabled={actionLoading}
                   onClick={handleCancel}
                 >
-                  {actionLoading ? 'Procesando...' : 'Cancelar Suscripcion'}
+                  {actionLoading ? 'Procesando...' : 'Cancelar Suscripción'}
                 </button>
               )}
 
@@ -263,7 +263,7 @@ function Subscription() {
                   disabled={actionLoading}
                   onClick={handleReactivate}
                 >
-                  {actionLoading ? 'Procesando...' : 'Reactivar Suscripcion'}
+                  {actionLoading ? 'Procesando...' : 'Reactivar Suscripción'}
                 </button>
               )}
             </div>
@@ -281,9 +281,14 @@ function Subscription() {
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                 <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>Mensajes este mes</span>
                 <span style={{ fontSize: '0.9rem', fontWeight: '600' }}>
-                  {usage?.messages_used?.toLocaleString() || 0}
-                  {' / '}
-                  {usage?.messages_limit === -1 ? 'Ilimitado' : (usage?.messages_limit?.toLocaleString() || 0)}
+                  {usage?.messages_limit === 0 && !usage?.messages_used
+                    ? 'Conecta tu tienda para ver tu uso'
+                    : <>
+                        {usage?.messages_used?.toLocaleString() || 0}
+                        {' / '}
+                        {usage?.messages_limit === -1 ? 'Ilimitado' : (usage?.messages_limit?.toLocaleString() || 0)}
+                      </>
+                  }
                 </span>
               </div>
               <div style={{

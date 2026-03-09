@@ -30,7 +30,7 @@ function AiConfigPage() {
       }
       setError(null);
     } catch (err: any) {
-      setError(err.message || 'Error al cargar configuracion');
+      setError(err.message || 'Error al cargar configuración');
     } finally {
       setLoading(false);
     }
@@ -53,7 +53,7 @@ function AiConfigPage() {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: any) {
-      setError(err.message || 'Error al guardar configuracion de IA');
+      setError(err.message || 'Error al guardar configuración de IA');
     } finally {
       setSaving(false);
     }
@@ -65,7 +65,7 @@ function AiConfigPage() {
         <header className="page-header">
           <div className="page-header-content">
             <div>
-              <h1 className="page-title">Configuracion de IA</h1>
+              <h1 className="page-title">Configuración de IA</h1>
               <p className="page-subtitle">Personaliza el comportamiento de tu asistente</p>
             </div>
           </div>
@@ -85,7 +85,7 @@ function AiConfigPage() {
       <header className="page-header">
         <div className="page-header-content">
           <div>
-            <h1 className="page-title">Configuracion de IA</h1>
+            <h1 className="page-title">Configuración de IA</h1>
             <p className="page-subtitle">Personaliza el comportamiento de tu asistente</p>
           </div>
           <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
@@ -120,7 +120,7 @@ function AiConfigPage() {
         {success && (
           <div className="alert alert-success">
             <div className="alert-content">
-              <div className="alert-message">Configuracion guardada exitosamente</div>
+              <div className="alert-message">Configuración guardada exitosamente</div>
             </div>
           </div>
         )}
@@ -161,12 +161,12 @@ function AiConfigPage() {
                   placeholder="Ej: Mi Asistente, Asesor de Belleza"
                 />
                 <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                  Como se presentara el asistente al cliente
+                  Como se presentará el asistente al cliente
                 </span>
               </div>
 
               <div className="form-group">
-                <label className="form-label">Descripcion de Marca</label>
+                <label className="form-label">Descripción de Marca</label>
                 <textarea
                   className="form-input"
                   rows={3}
@@ -175,7 +175,7 @@ function AiConfigPage() {
                   placeholder="Describe tu negocio para que el AI entienda el contexto..."
                 />
                 <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                  El AI usara esta informacion como contexto en sus respuestas
+                  El AI usará esta información como contexto en sus respuestas
                 </span>
               </div>
 
@@ -203,9 +203,9 @@ function AiConfigPage() {
                 <label className="form-label">Idioma</label>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   {[
-                    { value: 'es', label: 'Espanol' },
+                    { value: 'es', label: 'Español' },
                     { value: 'en', label: 'English' },
-                    { value: 'pt', label: 'Portugues' },
+                    { value: 'pt', label: 'Portugués' },
                   ].map(lang => (
                     <button
                       key={lang.value}
@@ -229,7 +229,7 @@ function AiConfigPage() {
                   placeholder="Reglas especificas, restricciones, comportamiento..."
                 />
                 <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                  Instrucciones que el AI seguira en cada conversacion
+                  Instrucciones que el AI seguirá en cada conversación
                 </span>
               </div>
 

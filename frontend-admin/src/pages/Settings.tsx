@@ -76,12 +76,12 @@ function Settings() {
     setPasswordSuccess(false);
 
     if (newPassword !== confirmPassword) {
-      setPasswordError('Las contrasenas no coinciden');
+      setPasswordError('Las contraseñas no coinciden');
       return;
     }
 
     if (newPassword.length < 8) {
-      setPasswordError('La contrasena debe tener al menos 8 caracteres');
+      setPasswordError('La contraseña debe tener al menos 8 caracteres');
       return;
     }
 
@@ -101,7 +101,7 @@ function Settings() {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Error al cambiar contrasena');
+        throw new Error(data.error || 'Error al cambiar contraseña');
       }
 
       setPasswordSuccess(true);
@@ -133,7 +133,7 @@ function Settings() {
       <header className="page-header">
         <div className="page-header-content">
           <div>
-            <h1 className="page-title">Configuracion</h1>
+            <h1 className="page-title">Configuración</h1>
             <p className="page-subtitle">Administra tu cuenta y preferencias</p>
           </div>
         </div>
@@ -184,7 +184,7 @@ function Settings() {
             </svg>
             <div className="alert-content">
               <div className="alert-title">Guardado</div>
-              <div className="alert-message">Configuracion guardada exitosamente</div>
+              <div className="alert-message">Configuración guardada exitosamente</div>
             </div>
           </div>
         )}
@@ -195,7 +195,7 @@ function Settings() {
             {/* API Configuration */}
             <div className="card">
               <div className="card-header">
-                <h3 className="card-title">Configuracion de API</h3>
+                <h3 className="card-title">Configuración de API</h3>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div className="form-group">
@@ -225,12 +225,12 @@ function Settings() {
             {/* System Info */}
             <div className="card">
               <div className="card-header">
-                <h3 className="card-title">Informacion del Sistema</h3>
+                <h3 className="card-title">Información del Sistema</h3>
                 <span className="badge badge-success">Operativo</span>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
                 <div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>Version</div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>Versión</div>
                   <div style={{ fontSize: '1rem', fontWeight: '600' }}>1.0.0</div>
                 </div>
                 <div>
@@ -252,7 +252,7 @@ function Settings() {
             {/* Profile Info */}
             <div className="card">
               <div className="card-header">
-                <h3 className="card-title">Informacion de Perfil</h3>
+                <h3 className="card-title">Información de Perfil</h3>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div className="form-group">
@@ -317,7 +317,7 @@ function Settings() {
             {/* Change Password */}
             <div className="card">
               <div className="card-header">
-                <h3 className="card-title">Cambiar Contrasena</h3>
+                <h3 className="card-title">Cambiar Contraseña</h3>
               </div>
 
               {passwordError && (
@@ -340,14 +340,14 @@ function Settings() {
                     <polyline points="22 4 12 14.01 9 11.01" />
                   </svg>
                   <div className="alert-content">
-                    <div className="alert-message">Contrasena cambiada exitosamente</div>
+                    <div className="alert-message">Contraseña cambiada exitosamente</div>
                   </div>
                 </div>
               )}
 
               <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div className="form-group">
-                  <label className="form-label">Contrasena actual</label>
+                  <label className="form-label">Contraseña actual</label>
                   <input
                     type="password"
                     className="form-input"
@@ -358,7 +358,7 @@ function Settings() {
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div className="form-group">
-                    <label className="form-label">Nueva contrasena</label>
+                    <label className="form-label">Nueva contraseña</label>
                     <input
                       type="password"
                       className="form-input"
@@ -368,7 +368,7 @@ function Settings() {
                     />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Confirmar contrasena</label>
+                    <label className="form-label">Confirmar contraseña</label>
                     <input
                       type="password"
                       className="form-input"
@@ -384,7 +384,7 @@ function Settings() {
                       <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                       <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                     </svg>
-                    Cambiar Contrasena
+                    Cambiar Contraseña
                   </button>
                 </div>
               </form>
@@ -399,14 +399,14 @@ function Settings() {
             {billingStatus?.subscription && (
               <div className="card" style={{ marginBottom: '1.5rem' }}>
                 <div className="card-header">
-                  <h3 className="card-title">Estado de Facturacion</h3>
+                  <h3 className="card-title">Estado de Facturación</h3>
                   <span className={`badge badge-${billingStatus.status === 'active' ? 'success' : billingStatus.status === 'trial' ? 'warning' : 'neutral'}`}>
                     {billingStatus.status === 'active' ? 'Activo' : billingStatus.status === 'trial' ? 'Periodo de prueba' : billingStatus.status}
                   </span>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                   <div>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>Estado suscripcion</div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>Estado suscripción</div>
                     <div style={{ fontWeight: '600' }}>{billingStatus.subscription.status}</div>
                   </div>
                   {billingStatus.subscription.trialEnd && (
@@ -416,7 +416,7 @@ function Settings() {
                     </div>
                   )}
                   <div>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>Proximo cobro</div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>Próximo cobro</div>
                     <div style={{ fontWeight: '600' }}>{new Date(billingStatus.subscription.currentPeriodEnd).toLocaleDateString()}</div>
                   </div>
                 </div>
@@ -432,7 +432,7 @@ function Settings() {
                           window.location.href = res.data.portalUrl;
                         }
                       } catch (err: any) {
-                        alert(err.message || 'Error al abrir portal de facturacion');
+                        alert(err.message || 'Error al abrir portal de facturación');
                       } finally {
                         setBillingLoading(false);
                       }
@@ -442,7 +442,7 @@ function Settings() {
                       <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
                       <line x1="1" y1="10" x2="23" y2="10" />
                     </svg>
-                    {billingLoading ? 'Abriendo...' : 'Gestionar Facturacion'}
+                    {billingLoading ? 'Abriendo...' : 'Gestionar Facturación'}
                   </button>
                 </div>
               </div>

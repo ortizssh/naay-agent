@@ -31,7 +31,7 @@ interface WidgetConfigData {
 function WidgetConfig() {
   const [config, setConfig] = useState<WidgetConfigData>({
     widget_position: 'bottom-right',
-    widget_color: '#a59457',
+    widget_color: '#6d5cff',
     welcome_message: '',
     widget_enabled: true,
     widget_secondary_color: '#212120',
@@ -79,7 +79,7 @@ function WidgetConfig() {
       }
       setError(null);
     } catch (err: any) {
-      setError(err.message || 'Error al cargar configuracion');
+      setError(err.message || 'Error al cargar configuración');
     } finally {
       setLoading(false);
     }
@@ -151,7 +151,7 @@ function WidgetConfig() {
         <header className="page-header">
           <div className="page-header-content">
             <div>
-              <h1 className="page-title">Configuracion del Widget</h1>
+              <h1 className="page-title">Configuración del Widget</h1>
               <p className="page-subtitle">Personaliza tu asistente de chat</p>
             </div>
           </div>
@@ -171,7 +171,7 @@ function WidgetConfig() {
       <header className="page-header">
         <div className="page-header-content">
           <div>
-            <h1 className="page-title">Configuracion del Widget</h1>
+            <h1 className="page-title">Configuración del Widget</h1>
             <p className="page-subtitle">Personaliza tu asistente de chat</p>
           </div>
           <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
@@ -206,7 +206,7 @@ function WidgetConfig() {
         {success && (
           <div className="alert alert-success">
             <div className="alert-content">
-              <div className="alert-message">Configuracion guardada exitosamente</div>
+              <div className="alert-message">Configuración guardada exitosamente</div>
             </div>
           </div>
         )}
@@ -217,7 +217,7 @@ function WidgetConfig() {
             <div>
               <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '600' }}>Estado del Widget</h3>
               <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                {config.widget_enabled ? 'El widget esta visible en tu tienda' : 'El widget esta oculto'}
+                {config.widget_enabled ? 'El widget está visible en tu tienda' : 'El widget está oculto'}
               </p>
             </div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -301,7 +301,7 @@ function WidgetConfig() {
                     />
                   </div>
                   <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                    Color principal del boton y acentos
+                    Color principal del botón y acentos
                   </span>
                 </div>
 
@@ -350,7 +350,7 @@ function WidgetConfig() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Posicion del widget</label>
+                  <label className="form-label">Posición del widget</label>
                   <div className="position-grid">
                     {positions.map((pos) => (
                       <button
@@ -365,7 +365,7 @@ function WidgetConfig() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Estilo del boton</label>
+                  <label className="form-label">Estilo del botón</label>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     {buttonStyles.map((style) => (
                       <button
@@ -381,7 +381,7 @@ function WidgetConfig() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Tamano del boton: {config.widget_button_size}px</label>
+                  <label className="form-label">Tamaño del botón: {config.widget_button_size}px</label>
                   <input
                     type="range"
                     min="56"
@@ -437,7 +437,7 @@ function WidgetConfig() {
                     placeholder="Kova"
                   />
                   <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                    Se mostrara en el header del chat
+                    Se mostrará en el header del chat
                   </span>
                 </div>
 
@@ -463,10 +463,10 @@ function WidgetConfig() {
                     rows={2}
                     value={config.welcome_message}
                     onChange={(e) => setConfig({ ...config, welcome_message: e.target.value })}
-                    placeholder="Necesitas ayuda para tu compra? Habla aqui!"
+                    placeholder="Necesitas ayuda para tu compra? Habla aquí!"
                   />
                   <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                    Texto del mensaje promocional junto al boton
+                    Texto del mensaje promocional junto al botón
                   </span>
                 </div>
 
@@ -512,9 +512,9 @@ function WidgetConfig() {
                       style={{ width: '20px', height: '20px' }}
                     />
                     <div>
-                      <span style={{ fontWeight: '500' }}>Animacion de pulso</span>
+                      <span style={{ fontWeight: '500' }}>Animación de pulso</span>
                       <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                        Efecto de pulso para llamar la atencion
+                        Efecto de pulso para llamar la atención
                       </p>
                     </div>
                   </label>
@@ -531,7 +531,7 @@ function WidgetConfig() {
                     <div>
                       <span style={{ fontWeight: '500' }}>Mostrar mensaje promocional</span>
                       <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                        Muestra el mensaje de bienvenida junto al boton
+                        Muestra el mensaje de bienvenida junto al botón
                       </p>
                     </div>
                   </label>
@@ -563,7 +563,7 @@ function WidgetConfig() {
                       style={{ width: '20px', height: '20px' }}
                     />
                     <div>
-                      <span style={{ fontWeight: '500' }}>Contacto telefonico</span>
+                      <span style={{ fontWeight: '500' }}>Contacto telefónico</span>
                       <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
                         Permite solicitar una llamada desde el chat
                       </p>
@@ -627,16 +627,16 @@ function WidgetConfig() {
 
         <div className="card" style={{ marginTop: '1.5rem' }}>
           <div className="card-header">
-            <h3 className="card-title">Codigo de Instalacion</h3>
+            <h3 className="card-title">Código de Instalación</h3>
           </div>
           <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
-            Copia este codigo y pegalo en tu tema de Shopify antes del cierre de {'</body>'}.
+            Copia este código y pégalo en tu tema de Shopify antes del cierre de {'</body>'}.
           </p>
           {widgetCode ? (
             <CodeSnippet code={widgetCode} />
           ) : (
             <div style={{ padding: '1rem', background: 'var(--color-bg)', borderRadius: '10px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-              Conecta tu tienda para obtener el codigo
+              Conecta tu tienda para obtener el código
             </div>
           )}
         </div>

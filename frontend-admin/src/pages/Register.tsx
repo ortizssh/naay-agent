@@ -30,12 +30,12 @@ export default function Register({ onSuccess, onLoginClick }: RegisterProps) {
     setError('');
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Las contrasenas no coinciden');
+      setError('Las contraseñas no coinciden');
       return;
     }
 
     if (formData.password.length < 8) {
-      setError('La contrasena debe tener al menos 8 caracteres');
+      setError('La contraseña debe tener al menos 8 caracteres');
       return;
     }
 
@@ -57,7 +57,7 @@ export default function Register({ onSuccess, onLoginClick }: RegisterProps) {
         setError(response.message || 'Error al crear cuenta');
       }
     } catch (err: any) {
-      setError(err.message || 'Error de conexion');
+      setError(err.message || 'Error de conexión');
     } finally {
       setLoading(false);
     }
@@ -128,7 +128,7 @@ export default function Register({ onSuccess, onLoginClick }: RegisterProps) {
 
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="password">Contrasena</label>
+              <label htmlFor="password">Contraseña</label>
               <input
                 type="password"
                 id="password"
@@ -140,7 +140,7 @@ export default function Register({ onSuccess, onLoginClick }: RegisterProps) {
               />
             </div>
             <div className="form-group">
-              <label htmlFor="confirmPassword">Confirmar Contrasena</label>
+              <label htmlFor="confirmPassword">Confirmar Contraseña</label>
               <input
                 type="password"
                 id="confirmPassword"
@@ -162,7 +162,7 @@ export default function Register({ onSuccess, onLoginClick }: RegisterProps) {
           <p>
             Ya tienes cuenta?{' '}
             <button type="button" onClick={onLoginClick} className="auth-link">
-              Inicia Sesion
+              Inicia Sesión
             </button>
           </p>
         </div>

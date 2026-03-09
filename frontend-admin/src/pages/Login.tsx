@@ -23,10 +23,10 @@ export default function Login({ onSuccess, onRegisterClick }: LoginProps) {
       if (response.success && response.token && response.user) {
         onSuccess(response.user, response.token);
       } else {
-        setError(response.message || 'Error al iniciar sesion');
+        setError(response.message || 'Error al iniciar sesión');
       }
     } catch (err: any) {
-      setError(err.message || 'Error de conexion');
+      setError(err.message || 'Error de conexión');
     } finally {
       setLoading(false);
     }
@@ -37,7 +37,7 @@ export default function Login({ onSuccess, onRegisterClick }: LoginProps) {
       <div className="auth-card">
         <div className="auth-header">
           <img src={logoKova} alt="Kova" className="auth-logo-img" />
-          <p>Inicia sesion en tu cuenta</p>
+          <p>Inicia sesión en tu cuenta</p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
@@ -56,7 +56,7 @@ export default function Login({ onSuccess, onRegisterClick }: LoginProps) {
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Contrasena</label>
+            <label htmlFor="password">Contraseña</label>
             <input
               type="password"
               id="password"
@@ -68,7 +68,7 @@ export default function Login({ onSuccess, onRegisterClick }: LoginProps) {
           </div>
 
           <button type="submit" className="auth-submit" disabled={loading}>
-            {loading ? 'Iniciando...' : 'Iniciar Sesion'}
+            {loading ? 'Iniciando...' : 'Iniciar Sesión'}
           </button>
         </form>
 
@@ -76,7 +76,7 @@ export default function Login({ onSuccess, onRegisterClick }: LoginProps) {
           <p>
             No tienes cuenta?{' '}
             <button type="button" onClick={onRegisterClick} className="auth-link">
-              Registrate
+              Regístrate
             </button>
           </p>
         </div>

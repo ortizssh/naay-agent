@@ -113,10 +113,27 @@ function ClientDashboard({ onStartOnboarding, onPageChange }: ClientDashboardPro
         {/* Setup prompt if not onboarded */}
         {data && !data.onboardingCompleted && (
           <div className="quick-setup-card">
-            <h3>Completa la configuracion de tu tienda</h3>
-            <p>Conecta tu tienda Shopify y configura el widget de chat AI para empezar a vender mas.</p>
+            <h3>Completa la configuración de tu tienda</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', margin: '1rem 0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem' }}>
+                <span style={{ color: 'var(--color-success)', fontSize: '1.1rem' }}>&#10003;</span>
+                <span>Crear cuenta</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem' }}>
+                <span style={{ color: data && data.activeStores > 0 ? 'var(--color-success)' : 'var(--color-text-muted)', fontSize: '1.1rem' }}>
+                  {data && data.activeStores > 0 ? '\u2713' : '\u25A1'}
+                </span>
+                <span style={{ color: data && data.activeStores > 0 ? 'var(--color-text)' : 'var(--color-text-muted)' }}>Conectar tienda</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem' }}>
+                <span style={{ color: usage && usage.messages_used > 0 ? 'var(--color-success)' : 'var(--color-text-muted)', fontSize: '1.1rem' }}>
+                  {usage && usage.messages_used > 0 ? '\u2713' : '\u25A1'}
+                </span>
+                <span style={{ color: usage && usage.messages_used > 0 ? 'var(--color-text)' : 'var(--color-text-muted)' }}>Primera conversación</span>
+              </div>
+            </div>
             <button className="btn" onClick={onStartOnboarding}>
-              Continuar configuracion
+              Continuar configuración
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="9 18 15 12 9 6" />
               </svg>
@@ -172,7 +189,10 @@ function ClientDashboard({ onStartOnboarding, onPageChange }: ClientDashboardPro
                 </svg>
               </div>
               <div className="stat-value">
-                {usage.messages_used?.toLocaleString()}{' / '}{usage.messages_limit === -1 ? 'Ilim.' : usage.messages_limit?.toLocaleString()}
+                {usage.messages_limit === 0 && !usage.messages_used
+                  ? '—'
+                  : <>{usage.messages_used?.toLocaleString()}{' / '}{usage.messages_limit === -1 ? 'Ilim.' : usage.messages_limit?.toLocaleString()}</>
+                }
               </div>
               <div className="stat-label">Mensajes este mes</div>
               <div style={{
@@ -237,7 +257,7 @@ function ClientDashboard({ onStartOnboarding, onPageChange }: ClientDashboardPro
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
           <div className="card">
             <div className="card-header">
-              <h3 className="card-title">Acciones Rapidas</h3>
+              <h3 className="card-title">Acciones Rápidas</h3>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <button className="btn btn-secondary" style={{ justifyContent: 'flex-start' }} onClick={() => onPageChange?.('widget')}>
@@ -252,7 +272,7 @@ function ClientDashboard({ onStartOnboarding, onPageChange }: ClientDashboardPro
                   <line x1="12" y1="20" x2="12" y2="4" />
                   <line x1="6" y1="20" x2="6" y2="14" />
                 </svg>
-                Ver Estadisticas
+                Ver Estadísticas
               </button>
               <button className="btn btn-secondary" style={{ justifyContent: 'flex-start' }} onClick={() => onPageChange?.('store')}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -285,7 +305,7 @@ function ClientDashboard({ onStartOnboarding, onPageChange }: ClientDashboardPro
                 </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>Sincronizacion</span>
+                <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>Sincronización</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-success)' }}></div>
                   <span style={{ fontSize: '0.85rem', fontWeight: '600' }}>Actualizado</span>

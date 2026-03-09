@@ -1,7 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { clientApi, ConversionDashboardData } from '../../services/api';
 
-function Analytics() {
+interface AnalyticsProps {
+  onPageChange?: (page: string) => void;
+}
+
+function Analytics({ onPageChange }: AnalyticsProps) {
   const [data, setData] = useState<ConversionDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -144,7 +148,7 @@ function Analytics() {
                 onClick={() => setDays(period)}
                 style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
               >
-                {period} dias
+                {period} días
               </button>
             ))}
           </div>
@@ -203,9 +207,9 @@ function Analytics() {
               </svg>
             </div>
             <div className="stat-value">{(data?.overview?.conversionRate || 0).toFixed(1)}%</div>
-            <div className="stat-label">Tasa de Conversion</div>
+            <div className="stat-label">Tasa de Conversión</div>
             <div className="stat-change positive">
-              Recomendacion a compra
+              Recomendación a compra
             </div>
           </div>
         </div>
@@ -261,7 +265,7 @@ function Analytics() {
                   {formatMinutes(data?.overview?.averageTimeToConversion || 0)}
                 </div>
                 <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                  Tiempo Promedio a Conversion
+                  Tiempo Promedio a Conversión
                 </div>
               </div>
             </div>
@@ -271,7 +275,7 @@ function Analytics() {
         {/* Timeline Chart */}
         <div className="card" style={{ marginTop: '1.5rem' }}>
           <div className="card-header">
-            <h3 className="card-title">Conversiones por Dia</h3>
+            <h3 className="card-title">Conversiones por Día</h3>
             <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                 <span style={{ width: '12px', height: '12px', borderRadius: '2px', background: 'var(--color-primary)' }}></span>
@@ -369,7 +373,7 @@ function Analytics() {
           {/* Attribution Breakdown */}
           <div className="card">
             <div className="card-header">
-              <h3 className="card-title">Atribucion por Tiempo</h3>
+              <h3 className="card-title">Atribución por Tiempo</h3>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem', background: 'var(--color-bg)', borderRadius: '8px' }}>
@@ -431,7 +435,7 @@ function Analytics() {
           {/* Period Comparison */}
           <div className="card">
             <div className="card-header">
-              <h3 className="card-title">Comparacion vs Periodo Anterior</h3>
+              <h3 className="card-title">Comparación vs Periodo Anterior</h3>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {/* Conversions comparison */}
@@ -481,7 +485,7 @@ function Analytics() {
               {/* Rate comparison */}
               <div style={{ padding: '0.75rem', background: 'var(--color-bg)', borderRadius: '8px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>Tasa de Conversion</span>
+                  <span style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>Tasa de Conversión</span>
                   <span style={{
                     fontSize: '0.85rem',
                     fontWeight: '600',
@@ -507,7 +511,7 @@ function Analytics() {
         {data?.topProducts && data.topProducts.length > 0 && (
           <div className="card" style={{ marginTop: '1.5rem' }}>
             <div className="card-header">
-              <h3 className="card-title">Productos con Mayor Conversion</h3>
+              <h3 className="card-title">Productos con Mayor Conversión</h3>
             </div>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -626,7 +630,7 @@ function Analytics() {
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: '500', fontSize: '0.9rem' }}>
-                      {activity.type === 'conversion' ? 'Conversion' : 'Recomendacion'}
+                      {activity.type === 'conversion' ? 'Conversión' : 'Recomendación'}
                     </div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
                       {activity.productTitle}
@@ -666,8 +670,17 @@ function Analytics() {
             </div>
             <h3 style={{ marginBottom: '0.5rem', color: 'var(--color-text)' }}>Sin datos de conversiones</h3>
             <p style={{ color: 'var(--color-text-muted)', maxWidth: '400px', margin: '0 auto' }}>
-              Cuando el asistente AI haga recomendaciones de productos y los clientes realicen compras, veras los datos de conversion aqui.
+              Cuando el asistente AI haga recomendaciones de productos y los clientes realicen compras, verás los datos de conversión aquí.
             </p>
+            {onPageChange && (
+              <button
+                className="btn btn-primary"
+                style={{ marginTop: '1rem' }}
+                onClick={() => onPageChange('store')}
+              >
+                Ir a Mi Tienda
+              </button>
+            )}
           </div>
         )}
       </div>

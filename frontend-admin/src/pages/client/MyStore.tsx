@@ -30,7 +30,11 @@ interface SyncStatusData {
   webhooksConfigured: boolean;
 }
 
-function MyStore() {
+interface MyStoreProps {
+  onStartOnboarding?: () => void;
+}
+
+function MyStore({ onStartOnboarding }: MyStoreProps) {
   const [store, setStore] = useState<StoreData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -104,7 +108,7 @@ function MyStore() {
 
     if (diffDays < 1) return 'Hoy';
     if (diffDays === 1) return 'Ayer';
-    if (diffDays < 30) return `Hace ${diffDays} dias`;
+    if (diffDays < 30) return `Hace ${diffDays} días`;
     const diffMonths = Math.floor(diffDays / 30);
     if (diffMonths === 1) return 'Hace 1 mes';
     if (diffMonths < 12) return `Hace ${diffMonths} meses`;
@@ -222,6 +226,11 @@ function MyStore() {
             <p className="empty-state-description">
               Completa el proceso de onboarding para conectar tu tienda.
             </p>
+            {onStartOnboarding && (
+              <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={onStartOnboarding}>
+                Conectar tienda
+              </button>
+            )}
           </div>
         ) : (
           <>
@@ -337,14 +346,14 @@ function MyStore() {
                       <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                       <polyline points="9 22 9 12 15 12 15 22" />
                     </svg>
-                    Informacion de la Tienda
+                    Información de la Tienda
                   </h3>
                 </div>
                 <div className="card-body" style={{ padding: 0 }}>
                   <InfoRow label="Nombre" value={store.shop_name || 'Sin configurar'} muted={!store.shop_name} />
                   <InfoRow label="Email" value={store.shop_email || 'Sin configurar'} muted={!store.shop_email} />
                   <InfoRow label="Moneda" value={store.shop_currency?.toUpperCase() || 'Sin configurar'} muted={!store.shop_currency} />
-                  <InfoRow label="Pais" value={store.shop_country || 'Sin configurar'} muted={!store.shop_country} />
+                  <InfoRow label="País" value={store.shop_country || 'Sin configurar'} muted={!store.shop_country} />
                   <InfoRow label="Zona horaria" value={store.shop_timezone || 'Sin configurar'} muted={!store.shop_timezone} last />
                 </div>
               </div>
@@ -357,7 +366,7 @@ function MyStore() {
                       <circle cx="12" cy="12" r="3" />
                       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
                     </svg>
-                    Conexion y Configuracion
+                    Conexión y Configuración
                   </h3>
                 </div>
                 <div className="card-body" style={{ padding: 0 }}>
@@ -411,7 +420,7 @@ function MyStore() {
             {/* Quick Actions */}
             <div className="card">
               <div className="card-header">
-                <h3 className="card-title">Acciones Rapidas</h3>
+                <h3 className="card-title">Acciones Rápidas</h3>
               </div>
               <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                 <button
