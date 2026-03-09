@@ -452,14 +452,14 @@ async function getAnalyticsForShop(
   ];
   if (dateFilters.start) {
     recFilters.push({
-      column: 'created_at',
+      column: 'recommended_at',
       value: dateFilters.start,
       operator: 'gte',
     });
   }
   if (dateFilters.end) {
     recFilters.push({
-      column: 'created_at',
+      column: 'recommended_at',
       value: dateFilters.end,
       operator: 'lte',
     });
@@ -469,9 +469,9 @@ async function getAnalyticsForShop(
   const recommendationsData = await fetchAllWithPagination(
     client,
     'simple_recommendations',
-    'id, created_at',
+    'id, recommended_at',
     recFilters,
-    'created_at'
+    'recommended_at'
   );
   const recommendationCount = recommendationsData.length;
 
@@ -481,8 +481,8 @@ async function getAnalyticsForShop(
 
   const recByDay: Record<string, number> = {};
   recommendationsData.forEach((rec: any) => {
-    if (!rec.created_at) return;
-    const date = new Date(rec.created_at).toISOString().split('T')[0];
+    if (!rec.recommended_at) return;
+    const date = new Date(rec.recommended_at).toISOString().split('T')[0];
     recByDay[date] = (recByDay[date] || 0) + 1;
   });
 

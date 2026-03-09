@@ -48,29 +48,50 @@ export class SimpleConversionTracker {
    */
   async trackRecommendation(event: SimpleConversionEvent): Promise<void> {
     try {
+      const row = {
+        session_id: event.sessionId,
+        shop_domain: event.shopDomain,
+        product_id: event.productId,
+        product_title: event.productTitle,
+        recommended_at: event.recommendedAt.toISOString(),
+        message_id: event.messageId,
+        expires_at: new Date(
+          event.recommendedAt.getTime() +
+            SimpleConversionTracker.ATTRIBUTION_WINDOW_MINUTES * 60 * 1000
+        ).toISOString(),
+      };
+
       const { error } = await (this.supabaseService as any).serviceClient
         .from('simple_recommendations')
-        .upsert(
-          {
-            session_id: event.sessionId,
-            shop_domain: event.shopDomain,
-            product_id: event.productId,
-            product_title: event.productTitle,
-            recommended_at: event.recommendedAt.toISOString(),
-            message_id: event.messageId,
-            expires_at: new Date(
-              event.recommendedAt.getTime() +
-                SimpleConversionTracker.ATTRIBUTION_WINDOW_MINUTES * 60 * 1000
-            ).toISOString(),
-          },
-          {
-            onConflict: 'session_id,product_id,shop_domain',
-            ignoreDuplicates: false,
-          }
-        );
+        .insert(row);
 
       if (error) {
-        logger.error('Error tracking recommendation:', error);
+        if (error.code === '23505') {
+          // Duplicate — update existing record with fresh timestamps
+          const { error: updateError } = await (this.supabaseService as any).serviceClient
+            .from('simple_recommendations')
+            .update({
+              product_title: row.product_title,
+              recommended_at: row.recommended_at,
+              message_id: row.message_id,
+              expires_at: row.expires_at,
+            })
+            .eq('session_id', row.session_id)
+            .eq('product_id', row.product_id)
+            .eq('shop_domain', row.shop_domain);
+
+          if (updateError) {
+            logger.error('Error updating recommendation:', updateError);
+          } else {
+            logger.info('Recommendation updated (dedup)', {
+              sessionId: event.sessionId,
+              productId: event.productId,
+              shopDomain: event.shopDomain,
+            });
+          }
+        } else {
+          logger.error('Error tracking recommendation:', error);
+        }
       } else {
         logger.info('Recommendation tracked', {
           sessionId: event.sessionId,

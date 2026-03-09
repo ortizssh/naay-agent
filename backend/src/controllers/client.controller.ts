@@ -1167,13 +1167,13 @@ router.get(
 
       if (dateFilters.start) {
         recommendationsQuery = recommendationsQuery.gte(
-          'created_at',
+          'recommended_at',
           dateFilters.start
         );
       }
       if (dateFilters.end) {
         recommendationsQuery = recommendationsQuery.lte(
-          'created_at',
+          'recommended_at',
           dateFilters.end
         );
       }
