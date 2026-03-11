@@ -323,7 +323,8 @@ async function persistChatMessage(
   sessionId: string,
   shopDomain: string,
   role: 'client' | 'agent',
-  content: string
+  content: string,
+  metadata?: Record<string, string>
 ): Promise<void> {
   try {
     const { error } = await (supabaseService as any).serviceClient
@@ -334,6 +335,7 @@ async function persistChatMessage(
         role,
         content,
         timestamp: new Date().toISOString(),
+        ...(metadata && Object.keys(metadata).length > 0 && { metadata }),
       });
 
     if (error) {
@@ -884,13 +886,20 @@ router.post(
         content: userTextForHistory,
       });
 
-      // Persist user message to database (non-blocking)
+      // Persist user message to database (non-blocking) — include IP/user-agent for conversion attribution
       if (shop) {
+        const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || '';
+        const clientUa = req.headers['user-agent'] || '';
+        const msgMetadata: Record<string, string> = {};
+        if (clientIp) msgMetadata['x-forwarded-for'] = clientIp;
+        if (clientUa) msgMetadata['user-agent'] = clientUa;
+
         persistChatMessage(
           currentConversationId,
           shop,
           'client',
-          userTextForHistory
+          userTextForHistory,
+          msgMetadata
         ).catch(() => {});
       }
 

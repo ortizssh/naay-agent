@@ -45,7 +45,8 @@ export class RealConversionAnalyzer {
   private supabaseService: SupabaseService;
   private shopifyService: ShopifyService;
 
-  private static readonly ATTRIBUTION_WINDOW_MINUTES = 10;
+  // Attribution window: 24 hours (1440 minutes)
+  private static readonly ATTRIBUTION_WINDOW_MINUTES = 1440;
 
   constructor() {
     this.supabaseService = new SupabaseService();

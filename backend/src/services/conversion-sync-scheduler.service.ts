@@ -4,7 +4,7 @@ import { SimpleConversionTracker } from './simple-conversion-tracker.service';
 
 const SYNC_INTERVAL_HOURS = 1;
 const SYNC_INTERVAL_MS = SYNC_INTERVAL_HOURS * 60 * 60 * 1000;
-const HOURS_TO_PROCESS = 1; // Only process orders from last hour
+const HOURS_TO_PROCESS = 24; // Process orders from last 24 hours to match attribution window
 
 export class ConversionSyncScheduler {
   private supabaseService: SupabaseService;
@@ -166,21 +166,20 @@ export class ConversionSyncScheduler {
       try {
         const orderId = order.id.toString();
 
-        // Check if already processed
-        const { data: existing } = await (
+        // Get already-converted product IDs for this order to avoid duplicates
+        const { data: existingConversions } = await (
           this.supabaseService as any
         ).serviceClient
           .from('simple_conversions')
-          .select('id')
+          .select('product_id')
           .eq('order_id', orderId)
-          .eq('shop_domain', shopDomain)
-          .limit(1);
+          .eq('shop_domain', shopDomain);
 
-        if (existing && existing.length > 0) {
-          continue;
-        }
+        const alreadyConvertedProducts = new Set(
+          (existingConversions || []).map((c: any) => c.product_id)
+        );
 
-        // Build order event
+        // Build order event — exclude products that already have conversions
         const orderEvent = {
           orderId,
           shopDomain,
@@ -193,7 +192,7 @@ export class ConversionSyncScheduler {
               quantity: parseInt(item.quantity) || 1,
               price: parseFloat(item.price) || 0,
             }))
-            .filter((p: any) => p.productId),
+            .filter((p: any) => p.productId && !alreadyConvertedProducts.has(p.productId)),
           totalAmount: parseFloat(order.total_price) || 0,
           createdAt: new Date(order.created_at),
         };

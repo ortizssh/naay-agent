@@ -114,16 +114,17 @@ function SelectPlan({ onBack, onNext }: SelectPlanProps) {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: `repeat(${Math.min(plans.filter(p => p.price > 0).length, 3)}, 1fr)`,
+          gridTemplateColumns: `repeat(${Math.min(plans.length, 3)}, 1fr)`,
           gap: '1rem',
           marginBottom: '2rem',
         }}
       >
-        {plans.filter(plan => plan.price > 0).map(plan => {
+        {plans.map(plan => {
           const isPopular = plan.slug === 'professional';
+          const isFree = plan.price === 0;
           const features = formatFeatures(plan);
-          const priceDisplay = `$${plan.price}`;
-          const periodDisplay = '/mes';
+          const priceDisplay = isFree ? 'Gratis' : `$${plan.price}`;
+          const periodDisplay = isFree ? '' : '/mes';
           const isSelected = selectedPlan === plan.slug;
 
           return (
@@ -246,7 +247,9 @@ function SelectPlan({ onBack, onNext }: SelectPlanProps) {
               >
                 {isSelected && processing
                   ? 'Procesando...'
-                  : 'Seleccionar plan'}
+                  : isFree
+                    ? 'Comenzar gratis'
+                    : 'Seleccionar plan'}
               </button>
             </div>
           );

@@ -36,8 +36,8 @@ interface ConversionResult {
 export class SimpleConversionTracker {
   private supabaseService: SupabaseService;
 
-  // Attribution window: 15 minutes
-  private static readonly ATTRIBUTION_WINDOW_MINUTES = 15;
+  // Attribution window: 24 hours (1440 minutes)
+  private static readonly ATTRIBUTION_WINDOW_MINUTES = 1440;
 
   constructor() {
     this.supabaseService = new SupabaseService();
