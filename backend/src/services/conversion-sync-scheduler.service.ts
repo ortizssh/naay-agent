@@ -192,7 +192,10 @@ export class ConversionSyncScheduler {
               quantity: parseInt(item.quantity) || 1,
               price: parseFloat(item.price) || 0,
             }))
-            .filter((p: any) => p.productId && !alreadyConvertedProducts.has(p.productId)),
+            .filter(
+              (p: any) =>
+                p.productId && !alreadyConvertedProducts.has(p.productId)
+            ),
           totalAmount: parseFloat(order.total_price) || 0,
           createdAt: new Date(order.created_at),
         };

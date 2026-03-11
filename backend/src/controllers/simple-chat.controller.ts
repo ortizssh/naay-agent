@@ -888,7 +888,10 @@ router.post(
 
       // Persist user message to database (non-blocking) — include IP/user-agent for conversion attribution
       if (shop) {
-        const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || '';
+        const clientIp =
+          (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+          req.ip ||
+          '';
         const clientUa = req.headers['user-agent'] || '';
         const msgMetadata: Record<string, string> = {};
         if (clientIp) msgMetadata['x-forwarded-for'] = clientIp;
