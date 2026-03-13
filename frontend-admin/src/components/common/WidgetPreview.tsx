@@ -5,14 +5,17 @@ interface WidgetPreviewProps {
 }
 
 function WidgetPreview({ color, welcomeMessage, position }: WidgetPreviewProps) {
+  const isBottom = position.includes('bottom');
+  const isRight = position.includes('right');
+
   return (
     <div className="widget-preview-wrapper">
       <div
         className="widget-preview"
         style={{
           position: 'absolute',
-          [position.includes('bottom') ? 'bottom' : 'top']: '20px',
-          [position.includes('right') ? 'right' : 'left']: '20px',
+          [isBottom ? 'bottom' : 'top']: '20px',
+          [isRight ? 'right' : 'left']: '20px',
         }}
       >
         <div className="widget-preview-header" style={{ background: color }}>

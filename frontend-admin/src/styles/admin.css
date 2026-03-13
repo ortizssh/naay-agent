@@ -1033,10 +1033,7 @@ body {
   background: var(--color-bg);
   border-radius: 16px;
   padding: 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 300px;
+  min-height: 400px;
   position: relative;
 }
 
