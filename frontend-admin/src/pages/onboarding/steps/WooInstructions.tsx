@@ -45,7 +45,7 @@ function WooInstructions({ onBack, onComplete }: WooInstructionsProps) {
               Descarga el archivo .zip del plugin de Kova Agent para WordPress.
             </p>
             <a
-              href={`${apiUrl}/static/downloads/kova-agent.zip`}
+              href={`${apiUrl}/api/woo/plugin/download`}
               download
               className="btn btn-primary"
               style={{ display: 'inline-flex' }}
