@@ -67,29 +67,62 @@ registerCommerceProvider('shopify', (credentials: StoreCredentials) => {
   return {
     searchProducts: async (shop: string, filters: any) => {
       const query = filters.query || '';
-      const limit = Math.min(filters.limit || 5, 10);
-      const data = await shopifyRest(
-        shop,
-        `products.json?limit=${limit}&status=active&title=${encodeURIComponent(query)}`
-      );
-      const products = (data.products || []).map(normalizeProduct);
-      // If title search returned nothing, try broader search
-      if (products.length === 0 && query) {
-        const allData = await shopifyRest(
+      const limit = Math.min(filters.limit || 6, 10);
+
+      if (!query) {
+        const data = await shopifyRest(
           shop,
-          `products.json?limit=50&status=active`
+          `products.json?limit=${limit}&status=active`
         );
-        const queryLower = query.toLowerCase();
-        const filtered = (allData.products || []).filter((p: any) => {
-          const text =
-            `${p.title} ${p.body_html || ''} ${p.tags || ''} ${p.product_type || ''}`.toLowerCase();
-          return queryLower
-            .split(/\s+/)
-            .some((word: string) => word.length > 2 && text.includes(word));
-        });
-        return filtered.slice(0, limit).map(normalizeProduct);
+        return (data.products || []).map(normalizeProduct);
       }
-      return products;
+
+      // Shopify REST ?title= is exact match only, so we use a two-step approach:
+      // 1. Try exact title match first (fast, works for precise queries)
+      try {
+        const exactData = await shopifyRest(
+          shop,
+          `products.json?limit=${limit}&status=active&title=${encodeURIComponent(query)}`
+        );
+        if (exactData.products && exactData.products.length > 0) {
+          return exactData.products.map(normalizeProduct);
+        }
+      } catch (e) {
+        // Continue to fallback
+      }
+
+      // 2. Fallback: load one page and filter in memory (good for small/medium catalogs)
+      //    For large catalogs (500+), semantic search via embeddings is the real solution
+      const allData = await shopifyRest(
+        shop,
+        `products.json?limit=250&status=active`
+      );
+      const products = allData.products || [];
+      const queryLower = query.toLowerCase();
+      const queryWords = queryLower.split(/\s+/).filter((w: string) => w.length > 1);
+
+      const scored = products.map((p: any) => {
+        const titleLower = (p.title || '').toLowerCase();
+        const text = `${p.title} ${p.body_html || ''} ${p.tags || ''} ${p.product_type || ''} ${p.vendor || ''}`.toLowerCase();
+        let score = 0;
+        for (const word of queryWords) {
+          if (titleLower.includes(word)) score += 3;
+          else if (text.includes(word)) score += 1;
+        }
+        return { product: p, score };
+      });
+
+      const matched = scored
+        .filter((s: any) => s.score > 0)
+        .sort((a: any, b: any) => b.score - a.score)
+        .slice(0, limit);
+
+      if (matched.length > 0) {
+        return matched.map((m: any) => normalizeProduct(m.product));
+      }
+
+      // No matches — return empty, let semantic search handle it
+      return [];
     },
     getProduct: async (shop: string, productId: string) => {
       try {
@@ -100,8 +133,7 @@ registerCommerceProvider('shopify', (credentials: StoreCredentials) => {
       }
     },
     getProductRecommendations: async (shop: string, options: any) => {
-      const limit = Math.min(options.limit || 5, 10);
-      const intent = options.intent || 'popular';
+      const limit = Math.min(options.limit || 6, 10);
       const data = await shopifyRest(
         shop,
         `products.json?limit=${limit}&status=active`
@@ -509,29 +541,34 @@ async function searchProductsViaProvider(
   try {
     logger.info('searchProducts via commerce provider', { shop, query, limit });
 
+    const normalizeResult = (p: any) => ({
+      id: p.external_id || p.id,
+      title: p.title,
+      description: p.description?.substring(0, 300) || '',
+      price: p.price_range?.min || p.variants?.[0]?.price || 'N/A',
+      vendor: p.vendor || '',
+      productType: p.product_type || '',
+      tags: p.tags || [],
+      images: p.images?.[0]?.src || null,
+      available: p.variants?.some((v: any) => v.available !== false) ?? true,
+      handle: p.handle || '',
+    });
+
     // Try real-time API first if provider is available
     if (provider) {
       try {
-        const products = await provider.searchProducts(shop, {
+        // Search WITHOUT stock filter — many WC stores don't track stock,
+        // and stock_status=instock silently filters out those products
+        let products = await provider.searchProducts(shop, {
           query,
           limit,
-          availability: true,
         });
+
         if (products && products.length > 0) {
-          return products.map((p: any) => ({
-            id: p.external_id || p.id,
-            title: p.title,
-            description: p.description?.substring(0, 300) || '',
-            price: p.price_range?.min || p.variants?.[0]?.price || 'N/A',
-            vendor: p.vendor || '',
-            productType: p.product_type || '',
-            tags: p.tags || [],
-            images: p.images?.[0]?.src || null,
-            available:
-              p.variants?.some((v: any) => v.available !== false) ?? true,
-            handle: p.handle || '',
-          }));
+          logger.info('Commerce provider returned products', { shop, query, count: products.length });
+          return products.map(normalizeResult);
         }
+        logger.info('Commerce provider returned 0 results', { shop, query });
       } catch (providerError) {
         logger.warn(
           'Commerce provider search failed, falling back to semantic:',
@@ -540,24 +577,32 @@ async function searchProductsViaProvider(
       }
     }
 
-    // Fallback: semantic search via embeddings
-    const products = await supabaseService.searchProductsSemantic(
-      shop,
-      query,
-      limit
-    );
-    return products.map(product => ({
-      id: product.id,
-      title: product.title,
-      description: product.description?.substring(0, 300) || '',
-      price: product.price,
-      vendor: product.vendor,
-      productType: product.product_type,
-      tags: product.tags,
-      images: product.images?.[0] || null,
-      available: product.variants?.some(v => v.available) || false,
-      similarity: product.similarity,
-    }));
+    // Fallback: semantic search via embeddings (scales to any catalog size)
+    try {
+      const products = await supabaseService.searchProductsSemantic(
+        shop,
+        query,
+        limit
+      );
+      if (products && products.length > 0) {
+        return products.map((product: any) => ({
+          id: product.id,
+          title: product.title,
+          description: product.description?.substring(0, 300) || '',
+          price: product.price,
+          vendor: product.vendor,
+          productType: product.product_type,
+          tags: product.tags,
+          images: product.images?.[0] || null,
+          available: product.variants?.some((v: any) => v.available) || false,
+          similarity: product.similarity,
+        }));
+      }
+    } catch (semanticError) {
+      logger.warn('Semantic search also failed:', semanticError);
+    }
+
+    return [];
   } catch (error) {
     logger.error('Error in searchProducts:', error);
     return [];
@@ -605,23 +650,31 @@ async function getProductRecommendationsViaProvider(
       }
     }
 
-    // Fallback: semantic search
+    // Fallback: semantic search (scales to any catalog size)
     const query = intent || 'productos populares recomendados';
-    const products = await supabaseService.searchProductsSemantic(
-      shop,
-      query,
-      limit
-    );
-    return products.map(product => ({
-      id: product.id,
-      title: product.title,
-      description: product.description?.substring(0, 300) || '',
-      price: product.price,
-      vendor: product.vendor,
-      tags: product.tags,
-      images: product.images?.[0] || null,
-      available: product.variants?.some(v => v.available) || false,
-    }));
+    try {
+      const products = await supabaseService.searchProductsSemantic(
+        shop,
+        query,
+        limit
+      );
+      if (products && products.length > 0) {
+        return products.map((product: any) => ({
+          id: product.id,
+          title: product.title,
+          description: product.description?.substring(0, 300) || '',
+          price: product.price,
+          vendor: product.vendor,
+          tags: product.tags,
+          images: product.images?.[0] || null,
+          available: product.variants?.some((v: any) => v.available) || false,
+        }));
+      }
+    } catch (semanticError) {
+      logger.warn('Semantic recommendation search failed:', semanticError);
+    }
+
+    return [];
   } catch (error) {
     logger.error('Error in getProductRecommendations:', error);
     return [];
@@ -638,56 +691,58 @@ async function searchProductsBroad(
   try {
     logger.info('searchProductsBroad', { shop, query, limit });
 
-    // Try provider first with higher limit
+    const normalizeProviderProduct = (p: any) => ({
+      id: p.external_id || p.id,
+      title: p.title,
+      description: p.description?.substring(0, 300) || '',
+      price: p.price_range?.min || p.variants?.[0]?.price || 'N/A',
+      vendor: p.vendor || '',
+      productType: p.product_type || '',
+      tags: p.tags || [],
+      images: p.images?.[0]?.src || null,
+      available: p.variants?.some((v: any) => v.available !== false) ?? true,
+      handle: p.handle || '',
+    });
+
+    // Try provider with a higher limit (server-side search scales fine)
     if (provider) {
       try {
         const products = await provider.searchProducts(shop, {
           query,
           limit,
-          availability: true,
         });
         if (products && products.length > 0) {
-          return products.map((p: any) => ({
-            id: p.external_id || p.id,
-            title: p.title,
-            description: p.description?.substring(0, 300) || '',
-            price: p.price_range?.min || p.variants?.[0]?.price || 'N/A',
-            vendor: p.vendor || '',
-            productType: p.product_type || '',
-            tags: p.tags || [],
-            images: p.images?.[0]?.src || null,
-            available:
-              p.variants?.some((v: any) => v.available !== false) ?? true,
-            handle: p.handle || '',
-          }));
+          return products.map(normalizeProviderProduct);
         }
       } catch (providerError) {
-        logger.warn(
-          'Commerce provider broad search failed, falling back to semantic:',
-          providerError
-        );
+        logger.warn('Commerce provider broad search failed:', providerError);
       }
     }
 
     // Fallback: broad semantic search with lower threshold (0.35)
-    const products = await supabaseService.searchProductsSemanticBroad(
-      shop,
-      query,
-      limit,
-      0.35
-    );
-    return products.map((product: any) => ({
-      id: product.id,
-      title: product.title,
-      description: product.description?.substring(0, 300) || '',
-      price: product.price,
-      vendor: product.vendor,
-      productType: product.product_type,
-      tags: product.tags,
-      images: product.images?.[0] || null,
-      available: product.variants?.some((v: any) => v.available) || false,
-      similarity: product.similarity,
-    }));
+    try {
+      const products = await supabaseService.searchProductsSemanticBroad(
+        shop,
+        query,
+        limit,
+        0.35
+      );
+      return products.map((product: any) => ({
+        id: product.id,
+        title: product.title,
+        description: product.description?.substring(0, 300) || '',
+        price: product.price,
+        vendor: product.vendor,
+        productType: product.product_type,
+        tags: product.tags,
+        images: product.images?.[0] || null,
+        available: product.variants?.some((v: any) => v.available) || false,
+        similarity: product.similarity,
+      }));
+    } catch (semanticError) {
+      logger.warn('Broad semantic search failed:', semanticError);
+      return [];
+    }
   } catch (error) {
     logger.error('Error in searchProductsBroad:', error);
     return [];
