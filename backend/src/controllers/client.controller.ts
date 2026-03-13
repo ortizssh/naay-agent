@@ -733,9 +733,7 @@ router.put(
         updateData.chatbot_endpoint = chatbotEndpoint;
 
       // Check if client_stores record exists for this user
-      const { data: existing } = await (
-        supabaseService as any
-      ).serviceClient
+      const { data: existing } = await (supabaseService as any).serviceClient
         .from('client_stores')
         .select('id')
         .eq('user_id', user.id)
