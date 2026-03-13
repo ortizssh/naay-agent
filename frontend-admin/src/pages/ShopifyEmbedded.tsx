@@ -212,7 +212,7 @@ interface EmbeddedVoiceCallLog {
   user_sentiment: string | null;
 }
 
-type TabType = 'dashboard' | 'analytics' | 'widget' | 'conversations' | 'ai' | 'knowledge' | 'voice';
+type TabType = 'dashboard' | 'analytics' | 'widget' | 'conversations' | 'ai' | 'knowledge' | 'voice' | 'guide';
 type DatePreset = 'today' | 'yesterday' | '3d' | '7d' | '14d' | '30d' | 'thisWeek' | 'thisMonth' | 'custom';
 
 // Helper functions for date calculations
@@ -1365,6 +1365,17 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
             <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
           </svg>
           Voice
+        </button>
+        <button
+          className={`embedded-tab ${currentTab === 'guide' ? 'active' : ''}`}
+          onClick={() => setCurrentTab('guide')}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+          Guia
         </button>
       </nav>
 
@@ -3865,6 +3876,74 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
               </>
             )}
           </>
+        )}
+
+        {/* Guide Tab */}
+        {currentTab === 'guide' && (
+          <div className="card" style={{ padding: '2rem' }}>
+            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="1.5" style={{ margin: '0 auto 1rem' }}>
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem' }}>Guia de Instalacion</h2>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', maxWidth: '500px', margin: '0 auto' }}>
+                Consulta nuestra guia completa con instrucciones paso a paso para instalar y configurar Kova en tu tienda Shopify.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: '600px', margin: '0 auto' }}>
+              <div style={{ display: 'flex', gap: '1rem', padding: '1rem', background: 'var(--color-bg)', borderRadius: '12px', alignItems: 'flex-start' }}>
+                <div style={{ width: '32px', height: '32px', minWidth: '32px', background: 'rgba(109,92,255,0.1)', color: 'var(--color-primary)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.9rem' }}>1</div>
+                <div>
+                  <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.25rem' }}>Autoriza la app en Shopify</h4>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>Acepta los permisos para que Kova acceda a tus productos y pedidos.</p>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '1rem', padding: '1rem', background: 'var(--color-bg)', borderRadius: '12px', alignItems: 'flex-start' }}>
+                <div style={{ width: '32px', height: '32px', minWidth: '32px', background: 'rgba(109,92,255,0.1)', color: 'var(--color-primary)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.9rem' }}>2</div>
+                <div>
+                  <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.25rem' }}>Sincroniza tus productos</h4>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>Kova importara tu catalogo automaticamente. Puedes forzar una sincronizacion desde el Dashboard.</p>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '1rem', padding: '1rem', background: 'var(--color-bg)', borderRadius: '12px', alignItems: 'flex-start' }}>
+                <div style={{ width: '32px', height: '32px', minWidth: '32px', background: 'rgba(109,92,255,0.1)', color: 'var(--color-primary)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.9rem' }}>3</div>
+                <div>
+                  <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.25rem' }}>Activa el widget en tu tema</h4>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>Ve a <strong>Online Store &gt; Themes &gt; Customize</strong>, busca <strong>App Blocks</strong> y activa <strong>Kova AI Chat Widget</strong>.</p>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '1rem', padding: '1rem', background: 'var(--color-bg)', borderRadius: '12px', alignItems: 'flex-start' }}>
+                <div style={{ width: '32px', height: '32px', minWidth: '32px', background: 'rgba(109,92,255,0.1)', color: 'var(--color-primary)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.9rem' }}>4</div>
+                <div>
+                  <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.25rem' }}>Personaliza colores y mensajes</h4>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>Configura el widget desde la pestana Widget de este panel o desde el Theme Editor de Shopify.</p>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+              <a
+                href="https://app.heykova.io/docs"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-primary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                  <polyline points="15 3 21 3 21 9" />
+                  <line x1="10" y1="14" x2="21" y2="3" />
+                </svg>
+                Ver guia completa
+              </a>
+              <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.75rem' }}>
+                ¿Necesitas ayuda? Contactanos en <a href="mailto:support@heykova.io" style={{ color: 'var(--color-primary)' }}>support@heykova.io</a>
+              </p>
+            </div>
+          </div>
         )}
       </div>
     </div>

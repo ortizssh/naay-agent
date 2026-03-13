@@ -30,6 +30,9 @@ import ClientSidebar from './components/layout/ClientSidebar';
 // Shopify Embedded
 import ShopifyEmbedded from './pages/ShopifyEmbedded';
 
+// Public pages
+import InstallationGuide from './pages/InstallationGuide';
+
 type AdminPageType = 'dashboard' | 'tenants' | 'settings';
 type ClientPageType = 'dashboard' | 'store' | 'widget' | 'analytics' | 'ai-config' | 'knowledge' | 'voice-agent' | 'subscription';
 type PageType = 'login' | 'register' | 'dashboard';
@@ -101,7 +104,11 @@ function App() {
       const path = window.location.pathname;
       let initialPage: PageType = 'login';
 
-      if (path === '/register') {
+      if (path === '/docs') {
+        setCurrentPage('docs' as any);
+        setLoading(false);
+        return;
+      } else if (path === '/register') {
         initialPage = 'register';
       } else if (path === '/login') {
         initialPage = 'login';
@@ -225,6 +232,11 @@ function App() {
   // Show Shopify embedded view (no login required)
   if (shopifyEmbed) {
     return <ShopifyEmbedded shop={shopifyEmbed.shop} host={shopifyEmbed.host} />;
+  }
+
+  // Show public pages (no login required)
+  if (currentPage === 'docs' as any) {
+    return <InstallationGuide onLoginClick={() => navigateTo('login')} />;
   }
 
   // Show auth pages if not logged in

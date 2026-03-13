@@ -2094,3 +2094,194 @@ body {
   padding: 0.5rem 1rem;
   font-size: 0.85rem;
 }
+
+/* =====================================================
+   Installation Guide Page
+   ===================================================== */
+
+.guide-container {
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 2rem 3rem;
+}
+
+.guide-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 2rem;
+}
+
+.guide-title-section {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.guide-title-section h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+  margin-bottom: 0.5rem;
+}
+
+.guide-title-section p {
+  color: var(--color-text-secondary);
+  font-size: 1.05rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.guide-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  background: var(--color-bg);
+  border-radius: 12px;
+  padding: 0.35rem;
+}
+
+.guide-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.5rem;
+  border: none;
+  background: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-main);
+}
+
+.guide-tab:hover {
+  color: var(--color-text);
+}
+
+.guide-tab.active {
+  background: white;
+  color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.guide-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.guide-step {
+  display: flex;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  transition: all 0.2s ease;
+}
+
+.guide-step:hover {
+  box-shadow: var(--shadow-sm);
+  border-color: var(--color-primary-light);
+}
+
+.guide-step-number {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.guide-step-content h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 0.35rem;
+}
+
+.guide-step-content p {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.guide-step-content code {
+  background: var(--color-bg);
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: var(--color-primary);
+}
+
+.guide-step-content a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.guide-step-content a:hover {
+  text-decoration: underline;
+}
+
+.guide-note {
+  padding: 1rem 1.25rem;
+  background: var(--color-primary-soft);
+  border-left: 4px solid var(--color-primary);
+  border-radius: 0 12px 12px 0;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  line-height: 1.6;
+}
+
+.guide-footer {
+  text-align: center;
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.guide-footer a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.guide-footer a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  .guide-container {
+    padding: 0 1rem 2rem;
+  }
+
+  .guide-title-section h1 {
+    font-size: 1.5rem;
+  }
+
+  .guide-tab {
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .guide-step {
+    padding: 1rem;
+  }
+}

@@ -438,7 +438,7 @@ class Kova_Admin {
 
                         <div class="kova-nav-section">
                             <div class="kova-nav-section-title"><?php _e('Help', 'kova-agent'); ?></div>
-                            <a href="https://docs.kova.ai" target="_blank" class="kova-nav-item">
+                            <a href="https://app.heykova.io/docs" target="_blank" class="kova-nav-item">
                                 <?php echo $this->render_icon('help'); ?>
                                 <?php _e('Documentation', 'kova-agent'); ?>
                             </a>
@@ -1702,7 +1702,7 @@ class Kova_Admin {
                         <div class="kova-info-box">
                             <h3><?php _e('Need Help?', 'kova-agent'); ?></h3>
                             <p><?php _e('Check our documentation for detailed setup instructions.', 'kova-agent'); ?></p>
-                            <a href="https://docs.kova.ai" target="_blank" class="kova-btn kova-btn-secondary" style="width: 100%; margin-top: 0.5rem;">
+                            <a href="https://app.heykova.io/docs" target="_blank" class="kova-btn kova-btn-secondary" style="width: 100%; margin-top: 0.5rem;">
                                 <?php _e('View Documentation', 'kova-agent'); ?>
                             </a>
                         </div>
