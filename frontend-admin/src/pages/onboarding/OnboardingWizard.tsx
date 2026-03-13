@@ -27,7 +27,8 @@ function OnboardingWizard({ initialStep = 0, onComplete }: OnboardingWizardProps
     subtitle: 'Asistente de compras con IA',
   });
 
-  const totalSteps = 6;
+  const isWoo = selectedPlatform === 'woocommerce';
+  const displayTotalSteps = isWoo ? 5 : 6;
   const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -106,7 +107,12 @@ function OnboardingWizard({ initialStep = 0, onComplete }: OnboardingWizardProps
         widgetSubtitle: widgetConfig.subtitle,
       });
 
-      setCurrentStep(5);
+      if (isWoo) {
+        // WooCommerce: plugin handles sync, so complete onboarding here
+        handleComplete();
+      } else {
+        setCurrentStep(5);
+      }
     } catch (error) {
       console.error('Error saving config:', error);
     }
@@ -132,8 +138,6 @@ function OnboardingWizard({ initialStep = 0, onComplete }: OnboardingWizardProps
       onComplete();
     }
   };
-
-  const isWoo = selectedPlatform === 'woocommerce';
 
   const renderStep = () => {
     switch (currentStep) {
@@ -212,7 +216,7 @@ function OnboardingWizard({ initialStep = 0, onComplete }: OnboardingWizardProps
           <img src={logoKova} alt="Kova" className="sidebar-logo-img" />
         </div>
         <div className="onboarding-header-right">
-          <span className="onboarding-step-text">Paso {currentStep + 1} de {totalSteps}</span>
+          <span className="onboarding-step-text">Paso {currentStep + 1} de {displayTotalSteps}</span>
           <button onClick={handleSkip} className="btn-skip">
             Saltar configuración
           </button>
@@ -221,7 +225,7 @@ function OnboardingWizard({ initialStep = 0, onComplete }: OnboardingWizardProps
 
       <div className="onboarding-content">
         <div className={`onboarding-card${currentStep === 3 ? ' onboarding-card-wide' : ''}`}>
-          <StepIndicator currentStep={currentStep} totalSteps={totalSteps} />
+          <StepIndicator currentStep={currentStep} totalSteps={displayTotalSteps} />
           {renderStep()}
         </div>
       </div>

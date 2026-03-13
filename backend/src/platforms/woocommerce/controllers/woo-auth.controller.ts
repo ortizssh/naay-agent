@@ -151,34 +151,23 @@ router.post('/connect', async (req: Request, res: Response) => {
     if (timezone) clientStoreMetadata.shop_timezone = timezone;
     if (locale) clientStoreMetadata.shop_locale = locale;
 
-    if (!existingClient) {
+    if (existingClient) {
+      // Update existing client_stores (created during register-woo) to active + metadata
       await (supabaseService as any).serviceClient
         .from('client_stores')
-        .insert({
-          shop_domain: dbShopDomain,
-          platform: 'woocommerce',
-          widget_enabled: true,
-          widget_position: 'bottom-right',
-          widget_color: '#6366f1',
-          widget_brand_name: storeName || connectionResult.storeName || 'Store',
-          created_at: new Date().toISOString(),
+        .update({
+          status: 'active',
+          is_active: true,
+          widget_brand_name:
+            storeName || connectionResult.storeName || undefined,
           updated_at: new Date().toISOString(),
           ...clientStoreMetadata,
-        });
-    } else {
-      // Update existing client_stores with metadata
-      if (Object.keys(clientStoreMetadata).length > 0) {
-        await (supabaseService as any).serviceClient
-          .from('client_stores')
-          .update({
-            ...clientStoreMetadata,
-            widget_brand_name:
-              storeName || connectionResult.storeName || undefined,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('shop_domain', dbShopDomain);
-      }
+        })
+        .eq('shop_domain', dbShopDomain);
     }
+    // If no existingClient (plugin-first flow without prior registration),
+    // skip client_stores creation — it requires user_id which we don't have here.
+    // The stores record is sufficient; client_stores will be created when user registers.
 
     // Update tenants table with metadata
     if (storeName || storeEmail) {

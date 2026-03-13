@@ -275,7 +275,8 @@ router.post(
 
 /**
  * POST /api/client/store/connect-woo
- * Connect a WooCommerce store (test connection + create records with user_id)
+ * Register a WooCommerce store URL (pending plugin installation)
+ * Only requires siteUrl — the WP plugin handles API key generation
  */
 router.post(
   '/store/connect-woo',
@@ -283,56 +284,29 @@ router.post(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = (req as any).user;
-      const { siteUrl, consumerKey, consumerSecret } = req.body;
+      const { siteUrl } = req.body;
 
-      if (!siteUrl || !consumerKey || !consumerSecret) {
-        throw new AppError(
-          'URL de tienda, Consumer Key y Consumer Secret son requeridos',
-          400
-        );
+      if (!siteUrl) {
+        throw new AppError('URL de tienda es requerida', 400);
       }
 
       // Validate and normalize URL
       let normalizedUrl: string;
       let shopDomain: string;
       try {
-        const url = new URL(siteUrl);
+        let urlStr = siteUrl.trim();
+        if (!urlStr.startsWith('http://') && !urlStr.startsWith('https://')) {
+          urlStr = `https://${urlStr}`;
+        }
+        const url = new URL(urlStr);
         normalizedUrl = `${url.protocol}//${url.host}`;
         shopDomain = url.host;
       } catch {
         throw new AppError('URL de tienda inválida', 400);
       }
 
-      // Test connection with WooCommerce
-      const { WooCommerceService } = await import(
-        '@/platforms/woocommerce/services/woocommerce.service'
-      );
-      const wooService = new WooCommerceService({
-        siteUrl: normalizedUrl,
-        consumerKey,
-        consumerSecret,
-      });
-
-      const connectionResult = await wooService.testConnection();
-      if (!connectionResult.success) {
-        throw new AppError(
-          'No se pudo conectar con la tienda WooCommerce. Verifica las credenciales.',
-          401
-        );
-      }
-
-      // Generate webhook secret
-      const crypto = await import('crypto');
-      const webhookSecret = crypto.randomBytes(32).toString('hex');
-
-      // Create/update stores record with credentials
+      // Create/update stores record (no credentials yet — plugin will provide them)
       const existingStore = await supabaseService.getStore(shopDomain);
-
-      const storeMetadata: any = {};
-      if (connectionResult.storeName)
-        storeMetadata.shop_name = connectionResult.storeName;
-      if (connectionResult.currency)
-        storeMetadata.shop_currency = connectionResult.currency;
 
       if (existingStore) {
         await (supabaseService as any).serviceClient
@@ -340,13 +314,7 @@ router.post(
           .update({
             platform: 'woocommerce',
             site_url: normalizedUrl,
-            credentials: {
-              consumer_key: consumerKey,
-              consumer_secret: consumerSecret,
-            },
-            webhook_secret: webhookSecret,
             updated_at: new Date().toISOString(),
-            ...storeMetadata,
           })
           .eq('shop_domain', (existingStore as any).shop_domain);
       } else {
@@ -355,18 +323,12 @@ router.post(
           platform: 'woocommerce',
           site_url: normalizedUrl,
           access_token: 'woocommerce',
-          credentials: {
-            consumer_key: consumerKey,
-            consumer_secret: consumerSecret,
-          },
-          webhook_secret: webhookSecret,
           installed_at: new Date().toISOString(),
           scopes: 'read_write',
-          ...storeMetadata,
         });
       }
 
-      // Create/update client_stores record WITH user_id
+      // Create/update client_stores record WITH user_id (status: pending)
       const { data: existingClient } = await (
         supabaseService as any
       ).serviceClient
@@ -378,12 +340,10 @@ router.post(
       const clientStoreData: any = {
         shop_domain: shopDomain,
         platform: 'woocommerce',
-        status: 'active',
-        is_active: true,
+        status: 'pending',
         widget_enabled: true,
         widget_position: 'bottom-right',
         widget_color: '#6366f1',
-        widget_brand_name: connectionResult.storeName || 'Store',
         updated_at: new Date().toISOString(),
       };
 
@@ -402,35 +362,21 @@ router.post(
           });
       }
 
-      // Also update client_stores by shop_domain if exists without user_id
-      // (e.g., created by the WP plugin previously)
-      await (supabaseService as any).serviceClient
-        .from('client_stores')
-        .update({
-          user_id: user.id,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('shop_domain', shopDomain)
-        .is('user_id', null);
-
-      // Update onboarding step to 1 (connect completed)
+      // Update onboarding step to 1 (URL registered, awaiting plugin)
       await (supabaseService as any).serviceClient
         .from('admin_users')
         .update({ onboarding_step: 1 })
         .eq('id', user.id);
 
-      logger.info('WooCommerce store connected via onboarding', {
+      logger.info('WooCommerce store URL registered (pending plugin)', {
         shopDomain,
         userId: user.id,
-        storeName: connectionResult.storeName,
       });
 
       res.json({
         success: true,
         data: {
           shopDomain,
-          storeName: connectionResult.storeName,
-          currency: connectionResult.currency,
         },
       });
     } catch (error) {
@@ -756,27 +702,7 @@ router.put(
         }
         store = updated;
       } else {
-        // Create a new client_stores record with widget config
-        const { data: created, error } = await (
-          supabaseService as any
-        ).serviceClient
-          .from('client_stores')
-          .insert({
-            user_id: user.id,
-            ...updateData,
-            platform: 'shopify',
-            status: 'pending',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .select()
-          .single();
-
-        if (error) {
-          logger.error('Error creating widget config:', error);
-          throw new AppError('Error al actualizar configuracion', 500);
-        }
-        store = created;
+        throw new AppError('No hay tienda conectada. Conecta tu tienda primero.', 404);
       }
 
       res.json({
