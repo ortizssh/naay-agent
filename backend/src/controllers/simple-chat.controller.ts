@@ -534,6 +534,94 @@ async function loadAgentConfig(shopDomain: string): Promise<{
   }
 }
 
+// Direct text search on products table in Supabase (works without embeddings)
+async function searchProductsInDB(
+  shop: string,
+  query: string,
+  limit: number = 6
+): Promise<any[]> {
+  const queryWords = query
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((w: string) => w.length > 1);
+
+  if (queryWords.length === 0) return [];
+
+  // Build an ilike filter for each word against title
+  // Supabase doesn't support full-text search natively via JS client in a simple way,
+  // so we use .or() with ilike patterns on title, description, product_type, tags
+  const orConditions = queryWords
+    .map(
+      (word: string) =>
+        `title.ilike.%${word}%,description.ilike.%${word}%,product_type.ilike.%${word}%`
+    )
+    .join(',');
+
+  const { data, error } = await (supabaseService as any).serviceClient
+    .from('products')
+    .select('id, title, description, handle, vendor, product_type, tags, images')
+    .eq('shop_domain', shop)
+    .or(orConditions)
+    .limit(limit * 3); // Fetch extra to score and rank
+
+  if (error) {
+    logger.error('DB text search error:', error);
+    return [];
+  }
+
+  if (!data || data.length === 0) return [];
+
+  // Score results by how many query words match in the title (higher weight) vs other fields
+  const scored = data.map((p: any) => {
+    const titleLower = (p.title || '').toLowerCase();
+    const text = `${p.description || ''} ${p.product_type || ''} ${(p.tags || []).join(' ')}`.toLowerCase();
+    let score = 0;
+    for (const word of queryWords) {
+      if (titleLower.includes(word)) score += 3;
+      else if (text.includes(word)) score += 1;
+    }
+    return { product: p, score };
+  });
+
+  scored.sort((a: any, b: any) => b.score - a.score);
+
+  // Get variant prices for the top results
+  const topProducts = scored.slice(0, limit);
+  const productIds = topProducts.map((s: any) => s.product.id);
+
+  let variantMap: Record<string, any[]> = {};
+  if (productIds.length > 0) {
+    const { data: variants } = await (supabaseService as any).serviceClient
+      .from('product_variants')
+      .select('product_id, price, compare_at_price, inventory_quantity')
+      .in('product_id', productIds);
+    if (variants) {
+      for (const v of variants) {
+        if (!variantMap[v.product_id]) variantMap[v.product_id] = [];
+        variantMap[v.product_id].push(v);
+      }
+    }
+  }
+
+  return topProducts.map((s: any) => {
+    const p = s.product;
+    const variants = variantMap[p.id] || [];
+    const price = variants[0]?.price || 'N/A';
+    return {
+      id: p.id,
+      title: p.title,
+      description: (p.description || '').substring(0, 300),
+      price,
+      vendor: p.vendor || '',
+      productType: p.product_type || '',
+      tags: p.tags || [],
+      images: p.images?.[0] || null,
+      available: true, // WC stores often don't track stock; assume available if product exists
+      handle: p.handle || '',
+    };
+  });
+}
+
 // Function to search products via commerce provider (real-time API)
 async function searchProductsViaProvider(
   shop: string,
@@ -584,7 +672,7 @@ async function searchProductsViaProvider(
       }
     }
 
-    // Fallback: semantic search via embeddings (scales to any catalog size)
+    // Fallback 1: semantic search via embeddings (scales to any catalog size)
     try {
       const products = await supabaseService.searchProductsSemantic(
         shop,
@@ -607,6 +695,17 @@ async function searchProductsViaProvider(
       }
     } catch (semanticError) {
       logger.warn('Semantic search also failed:', semanticError);
+    }
+
+    // Fallback 2: direct text search on products table (works even without embeddings)
+    try {
+      const dbProducts = await searchProductsInDB(shop, query, limit);
+      if (dbProducts.length > 0) {
+        logger.info('DB text search found products', { shop, query, count: dbProducts.length });
+        return dbProducts;
+      }
+    } catch (dbError) {
+      logger.warn('DB text search failed:', dbError);
     }
 
     return [];
@@ -657,7 +756,7 @@ async function getProductRecommendationsViaProvider(
       }
     }
 
-    // Fallback: semantic search (scales to any catalog size)
+    // Fallback 1: semantic search (scales to any catalog size)
     const query = intent || 'productos populares recomendados';
     try {
       const products = await supabaseService.searchProductsSemantic(
@@ -679,6 +778,17 @@ async function getProductRecommendationsViaProvider(
       }
     } catch (semanticError) {
       logger.warn('Semantic recommendation search failed:', semanticError);
+    }
+
+    // Fallback 2: direct text search on products table
+    try {
+      const dbProducts = await searchProductsInDB(shop, query, limit);
+      if (dbProducts.length > 0) {
+        logger.info('DB text search found recommendations', { shop, query, count: dbProducts.length });
+        return dbProducts;
+      }
+    } catch (dbError) {
+      logger.warn('DB text search for recommendations failed:', dbError);
     }
 
     return [];
@@ -726,7 +836,7 @@ async function searchProductsBroad(
       }
     }
 
-    // Fallback: broad semantic search with lower threshold (0.35)
+    // Fallback 1: broad semantic search with lower threshold (0.35)
     try {
       const products = await supabaseService.searchProductsSemanticBroad(
         shop,
@@ -734,22 +844,35 @@ async function searchProductsBroad(
         limit,
         0.35
       );
-      return products.map((product: any) => ({
-        id: product.id,
-        title: product.title,
-        description: product.description?.substring(0, 300) || '',
-        price: product.price,
-        vendor: product.vendor,
-        productType: product.product_type,
-        tags: product.tags,
-        images: product.images?.[0] || null,
-        available: product.variants?.some((v: any) => v.available) || false,
-        similarity: product.similarity,
-      }));
+      if (products && products.length > 0) {
+        return products.map((product: any) => ({
+          id: product.id,
+          title: product.title,
+          description: product.description?.substring(0, 300) || '',
+          price: product.price,
+          vendor: product.vendor,
+          productType: product.product_type,
+          tags: product.tags,
+          images: product.images?.[0] || null,
+          available: product.variants?.some((v: any) => v.available) || false,
+          similarity: product.similarity,
+        }));
+      }
     } catch (semanticError) {
       logger.warn('Broad semantic search failed:', semanticError);
-      return [];
     }
+
+    // Fallback 2: direct text search on products table
+    try {
+      const dbProducts = await searchProductsInDB(shop, query, limit);
+      if (dbProducts.length > 0) {
+        return dbProducts;
+      }
+    } catch (dbError) {
+      logger.warn('DB broad text search failed:', dbError);
+    }
+
+    return [];
   } catch (error) {
     logger.error('Error in searchProductsBroad:', error);
     return [];
@@ -938,6 +1061,14 @@ router.post(
             siteUrl = storeData[0].site_url;
           }
           const platform = (agentConfig?.platform || 'shopify') as any;
+          logger.info('Commerce provider init', {
+            shop,
+            platform,
+            hasAccessToken: !!accessToken,
+            hasConsumerKey: !!credentials?.consumer_key,
+            hasConsumerSecret: !!credentials?.consumer_secret,
+            siteUrl: siteUrl || null,
+          });
           if (
             accessToken ||
             (credentials?.consumer_key && credentials?.consumer_secret)
@@ -951,6 +1082,9 @@ router.post(
                 siteUrl ||
                 (platform === 'woocommerce' ? `https://${shop}` : undefined),
             });
+            logger.info('Commerce provider initialized successfully', { shop, platform });
+          } else {
+            logger.warn('No credentials for commerce provider', { shop, platform });
           }
         } catch (providerErr) {
           logger.warn('Could not initialize commerce provider:', providerErr);

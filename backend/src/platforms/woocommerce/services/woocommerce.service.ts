@@ -641,7 +641,7 @@ export class WooCommerceService implements ICommerceProvider {
           weight: product.weight ? parseFloat(product.weight) : undefined,
           requires_shipping: product.shipping_required,
           taxable: product.tax_status === 'taxable',
-          available: product.purchasable && product.stock_status === 'instock',
+          available: product.purchasable !== false && product.stock_status !== 'outofstock',
         },
       ];
     }
@@ -695,7 +695,7 @@ export class WooCommerceService implements ICommerceProvider {
       weight: variation.weight ? parseFloat(variation.weight) : undefined,
       requires_shipping: true,
       taxable: true,
-      available: variation.purchasable && variation.stock_status === 'instock',
+      available: variation.purchasable !== false && variation.stock_status !== 'outofstock',
       options: variation.attributes.map(attr => ({
         name: attr.name,
         value: attr.option,
