@@ -559,7 +559,9 @@ async function searchProductsInDB(
 
   const { data, error } = await (supabaseService as any).serviceClient
     .from('products')
-    .select('id, title, description, handle, vendor, product_type, tags, images')
+    .select(
+      'id, title, description, handle, vendor, product_type, tags, images'
+    )
     .eq('shop_domain', shop)
     .or(orConditions)
     .limit(limit * 3); // Fetch extra to score and rank
@@ -574,7 +576,8 @@ async function searchProductsInDB(
   // Score results by how many query words match in the title (higher weight) vs other fields
   const scored = data.map((p: any) => {
     const titleLower = (p.title || '').toLowerCase();
-    const text = `${p.description || ''} ${p.product_type || ''} ${(p.tags || []).join(' ')}`.toLowerCase();
+    const text =
+      `${p.description || ''} ${p.product_type || ''} ${(p.tags || []).join(' ')}`.toLowerCase();
     let score = 0;
     for (const word of queryWords) {
       if (titleLower.includes(word)) score += 3;
@@ -701,7 +704,11 @@ async function searchProductsViaProvider(
     try {
       const dbProducts = await searchProductsInDB(shop, query, limit);
       if (dbProducts.length > 0) {
-        logger.info('DB text search found products', { shop, query, count: dbProducts.length });
+        logger.info('DB text search found products', {
+          shop,
+          query,
+          count: dbProducts.length,
+        });
         return dbProducts;
       }
     } catch (dbError) {
@@ -784,7 +791,11 @@ async function getProductRecommendationsViaProvider(
     try {
       const dbProducts = await searchProductsInDB(shop, query, limit);
       if (dbProducts.length > 0) {
-        logger.info('DB text search found recommendations', { shop, query, count: dbProducts.length });
+        logger.info('DB text search found recommendations', {
+          shop,
+          query,
+          count: dbProducts.length,
+        });
         return dbProducts;
       }
     } catch (dbError) {
@@ -1082,9 +1093,15 @@ router.post(
                 siteUrl ||
                 (platform === 'woocommerce' ? `https://${shop}` : undefined),
             });
-            logger.info('Commerce provider initialized successfully', { shop, platform });
+            logger.info('Commerce provider initialized successfully', {
+              shop,
+              platform,
+            });
           } else {
-            logger.warn('No credentials for commerce provider', { shop, platform });
+            logger.warn('No credentials for commerce provider', {
+              shop,
+              platform,
+            });
           }
         } catch (providerErr) {
           logger.warn('Could not initialize commerce provider:', providerErr);
