@@ -702,7 +702,10 @@ router.put(
         }
         store = updated;
       } else {
-        throw new AppError('No hay tienda conectada. Conecta tu tienda primero.', 404);
+        throw new AppError(
+          'No hay tienda conectada. Conecta tu tienda primero.',
+          404
+        );
       }
 
       res.json({
