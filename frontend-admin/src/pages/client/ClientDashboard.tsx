@@ -117,41 +117,74 @@ function ClientDashboard({ onStartOnboarding, onPageChange }: ClientDashboardPro
           const firstConversation = !!(usage && usage.messages_used > 0);
           const allDone = storeConnected && widgetCustomized && firstConversation;
           if (allDone) return null;
+
+          const steps = [
+            { label: 'Crear cuenta', done: true, onClick: undefined },
+            { label: 'Conectar tienda', done: storeConnected, onClick: !storeConnected ? onStartOnboarding : undefined },
+            { label: 'Personalizar widget', done: widgetCustomized, onClick: !widgetCustomized ? () => onPageChange?.('widget') : undefined },
+            { label: 'Primera conversación', done: firstConversation, onClick: undefined },
+          ];
+          const completed = steps.filter(s => s.done).length;
+          const progress = Math.round((completed / steps.length) * 100);
+
           return (
             <div className="quick-setup-card">
-              <h3>Completa tu setup</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', margin: '1rem 0' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem' }}>
-                  <span style={{ color: 'var(--color-success)', fontSize: '1.1rem' }}>{'\u2713'}</span>
-                  <span>Crear cuenta</span>
-                </div>
-                <div
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem', cursor: storeConnected ? undefined : 'pointer' }}
-                  onClick={() => !storeConnected && onStartOnboarding()}
-                >
-                  <span style={{ color: storeConnected ? 'var(--color-success)' : 'var(--color-text-muted)', fontSize: '1.1rem' }}>
-                    {storeConnected ? '\u2713' : '\u25A1'}
-                  </span>
-                  <span style={{ color: storeConnected ? 'var(--color-text)' : 'var(--color-text-muted)' }}>Conectar tienda</span>
-                </div>
-                <div
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem', cursor: widgetCustomized ? undefined : 'pointer' }}
-                  onClick={() => !widgetCustomized && onPageChange?.('widget')}
-                >
-                  <span style={{ color: widgetCustomized ? 'var(--color-success)' : 'var(--color-text-muted)', fontSize: '1.1rem' }}>
-                    {widgetCustomized ? '\u2713' : '\u25A1'}
-                  </span>
-                  <span style={{ color: widgetCustomized ? 'var(--color-text)' : 'var(--color-text-muted)' }}>Personalizar widget</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem' }}>
-                  <span style={{ color: firstConversation ? 'var(--color-success)' : 'var(--color-text-muted)', fontSize: '1.1rem' }}>
-                    {firstConversation ? '\u2713' : '\u25A1'}
-                  </span>
-                  <span style={{ color: firstConversation ? 'var(--color-text)' : 'var(--color-text-muted)' }}>Primera conversación</span>
-                </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h3 style={{ margin: 0 }}>Completa tu setup</h3>
+                <span style={{ fontSize: '0.85rem', opacity: 0.85, fontWeight: 500 }}>{completed}/{steps.length}</span>
+              </div>
+              <div style={{ height: 6, background: 'rgba(255,255,255,0.2)', borderRadius: 3, marginBottom: '1.25rem', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${progress}%`, background: '#4ade80', borderRadius: 3, transition: 'width 0.4s ease' }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {steps.map((step, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      cursor: step.onClick ? 'pointer' : 'default',
+                      opacity: step.done ? 1 : 0.75,
+                    }}
+                    onClick={() => step.onClick?.()}
+                  >
+                    <div style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: '50%',
+                      background: step.done ? '#4ade80' : 'rgba(255,255,255,0.15)',
+                      border: step.done ? 'none' : '2px solid rgba(255,255,255,0.35)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      transition: 'all 0.2s ease',
+                    }}>
+                      {step.done && (
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                    </div>
+                    <span style={{
+                      fontSize: '0.95rem',
+                      fontWeight: step.done ? 500 : 400,
+                      textDecoration: step.done ? 'line-through' : 'none',
+                      textDecorationColor: 'rgba(255,255,255,0.5)',
+                    }}>
+                      {step.label}
+                    </span>
+                    {step.onClick && !step.done && (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginLeft: 'auto', opacity: 0.6 }}>
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    )}
+                  </div>
+                ))}
               </div>
               {!storeConnected && (
-                <button className="btn" onClick={onStartOnboarding}>
+                <button className="btn" onClick={onStartOnboarding} style={{ marginTop: '1.25rem' }}>
                   Continuar configuración
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polyline points="9 18 15 12 9 6" />

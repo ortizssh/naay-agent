@@ -732,18 +732,53 @@ router.put(
       if (chatbotEndpoint !== undefined)
         updateData.chatbot_endpoint = chatbotEndpoint;
 
-      const { data: store, error } = await (
+      // Check if client_stores record exists for this user
+      const { data: existing } = await (
         supabaseService as any
       ).serviceClient
         .from('client_stores')
-        .update(updateData)
+        .select('id')
         .eq('user_id', user.id)
-        .select()
         .single();
 
-      if (error) {
-        logger.error('Error updating widget config:', error);
-        throw new AppError('Error al actualizar configuracion', 500);
+      let store;
+      if (existing) {
+        const { data: updated, error } = await (
+          supabaseService as any
+        ).serviceClient
+          .from('client_stores')
+          .update(updateData)
+          .eq('user_id', user.id)
+          .select()
+          .single();
+
+        if (error) {
+          logger.error('Error updating widget config:', error);
+          throw new AppError('Error al actualizar configuracion', 500);
+        }
+        store = updated;
+      } else {
+        // Create a new client_stores record with widget config
+        const { data: created, error } = await (
+          supabaseService as any
+        ).serviceClient
+          .from('client_stores')
+          .insert({
+            user_id: user.id,
+            ...updateData,
+            platform: 'shopify',
+            status: 'pending',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (error) {
+          logger.error('Error creating widget config:', error);
+          throw new AppError('Error al actualizar configuracion', 500);
+        }
+        store = created;
       }
 
       res.json({
