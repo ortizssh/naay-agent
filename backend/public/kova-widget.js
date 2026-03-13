@@ -1106,6 +1106,23 @@
           margin-top: 2px !important;
         }
 
+        .kova-widget--bottom-left .kova-widget__promotional-message {
+          right: auto !important;
+          left: 76px !important;
+        }
+
+        .kova-widget--top-right .kova-widget__promotional-message {
+          bottom: auto !important;
+          top: 12px !important;
+        }
+
+        .kova-widget--top-left .kova-widget__promotional-message {
+          bottom: auto !important;
+          top: 12px !important;
+          right: auto !important;
+          left: 76px !important;
+        }
+
         .kova-widget--open .kova-widget__promotional-message {
           opacity: 0 !important;
           visibility: hidden !important;
