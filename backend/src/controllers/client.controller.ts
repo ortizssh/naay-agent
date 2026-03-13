@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import multer from 'multer';
 import { SupabaseService } from '@/services/supabase.service';
 import { ShopifyService } from '@/services/shopify.service';
 import { SimpleConversionTracker } from '@/services/simple-conversion-tracker.service';
@@ -6,6 +7,19 @@ import { logger } from '@/utils/logger';
 import { AppError } from '@/types';
 import jwt from 'jsonwebtoken';
 import { config } from '@/utils/config';
+
+const avatarUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo se permiten imágenes (JPEG, PNG, WebP, GIF)'));
+    }
+  },
+});
 
 const router = Router();
 const supabaseService = new SupabaseService();
@@ -629,6 +643,7 @@ router.put(
         widgetEnableAnimations,
         widgetTheme,
         widgetBrandName,
+        widgetAvatarUrl,
         chatbotEndpoint,
       } = req.body;
 
@@ -675,6 +690,8 @@ router.put(
       if (widgetTheme) updateData.widget_theme = widgetTheme;
       if (widgetBrandName !== undefined)
         updateData.widget_brand_name = widgetBrandName;
+      if (widgetAvatarUrl !== undefined)
+        updateData.widget_avatar_url = widgetAvatarUrl;
       if (chatbotEndpoint !== undefined)
         updateData.chatbot_endpoint = chatbotEndpoint;
 
@@ -714,6 +731,92 @@ router.put(
       });
     } catch (error) {
       logger.error('Update widget config error:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * POST /api/client/widget/avatar
+ * Upload a custom avatar image for the widget header
+ */
+router.post(
+  '/widget/avatar',
+  requireClientAuth,
+  avatarUpload.single('avatar'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = (req as any).user;
+      const file = req.file;
+
+      if (!file) {
+        throw new AppError('No se proporcionó ninguna imagen', 400);
+      }
+
+      // Get the user's shop domain
+      const { data: store } = await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .select('shop_domain')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!store) {
+        throw new AppError('No hay tienda conectada', 404);
+      }
+
+      // Upload to Supabase Storage
+      const avatarUrl = await supabaseService.uploadChatFile(
+        'chat-images',
+        store.shop_domain,
+        'widget-avatar',
+        file.buffer,
+        file.mimetype
+      );
+
+      // Save URL to client_stores
+      const { error } = await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .update({ widget_avatar_url: avatarUrl })
+        .eq('user_id', user.id);
+
+      if (error) {
+        throw new AppError('Error al guardar avatar', 500);
+      }
+
+      res.json({
+        success: true,
+        data: { avatarUrl },
+      });
+    } catch (error) {
+      logger.error('Upload widget avatar error:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * DELETE /api/client/widget/avatar
+ * Remove custom avatar image (revert to emoji)
+ */
+router.delete(
+  '/widget/avatar',
+  requireClientAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = (req as any).user;
+
+      const { error } = await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .update({ widget_avatar_url: null })
+        .eq('user_id', user.id);
+
+      if (error) {
+        throw new AppError('Error al eliminar avatar', 500);
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      logger.error('Delete widget avatar error:', error);
       next(error);
     }
   }

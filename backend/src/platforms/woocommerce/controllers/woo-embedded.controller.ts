@@ -17,6 +17,15 @@ import { tenantService } from '@/services/tenant.service';
 const router = Router();
 const supabaseService = new SupabaseService();
 
+const avatarUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    cb(null, allowed.includes(file.mimetype));
+  },
+});
+
 /**
  * Normalize WooCommerce site URL to host-only format
  * Must match registration format in woo-auth.controller.ts which stores shop_domain as url.host (e.g., "cactus.mx")
@@ -243,6 +252,8 @@ router.put(
       if (config.widgetTheme) updateData.widget_theme = config.widgetTheme;
       if (config.widgetBrandName !== undefined)
         updateData.widget_brand_name = config.widgetBrandName;
+      if (config.widgetAvatarUrl !== undefined)
+        updateData.widget_avatar_url = config.widgetAvatarUrl;
       // Promotion badge settings
       if (config.promoBadgeEnabled !== undefined)
         updateData.promo_badge_enabled = config.promoBadgeEnabled;
@@ -312,6 +323,71 @@ router.put(
     } catch (error) {
       logger.error('WooCommerce embedded widget config update error:', error);
       return next(error);
+    }
+  }
+);
+
+/**
+ * POST /api/woo/embedded/widget/avatar
+ * Upload a custom avatar image for the widget
+ */
+router.post(
+  '/widget/avatar',
+  avatarUpload.single('avatar'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const siteUrl = req.body.siteUrl || req.query.siteUrl;
+      if (!siteUrl) {
+        return res.status(400).json({ success: false, error: 'siteUrl is required' });
+      }
+
+      const normalizedShop = normalizeWooSiteUrl(siteUrl as string);
+
+      if (!req.file) {
+        return res.status(400).json({ success: false, error: 'No image provided' });
+      }
+
+      const avatarUrl = await supabaseService.uploadChatFile(
+        'chat-images', normalizedShop, 'widget-avatar', req.file.buffer, req.file.mimetype
+      );
+
+      await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .update({ widget_avatar_url: avatarUrl })
+        .eq('shop_domain', normalizedShop);
+
+      res.json({ success: true, data: { avatarUrl } });
+    } catch (error) {
+      logger.error('Upload WooCommerce widget avatar error:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * DELETE /api/woo/embedded/widget/avatar
+ * Remove custom avatar image
+ */
+router.delete(
+  '/widget/avatar',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const siteUrl = req.body.siteUrl || req.query.siteUrl;
+      if (!siteUrl) {
+        return res.status(400).json({ success: false, error: 'siteUrl is required' });
+      }
+
+      const normalizedShop = normalizeWooSiteUrl(siteUrl as string);
+
+      await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .update({ widget_avatar_url: null })
+        .eq('shop_domain', normalizedShop);
+
+      res.json({ success: true });
+    } catch (error) {
+      logger.error('Delete WooCommerce widget avatar error:', error);
+      next(error);
     }
   }
 );
@@ -873,6 +949,7 @@ router.get(
             widgetSubtitle: clientStore.widget_subtitle,
             widgetPlaceholder: clientStore.widget_placeholder,
             widgetAvatar: clientStore.widget_avatar,
+            widgetAvatarUrl: clientStore.widget_avatar_url || '',
             widgetShowPromoMessage: clientStore.widget_show_promo_message,
             widgetShowCart: clientStore.widget_show_cart,
             widgetShowContact: clientStore.widget_show_contact,

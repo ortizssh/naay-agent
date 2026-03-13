@@ -11,6 +11,15 @@ import { AppError, TenantPlan, TenantStatus } from '@/types';
 const router = Router();
 const supabaseService = new SupabaseService();
 
+const avatarUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    cb(null, allowed.includes(file.mimetype));
+  },
+});
+
 // Multer config for knowledge file uploads: memory storage, 10MB limit, PDF/TXT/MD only
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -732,6 +741,7 @@ router.put(
         'widget_subtitle',
         'widget_placeholder',
         'widget_avatar',
+        'widget_avatar_url',
         'widget_show_promo_message',
         'widget_show_cart',
         'widget_show_contact',
@@ -878,6 +888,61 @@ router.put(
       });
     } catch (error) {
       logger.error('Error updating tenant status:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * POST /api/admin/tenants/:shopDomain/widget/avatar
+ * Upload a custom avatar image for a tenant's widget
+ */
+router.post(
+  '/:shopDomain/widget/avatar',
+  avatarUpload.single('avatar'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shopDomain } = req.params;
+
+      if (!req.file) {
+        throw new AppError('No image provided', 400);
+      }
+
+      const avatarUrl = await supabaseService.uploadChatFile(
+        'chat-images', shopDomain, 'widget-avatar', req.file.buffer, req.file.mimetype
+      );
+
+      await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .update({ widget_avatar_url: avatarUrl })
+        .eq('shop_domain', shopDomain);
+
+      res.json({ success: true, data: { avatarUrl } });
+    } catch (error) {
+      logger.error('Upload tenant widget avatar error:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * DELETE /api/admin/tenants/:shopDomain/widget/avatar
+ * Remove a tenant's custom avatar image
+ */
+router.delete(
+  '/:shopDomain/widget/avatar',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { shopDomain } = req.params;
+
+      await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .update({ widget_avatar_url: null })
+        .eq('shop_domain', shopDomain);
+
+      res.json({ success: true });
+    } catch (error) {
+      logger.error('Delete tenant widget avatar error:', error);
       next(error);
     }
   }

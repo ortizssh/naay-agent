@@ -23,6 +23,7 @@ function Tenants() {
   const [widgetSubTab, setWidgetSubTab] = useState<'appearance' | 'content' | 'features' | 'questions' | 'promo'>('appearance');
   const [detailForm, setDetailForm] = useState<Record<string, any>>({});
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [success, setSuccess] = useState(false);
 
   // Knowledge state
@@ -103,6 +104,7 @@ function Tenants() {
         widget_subtitle: detail.clientStore?.widget_subtitle || '',
         widget_placeholder: detail.clientStore?.widget_placeholder || '',
         widget_avatar: detail.clientStore?.widget_avatar || '',
+        widget_avatar_url: detail.clientStore?.widget_avatar_url || '',
         widget_show_promo_message: detail.clientStore?.widget_show_promo_message ?? true,
         widget_show_cart: detail.clientStore?.widget_show_cart ?? true,
         widget_show_contact: detail.clientStore?.widget_show_contact ?? false,
@@ -760,8 +762,63 @@ function Tenants() {
                       </div>
                       <div className="form-group">
                         <label className="form-label">Avatar</label>
-                        <input type="text" className="form-input" value={detailForm.widget_avatar} onChange={e => updateDetailForm('widget_avatar', e.target.value)} maxLength={4} style={{ maxWidth: 100 }} />
-                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Emoji o texto corto</span>
+                        {detailForm.widget_avatar_url ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                            <img
+                              src={detailForm.widget_avatar_url}
+                              alt="Avatar"
+                              style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--color-border, #ddd)' }}
+                            />
+                            <button
+                              type="button"
+                              className="btn btn-outline btn-sm"
+                              onClick={async () => {
+                                try {
+                                  if (selectedDetail) {
+                                    await api.deleteTenantWidgetAvatar(selectedDetail.tenant.shop_domain);
+                                    updateDetailForm('widget_avatar_url', '');
+                                  }
+                                } catch (err) {
+                                  console.error('Error deleting avatar:', err);
+                                }
+                              }}
+                              style={{ fontSize: '0.85rem' }}
+                            >
+                              Eliminar imagen
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <input type="text" className="form-input" value={detailForm.widget_avatar} onChange={e => updateDetailForm('widget_avatar', e.target.value)} maxLength={4} style={{ flex: '0 0 80px' }} />
+                            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>o</span>
+                            <label
+                              className="btn btn-outline btn-sm"
+                              style={{ cursor: uploadingAvatar ? 'wait' : 'pointer', fontSize: '0.85rem', margin: 0 }}
+                            >
+                              {uploadingAvatar ? 'Subiendo...' : 'Subir imagen'}
+                              <input
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp,image/gif"
+                                style={{ display: 'none' }}
+                                disabled={uploadingAvatar}
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file || !selectedDetail) return;
+                                  try {
+                                    setUploadingAvatar(true);
+                                    const data = await api.uploadTenantWidgetAvatar(selectedDetail.tenant.shop_domain, file);
+                                    updateDetailForm('widget_avatar_url', data.avatarUrl);
+                                  } catch (err) {
+                                    console.error('Error uploading avatar:', err);
+                                  } finally {
+                                    setUploadingAvatar(false);
+                                    e.target.value = '';
+                                  }
+                                }}
+                              />
+                            </label>
+                          </div>
+                        )}
                       </div>
                       <div className="form-group">
                         <label className="form-label">Mensaje de Bienvenida</label>

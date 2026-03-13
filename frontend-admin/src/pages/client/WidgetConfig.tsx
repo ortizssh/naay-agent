@@ -18,6 +18,7 @@ interface WidgetConfigData {
   widget_subtitle: string;
   widget_placeholder: string;
   widget_avatar: string;
+  widget_avatar_url: string;
   widget_show_promo_message: boolean;
   widget_show_cart: boolean;
   widget_show_contact: boolean;
@@ -50,6 +51,7 @@ function WidgetConfig({ onStartOnboarding, onPageChange }: WidgetConfigProps) {
     widget_subtitle: 'Asistente de compras con IA',
     widget_placeholder: 'Escribe tu mensaje...',
     widget_avatar: '🌿',
+    widget_avatar_url: '',
     widget_show_promo_message: true,
     widget_show_cart: true,
     widget_show_contact: false,
@@ -65,6 +67,7 @@ function WidgetConfig({ onStartOnboarding, onPageChange }: WidgetConfigProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [activeTab, setActiveTab] = useState<'appearance' | 'content' | 'features'>('appearance');
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   useEffect(() => {
     loadConfig();
@@ -491,18 +494,75 @@ function WidgetConfig({ onStartOnboarding, onPageChange }: WidgetConfigProps) {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Avatar / Emoji</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={config.widget_avatar}
-                    onChange={(e) => setConfig({ ...config, widget_avatar: e.target.value })}
-                    placeholder="🌿"
-                    maxLength={4}
-                  />
-                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                    Emoji o texto para el avatar del asistente
-                  </span>
+                  <label className="form-label">Avatar</label>
+                  {config.widget_avatar_url ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                      <img
+                        src={config.widget_avatar_url}
+                        alt="Avatar"
+                        style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--color-border)' }}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-sm"
+                        onClick={async () => {
+                          try {
+                            await clientApi.deleteWidgetAvatar();
+                            setConfig({ ...config, widget_avatar_url: '' });
+                          } catch (err: any) {
+                            setError(err.message || 'Error al eliminar avatar');
+                          }
+                        }}
+                        style={{ fontSize: '0.85rem' }}
+                      >
+                        Eliminar imagen
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={config.widget_avatar}
+                          onChange={(e) => setConfig({ ...config, widget_avatar: e.target.value })}
+                          placeholder="🌿"
+                          maxLength={4}
+                          style={{ flex: '0 0 80px' }}
+                        />
+                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>o</span>
+                        <label
+                          className="btn btn-outline btn-sm"
+                          style={{ cursor: uploadingAvatar ? 'wait' : 'pointer', fontSize: '0.85rem', margin: 0 }}
+                        >
+                          {uploadingAvatar ? 'Subiendo...' : 'Subir imagen'}
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/gif"
+                            style={{ display: 'none' }}
+                            disabled={uploadingAvatar}
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              try {
+                                setUploadingAvatar(true);
+                                const res = await clientApi.uploadWidgetAvatar(file);
+                                setConfig({ ...config, widget_avatar_url: res.data.avatarUrl });
+                              } catch (err: any) {
+                                setError(err.message || 'Error al subir imagen');
+                              } finally {
+                                setUploadingAvatar(false);
+                                e.target.value = '';
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                        Emoji o imagen personalizada para el avatar del asistente
+                      </span>
+                    </>
+                  )}
                 </div>
 
                 <div className="form-group">

@@ -133,6 +133,7 @@ class Kova_API {
             'subtitle' => $settings['widget_subtitle'] ?? 'Asistente de compras con IA',
             'placeholder' => $settings['widget_placeholder'] ?? 'Escribe tu mensaje...',
             'avatar' => $settings['widget_avatar'] ?? '🌿',
+            'avatarUrl' => $settings['widget_avatar_url'] ?? '',
             'brandName' => $settings['widget_brand_name'] ?? get_bloginfo('name'),
             'buttonSize' => intval($settings['widget_button_size'] ?? 72),
             'buttonStyle' => $settings['widget_button_style'] ?? 'circle',

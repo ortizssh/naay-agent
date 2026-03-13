@@ -3339,8 +3339,8 @@
           }
 
           .kova-cart-panel__item-image-container {
-            width: 64px !important;
-            height: 64px !important;
+            width: 56px !important;
+            height: 56px !important;
           }
 
           /* Cart footer mobile - centered modal */
@@ -4205,17 +4205,18 @@
         /* Cart Item */
         .kova-cart-panel__item {
           display: flex !important;
-          gap: 12px !important;
-          padding: 12px !important;
+          align-items: center !important;
+          gap: 10px !important;
+          padding: 10px !important;
           background: var(--kova-white) !important;
           border-radius: 12px !important;
           border: 1px solid rgba(212, 196, 184, 0.2) !important;
           box-shadow: 0 2px 8px rgba(165, 148, 87, 0.08) !important;
           transition: all 0.3s ease !important;
-          overflow: hidden !important;
+          overflow: visible !important;
           transform-origin: center !important;
         }
-        
+
         .kova-cart-panel__item:hover {
           border-color: rgba(165, 148, 87, 0.3) !important;
           transform: translateY(-1px) !important;
@@ -4225,8 +4226,8 @@
         /* Item Image */
         .kova-cart-panel__item-image-container {
           flex-shrink: 0 !important;
-          width: 64px !important;
-          height: 64px !important;
+          width: 56px !important;
+          height: 56px !important;
         }
 
         .kova-cart-panel__item-image {
@@ -4250,23 +4251,17 @@
           height: 32px !important;
         }
 
-        /* Item Details */
-        .kova-cart-panel__item-details {
-          flex: 1 !important;
-          display: flex !important;
-          flex-direction: column !important;
-          justify-content: space-between !important;
-        }
-
+        /* Item Info (center column) */
         .kova-cart-panel__item-info {
-          margin-bottom: 8px !important;
+          flex: 1 !important;
+          min-width: 0 !important;
         }
 
         .kova-cart-panel__item-title {
-          font-size: 14px !important;
+          font-size: 13px !important;
           font-weight: var(--kova-font-weight-semibold) !important;
           color: var(--kova-text-primary) !important;
-          margin: 0 0 4px 0 !important;
+          margin: 0 0 2px 0 !important;
           line-height: 1.3 !important;
           display: -webkit-box !important;
           -webkit-line-clamp: 2 !important;
@@ -4275,9 +4270,9 @@
         }
 
         .kova-cart-panel__item-variant {
-          font-size: 12px !important;
+          font-size: 11px !important;
           color: var(--kova-text-secondary) !important;
-          margin: 0 0 8px 0 !important;
+          margin: 0 0 2px 0 !important;
           opacity: 0.8 !important;
         }
 
@@ -4299,12 +4294,13 @@
           color: var(--kova-perfect) !important;
         }
 
-        /* Item Controls */
+        /* Item Controls (right column) */
         .kova-cart-panel__item-controls {
+          flex-shrink: 0 !important;
           display: flex !important;
+          flex-direction: column !important;
           align-items: center !important;
-          justify-content: space-between !important;
-          gap: 12px !important;
+          gap: 6px !important;
         }
 
         .kova-cart-panel__item-quantity {
@@ -4573,16 +4569,16 @@
           }
 
           .kova-cart-panel__item-image-container {
-            width: 60px !important;
-            height: 60px !important;
+            width: 52px !important;
+            height: 52px !important;
           }
 
           .kova-cart-panel__item-title {
-            font-size: 13px !important;
+            font-size: 12px !important;
           }
 
           .kova-cart-panel__item-variant {
-            font-size: 11px !important;
+            font-size: 10px !important;
           }
 
           .kova-cart-panel__item-total-price {
@@ -7974,35 +7970,32 @@ Si quieres, puedo ayudarte a agregarlo a tu carrito o responder cualquier duda q
               </div>`
           }
           </div>
-          <div class="kova-cart-panel__item-details">
-            <div class="kova-cart-panel__item-info">
-              <h4 class="kova-cart-panel__item-title">${item.title}</h4>
-              ${variantTitle ? `<p class="kova-cart-panel__item-variant">${variantTitle}</p>` : ''}
-              <div class="kova-cart-panel__item-price-info">
-                <span class="kova-cart-panel__item-unit-price">${formatChileanPrice(unitPrice)} c/u</span>
-                <span class="kova-cart-panel__item-total-price">${formatChileanPrice(totalPrice)}</span>
-              </div>
+          <div class="kova-cart-panel__item-info">
+            <h4 class="kova-cart-panel__item-title">${item.title}</h4>
+            ${variantTitle ? `<p class="kova-cart-panel__item-variant">${variantTitle}</p>` : ''}
+            <div class="kova-cart-panel__item-price-info">
+              <span class="kova-cart-panel__item-unit-price">${formatChileanPrice(unitPrice)} c/u</span>
             </div>
-            <div class="kova-cart-panel__item-controls">
-              <div class="kova-cart-panel__item-quantity">
-                <button class="kova-cart-panel__quantity-btn kova-cart-panel__quantity-btn--decrease" data-action="decrease" data-cart-item-id="${item.cartItemId}" aria-label="Disminuir cantidad">
-                  <svg viewBox="0 0 24 24" fill="none">
-                    <path d="M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                  </svg>
-                </button>
-                <span class="kova-cart-panel__quantity-value">${item.quantity}</span>
-                <button class="kova-cart-panel__quantity-btn kova-cart-panel__quantity-btn--increase" data-action="increase" data-cart-item-id="${item.cartItemId}" aria-label="Aumentar cantidad">
-                  <svg viewBox="0 0 24 24" fill="none">
-                    <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                  </svg>
-                </button>
-              </div>
-              <button class="kova-cart-panel__item-remove" data-cart-item-id="${item.cartItemId}" aria-label="Eliminar producto">
+          </div>
+          <div class="kova-cart-panel__item-controls">
+            <div class="kova-cart-panel__item-quantity">
+              <button class="kova-cart-panel__quantity-btn kova-cart-panel__quantity-btn--decrease" data-action="decrease" data-cart-item-id="${item.cartItemId}" aria-label="Disminuir cantidad">
                 <svg viewBox="0 0 24 24" fill="none">
-                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </button>
+              <span class="kova-cart-panel__quantity-value">${item.quantity}</span>
+              <button class="kova-cart-panel__quantity-btn kova-cart-panel__quantity-btn--increase" data-action="increase" data-cart-item-id="${item.cartItemId}" aria-label="Aumentar cantidad">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                 </svg>
               </button>
             </div>
+            <button class="kova-cart-panel__item-remove" data-cart-item-id="${item.cartItemId}" aria-label="Eliminar producto">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
           </div>
         `;
 

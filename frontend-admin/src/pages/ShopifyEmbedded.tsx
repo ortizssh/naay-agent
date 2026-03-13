@@ -54,6 +54,7 @@ interface WidgetConfig {
   widget_subtitle: string;
   widget_placeholder: string;
   widget_avatar: string;
+  widget_avatar_url: string;
   widget_show_promo_message: boolean;
   widget_show_cart: boolean;
   widget_show_contact: boolean;
@@ -421,6 +422,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
     widget_subtitle: 'Asistente de compras con IA',
     widget_placeholder: 'Escribe tu mensaje...',
     widget_avatar: '🌿',
+    widget_avatar_url: '',
     widget_show_promo_message: true,
     widget_show_cart: true,
     widget_show_contact: false,
@@ -450,6 +452,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [widgetTab, setWidgetTab] = useState<'appearance' | 'content' | 'features' | 'promotion'>('appearance');
@@ -1074,6 +1077,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
             widget_subtitle: data.data.subtitle || prev.widget_subtitle,
             widget_placeholder: data.data.placeholder || prev.widget_placeholder,
             widget_avatar: data.data.avatar || prev.widget_avatar,
+            widget_avatar_url: data.data.avatarUrl || prev.widget_avatar_url,
             widget_show_promo_message: data.data.showPromoMessage ?? prev.widget_show_promo_message,
             widget_show_cart: data.data.showCart ?? prev.widget_show_cart,
             widget_show_contact: data.data.showContact ?? prev.widget_show_contact,
@@ -1140,6 +1144,7 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
             widgetSubtitle: widgetConfig.widget_subtitle,
             widgetPlaceholder: widgetConfig.widget_placeholder,
             widgetAvatar: widgetConfig.widget_avatar,
+            widgetAvatarUrl: widgetConfig.widget_avatar_url,
             widgetShowPromoMessage: widgetConfig.widget_show_promo_message,
             widgetShowCart: widgetConfig.widget_show_cart,
             widgetShowContact: widgetConfig.widget_show_contact,
@@ -2279,15 +2284,81 @@ function ShopifyEmbedded({ shop, host: _host }: ShopifyEmbeddedProps) {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Avatar / Emoji</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={widgetConfig.widget_avatar}
-                      onChange={e => setWidgetConfig({ ...widgetConfig, widget_avatar: e.target.value })}
-                      placeholder="🌿"
-                      maxLength={4}
-                    />
+                    <label className="form-label">Avatar</label>
+                    {widgetConfig.widget_avatar_url ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                        <img
+                          src={widgetConfig.widget_avatar_url}
+                          alt="Avatar"
+                          style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--color-border, #ddd)' }}
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-sm"
+                          onClick={async () => {
+                            try {
+                              const apiUrl = getApiUrl();
+                              await fetch(`${apiUrl}/api/shopify/embedded/widget/avatar?shop=${encodeURIComponent(shopDomain)}`, { method: 'DELETE' });
+                              setWidgetConfig({ ...widgetConfig, widget_avatar_url: '' });
+                            } catch (err) {
+                              console.error('Error deleting avatar:', err);
+                            }
+                          }}
+                          style={{ fontSize: '0.85rem' }}
+                        >
+                          Eliminar imagen
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={widgetConfig.widget_avatar}
+                          onChange={e => setWidgetConfig({ ...widgetConfig, widget_avatar: e.target.value })}
+                          placeholder="🌿"
+                          maxLength={4}
+                          style={{ flex: '0 0 80px' }}
+                        />
+                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted, #999)' }}>o</span>
+                        <label
+                          className="btn btn-outline btn-sm"
+                          style={{ cursor: uploadingAvatar ? 'wait' : 'pointer', fontSize: '0.85rem', margin: 0 }}
+                        >
+                          {uploadingAvatar ? 'Subiendo...' : 'Subir imagen'}
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/gif"
+                            style={{ display: 'none' }}
+                            disabled={uploadingAvatar}
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              try {
+                                setUploadingAvatar(true);
+                                const apiUrl = getApiUrl();
+                                const formData = new FormData();
+                                formData.append('avatar', file);
+                                formData.append('shop', shopDomain);
+                                const res = await fetch(`${apiUrl}/api/shopify/embedded/widget/avatar`, {
+                                  method: 'POST',
+                                  body: formData,
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                  setWidgetConfig({ ...widgetConfig, widget_avatar_url: data.data.avatarUrl });
+                                }
+                              } catch (err) {
+                                console.error('Error uploading avatar:', err);
+                              } finally {
+                                setUploadingAvatar(false);
+                                e.target.value = '';
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                    )}
                   </div>
 
                   <div className="form-group">

@@ -49,6 +49,8 @@ class Kova_Admin {
         add_action('wp_ajax_kova_get_voices', array($this, 'ajax_get_voices'));
         add_action('wp_ajax_kova_voice_test_call', array($this, 'ajax_voice_test_call'));
         add_action('wp_ajax_kova_get_voice_calls', array($this, 'ajax_get_voice_calls'));
+        add_action('wp_ajax_kova_upload_avatar', array($this, 'ajax_upload_avatar'));
+        add_action('wp_ajax_kova_delete_avatar', array($this, 'ajax_delete_avatar'));
     }
 
     /**
@@ -194,6 +196,7 @@ class Kova_Admin {
         $sanitized['widget_subtitle'] = sanitize_text_field($get_value('widget_subtitle', 'Asistente de compras con IA'));
         $sanitized['widget_placeholder'] = sanitize_text_field($get_value('widget_placeholder', 'Escribe tu mensaje...'));
         $sanitized['widget_avatar'] = sanitize_text_field($get_value('widget_avatar', '🌿'));
+        $sanitized['widget_avatar_url'] = esc_url_raw($get_value('widget_avatar_url', ''));
         $sanitized['widget_brand_name'] = sanitize_text_field($get_value('widget_brand_name', get_bloginfo('name')));
 
         // Rotating messages (Widget tab)
@@ -835,6 +838,7 @@ class Kova_Admin {
         $widget_subtitle = $settings['widget_subtitle'] ?? 'Asistente de compras con IA';
         $widget_placeholder = $settings['widget_placeholder'] ?? 'Escribe tu mensaje...';
         $widget_avatar = $settings['widget_avatar'] ?? '🌿';
+        $widget_avatar_url = $settings['widget_avatar_url'] ?? '';
         $widget_button_size = $settings['widget_button_size'] ?? 72;
         $widget_button_style = $settings['widget_button_style'] ?? 'circle';
         $widget_show_pulse = $settings['widget_show_pulse'] ?? true;
@@ -1017,13 +1021,29 @@ class Kova_Admin {
                                            placeholder="<?php echo esc_attr(get_bloginfo('name')); ?>">
                                 </div>
                                 <div class="kova-form-group kova-form-group-half">
-                                    <label class="kova-form-label" for="kova_widget_avatar"><?php _e('Avatar/Emoji', 'kova-agent'); ?></label>
-                                    <input type="text"
-                                           id="kova_widget_avatar"
-                                           name="kova_agent_settings[widget_avatar]"
-                                           value="<?php echo esc_attr($widget_avatar); ?>"
-                                           class="kova-form-input"
-                                           placeholder="🌿">
+                                    <label class="kova-form-label"><?php _e('Avatar', 'kova-agent'); ?></label>
+                                    <input type="hidden" name="kova_agent_settings[widget_avatar_url]" id="kova_widget_avatar_url" value="<?php echo esc_attr($widget_avatar_url); ?>">
+                                    <div id="kova-avatar-container">
+                                        <?php if (!empty($widget_avatar_url)): ?>
+                                            <div style="display:flex;align-items:center;gap:10px;">
+                                                <img src="<?php echo esc_url($widget_avatar_url); ?>" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid #ddd;">
+                                                <button type="button" class="button button-small" id="kova-remove-avatar"><?php _e('Remove image', 'kova-agent'); ?></button>
+                                            </div>
+                                        <?php else: ?>
+                                            <div style="display:flex;align-items:center;gap:8px;">
+                                                <input type="text"
+                                                       id="kova_widget_avatar"
+                                                       name="kova_agent_settings[widget_avatar]"
+                                                       value="<?php echo esc_attr($widget_avatar); ?>"
+                                                       class="kova-form-input"
+                                                       placeholder="🌿"
+                                                       style="max-width:80px;">
+                                                <span style="color:#666;font-size:12px;"><?php _e('or', 'kova-agent'); ?></span>
+                                                <button type="button" class="button button-small" id="kova-upload-avatar"><?php _e('Upload image', 'kova-agent'); ?></button>
+                                                <input type="file" id="kova-avatar-file" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none;">
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
                             </div>
 
@@ -1488,7 +1508,7 @@ class Kova_Admin {
                             <div class="kova-widget-preview-container">
                                 <div class="kova-widget-preview">
                                     <div class="kova-widget-preview-header" id="kova-preview-header" style="background: <?php echo esc_attr($widget_color); ?>;">
-                                        <div class="kova-widget-preview-avatar"><?php echo esc_html($widget_avatar); ?></div>
+                                        <div class="kova-widget-preview-avatar" id="kova-preview-avatar"><?php if (!empty($widget_avatar_url)): ?><img src="<?php echo esc_url($widget_avatar_url); ?>" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"><?php else: ?><?php echo esc_html($widget_avatar); ?><?php endif; ?></div>
                                         <div>
                                             <div class="kova-widget-preview-title" id="kova-preview-title"><?php echo esc_html($widget_brand_name); ?></div>
                                             <div class="kova-widget-preview-status"><?php echo esc_html($widget_subtitle); ?></div>
@@ -3404,5 +3424,89 @@ class Kova_Admin {
         } else {
             wp_send_json_error(array('message' => $body['error'] ?? __('Failed to load call history.', 'kova-agent')));
         }
+    }
+
+    /**
+     * AJAX: Upload widget avatar image
+     */
+    public function ajax_upload_avatar() {
+        check_ajax_referer('kova_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => __('Permission denied.', 'kova-agent')));
+        }
+
+        if (empty($_FILES['avatar'])) {
+            wp_send_json_error(array('message' => __('No image provided.', 'kova-agent')));
+        }
+
+        $settings = get_option('kova_agent_settings', array());
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
+
+        $file = $_FILES['avatar'];
+        $boundary = wp_generate_password(24);
+        $body = '';
+
+        // siteUrl field
+        $body .= '--' . $boundary . "\r\n";
+        $body .= 'Content-Disposition: form-data; name="siteUrl"' . "\r\n\r\n";
+        $body .= site_url() . "\r\n";
+
+        // avatar file field
+        $file_content = file_get_contents($file['tmp_name']);
+        $body .= '--' . $boundary . "\r\n";
+        $body .= 'Content-Disposition: form-data; name="avatar"; filename="' . $file['name'] . '"' . "\r\n";
+        $body .= 'Content-Type: ' . $file['type'] . "\r\n\r\n";
+        $body .= $file_content . "\r\n";
+        $body .= '--' . $boundary . '--' . "\r\n";
+
+        $response = wp_remote_post($api_endpoint . '/api/woo/embedded/widget/avatar', array(
+            'timeout' => 30,
+            'headers' => array(
+                'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
+            ),
+            'body' => $body,
+        ));
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => $response->get_error_message()));
+        }
+
+        $result = json_decode(wp_remote_retrieve_body($response), true);
+
+        if (!empty($result['success']) && !empty($result['data']['avatarUrl'])) {
+            // Save URL to local settings too
+            $settings['widget_avatar_url'] = $result['data']['avatarUrl'];
+            update_option('kova_agent_settings', $settings);
+
+            wp_send_json_success(array('avatarUrl' => $result['data']['avatarUrl']));
+        } else {
+            wp_send_json_error(array('message' => $result['error'] ?? __('Failed to upload avatar.', 'kova-agent')));
+        }
+    }
+
+    /**
+     * AJAX: Delete widget avatar image
+     */
+    public function ajax_delete_avatar() {
+        check_ajax_referer('kova_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => __('Permission denied.', 'kova-agent')));
+        }
+
+        $settings = get_option('kova_agent_settings', array());
+        $api_endpoint = $settings['api_endpoint'] ?? 'https://app.heykova.io';
+
+        $response = wp_remote_request($api_endpoint . '/api/woo/embedded/widget/avatar?siteUrl=' . urlencode(site_url()), array(
+            'method' => 'DELETE',
+            'timeout' => 15,
+        ));
+
+        // Clear local setting regardless
+        $settings['widget_avatar_url'] = '';
+        update_option('kova_agent_settings', $settings);
+
+        wp_send_json_success();
     }
 }

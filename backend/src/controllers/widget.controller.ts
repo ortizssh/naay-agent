@@ -240,6 +240,7 @@ router.get(
             widget_enable_animations,
             widget_theme,
             widget_brand_name,
+            widget_avatar_url,
             promo_badge_enabled,
             promo_badge_type,
             promo_badge_discount,
@@ -317,6 +318,7 @@ router.get(
             placeholder:
               clientStore.widget_placeholder || defaultConfig.placeholder,
             avatar: clientStore.widget_avatar || defaultConfig.avatar,
+            avatarUrl: clientStore.widget_avatar_url || '',
             brandName: clientStore.widget_brand_name || defaultConfig.brandName,
             buttonSize:
               clientStore.widget_button_size || defaultConfig.buttonSize,

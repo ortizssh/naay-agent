@@ -1674,4 +1674,73 @@
         }
     }
 
+    // ==============================
+    // Widget Avatar Upload/Delete
+    // ==============================
+    $(document).on('click', '#kova-upload-avatar', function() {
+        $('#kova-avatar-file').trigger('click');
+    });
+
+    $(document).on('change', '#kova-avatar-file', function() {
+        var file = this.files[0];
+        if (!file) return;
+
+        var formData = new FormData();
+        formData.append('action', 'kova_upload_avatar');
+        formData.append('nonce', kovaAdmin.nonce);
+        formData.append('avatar', file);
+
+        var $container = $('#kova-avatar-container');
+        $container.css('opacity', '0.5');
+
+        $.ajax({
+            url: kovaAdmin.ajax_url,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success && response.data.avatarUrl) {
+                    var avatarUrl = response.data.avatarUrl;
+                    $('#kova_widget_avatar_url').val(avatarUrl);
+                    $container.html(
+                        '<div style="display:flex;align-items:center;gap:10px;">' +
+                        '<img src="' + avatarUrl + '" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid #ddd;">' +
+                        '<button type="button" class="button button-small" id="kova-remove-avatar">Remove image</button>' +
+                        '</div>'
+                    );
+                    $('#kova-preview-avatar').html('<img src="' + avatarUrl + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">');
+                } else {
+                    alert(response.data?.message || 'Upload failed');
+                }
+                $container.css('opacity', '1');
+            },
+            error: function() {
+                alert('Upload failed');
+                $container.css('opacity', '1');
+            }
+        });
+    });
+
+    $(document).on('click', '#kova-remove-avatar', function() {
+        var $container = $('#kova-avatar-container');
+
+        $.post(kovaAdmin.ajax_url, {
+            action: 'kova_delete_avatar',
+            nonce: kovaAdmin.nonce
+        }, function() {
+            $('#kova_widget_avatar_url').val('');
+            $container.html(
+                '<div style="display:flex;align-items:center;gap:8px;">' +
+                '<input type="text" id="kova_widget_avatar" name="kova_agent_settings[widget_avatar]" value="🌿" class="kova-form-input" placeholder="🌿" style="max-width:80px;">' +
+                '<span style="color:#666;font-size:12px;">or</span>' +
+                '<button type="button" class="button button-small" id="kova-upload-avatar">Upload image</button>' +
+                '<input type="file" id="kova-avatar-file" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none;">' +
+                '</div>'
+            );
+            var emoji = $('#kova_widget_avatar').val() || '🌿';
+            $('#kova-preview-avatar').html(emoji);
+        });
+    });
+
 })(jQuery);

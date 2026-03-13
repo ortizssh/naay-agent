@@ -276,6 +276,35 @@ class ApiClient {
     });
   }
 
+  async uploadTenantWidgetAvatar(shopDomain: string, file: File): Promise<{ avatarUrl: string }> {
+    const token = localStorage.getItem('auth_token');
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    const url = `${getApiUrl()}/api/admin/tenants/${shopDomain}/widget/avatar`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.data;
+  }
+
+  async deleteTenantWidgetAvatar(shopDomain: string): Promise<void> {
+    return this.request<void>(`/api/admin/tenants/${shopDomain}/widget/avatar`, {
+      method: 'DELETE',
+    });
+  }
+
   async deleteTenant(shopDomain: string): Promise<void> {
     return this.request<void>(`/api/admin/tenants/${shopDomain}`, {
       method: 'DELETE',
@@ -408,10 +437,39 @@ class ClientApiClient {
     widgetEnableAnimations?: boolean;
     widgetTheme?: string;
     widgetBrandName?: string;
+    widgetAvatarUrl?: string;
   }): Promise<{ success: boolean; data: any }> {
     return this.request('/api/client/widget/config', {
       method: 'PUT',
       body: JSON.stringify(config),
+    });
+  }
+
+  async uploadWidgetAvatar(file: File): Promise<{ success: boolean; data: { avatarUrl: string } }> {
+    const token = localStorage.getItem('auth_token');
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    const url = `${getApiUrl()}/api/client/widget/avatar`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  async deleteWidgetAvatar(): Promise<{ success: boolean }> {
+    return this.request('/api/client/widget/avatar', {
+      method: 'DELETE',
     });
   }
 

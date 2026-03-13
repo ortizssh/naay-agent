@@ -11,6 +11,15 @@ import { tenantService } from '@/services/tenant.service';
 const router = Router();
 const supabaseService = new SupabaseService();
 
+const avatarUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    cb(null, allowed.includes(file.mimetype));
+  },
+});
+
 /**
  * GET /api/shopify/embedded/analytics
  * Get analytics for a shop in embedded Shopify context
@@ -222,6 +231,8 @@ router.put(
       if (config.widgetTheme) updateData.widget_theme = config.widgetTheme;
       if (config.widgetBrandName !== undefined)
         updateData.widget_brand_name = config.widgetBrandName;
+      if (config.widgetAvatarUrl !== undefined)
+        updateData.widget_avatar_url = config.widgetAvatarUrl;
       // Promotion badge settings
       if (config.promoBadgeEnabled !== undefined)
         updateData.promo_badge_enabled = config.promoBadgeEnabled;
@@ -305,6 +316,77 @@ router.put(
       });
     } catch (error) {
       logger.error('Embedded widget config update error:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * POST /api/shopify/embedded/widget/avatar
+ * Upload a custom avatar image for the widget
+ */
+router.post(
+  '/widget/avatar',
+  avatarUpload.single('avatar'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const shop = req.body.shop || req.query.shop;
+      if (!shop) {
+        return res.status(400).json({ success: false, error: 'Shop domain is required' });
+      }
+
+      let normalizedShop = (shop as string).toLowerCase().trim();
+      if (!normalizedShop.includes('.myshopify.com')) {
+        normalizedShop = `${normalizedShop}.myshopify.com`;
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ success: false, error: 'No image provided' });
+      }
+
+      const avatarUrl = await supabaseService.uploadChatFile(
+        'chat-images', normalizedShop, 'widget-avatar', req.file.buffer, req.file.mimetype
+      );
+
+      await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .update({ widget_avatar_url: avatarUrl })
+        .eq('shop_domain', normalizedShop);
+
+      res.json({ success: true, data: { avatarUrl } });
+    } catch (error) {
+      logger.error('Upload widget avatar error:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * DELETE /api/shopify/embedded/widget/avatar
+ * Remove custom avatar image
+ */
+router.delete(
+  '/widget/avatar',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const shop = req.body.shop || req.query.shop;
+      if (!shop) {
+        return res.status(400).json({ success: false, error: 'Shop domain is required' });
+      }
+
+      let normalizedShop = (shop as string).toLowerCase().trim();
+      if (!normalizedShop.includes('.myshopify.com')) {
+        normalizedShop = `${normalizedShop}.myshopify.com`;
+      }
+
+      await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .update({ widget_avatar_url: null })
+        .eq('shop_domain', normalizedShop);
+
+      res.json({ success: true });
+    } catch (error) {
+      logger.error('Delete widget avatar error:', error);
       next(error);
     }
   }

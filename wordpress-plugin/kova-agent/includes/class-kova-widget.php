@@ -189,6 +189,7 @@ class Kova_Widget {
             // Content
             'brandName' => $this->settings['widget_brand_name'] ?? get_bloginfo('name'),
             'avatar' => $this->settings['widget_avatar'] ?? '🌿',
+            'avatarUrl' => $this->settings['widget_avatar_url'] ?? '',
             'subtitle' => $this->settings['widget_subtitle'] ?? 'Asistente de compras con IA',
             'greeting' => $this->settings['welcome_message'] ?? '',
             'placeholder' => $this->settings['widget_placeholder'] ?? 'Escribe tu mensaje...',
