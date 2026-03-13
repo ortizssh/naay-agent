@@ -99,11 +99,14 @@ registerCommerceProvider('shopify', (credentials: StoreCredentials) => {
       );
       const products = allData.products || [];
       const queryLower = query.toLowerCase();
-      const queryWords = queryLower.split(/\s+/).filter((w: string) => w.length > 1);
+      const queryWords = queryLower
+        .split(/\s+/)
+        .filter((w: string) => w.length > 1);
 
       const scored = products.map((p: any) => {
         const titleLower = (p.title || '').toLowerCase();
-        const text = `${p.title} ${p.body_html || ''} ${p.tags || ''} ${p.product_type || ''} ${p.vendor || ''}`.toLowerCase();
+        const text =
+          `${p.title} ${p.body_html || ''} ${p.tags || ''} ${p.product_type || ''} ${p.vendor || ''}`.toLowerCase();
         let score = 0;
         for (const word of queryWords) {
           if (titleLower.includes(word)) score += 3;
@@ -565,7 +568,11 @@ async function searchProductsViaProvider(
         });
 
         if (products && products.length > 0) {
-          logger.info('Commerce provider returned products', { shop, query, count: products.length });
+          logger.info('Commerce provider returned products', {
+            shop,
+            query,
+            count: products.length,
+          });
           return products.map(normalizeResult);
         }
         logger.info('Commerce provider returned 0 results', { shop, query });
