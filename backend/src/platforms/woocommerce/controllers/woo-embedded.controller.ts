@@ -338,17 +338,25 @@ router.post(
     try {
       const siteUrl = req.body.siteUrl || req.query.siteUrl;
       if (!siteUrl) {
-        return res.status(400).json({ success: false, error: 'siteUrl is required' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'siteUrl is required' });
       }
 
       const normalizedShop = normalizeWooSiteUrl(siteUrl as string);
 
       if (!req.file) {
-        return res.status(400).json({ success: false, error: 'No image provided' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'No image provided' });
       }
 
       const avatarUrl = await supabaseService.uploadChatFile(
-        'chat-images', normalizedShop, 'widget-avatar', req.file.buffer, req.file.mimetype
+        'chat-images',
+        normalizedShop,
+        'widget-avatar',
+        req.file.buffer,
+        req.file.mimetype
       );
 
       await (supabaseService as any).serviceClient
@@ -374,7 +382,9 @@ router.delete(
     try {
       const siteUrl = req.body.siteUrl || req.query.siteUrl;
       if (!siteUrl) {
-        return res.status(400).json({ success: false, error: 'siteUrl is required' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'siteUrl is required' });
       }
 
       const normalizedShop = normalizeWooSiteUrl(siteUrl as string);

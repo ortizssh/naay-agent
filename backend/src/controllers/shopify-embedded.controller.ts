@@ -332,7 +332,9 @@ router.post(
     try {
       const shop = req.body.shop || req.query.shop;
       if (!shop) {
-        return res.status(400).json({ success: false, error: 'Shop domain is required' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'Shop domain is required' });
       }
 
       let normalizedShop = (shop as string).toLowerCase().trim();
@@ -341,11 +343,17 @@ router.post(
       }
 
       if (!req.file) {
-        return res.status(400).json({ success: false, error: 'No image provided' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'No image provided' });
       }
 
       const avatarUrl = await supabaseService.uploadChatFile(
-        'chat-images', normalizedShop, 'widget-avatar', req.file.buffer, req.file.mimetype
+        'chat-images',
+        normalizedShop,
+        'widget-avatar',
+        req.file.buffer,
+        req.file.mimetype
       );
 
       await (supabaseService as any).serviceClient
@@ -371,7 +379,9 @@ router.delete(
     try {
       const shop = req.body.shop || req.query.shop;
       if (!shop) {
-        return res.status(400).json({ success: false, error: 'Shop domain is required' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'Shop domain is required' });
       }
 
       let normalizedShop = (shop as string).toLowerCase().trim();

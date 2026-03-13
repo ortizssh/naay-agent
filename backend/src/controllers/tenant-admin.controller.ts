@@ -909,7 +909,11 @@ router.post(
       }
 
       const avatarUrl = await supabaseService.uploadChatFile(
-        'chat-images', shopDomain, 'widget-avatar', req.file.buffer, req.file.mimetype
+        'chat-images',
+        shopDomain,
+        'widget-avatar',
+        req.file.buffer,
+        req.file.mimetype
       );
 
       await (supabaseService as any).serviceClient
