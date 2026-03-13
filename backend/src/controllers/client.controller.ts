@@ -383,8 +383,7 @@ router.post(
         widget_enabled: true,
         widget_position: 'bottom-right',
         widget_color: '#6366f1',
-        widget_brand_name:
-          connectionResult.storeName || 'Store',
+        widget_brand_name: connectionResult.storeName || 'Store',
         updated_at: new Date().toISOString(),
       };
 
