@@ -1015,9 +1015,10 @@ body {
 /* Widget Preview */
 .widget-preview-container {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.2fr 1fr;
   gap: 2rem;
   margin-bottom: 2rem;
+  align-items: start;
 }
 
 .widget-config-form {
@@ -1027,6 +1028,8 @@ body {
 }
 
 .widget-preview-wrapper {
+  position: sticky;
+  top: 2rem;
   background: var(--color-bg);
   border-radius: 16px;
   padding: 1.5rem;
@@ -1039,8 +1042,8 @@ body {
 
 .widget-preview {
   position: relative;
-  width: 320px;
-  height: 400px;
+  width: 280px;
+  height: 360px;
   background: white;
   border-radius: 16px;
   box-shadow: var(--shadow-lg);
@@ -2376,6 +2379,75 @@ body {
 .docs-plans-table td:first-child {
   font-weight: 500;
   color: var(--color-text);
+}
+
+/* Step indicators */
+.docs-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.docs-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  font-size: 0.925rem;
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+}
+
+.docs-step strong {
+  color: var(--color-text);
+}
+
+.docs-step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-top: 1px;
+}
+
+/* Callout variants */
+.docs-callout-tip {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  background: #eef2ff;
+  border-left-color: var(--color-primary);
+}
+
+.docs-callout-warning {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  background: var(--color-warning-soft, #fffbeb);
+  border-left-color: var(--color-warning, #f59e0b);
+}
+
+.docs-callout-icon {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  margin-top: 1px;
+  opacity: 0.7;
+}
+
+.docs-callout-tip .docs-callout-icon {
+  color: var(--color-primary);
+}
+
+.docs-callout-warning .docs-callout-icon {
+  color: var(--color-warning, #f59e0b);
 }
 
 /* FAQ items */

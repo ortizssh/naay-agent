@@ -351,11 +351,24 @@ async function persistChatMessage(
 // =====================================================
 const DEFAULT_SYSTEM_PROMPT = `Eres un asistente virtual de comercio. Tu misión es ayudar a los clientes a encontrar productos y resolver sus dudas.
 
-INSTRUCCIONES CRÍTICAS:
-- SIEMPRE usa search_products antes de recomendar productos
-- NUNCA inventes productos que no existan en el catálogo
+ESTRATEGIA DE BÚSQUEDA:
+- Antes de recomendar, haz búsquedas amplias. Usa search_products con diferentes variaciones de la consulta del cliente.
+- Si el cliente pide algo genérico ("algo para regalar"), haz 2-3 búsquedas con términos complementarios (ej: "regalo", "popular", "más vendido").
+- Si los primeros resultados no son ideales, reformula la búsqueda con sinónimos o términos relacionados.
+- Usa get_product_recommendations para complementar con productos por intención/necesidad.
+- Usa get_product_details si necesitas confirmar precio, stock o variantes antes de recomendar.
+- Usa search_products_broad cuando search_products no devuelve suficientes resultados o necesitas explorar más opciones.
+- Combina resultados de múltiples búsquedas y selecciona los 3 MEJORES según:
+  1. Relevancia para lo que pide el cliente
+  2. Disponibilidad (prioriza productos en stock)
+  3. Variedad (no recomiendes 3 productos casi idénticos)
+  4. Precio adecuado al contexto de la conversación
+
+REGLAS CRÍTICAS:
+- SIEMPRE usa search_products antes de recomendar productos. Puedes llamar a search_products MÚLTIPLES VECES con diferentes queries para explorar más opciones.
+- NUNCA inventes productos que no existan en el catálogo.
 - Usa search_knowledge para preguntas sobre la marca, políticas, envíos, etc.
-- Si no encuentras productos adecuados, ofrece consejos generales y sugiere reformular la consulta
+- Si no encuentras productos adecuados, sugiere reformular la consulta al cliente o pregunta más detalles sobre lo que busca.
 - Los productos se mostrarán como tarjetas visuales con imagen, precio y botón de compra. Tu texto debe ser un párrafo breve de recomendación, NO un listado detallado de productos con precios.
 - Menciona los productos por nombre de forma natural en tu recomendación, pero no repitas precios ni descripciones extensas.`;
 
@@ -408,17 +421,29 @@ function buildSystemPrompt(agentConfig: {
   }
 
   prompt += `\n\nHERRAMIENTAS DISPONIBLES:
-- search_products: busca productos en el catálogo actualizado de la tienda
-- get_product_recommendations: obtiene recomendaciones de productos
-- get_product_details: obtiene detalle completo de un producto específico
+- search_products: busca productos en el catálogo (hasta 6 resultados para que elijas los mejores)
+- get_product_recommendations: obtiene recomendaciones por intención/necesidad (hasta 6 resultados)
+- get_product_details: obtiene detalle completo de un producto específico (precio, stock, variantes)
 - search_knowledge: consulta la base de conocimiento de la marca (políticas, envíos, info de marca, etc.)
+- search_products_broad: búsqueda amplia en todo el catálogo (hasta 10 resultados, menor umbral de relevancia). Úsalo cuando las otras búsquedas no devuelven suficientes resultados.
+
+ESTRATEGIA DE BÚSQUEDA:
+- Antes de recomendar, haz búsquedas amplias. Usa search_products con diferentes variaciones de la consulta.
+- Si el cliente pide algo genérico ("algo para regalar"), haz 2-3 búsquedas con términos complementarios.
+- Si los primeros resultados no son ideales, reformula con sinónimos o términos relacionados.
+- Usa get_product_recommendations para complementar con productos por intención/necesidad.
+- Usa get_product_details si necesitas confirmar precio, stock o variantes antes de recomendar.
+- Combina resultados de múltiples búsquedas y selecciona los 3 MEJORES según:
+  1. Relevancia para lo que pide el cliente
+  2. Disponibilidad (prioriza productos en stock)
+  3. Variedad (no recomiendes 3 productos casi idénticos)
+  4. Precio adecuado al contexto de la conversación
 
 REGLAS CRÍTICAS:
-- SIEMPRE usa search_products antes de recomendar productos específicos
-- NUNCA inventes productos que no existan en el catálogo
+- SIEMPRE usa search_products antes de recomendar. Puedes llamar a search_products MÚLTIPLES VECES con diferentes queries.
+- NUNCA inventes productos que no existan en el catálogo.
 - Usa search_knowledge para preguntas sobre la marca, políticas, envíos, etc.
-- Solo recomienda productos que aparezcan en los resultados de búsqueda
-- Si no encuentras productos adecuados, ofrece consejos generales y sugiere reformular la consulta
+- Si no encuentras productos adecuados, sugiere reformular la consulta o pregunta más detalles.
 
 FORMATO DE RESPUESTA:
 - Tu respuesta de texto NO debe superar los 350 caracteres. Sé breve, directa y conversacional.
@@ -599,6 +624,72 @@ async function getProductRecommendationsViaProvider(
     }));
   } catch (error) {
     logger.error('Error in getProductRecommendations:', error);
+    return [];
+  }
+}
+
+// Broad product search with lower threshold for exploratory queries
+async function searchProductsBroad(
+  shop: string,
+  query: string,
+  limit: number = 10,
+  provider: any | null
+) {
+  try {
+    logger.info('searchProductsBroad', { shop, query, limit });
+
+    // Try provider first with higher limit
+    if (provider) {
+      try {
+        const products = await provider.searchProducts(shop, {
+          query,
+          limit,
+          availability: true,
+        });
+        if (products && products.length > 0) {
+          return products.map((p: any) => ({
+            id: p.external_id || p.id,
+            title: p.title,
+            description: p.description?.substring(0, 300) || '',
+            price: p.price_range?.min || p.variants?.[0]?.price || 'N/A',
+            vendor: p.vendor || '',
+            productType: p.product_type || '',
+            tags: p.tags || [],
+            images: p.images?.[0]?.src || null,
+            available:
+              p.variants?.some((v: any) => v.available !== false) ?? true,
+            handle: p.handle || '',
+          }));
+        }
+      } catch (providerError) {
+        logger.warn(
+          'Commerce provider broad search failed, falling back to semantic:',
+          providerError
+        );
+      }
+    }
+
+    // Fallback: broad semantic search with lower threshold (0.35)
+    const products = await supabaseService.searchProductsSemanticBroad(
+      shop,
+      query,
+      limit,
+      0.35
+    );
+    return products.map((product: any) => ({
+      id: product.id,
+      title: product.title,
+      description: product.description?.substring(0, 300) || '',
+      price: product.price,
+      vendor: product.vendor,
+      productType: product.product_type,
+      tags: product.tags,
+      images: product.images?.[0] || null,
+      available: product.variants?.some((v: any) => v.available) || false,
+      similarity: product.similarity,
+    }));
+  } catch (error) {
+    logger.error('Error in searchProductsBroad:', error);
     return [];
   }
 }
@@ -958,7 +1049,7 @@ router.post(
           function: {
             name: 'search_products',
             description:
-              'Busca productos en el catálogo actualizado de la tienda basado en una consulta de texto',
+              'Busca productos en el catálogo actualizado de la tienda. Devuelve hasta 6 resultados para que elijas los mejores. Puedes llamarlo MÚLTIPLES VECES con diferentes queries para explorar más opciones.',
             parameters: {
               type: 'object',
               properties: {
@@ -970,7 +1061,7 @@ router.post(
                 limit: {
                   type: 'number',
                   description:
-                    'Número máximo de productos a devolver (default: 3, max: 3)',
+                    'Número máximo de productos a devolver (default: 6, max: 6)',
                 },
               },
               required: ['query'],
@@ -982,7 +1073,7 @@ router.post(
           function: {
             name: 'get_product_recommendations',
             description:
-              'Obtiene recomendaciones de productos según una intención o necesidad',
+              'Obtiene recomendaciones de productos según una intención o necesidad. Devuelve hasta 6 resultados para que elijas los mejores.',
             parameters: {
               type: 'object',
               properties: {
@@ -994,7 +1085,7 @@ router.post(
                 limit: {
                   type: 'number',
                   description:
-                    'Número máximo de productos a recomendar (default: 3, max: 3)',
+                    'Número máximo de productos a recomendar (default: 6, max: 6)',
                 },
               },
               required: ['intent'],
@@ -1042,6 +1133,29 @@ router.post(
             },
           },
         },
+        {
+          type: 'function' as const,
+          function: {
+            name: 'search_products_broad',
+            description:
+              'Búsqueda amplia en TODO el catálogo con menor umbral de relevancia. Devuelve hasta 10 resultados. Úsalo cuando search_products no devuelve suficientes resultados o necesitas explorar más opciones.',
+            parameters: {
+              type: 'object',
+              properties: {
+                query: {
+                  type: 'string',
+                  description: 'Término de búsqueda amplio',
+                },
+                limit: {
+                  type: 'number',
+                  description:
+                    'Número máximo de productos a devolver (default: 10, max: 10)',
+                },
+              },
+              required: ['query'],
+            },
+          },
+        },
       ];
 
       // Call OpenAI with tools
@@ -1071,7 +1185,7 @@ router.post(
             const products = await searchProductsViaProvider(
               shop,
               args.query,
-              Math.min(args.limit || 3, 3),
+              Math.min(args.limit || 6, 6),
               commerceProvider
             );
             allRecommendedProducts.push(...products);
@@ -1084,7 +1198,7 @@ router.post(
             const products = await getProductRecommendationsViaProvider(
               shop,
               args.intent,
-              Math.min(args.limit || 3, 3),
+              Math.min(args.limit || 6, 6),
               commerceProvider
             );
             allRecommendedProducts.push(...products);
@@ -1130,6 +1244,20 @@ router.post(
                   similarity: r.similarity,
                 }))
               ),
+            });
+          } else if (toolCall.function.name === 'search_products_broad') {
+            const broadLimit = Math.min(args.limit || 10, 10);
+            const products = await searchProductsBroad(
+              shop,
+              args.query,
+              broadLimit,
+              commerceProvider
+            );
+            allRecommendedProducts.push(...products);
+            toolResults.push({
+              tool_call_id: toolCall.id,
+              role: 'tool' as const,
+              content: JSON.stringify(products),
             });
           }
         }

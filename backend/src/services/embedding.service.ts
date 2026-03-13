@@ -168,6 +168,8 @@ export class EmbeddingService {
       product.description,
       product.vendor,
       product.product_type,
+      product.product_type ? `Categoría: ${product.product_type}` : '',
+      product.vendor ? `Marca: ${product.vendor}` : '',
       ...(product.tags || []),
     ].filter(Boolean);
 

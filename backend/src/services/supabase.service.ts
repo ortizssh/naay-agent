@@ -186,7 +186,7 @@ export class SupabaseService {
             {
               p_shop_domain: shopDomain,
               p_query_embedding: embedding,
-              p_match_threshold: 0.7,
+              p_match_threshold: 0.5,
               p_match_count: limit,
             }
           );
@@ -226,6 +226,46 @@ export class SupabaseService {
       return await this.searchProducts(shopDomain, query, embedding, limit);
     } catch (error) {
       logger.error('Error in semantic search:', error);
+      throw error;
+    }
+  }
+
+  // Broad semantic search with lower similarity threshold for exploratory queries
+  async searchProductsSemanticBroad(
+    shopDomain: string,
+    query: string,
+    limit: number = 10,
+    threshold: number = 0.35
+  ): Promise<any[]> {
+    try {
+      const embedding = await this.embeddingService.generateEmbedding(query);
+
+      const cacheKey = `search_broad:${shopDomain}:${query}:${limit}:${threshold}`;
+      const cached = await cacheService.get(cacheKey);
+      if (cached) {
+        return cached as any[];
+      }
+
+      const { data, error } = await this.serviceClient.rpc(
+        'search_products_semantic_v2',
+        {
+          p_shop_domain: shopDomain,
+          p_query_embedding: embedding,
+          p_match_threshold: threshold,
+          p_match_count: limit,
+        }
+      );
+
+      if (error) {
+        logger.error('Error in broad semantic search:', error);
+        throw new Error(`Failed broad semantic search: ${error.message}`);
+      }
+
+      const results = data || [];
+      await cacheService.set(cacheKey, results, { ttl: 300 });
+      return results;
+    } catch (error) {
+      logger.error('Error in broad semantic search:', error);
       throw error;
     }
   }

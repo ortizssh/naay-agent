@@ -224,7 +224,7 @@ function OnboardingWizard({ initialStep = 0, onComplete }: OnboardingWizardProps
       </header>
 
       <div className="onboarding-content">
-        <div className={`onboarding-card${currentStep === 3 ? ' onboarding-card-wide' : ''}`}>
+        <div className={`onboarding-card${(currentStep === 3 || currentStep === 4) ? ' onboarding-card-wide' : ''}`}>
           <StepIndicator currentStep={currentStep} totalSteps={displayTotalSteps} />
           {renderStep()}
         </div>
