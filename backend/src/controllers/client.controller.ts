@@ -274,6 +274,174 @@ router.post(
 );
 
 /**
+ * POST /api/client/store/connect-woo
+ * Connect a WooCommerce store (test connection + create records with user_id)
+ */
+router.post(
+  '/store/connect-woo',
+  requireClientAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = (req as any).user;
+      const { siteUrl, consumerKey, consumerSecret } = req.body;
+
+      if (!siteUrl || !consumerKey || !consumerSecret) {
+        throw new AppError(
+          'URL de tienda, Consumer Key y Consumer Secret son requeridos',
+          400
+        );
+      }
+
+      // Validate and normalize URL
+      let normalizedUrl: string;
+      let shopDomain: string;
+      try {
+        const url = new URL(siteUrl);
+        normalizedUrl = `${url.protocol}//${url.host}`;
+        shopDomain = url.host;
+      } catch {
+        throw new AppError('URL de tienda inválida', 400);
+      }
+
+      // Test connection with WooCommerce
+      const { WooCommerceService } = await import(
+        '@/platforms/woocommerce/services/woocommerce.service'
+      );
+      const wooService = new WooCommerceService({
+        siteUrl: normalizedUrl,
+        consumerKey,
+        consumerSecret,
+      });
+
+      const connectionResult = await wooService.testConnection();
+      if (!connectionResult.success) {
+        throw new AppError(
+          'No se pudo conectar con la tienda WooCommerce. Verifica las credenciales.',
+          401
+        );
+      }
+
+      // Generate webhook secret
+      const crypto = await import('crypto');
+      const webhookSecret = crypto.randomBytes(32).toString('hex');
+
+      // Create/update stores record with credentials
+      const existingStore = await supabaseService.getStore(shopDomain);
+
+      const storeMetadata: any = {};
+      if (connectionResult.storeName)
+        storeMetadata.shop_name = connectionResult.storeName;
+      if (connectionResult.currency)
+        storeMetadata.shop_currency = connectionResult.currency;
+
+      if (existingStore) {
+        await (supabaseService as any).serviceClient
+          .from('stores')
+          .update({
+            platform: 'woocommerce',
+            site_url: normalizedUrl,
+            credentials: {
+              consumer_key: consumerKey,
+              consumer_secret: consumerSecret,
+            },
+            webhook_secret: webhookSecret,
+            updated_at: new Date().toISOString(),
+            ...storeMetadata,
+          })
+          .eq('shop_domain', (existingStore as any).shop_domain);
+      } else {
+        await (supabaseService as any).serviceClient.from('stores').insert({
+          shop_domain: shopDomain,
+          platform: 'woocommerce',
+          site_url: normalizedUrl,
+          access_token: 'woocommerce',
+          credentials: {
+            consumer_key: consumerKey,
+            consumer_secret: consumerSecret,
+          },
+          webhook_secret: webhookSecret,
+          installed_at: new Date().toISOString(),
+          scopes: 'read_write',
+          ...storeMetadata,
+        });
+      }
+
+      // Create/update client_stores record WITH user_id
+      const { data: existingClient } = await (
+        supabaseService as any
+      ).serviceClient
+        .from('client_stores')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      const clientStoreData: any = {
+        shop_domain: shopDomain,
+        platform: 'woocommerce',
+        status: 'active',
+        is_active: true,
+        widget_enabled: true,
+        widget_position: 'bottom-right',
+        widget_color: '#6366f1',
+        widget_brand_name:
+          connectionResult.storeName || 'Store',
+        updated_at: new Date().toISOString(),
+      };
+
+      if (existingClient) {
+        await (supabaseService as any).serviceClient
+          .from('client_stores')
+          .update(clientStoreData)
+          .eq('user_id', user.id);
+      } else {
+        await (supabaseService as any).serviceClient
+          .from('client_stores')
+          .insert({
+            ...clientStoreData,
+            user_id: user.id,
+            created_at: new Date().toISOString(),
+          });
+      }
+
+      // Also update client_stores by shop_domain if exists without user_id
+      // (e.g., created by the WP plugin previously)
+      await (supabaseService as any).serviceClient
+        .from('client_stores')
+        .update({
+          user_id: user.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('shop_domain', shopDomain)
+        .is('user_id', null);
+
+      // Update onboarding step to 1 (connect completed)
+      await (supabaseService as any).serviceClient
+        .from('admin_users')
+        .update({ onboarding_step: 1 })
+        .eq('id', user.id);
+
+      logger.info('WooCommerce store connected via onboarding', {
+        shopDomain,
+        userId: user.id,
+        storeName: connectionResult.storeName,
+      });
+
+      res.json({
+        success: true,
+        data: {
+          shopDomain,
+          storeName: connectionResult.storeName,
+          currency: connectionResult.currency,
+        },
+      });
+    } catch (error) {
+      logger.error('WooCommerce connect error:', error);
+      next(error);
+    }
+  }
+);
+
+/**
  * GET /api/client/oauth/callback
  * Handle OAuth callback from Shopify
  */
@@ -824,10 +992,78 @@ router.post(
       // Start async sync
       (async () => {
         try {
-          const products = await shopifyService.getAllProducts(
-            store.shop_domain,
-            store.access_token
-          );
+          let products: any[];
+
+          if (store.platform === 'woocommerce') {
+            // WooCommerce sync: get credentials from stores table
+            const { data: storeRecord } = await (
+              supabaseService as any
+            ).serviceClient
+              .from('stores')
+              .select('site_url, credentials')
+              .eq('shop_domain', store.shop_domain)
+              .single();
+
+            if (
+              !storeRecord?.credentials?.consumer_key ||
+              !storeRecord?.credentials?.consumer_secret
+            ) {
+              throw new Error('WooCommerce credentials not found');
+            }
+
+            const { WooCommerceService } = await import(
+              '@/platforms/woocommerce/services/woocommerce.service'
+            );
+            const wooService = new WooCommerceService({
+              siteUrl: storeRecord.site_url,
+              consumerKey: storeRecord.credentials.consumer_key,
+              consumerSecret: storeRecord.credentials.consumer_secret,
+            });
+
+            const normalizedProducts = await wooService.getAllProducts(
+              storeRecord.site_url
+            );
+
+            // Convert normalized products to the format saveProduct expects
+            products = normalizedProducts.map((p: any) => ({
+              id: p.external_id,
+              title: p.title,
+              description: p.description,
+              handle: p.handle,
+              vendor: p.vendor || '',
+              product_type: p.product_type || '',
+              tags: p.tags,
+              status: p.status,
+              images: (p.images || []).map((img: any) => ({
+                id: img.id,
+                src: img.src,
+                alt_text: img.alt_text,
+                width: img.width || 0,
+                height: img.height || 0,
+              })),
+              variants: (p.variants || []).map((v: any) => ({
+                id: v.external_id,
+                product_id: p.external_id,
+                title: v.title,
+                sku: v.sku || '',
+                price: v.price,
+                compare_at_price: v.compare_at_price,
+                inventory_quantity: v.inventory_quantity,
+                weight: v.weight || 0,
+                weight_unit: v.weight_unit || 'kg',
+                requires_shipping: v.requires_shipping,
+                taxable: v.taxable,
+              })),
+              created_at: p.created_at,
+              updated_at: p.updated_at,
+            }));
+          } else {
+            // Shopify sync
+            products = await shopifyService.getAllProducts(
+              store.shop_domain,
+              store.access_token
+            );
+          }
 
           // Update total
           await (supabaseService as any).serviceClient
@@ -862,18 +1098,20 @@ router.post(
             })
             .eq('id', store.id);
 
-          // Create webhooks
-          try {
-            await shopifyService.createWebhooks(
-              store.shop_domain,
-              store.access_token
-            );
-            await (supabaseService as any).serviceClient
-              .from('client_stores')
-              .update({ webhooks_configured: true })
-              .eq('id', store.id);
-          } catch (err) {
-            logger.error('Failed to create webhooks:', err);
+          // Create webhooks (Shopify only — WooCommerce webhooks are set up via the plugin)
+          if (store.platform !== 'woocommerce') {
+            try {
+              await shopifyService.createWebhooks(
+                store.shop_domain,
+                store.access_token
+              );
+              await (supabaseService as any).serviceClient
+                .from('client_stores')
+                .update({ webhooks_configured: true })
+                .eq('id', store.id);
+            } catch (err) {
+              logger.error('Failed to create webhooks:', err);
+            }
           }
 
           logger.info(

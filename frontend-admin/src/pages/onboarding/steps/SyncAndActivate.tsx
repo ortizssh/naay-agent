@@ -188,42 +188,61 @@ function SyncAndActivate({ onBack, onComplete }: SyncAndActivateProps) {
       {/* Installation instructions - show after sync */}
       {(syncStatus === 'completed' || syncStatus === 'failed') && (
         <>
-          <div className="card" style={{ marginBottom: '1.5rem' }}>
-            <div className="card-header">
-              <h3 className="card-title">Opción 1: Extension de Shopify (Recomendado)</h3>
-            </div>
-            <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
-              La forma más fácil. Ve a tu panel de Shopify {'>'} Tema {'>'} Personalizar {'>'}
-              App embeds y activa "Kova AI Chat Widget".
-            </p>
-            {shopDomain && (
-              <a
-                href={`https://${shopDomain}/admin/themes/current/editor`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-secondary"
-                style={{ display: 'inline-flex' }}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                  <polyline points="15 3 21 3 21 9" />
-                  <line x1="10" y1="14" x2="21" y2="3" />
-                </svg>
-                Ir al Editor de Tema
-              </a>
-            )}
-          </div>
-
-          {widgetCode && (
-            <div className="card" style={{ marginBottom: '1.5rem' }}>
-              <div className="card-header">
-                <h3 className="card-title">Opción 2: Código Manual</h3>
+          {shopDomain && !shopDomain.includes('.myshopify.com') ? (
+            /* WooCommerce: show widget code snippet */
+            widgetCode && (
+              <div className="card" style={{ marginBottom: '1.5rem' }}>
+                <div className="card-header">
+                  <h3 className="card-title">Instala el widget en tu tienda</h3>
+                </div>
+                <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
+                  Copia y pega este código en tu tema de WordPress, antes del cierre del tag {'</body>'},
+                  o usa el plugin de Kova para instalarlo automáticamente.
+                </p>
+                <CodeSnippet code={widgetCode} />
               </div>
-              <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
-                Copia y pega este código en tu tema, antes del cierre del tag {'</body>'}.
-              </p>
-              <CodeSnippet code={widgetCode} />
-            </div>
+            )
+          ) : (
+            /* Shopify: show theme editor + manual code */
+            <>
+              <div className="card" style={{ marginBottom: '1.5rem' }}>
+                <div className="card-header">
+                  <h3 className="card-title">Opción 1: Extension de Shopify (Recomendado)</h3>
+                </div>
+                <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
+                  La forma más fácil. Ve a tu panel de Shopify {'>'} Tema {'>'} Personalizar {'>'}
+                  App embeds y activa "Kova AI Chat Widget".
+                </p>
+                {shopDomain && (
+                  <a
+                    href={`https://${shopDomain}/admin/themes/current/editor`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-secondary"
+                    style={{ display: 'inline-flex' }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                      <polyline points="15 3 21 3 21 9" />
+                      <line x1="10" y1="14" x2="21" y2="3" />
+                    </svg>
+                    Ir al Editor de Tema
+                  </a>
+                )}
+              </div>
+
+              {widgetCode && (
+                <div className="card" style={{ marginBottom: '1.5rem' }}>
+                  <div className="card-header">
+                    <h3 className="card-title">Opción 2: Código Manual</h3>
+                  </div>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
+                    Copia y pega este código en tu tema, antes del cierre del tag {'</body>'}.
+                  </p>
+                  <CodeSnippet code={widgetCode} />
+                </div>
+              )}
+            </>
           )}
         </>
       )}
